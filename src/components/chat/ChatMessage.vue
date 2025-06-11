@@ -58,22 +58,22 @@ const formatFileSize = (bytes: number) => {
 function addToStory() {
   if (!props.message.content) return;
   
-  // Get current story content
+  // Get current prompt content
   const chat = chatStore.chats.find(c => c.id === chatId.value);
-  const currentStory = chat?.story?.content || '';
+  const currentPrompt = chat?.story?.content || '';
   
-  // Add new content to story
-  let newStoryContent = currentStory;
-  if (currentStory) {
-    newStoryContent += '\n\n---\n\n'; // Add a separator between entries
+  // Add new content to prompt
+  let newPromptContent = currentPrompt;
+  if (currentPrompt) {
+    newPromptContent += '\n\n---\n\n'; // Add a separator between entries
   }
   
-  // Add timestamp and the new story content
+  // Add timestamp and the new prompt content
   const timestamp = new Date().toLocaleTimeString();
-  newStoryContent += `**[${timestamp}] Manual Addition**\n\n${props.message.content}`;
+  newPromptContent += `**[${timestamp}] Manual Addition**\n\n${props.message.content}`;
   
-  // Update the story in the store
-  chatStore.updateStory(chatId.value, newStoryContent);
+  // Update the prompt in the store
+  chatStore.updateStory(chatId.value, newPromptContent);
 }
 
 onMounted(() => {
@@ -127,7 +127,7 @@ onMounted(() => {
           <span class="time">{{ formattedTime }}</span>
         </div>
         <div v-if="props.message.sender === 'assistant'" class="meta-actions">
-          <button @click="addToStory" class="add-to-story-btn" title="Add to Story">
+          <button @click="addToStory" class="add-to-story-btn" title="Add to Prompt">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>

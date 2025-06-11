@@ -9,20 +9,20 @@ const isDeployingAgent = ref(false);
 const lastTestResult = ref<BotsifyResponse | null>(null);
 const lastDeployResult = ref<BotsifyResponse | null>(null);
 
-// Get the latest story content from the current active chat
-const latestStoryContent = computed(() => {
+// Get the latest prompt content from the current active chat
+const latestPromptContent = computed(() => {
   const currentChat = chatStore.chats.find(chat => chat.id === chatStore.activeChat);
   return currentChat?.story?.content || '';
 });
 
-// Check if there's story content available
-const hasStoryContent = computed(() => {
-  return latestStoryContent.value.trim().length > 0;
+// Check if there's prompt content available
+const hasPromptContent = computed(() => {
+  return latestPromptContent.value.trim().length > 0;
 });
 
 const testAiAgent = async () => {
-  if (!hasStoryContent.value) {
-    alert('No story content available to test. Please generate some content first.');
+  if (!hasPromptContent.value) {
+    alert('No prompt content available to test. Please generate some content first.');
     return;
   }
 
@@ -31,7 +31,7 @@ const testAiAgent = async () => {
 
   try {
     console.log('Starting AI Agent test...');
-    const result = await botsifyApi.testAiAgent(latestStoryContent.value);
+    const result = await botsifyApi.testAiAgent(latestPromptContent.value);
     lastTestResult.value = result;
     
     if (result.success) {
@@ -48,8 +48,8 @@ const testAiAgent = async () => {
 };
 
 const deployAiAgent = async () => {
-  if (!hasStoryContent.value) {
-    alert('No story content available to deploy. Please generate some content first.');
+  if (!hasPromptContent.value) {
+    alert('No prompt content available to deploy. Please generate some content first.');
     return;
   }
 
@@ -62,7 +62,7 @@ const deployAiAgent = async () => {
 
   try {
     console.log('Starting AI Agent deployment...');
-    const result = await botsifyApi.deployAiAgent(latestStoryContent.value);
+    const result = await botsifyApi.deployAiAgent(latestPromptContent.value);
     lastDeployResult.value = result;
     
     if (result.success) {
@@ -83,7 +83,7 @@ const deployAiAgent = async () => {
   <div class="ai-agent-actions">
     <div class="section-header">
       <h4>🤖 AI Agent</h4>
-      <p class="section-description">Test and deploy your chatbot story</p>
+      <p class="section-description">Test and deploy your AI prompt</p>
     </div>
     
     <div class="action-buttons">
@@ -91,8 +91,8 @@ const deployAiAgent = async () => {
       <button 
         class="action-button test-button"
         @click="testAiAgent"
-        :disabled="isTestingAgent || !hasStoryContent"
-        :title="!hasStoryContent ? 'No story content available' : 'Test your AI agent'"
+        :disabled="isTestingAgent || !hasPromptContent"
+        :title="!hasPromptContent ? 'No prompt content available' : 'Test your AI agent'"
       >
         <div class="button-content">
           <svg v-if="!isTestingAgent" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -107,8 +107,8 @@ const deployAiAgent = async () => {
       <button 
         class="action-button deploy-button"
         @click="deployAiAgent"
-        :disabled="isDeployingAgent || !hasStoryContent"
-        :title="!hasStoryContent ? 'No story content available' : 'Deploy your AI agent'"
+        :disabled="isDeployingAgent || !hasPromptContent"
+        :title="!hasPromptContent ? 'No prompt content available' : 'Deploy your AI agent'"
       >
         <div class="button-content">
           <svg v-if="!isDeployingAgent" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -122,20 +122,20 @@ const deployAiAgent = async () => {
     </div>
 
     <!-- Status Information -->
-    <div v-if="!hasStoryContent" class="status-info warning">
+    <div v-if="!hasPromptContent" class="status-info warning">
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
         <line x1="12" y1="9" x2="12" y2="13"></line>
         <line x1="12" y1="17" x2="12.01" y2="17"></line>
       </svg>
-      <span>Generate story content first</span>
+      <span>Generate prompt content first</span>
     </div>
 
     <div v-else class="status-info success">
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="20,6 9,17 4,12"></polyline>
       </svg>
-      <span>Story content ready ({{ Math.round(latestStoryContent.length / 100) / 10 }}k chars)</span>
+      <span>Prompt content ready ({{ Math.round(latestPromptContent.length / 100) / 10 }}k chars)</span>
     </div>
   </div>
 </template>

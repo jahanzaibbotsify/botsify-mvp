@@ -158,12 +158,12 @@ export const useChatStore = defineStore('chat', () => {
       messages: [
         {
           id: '1',
-          content: 'Hello! Start creating your chatbot story here.',
+          content: 'Hello! Start creating your AI prompt here.',
           timestamp: new Date(),
           sender: 'assistant'
         }
       ],
-      lastMessage: 'Hello! Start creating your chatbot story here.'
+      lastMessage: 'Hello! Start creating your AI prompt here.'
     };
     
     chats.value.unshift(newChat);

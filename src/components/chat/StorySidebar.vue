@@ -2,6 +2,7 @@
 import { computed, ref, watch, onMounted } from 'vue';
 import { useChatStore } from '../../stores/chatStore';
 import { marked } from 'marked';
+import AiAgentActions from '../sidebar/AiAgentActions.vue';
 
 const props = defineProps<{
   chatId: string;
@@ -38,7 +39,7 @@ const parsedStoryContent = computed(() => {
   if (!story.value?.content) {
     return `
       <div class="empty-state">
-        <h4>🤖 Latest Chatbot Story</h4>
+        <h4>🤖 Latest AI Prompt</h4>
         <p>The most recent AI response will appear here automatically.</p>
         <p>Start chatting and the AI's latest response will be displayed in this sidebar!</p>
       </div>
@@ -82,11 +83,14 @@ defineExpose({
     
     <div class="sidebar-content">
       <div class="sidebar-header">
-        <h3>Chatbot Story</h3>
+        <h3>AI Prompt</h3>
         <span v-if="story?.updatedAt" class="last-updated">Updated: {{ formattedLastUpdate }}</span>
       </div>
       
-      <div class="story-content scrollbar" style="padding: 35px;" v-html="parsedStoryContent"></div>
+      <div class="story-content scrollbar" v-html="parsedStoryContent"></div>
+      
+      <!-- AI Agent Actions moved to right sidebar -->
+      <AiAgentActions />
     </div>
   </div>
 </template>
@@ -147,95 +151,155 @@ defineExpose({
 }
 
 .sidebar-header {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-4);
   border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-bg-primary);
 }
 
 .sidebar-header h3 {
-  margin: 0;
+  margin: 0 0 var(--space-1) 0;
   font-size: 1.125rem;
   font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .last-updated {
-  display: block;
   font-size: 0.75rem;
   color: var(--color-text-secondary);
-  margin-top: var(--space-1);
 }
 
 .story-content {
   flex: 1;
   padding: var(--space-4);
   overflow-y: auto;
-}
-
-.story-content :deep(p) {
-  margin: 0 0 var(--space-3);
-}
-
-.story-content :deep(p:last-child) {
-  margin-bottom: 0;
-}
-
-.story-content :deep(h1), 
-.story-content :deep(h2), 
-.story-content :deep(h3), 
-.story-content :deep(h4), 
-.story-content :deep(h5), 
-.story-content :deep(h6) {
-  margin-top: var(--space-4);
-  margin-bottom: var(--space-2);
-}
-
-.story-content :deep(.error-text) {
-  color: var(--color-error);
-  font-weight: 500;
+  background-color: var(--color-bg-primary);
 }
 
 .story-content :deep(.empty-state) {
   text-align: center;
-  padding: var(--space-6) var(--space-4);
+  padding: var(--space-8) var(--space-4);
   color: var(--color-text-secondary);
 }
 
 .story-content :deep(.empty-state h4) {
-  color: var(--color-text-primary);
-  margin-bottom: var(--space-3);
+  margin: 0 0 var(--space-3) 0;
   font-size: 1.125rem;
-}
-
-.story-content :deep(.empty-state ul) {
-  text-align: left;
-  margin: var(--space-3) 0;
-  padding-left: var(--space-4);
-}
-
-.story-content :deep(.empty-state li) {
-  margin-bottom: var(--space-2);
+  font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .story-content :deep(.empty-state p) {
-  margin-bottom: var(--space-3);
+  margin: 0 0 var(--space-2) 0;
+  line-height: 1.5;
+}
+
+.story-content :deep(.empty-state p:last-child) {
+  margin-bottom: 0;
+}
+
+.story-content :deep(.error-text) {
+  color: var(--color-error);
+  font-style: italic;
+  text-align: center;
+  padding: var(--space-4);
+}
+
+/* Markdown content styling */
+.story-content :deep(h1),
+.story-content :deep(h2),
+.story-content :deep(h3),
+.story-content :deep(h4),
+.story-content :deep(h5),
+.story-content :deep(h6) {
+  margin: var(--space-4) 0 var(--space-2) 0;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.story-content :deep(h1) { font-size: 1.5rem; }
+.story-content :deep(h2) { font-size: 1.375rem; }
+.story-content :deep(h3) { font-size: 1.25rem; }
+.story-content :deep(h4) { font-size: 1.125rem; }
+.story-content :deep(h5) { font-size: 1rem; }
+.story-content :deep(h6) { font-size: 0.875rem; }
+
+.story-content :deep(p) {
+  margin: 0 0 var(--space-3) 0;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+}
+
+.story-content :deep(ul),
+.story-content :deep(ol) {
+  margin: 0 0 var(--space-3) 0;
+  padding-left: var(--space-5);
+}
+
+.story-content :deep(li) {
+  margin-bottom: var(--space-1);
+  line-height: 1.5;
+}
+
+.story-content :deep(code) {
+  background-color: var(--color-bg-tertiary);
+  padding: 0.125rem 0.25rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+}
+
+.story-content :deep(pre) {
+  background-color: var(--color-bg-tertiary);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  margin: var(--space-3) 0;
+}
+
+.story-content :deep(pre code) {
+  background: none;
+  padding: 0;
+}
+
+.story-content :deep(blockquote) {
+  border-left: 4px solid var(--color-primary);
+  padding-left: var(--space-3);
+  margin: var(--space-3) 0;
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+
+.story-content :deep(a) {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.story-content :deep(a:hover) {
+  text-decoration: underline;
+}
+
+.story-content :deep(hr) {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: var(--space-4) 0;
 }
 
 /* Mobile styles */
 @media (max-width: 767px) {
   .story-sidebar {
-    width: 280px;
+    width: 100%;
+    max-width: 350px;
   }
   
-  /* Show toggle button on mobile */
   .sidebar-toggle.mobile-only {
     display: flex;
   }
-  
-  .sidebar-header {
-    padding: var(--space-2) var(--space-3);
-  }
-  
-  .story-content {
-    padding: var(--space-3);
+}
+
+/* Tablet styles */
+@media (max-width: 1024px) and (min-width: 768px) {
+  .story-sidebar {
+    width: 300px;
   }
 }
 </style> 

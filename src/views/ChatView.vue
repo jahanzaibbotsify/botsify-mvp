@@ -68,7 +68,7 @@ watch(() => {
   // Update sidebar when AI message content changes and has actual content
   if (newData.sender === 'assistant' && newData.content && newData.content !== oldData?.content) {
     console.log('AI message content updated, updating sidebar');
-    updateStoryContent(newData.content);
+    updatePromptContent(newData.content);
   }
 }, { deep: true });
 
@@ -83,25 +83,25 @@ watch(() => chatStore.isTyping, (isTyping, wasTyping) => {
     const lastMessage = messages[messages.length - 1];
     if (lastMessage && lastMessage.sender === 'assistant' && lastMessage.content) {
       console.log('Typing finished, ensuring sidebar has final content');
-      updateStoryContent(lastMessage.content);
+      updatePromptContent(lastMessage.content);
     }
   }
 });
 
-function updateStoryContent(message: string) {
-  console.log('updateStoryContent called with message:', message.substring(0, 100) + '...');
+function updatePromptContent(message: string) {
+  console.log('updatePromptContent called with message:', message.substring(0, 100) + '...');
   if (!chat.value) {
     console.log('No chat found, returning');
     return;
   }
   
-  // Replace the entire story content with just the latest AI response
-  const newStoryContent = `${message}`;
+  // Replace the entire prompt content with just the latest AI response
+  const newPromptContent = `${message}`;
   
-  console.log('Updating story with content:', newStoryContent.substring(0, 100) + '...');
-  // Update the story in the store (replace, don't append)
-  chatStore.updateStory(chatId.value, newStoryContent);
-  console.log('Story updated successfully');
+  console.log('Updating prompt with content:', newPromptContent.substring(0, 100) + '...');
+  // Update the prompt in the store (replace, don't append)
+  chatStore.updateStory(chatId.value, newPromptContent);
+  console.log('Prompt updated successfully');
 }
 
 onMounted(() => {
@@ -114,7 +114,7 @@ onMounted(() => {
     const lastMessage = chat.value.messages[chat.value.messages.length - 1];
     if (lastMessage && lastMessage.sender === 'assistant' && lastMessage.content) {
       console.log('Found existing AI message on mount, adding to sidebar');
-      updateStoryContent(lastMessage.content);
+      updatePromptContent(lastMessage.content);
     }
   }
   
