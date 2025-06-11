@@ -145,6 +145,24 @@ function toggleMobileSidebar() {
     storySidebar.value.toggleSidebar();
   }
 }
+
+function clearVersionHistory() {
+  if (confirm('Are you sure you want to clear version history for this chat? This cannot be undone.')) {
+    chatStore.clearVersionHistory(chatId.value);
+  }
+}
+
+function clearAllChats() {
+  if (confirm('Are you sure you want to clear all conversations except this one? This cannot be undone.')) {
+    chatStore.clearAllChatsExceptActive();
+  }
+}
+
+function clearMessageHistory() {
+  if (confirm('Are you sure you want to clear the message history for this conversation? This cannot be undone.')) {
+    chatStore.clearChatMessages(chatId.value);
+  }
+}
 </script>
 
 <template>
@@ -155,6 +173,28 @@ function toggleMobileSidebar() {
     <div class="chat-header">
       <h2>{{ chat.title }}</h2>
       <div class="chat-actions">
+        <!-- Clear History Dropdown -->
+        <div class="dropdown">
+          <button class="icon-button" title="Clear History">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18"></path>
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+            </svg>
+          </button>
+          <div class="dropdown-content">
+            <button @click="clearMessageHistory" class="dropdown-item">
+              Clear Message History
+            </button>
+            <button @click="clearVersionHistory" class="dropdown-item">
+              Clear Version History
+            </button>
+            <button @click="clearAllChats" class="dropdown-item danger">
+              Clear All Conversations
+            </button>
+          </div>
+        </div>
+        
         <!-- Mobile sidebar toggle button -->
         <button class="icon-button mobile-sidebar-toggle" @click="toggleMobileSidebar" title="Toggle Sidebar">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -266,6 +306,60 @@ function toggleMobileSidebar() {
 .icon-button:hover {
   background-color: var(--color-bg-tertiary);
   color: var(--color-text-primary);
+}
+
+/* Dropdown styles */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  background-color: var(--color-bg-primary);
+  min-width: 200px;
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  z-index: var(--z-dropdown);
+  overflow: hidden;
+}
+
+.dropdown:hover .dropdown-content,
+.dropdown:focus-within .dropdown-content {
+  display: block;
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color var(--transition-fast);
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.dropdown-item.danger {
+  color: var(--color-error);
+}
+
+.dropdown-item.danger:hover {
+  background-color: rgba(239, 68, 68, 0.1);
 }
 
 .system-button {

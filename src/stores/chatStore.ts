@@ -507,6 +507,55 @@ export const useChatStore = defineStore('chat', () => {
     return newChat;
   }
 
+  // Function to clear all chat history except the active chat
+  function clearAllChatsExceptActive() {
+    if (!activeChat.value) return;
+    
+    // Keep only the active chat
+    const currentActiveChat = chats.value.find(c => c.id === activeChat.value);
+    if (currentActiveChat) {
+      chats.value = [currentActiveChat];
+      console.log('Cleared all chats except active one');
+      forceSave();
+      return true;
+    }
+    return false;
+  }
+
+  // Function to clear version history for a specific chat
+  function clearVersionHistory(chatId: string) {
+    const chat = chats.value.find(c => c.id === chatId);
+    if (!chat?.story) return false;
+    
+    // Keep only the active version
+    const activeVersion = chat.story.versions.find(v => v.isActive);
+    if (activeVersion) {
+      chat.story.versions = [activeVersion];
+      console.log(`Cleared version history for chat ${chatId}`);
+      forceSave();
+      return true;
+    }
+    return false;
+  }
+
+  // Function to clear message history for a specific chat
+  function clearChatMessages(chatId: string) {
+    const chat = chats.value.find(c => c.id === chatId);
+    if (!chat) return false;
+    
+    // Keep only the welcome message
+    chat.messages = [{
+      id: Date.now().toString(),
+      content: 'Chat history has been cleared.',
+      timestamp: new Date(),
+      sender: 'assistant'
+    }];
+    chat.lastMessage = 'Chat history has been cleared.';
+    console.log(`Cleared message history for chat ${chatId}`);
+    forceSave();
+    return true;
+  }
+
   // Initialize data
   loadFromStorage();
 
@@ -555,6 +604,9 @@ Keep flows organized, clear, and user-friendly.`,
     deleteGlobalPromptTemplate,
     loadFromStorage,
     saveToStorage,
-    forceSave
+    forceSave,
+    clearAllChatsExceptActive,
+    clearVersionHistory,
+    clearChatMessages
   };
 });
