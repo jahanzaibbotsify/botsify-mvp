@@ -15,8 +15,27 @@ export interface Message {
   attachments?: Attachment[];
 }
 
+export interface PromptVersion {
+  id: string;
+  content: string;
+  updatedAt: Date;
+  version: number;
+  isActive: boolean;
+}
+
 export interface Story {
   content: string;
+  updatedAt: Date;
+  versions: PromptVersion[];
+  activeVersionId?: string;
+}
+
+export interface GlobalPromptTemplate {
+  id: string;
+  name: string;
+  content: string;
+  isDefault: boolean;
+  createdAt: Date;
   updatedAt: Date;
 }
 

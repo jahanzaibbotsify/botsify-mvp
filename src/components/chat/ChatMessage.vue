@@ -72,8 +72,11 @@ function addToStory() {
   const timestamp = new Date().toLocaleTimeString();
   newPromptContent += `**[${timestamp}] Manual Addition**\n\n${props.message.content}`;
   
-  // Update the prompt in the store
-  chatStore.updateStory(chatId.value, newPromptContent);
+  // Update the prompt in the store (create new version for manual additions)
+  chatStore.updateStory(chatId.value, newPromptContent, true);
+  
+  // Force save to ensure persistence
+  chatStore.forceSave();
 }
 
 onMounted(() => {

@@ -99,9 +99,12 @@ function updatePromptContent(message: string) {
   const newPromptContent = `${message}`;
   
   console.log('Updating prompt with content:', newPromptContent.substring(0, 100) + '...');
-  // Update the prompt in the store (replace, don't append)
-  chatStore.updateStory(chatId.value, newPromptContent);
+  // Update the prompt in the store (create new version for AI responses)
+  chatStore.updateStory(chatId.value, newPromptContent, true);
   console.log('Prompt updated successfully');
+  
+  // Force save to ensure persistence
+  chatStore.forceSave();
 }
 
 onMounted(() => {
@@ -219,7 +222,7 @@ function toggleMobileSidebar() {
 }
 
 .chat-view.with-sidebar {
-  padding-right: 350px;
+  padding-right: 400px;
 }
 
 .chat-header {
