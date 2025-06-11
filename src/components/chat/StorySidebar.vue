@@ -393,11 +393,15 @@ defineExpose({
   width: 400px;
   height: 100vh;
   background-color: var(--color-bg-secondary);
-  border-left: 1px solid var(--color-border);
+  border-left: 1px solid rgba(0, 163, 255, 0.1);
   display: flex;
-  flex-direction: row;
-  transition: transform 0.3s ease;
+  flex-direction: column;
   z-index: var(--z-sidebar);
+  box-shadow: -4px 0 15px rgba(0, 163, 255, 0.08);
+  transition: transform var(--transition-normal);
+  background-image: 
+    radial-gradient(circle at right top, rgba(0, 163, 255, 0.12), transparent 60%),
+    radial-gradient(circle at right bottom, rgba(0, 163, 255, 0.08), transparent 60%);
 }
 
 .story-sidebar.collapsed {
@@ -441,9 +445,11 @@ defineExpose({
 }
 
 .sidebar-header {
-  padding: var(--space-4);
-  border-bottom: 1px solid var(--color-border);
-  background-color: var(--color-bg-primary);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid rgba(0, 163, 255, 0.1);
+  align-items: center;
+  justify-content: space-between;
+  background-image: linear-gradient(to left, rgba(0, 163, 255, 0.08), transparent 80%);
 }
 
 .header-title {
@@ -908,5 +914,44 @@ defineExpose({
   .story-sidebar {
     width: 350px;
   }
+}
+
+.tab {
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.875rem;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-normal);
+}
+
+.tab:hover {
+  color: var(--color-text-primary);
+  background-color: rgba(0, 163, 255, 0.03);
+}
+
+.tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  background-image: linear-gradient(to bottom, rgba(0, 163, 255, 0.05), transparent);
+}
+
+.version-item {
+  padding: var(--space-3);
+  border-bottom: 1px solid rgba(0, 163, 255, 0.05);
+  transition: background-color var(--transition-normal);
+  position: relative;
+}
+
+.version-item:hover {
+  background-color: rgba(0, 163, 255, 0.05);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.08), transparent 80%);
+}
+
+.version-item.active {
+  background-color: rgba(0, 163, 255, 0.08);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.12), transparent 80%);
 }
 </style> 

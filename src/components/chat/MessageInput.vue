@@ -141,13 +141,17 @@ const removeAttachment = (id: string) => {
   align-items: center;
   background-color: var(--color-bg-tertiary);
   border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(0, 163, 255, 0.15);
   padding: var(--space-2);
-  transition: border-color var(--transition-normal);
+  transition: all var(--transition-normal);
+  box-shadow: 0 2px 8px rgba(0, 163, 255, 0.03);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.05), transparent 70%);
 }
 
 .input-area:focus-within {
   border-color: var(--color-primary);
+  box-shadow: 0 2px 12px rgba(0, 163, 255, 0.08);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.08), transparent 70%);
 }
 
 .message-textarea {
@@ -180,10 +184,20 @@ const removeAttachment = (id: string) => {
 
 .send-button {
   color: var(--color-primary);
+  background-color: rgba(0, 163, 255, 0.08);
+  border-radius: var(--radius-full);
+  width: 40px;
+  height: 40px;
+}
+
+.send-button:hover {
+  background-color: rgba(0, 163, 255, 0.15);
+  color: var(--color-primary);
 }
 
 .send-button:disabled {
   color: var(--color-text-tertiary);
+  background-color: transparent;
   cursor: not-allowed;
 }
 
@@ -209,8 +223,10 @@ kbd {
 .file-upload-container {
   margin-bottom: var(--space-3);
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(0, 163, 255, 0.15);
   background-color: var(--color-bg-tertiary);
+  box-shadow: 0 2px 8px rgba(0, 163, 255, 0.03);
+  background-image: linear-gradient(to bottom, rgba(0, 163, 255, 0.05), transparent 70%);
 }
 
 .attachments-preview {
@@ -230,6 +246,16 @@ kbd {
   max-width: 300px;
   flex: 1;
   min-width: 200px;
+  border: 1px solid rgba(0, 163, 255, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 163, 255, 0.02);
+  transition: all var(--transition-normal);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.03), transparent 70%);
+}
+
+.attachment-item:hover {
+  border-color: rgba(0, 163, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 163, 255, 0.05);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.06), transparent 70%);
 }
 
 .attachment-preview {

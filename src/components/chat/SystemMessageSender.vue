@@ -165,11 +165,26 @@ function parsePayload(payload: string) {
 <style scoped>
 .system-message-sender {
   padding: var(--space-4);
+  background-image: 
+    radial-gradient(circle at left bottom, rgba(0, 163, 255, 0.05), transparent 70%),
+    radial-gradient(circle at right top, rgba(0, 163, 255, 0.03), transparent 60%);
 }
 
 h3 {
   margin-bottom: var(--space-3);
   font-size: 1.125rem;
+  position: relative;
+  display: inline-block;
+}
+
+h3::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(to right, rgba(0, 163, 255, 0.6), transparent);
 }
 
 .description {
@@ -185,17 +200,21 @@ h3 {
 .system-textarea {
   width: 100%;
   padding: var(--space-3);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(0, 163, 255, 0.1);
   border-radius: var(--radius-md);
   background-color: var(--color-bg-tertiary);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.03), transparent 80%);
   font-family: monospace;
   font-size: 0.875rem;
   resize: vertical;
+  transition: all var(--transition-normal);
 }
 
 .system-textarea:focus {
   outline: none;
   border-color: var(--color-primary);
+  box-shadow: 0 2px 10px rgba(0, 163, 255, 0.05);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.05), transparent 80%);
 }
 
 .actions {
@@ -214,22 +233,31 @@ button {
 
 button.primary {
   background-color: var(--color-primary);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 1), var(--color-primary-hover));
   color: white;
   border: none;
+  box-shadow: 0 2px 8px rgba(0, 163, 255, 0.2);
+  transition: all var(--transition-normal);
 }
 
 button.primary:hover:not(:disabled) {
-  background-color: var(--color-primary-dark);
+  background-color: var(--color-primary-hover);
+  box-shadow: 0 4px 12px rgba(0, 163, 255, 0.3);
+  transform: translateY(-1px);
 }
 
 button.secondary {
   background-color: var(--color-bg-tertiary);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.05), transparent 80%);
   color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(0, 163, 255, 0.1);
+  transition: all var(--transition-normal);
 }
 
 button.secondary:hover:not(:disabled) {
   background-color: var(--color-bg-secondary);
+  border-color: rgba(0, 163, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 163, 255, 0.05);
 }
 
 button:disabled {
@@ -259,7 +287,8 @@ button:disabled {
 .note {
   font-size: 0.75rem;
   color: var(--color-text-tertiary);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid rgba(0, 163, 255, 0.05);
   padding-top: var(--space-3);
+  background-image: linear-gradient(to bottom, rgba(0, 163, 255, 0.01), transparent 80%);
 }
 </style> 

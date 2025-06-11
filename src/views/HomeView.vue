@@ -67,6 +67,9 @@ const startNewChat = () => {
   overflow-y: auto;
   padding: var(--space-4);
   background-color: var(--color-bg-primary);
+  background-image: 
+    radial-gradient(circle at left top, rgba(0, 163, 255, 0.12), transparent 60%),
+    radial-gradient(circle at right bottom, rgba(0, 163, 255, 0.12), transparent 60%);
 }
 
 .home-header {
@@ -75,8 +78,9 @@ const startNewChat = () => {
   background-color: var(--color-bg-primary);
   padding: var(--space-2) 0;
   margin-bottom: var(--space-6);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid rgba(0, 163, 255, 0.1);
   z-index: 10;
+  background-image: linear-gradient(to bottom, var(--color-bg-primary), rgba(0, 163, 255, 0.01), var(--color-bg-primary));
 }
 
 .header-content {
@@ -152,23 +156,30 @@ const startNewChat = () => {
   background-color: var(--color-bg-secondary);
   border-radius: var(--radius-lg);
   transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  border: 1px solid rgba(0, 163, 255, 0.08);
+  box-shadow: 0 4px 15px rgba(0, 163, 255, 0.05);
+  background-image: 
+    radial-gradient(circle at left top, rgba(0, 163, 255, 0.05), transparent 70%),
+    radial-gradient(circle at right bottom, rgba(0, 163, 255, 0.03), transparent 70%);
 }
 
 .feature:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 8px 20px rgba(0, 163, 255, 0.1);
+  border-color: rgba(0, 163, 255, 0.15);
 }
 
 .feature-icon {
   width: 50px;
   height: 50px;
   border-radius: var(--radius-full);
-  background-color: var(--color-bg-tertiary);
+  background-color: rgba(0, 163, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: var(--space-3);
   color: var(--color-primary);
+  box-shadow: 0 4px 10px rgba(0, 163, 255, 0.1);
 }
 
 .feature h3 {

@@ -169,15 +169,27 @@ onMounted(() => {
   box-shadow: var(--shadow-sm);
   word-break: break-word;
   overflow-wrap: break-word;
+  transition: all var(--transition-normal);
+  border: 1px solid transparent;
 }
 
 .user-message .message {
   background-color: var(--color-primary);
   color: white;
+  box-shadow: 0 4px 12px rgba(0, 163, 255, 0.15);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.9), var(--color-primary));
 }
 
 .ai-message .message {
   background-color: var(--color-bg-tertiary);
+  border-color: rgba(0, 163, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 163, 255, 0.05);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.03), transparent);
+}
+
+.ai-message .message:hover {
+  border-color: rgba(0, 163, 255, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 163, 255, 0.08);
 }
 
 .content {
@@ -264,7 +276,7 @@ onMounted(() => {
 }
 
 .add-to-story-btn:hover {
-  background-color: var(--color-bg-hover);
+  background-color: rgba(0, 163, 255, 0.1);
   color: var(--color-primary);
 }
 
@@ -283,6 +295,13 @@ onMounted(() => {
   background-color: rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-md);
   overflow: hidden;
+  border: 1px solid rgba(0, 163, 255, 0.1);
+  transition: all var(--transition-normal);
+}
+
+.attachment:hover {
+  border-color: rgba(0, 163, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 163, 255, 0.08);
 }
 
 .attachment-link {

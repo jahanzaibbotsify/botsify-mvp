@@ -29,6 +29,9 @@ import SystemMessageSender from '../components/chat/SystemMessageSender.vue';
   overflow-y: auto;
   padding: var(--space-4);
   background-color: var(--color-bg-primary);
+  background-image: 
+    radial-gradient(circle at left top, rgba(0, 163, 255, 0.08), transparent 60%),
+    radial-gradient(circle at right bottom, rgba(0, 163, 255, 0.05), transparent 60%);
 }
 
 .settings-header {
@@ -37,8 +40,9 @@ import SystemMessageSender from '../components/chat/SystemMessageSender.vue';
   background-color: var(--color-bg-primary);
   padding: var(--space-2) 0;
   margin-bottom: var(--space-6);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid rgba(0, 163, 255, 0.1);
   z-index: 10;
+  background-image: linear-gradient(to bottom, var(--color-bg-primary), rgba(0, 163, 255, 0.01), var(--color-bg-primary));
 }
 
 .header-content {
@@ -62,6 +66,11 @@ import SystemMessageSender from '../components/chat/SystemMessageSender.vue';
   background-color: var(--color-bg-secondary);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 163, 255, 0.06);
+  border: 1px solid rgba(0, 163, 255, 0.1);
+  background-image: 
+    radial-gradient(circle at left top, rgba(0, 163, 255, 0.03), transparent 50%),
+    radial-gradient(circle at right bottom, rgba(0, 163, 255, 0.02), transparent 50%);
 }
 
 @media (max-width: 767px) {

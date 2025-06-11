@@ -81,8 +81,9 @@ const close = () => {
   min-width: 300px;
   max-width: 500px;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), 0 8px 25px rgba(0, 163, 255, 0.12);
   backdrop-filter: blur(8px);
+  overflow: hidden;
 }
 
 .toast-content {
@@ -119,24 +120,28 @@ const close = () => {
 /* Toast variants */
 .toast-success {
   background-color: rgba(34, 197, 94, 0.95);
+  background-image: linear-gradient(to right, rgba(34, 197, 94, 1), rgba(34, 197, 94, 0.8));
   color: white;
   border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 .toast-error {
   background-color: rgba(239, 68, 68, 0.95);
+  background-image: linear-gradient(to right, rgba(239, 68, 68, 1), rgba(239, 68, 68, 0.8));
   color: white;
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .toast-warning {
   background-color: rgba(245, 158, 11, 0.95);
+  background-image: linear-gradient(to right, rgba(245, 158, 11, 1), rgba(245, 158, 11, 0.8));
   color: white;
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .toast-info {
   background-color: rgba(59, 130, 246, 0.95);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 1), rgba(59, 130, 246, 0.8));
   color: white;
   border: 1px solid rgba(59, 130, 246, 0.3);
 }

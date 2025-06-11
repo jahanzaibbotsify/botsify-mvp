@@ -185,21 +185,25 @@ const isLinkActive = (url: string) => {
   min-width: 280px;
   height: 100%;
   background-color: var(--color-bg-secondary);
-  border-right: 1px solid var(--color-border);
+  border-right: 1px solid rgba(0, 163, 255, 0.1);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   position: relative;
   z-index: var(--z-fixed);
+  box-shadow: 4px 0 10px rgba(0, 163, 255, 0.05);
+  background-image: 
+    radial-gradient(circle at left top, rgba(0, 163, 255, 0.15), transparent 70%),
+    radial-gradient(circle at left bottom, rgba(0, 163, 255, 0.10), transparent 50%);
 }
 
 .sidebar-header {
-  padding: var(--space-4);
-  border-bottom: 1px solid var(--color-border);
-  position: sticky;
-  top: 0;
-  background-color: var(--color-bg-secondary);
-  z-index: 1;
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0, 163, 255, 0.08);
+  background: linear-gradient(to right, rgba(0, 163, 255, 0.08), rgba(0, 163, 255, 0) 80%);
 }
 
 .header-content {
@@ -216,19 +220,20 @@ const isLinkActive = (url: string) => {
 }
 
 .logo-link {
-  display: block;
+  display: flex;
+  align-items: center;
   text-decoration: none;
-  transition: opacity 0.2s;
+  transition: all var(--transition-normal);
 }
 
 .logo-link:hover {
   opacity: 0.9;
+  transform: scale(1.02);
 }
 
 .logo-icon {
-  width: 100%;
-  max-height: 28px;
-  object-fit: contain;
+  height: 32px;
+  width: auto;
 }
 
 .sidebar-actions {
@@ -245,25 +250,37 @@ const isLinkActive = (url: string) => {
   font-size: 0.875rem;
   white-space: nowrap;
   min-width: fit-content;
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition-normal);
+}
+
+.new-chat-button:hover {
+  background-color: var(--color-primary-hover);
 }
 
 .menu-button {
+  background-color: transparent;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
-  background: transparent;
-  border: none;
-  cursor: pointer;
+  padding: var(--space-1);
   color: var(--color-text-secondary);
-  transition: background-color 0.2s, color 0.2s;
+  transition: all var(--transition-normal);
+  margin-left: var(--space-2);
 }
 
 .menu-button:hover {
-  background-color: var(--color-bg-hover);
-  color: var(--color-text-primary);
+  background-color: rgba(0, 163, 255, 0.1);
+  color: var(--color-primary);
 }
 
 .dropdown-container {
@@ -272,49 +289,38 @@ const isLinkActive = (url: string) => {
 
 .nav-dropdown {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 5px);
   right: 0;
   width: 200px;
   background-color: var(--color-bg-primary);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  border: 1px solid var(--color-border);
-  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 163, 255, 0.1);
+  border: 1px solid rgba(0, 163, 255, 0.1);
+  z-index: var(--z-dropdown);
   overflow: hidden;
 }
 
 .dropdown-arrow {
   position: absolute;
   top: -8px;
-  right: 12px;
-  width: 16px;
-  height: 8px;
-  overflow: hidden;
-}
-
-.dropdown-arrow:after {
-  content: '';
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  background: var(--color-bg-primary);
-  transform: translateY(50%) rotate(45deg);
-  border: 1px solid var(--color-border);
-  top: 0;
-  left: 2px;
+  right: 14px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid var(--color-bg-primary);
+  filter: drop-shadow(0 -2px 2px rgba(0, 163, 255, 0.1));
 }
 
 .nav-item {
-  padding: var(--space-3);
-  cursor: pointer;
-  transition: background-color 0.2s;
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-  border-bottom: 1px solid var(--color-border);
-  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  padding: var(--space-3);
+  cursor: pointer;
+  color: var(--color-text-primary);
+  transition: all var(--transition-normal);
+  border-bottom: 1px solid rgba(0, 163, 255, 0.05);
 }
 
 .nav-item:last-child {
@@ -322,23 +328,12 @@ const isLinkActive = (url: string) => {
 }
 
 .nav-item:hover {
-  background-color: var(--color-bg-hover);
+  background-color: rgba(0, 163, 255, 0.05);
 }
 
 .nav-item.active {
-  background-color: var(--color-bg-hover);
+  background-color: rgba(0, 163, 255, 0.08);
   color: var(--color-primary);
-  font-weight: 500;
-}
-
-.nav-item.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background-color: var(--color-primary);
 }
 
 .nav-item-icon {
@@ -355,7 +350,8 @@ const isLinkActive = (url: string) => {
 .chat-list {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-2) 0;
+  padding: var(--space-2) var(--space-3);
+  position: relative;
 }
 
 .no-results {

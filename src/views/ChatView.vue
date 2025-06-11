@@ -259,6 +259,8 @@ function clearMessageHistory() {
   height: 100%;
   overflow: hidden;
   transition: padding-right 0.3s ease;
+  position: relative;
+  z-index: 1;
 }
 
 .chat-view.with-sidebar {
@@ -267,14 +269,20 @@ function clearMessageHistory() {
 
 .chat-header {
   padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--color-border);
   background-color: var(--color-bg-secondary);
+  border-bottom: none;
   z-index: var(--z-sticky);
   position: sticky;
   top: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin: 0 var(--space-4);
+  margin-top: var(--space-4);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: 0 4px 15px rgba(0, 163, 255, 0.08);
+  border: 1px solid rgba(0, 163, 255, 0.1);
+  border-bottom: none;
 }
 
 .chat-header h2 {
@@ -319,10 +327,12 @@ function clearMessageHistory() {
   position: absolute;
   right: 0;
   background-color: var(--color-bg-primary);
+  background-image: 
+    radial-gradient(circle at right top, rgba(0, 163, 255, 0.08), transparent 70%);
   min-width: 200px;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-md), 0 4px 15px rgba(0, 163, 255, 0.08);
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(0, 163, 255, 0.1);
   z-index: var(--z-dropdown);
   overflow: hidden;
 }
@@ -339,7 +349,7 @@ function clearMessageHistory() {
   padding: var(--space-2) var(--space-3);
   background: none;
   border: none;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid rgba(0, 163, 255, 0.05);
   color: var(--color-text-primary);
   cursor: pointer;
   font-size: 0.875rem;
@@ -351,7 +361,8 @@ function clearMessageHistory() {
 }
 
 .dropdown-item:hover {
-  background-color: var(--color-bg-hover);
+  background-color: rgba(0, 163, 255, 0.05);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.08), transparent 80%);
 }
 
 .dropdown-item.danger {
@@ -375,6 +386,10 @@ function clearMessageHistory() {
   overflow-y: auto;
   padding: var(--space-4);
   background-color: var(--color-bg-primary);
+  border-left: 1px solid rgba(0, 163, 255, 0.1);
+  border-right: 1px solid rgba(0, 163, 255, 0.1);
+  margin: 0 var(--space-4);
+  box-shadow: 0 0 20px rgba(0, 163, 255, 0.06);
 }
 
 .messages {
@@ -391,6 +406,8 @@ function clearMessageHistory() {
   justify-content: center;
   padding: var(--space-4);
   text-align: center;
+  background-image: 
+    radial-gradient(circle at center, rgba(0, 163, 255, 0.05), transparent 70%);
 }
 
 .chat-not-found h2 {
@@ -410,6 +427,7 @@ function clearMessageHistory() {
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
+  background-image: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.6) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -418,12 +436,16 @@ function clearMessageHistory() {
 
 .modal-content {
   background-color: var(--color-bg-secondary);
+  background-image: 
+    radial-gradient(circle at left top, rgba(0, 163, 255, 0.08), transparent 60%),
+    radial-gradient(circle at right bottom, rgba(0, 163, 255, 0.05), transparent 60%);
   border-radius: var(--radius-lg);
   width: 90%;
   max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-lg), 0 0 30px rgba(0, 163, 255, 0.1);
+  border: 1px solid rgba(0, 163, 255, 0.1);
 }
 
 .modal-header {
@@ -431,7 +453,8 @@ function clearMessageHistory() {
   justify-content: space-between;
   align-items: center;
   padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid rgba(0, 163, 255, 0.1);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.05), transparent 80%);
 }
 
 .modal-header h3 {
@@ -465,25 +488,31 @@ function clearMessageHistory() {
 /* Mobile styles */
 @media (max-width: 767px) {
   .chat-view.with-sidebar {
-    padding-right: 0; /* Remove sidebar padding on mobile - let sidebar handle its own visibility */
+    padding-right: 0;
   }
 
-  /* Show mobile sidebar toggle on mobile */
   .mobile-sidebar-toggle {
     display: flex;
   }
 
   .messages-container {
     padding: var(--space-3) var(--space-2);
+    margin: 0 var(--space-2);
   }
   
   .chat-header {
     padding: var(--space-2) var(--space-3);
+    margin: var(--space-2) var(--space-2) 0;
+  }
+  
+  .message-input-container {
+    margin: 0 var(--space-2) var(--space-2);
+    padding: var(--space-2);
   }
   
   .chat-header h2 {
     font-size: 1rem;
-    max-width: calc(100% - 120px); /* Make room for all buttons */
+    max-width: calc(100% - 120px);
   }
   
   .modal-content {
@@ -496,5 +525,18 @@ function clearMessageHistory() {
   .messages-container {
     padding: var(--space-2) var(--space-1);
   }
+}
+
+.message-input-container {
+  padding: var(--space-3);
+  background-color: var(--color-bg-secondary);
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-sticky);
+  margin: 0 var(--space-4) var(--space-4);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  box-shadow: 0 -2px 10px rgba(0, 163, 255, 0.03);
+  border: 1px solid rgba(0, 163, 255, 0.1);
+  border-top: none;
 }
 </style>

@@ -30,10 +30,22 @@ const toggleTheme = () => {
 <style scoped>
 .theme-toggle {
   color: var(--color-text-secondary);
-  transition: color var(--transition-normal);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 163, 255, 0.05);
+  border: 1px solid rgba(0, 163, 255, 0.08);
+  background-image: radial-gradient(circle at center, rgba(0, 163, 255, 0.05), transparent 70%);
 }
 
 .theme-toggle:hover {
-  color: var(--color-text-primary);
+  color: var(--color-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 163, 255, 0.1);
+  background-image: radial-gradient(circle at center, rgba(0, 163, 255, 0.1), transparent 70%);
+}
+
+.theme-toggle:active {
+  transform: translateY(0);
 }
 </style>

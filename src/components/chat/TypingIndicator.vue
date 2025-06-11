@@ -23,6 +23,9 @@
   max-width: 100px;
   border-radius: var(--radius-lg);
   background-color: var(--color-bg-tertiary);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.08), transparent 80%);
+  border: 1px solid rgba(0, 163, 255, 0.08);
+  box-shadow: 0 3px 8px rgba(0, 163, 255, 0.06);
 }
 
 .typing-indicator {
@@ -34,10 +37,11 @@
   height: 8px;
   width: 8px;
   margin: 0 1px;
-  background-color: var(--color-text-secondary);
+  background-color: var(--color-primary);
   border-radius: 50%;
   display: inline-block;
   animation: typing 1.4s infinite ease-in-out both;
+  box-shadow: 0 0 4px rgba(0, 163, 255, 0.3);
 }
 
 .typing-indicator span:nth-child(1) {
@@ -61,14 +65,17 @@
   0% {
     transform: scale(1);
     opacity: 0.6;
+    box-shadow: 0 0 2px rgba(0, 163, 255, 0.2);
   }
   50% {
     transform: scale(1.4);
     opacity: 1;
+    box-shadow: 0 0 6px rgba(0, 163, 255, 0.4);
   }
   100% {
     transform: scale(1);
     opacity: 0.6;
+    box-shadow: 0 0 2px rgba(0, 163, 255, 0.2);
   }
 }
 </style>
