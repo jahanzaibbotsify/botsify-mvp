@@ -218,7 +218,7 @@ export const useChatStore = defineStore('chat', () => {
     const chat = chats.value.find(c => c.id === chatId);
     if (!chat) {
       console.error('Chat not found with ID:', chatId);
-      return;
+      return null;
     }
 
     const newMessage: Message = {
@@ -248,6 +248,25 @@ export const useChatStore = defineStore('chat', () => {
     }
 
     return newMessage;
+  }
+
+  async function updateMessage(messageId: string, content: string) {
+    console.log(`Updating message ${messageId} with content:`, content.substring(0, 50) + '...');
+    
+    // Find the message across all chats
+    for (const chat of chats.value) {
+      const message = chat.messages.find(m => m.id === messageId);
+      if (message) {
+        message.content = content;
+        chat.lastMessage = content;
+        console.log('Message updated successfully');
+        await nextTick();
+        return message;
+      }
+    }
+    
+    console.warn('Message not found with ID:', messageId);
+    return null;
   }
 
   function createPromptVersion(content: string, isActive: boolean = true): PromptVersion {
@@ -425,15 +444,9 @@ export const useChatStore = defineStore('chat', () => {
       const stream = await openAIStore.streamChat(messages);
       console.log('Stream object received:', stream);
 
-      // Add initial AI message
-      const aiMessage: Message = {
-        id: Date.now().toString(),
-        content: '',
-        timestamp: new Date(),
-        sender: 'assistant'
-      };
-      chat.messages.push(aiMessage);
-      console.log('Added initial empty AI message');
+      // Don't add initial AI message yet - wait for first content
+      let aiMessage: Message | null = null;
+      console.log('Waiting for first content chunk to create AI message');
 
       console.log('Starting to process stream');
       for await (const chunk of stream) {
@@ -443,6 +456,18 @@ export const useChatStore = defineStore('chat', () => {
         if (chunk.type === 'response.output_text.delta') {
           const content = chunk.delta || '';
           streamedContent += content;
+          
+          // Create AI message on first content chunk
+          if (!aiMessage && content) {
+            aiMessage = {
+              id: Date.now().toString(),
+              content: '',
+              timestamp: new Date(),
+              sender: 'assistant'
+            };
+            chat.messages.push(aiMessage);
+            console.log('Created AI message on first content chunk');
+          }
           
           // Update the message in real-time
           if (aiMessage) {
@@ -516,13 +541,28 @@ export const useChatStore = defineStore('chat', () => {
         }
       }
       
+      // If no content was received but we expected some, show a fallback message
+      if (!streamedContent && !toolCalls.length) {
+        console.warn('No content received from stream');
+        if (!aiMessage) {
+          aiMessage = {
+            id: Date.now().toString(),
+            content: 'I received your message but had no response to provide.',
+            timestamp: new Date(),
+            sender: 'assistant'
+          };
+          chat.messages.push(aiMessage);
+          chat.lastMessage = aiMessage.content;
+        }
+      }
+      
     } catch (error: any) {
       console.error('AI response error:', error);
       console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
       
-      // Remove the empty message if it exists
+      // Remove any empty message if it exists
       const lastMessage = chat.messages[chat.messages.length - 1];
-      if (lastMessage && lastMessage.sender === 'assistant' && lastMessage.content === '') {
+      if (lastMessage && lastMessage.sender === 'assistant' && !lastMessage.content) {
         chat.messages.pop();
       }
       
@@ -533,7 +573,9 @@ export const useChatStore = defineStore('chat', () => {
         'assistant'
       );
     } finally {
+      // Always set typing to false when done
       isTyping.value = false;
+      console.log('Typing indicator turned off');
     }
   }
 
@@ -663,6 +705,7 @@ Keep flows organized, clear, and user-friendly.`,
     defaultPromptTemplate,
     setActiveChat,
     addMessage,
+    updateMessage,
     createNewChat,
     updateStory,
     revertToPromptVersion,
