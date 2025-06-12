@@ -10,7 +10,7 @@
         <span></span>
         <span></span>
       </div>
-      <div class="typing-text">AI is typing...</div>
+      <div class="typing-text">AI is thinking...</div>
     </div>
   </div>
 </template>

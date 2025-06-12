@@ -469,10 +469,10 @@ export const useChatStore = defineStore('chat', () => {
             console.log('Created AI message on first content chunk');
           }
           
-          // Update the message in real-time
+          // For now, just show "AI is processing..." until we have the full response
           if (aiMessage) {
-            aiMessage.content = streamedContent;
-            chat.lastMessage = streamedContent;
+            aiMessage.content = 'AI is processing your request...';
+            chat.lastMessage = 'AI is processing your request...';
             await nextTick();
           }
         } else if (chunk.type && chunk.type.includes('function_call')) {
@@ -486,6 +486,35 @@ export const useChatStore = defineStore('chat', () => {
       console.log('Stream processing complete');
       console.log('Final content length:', streamedContent.length);
       console.log('Tool calls received:', toolCalls);
+      
+      // Parse the dual response format
+      const parsedResponse = parseDualResponse(streamedContent);
+      
+      if (parsedResponse.chatResponse && parsedResponse.aiPrompt) {
+        // Update the AI message with the chat response
+        if (aiMessage) {
+          aiMessage.content = parsedResponse.chatResponse;
+          chat.lastMessage = parsedResponse.chatResponse;
+          await nextTick();
+        }
+        
+        // Update the sidebar with the AI prompt
+        updateStory(chat.id, parsedResponse.aiPrompt, true);
+        console.log('Updated sidebar with AI prompt');
+      } else {
+        // Fallback: use the entire content as both chat and prompt
+        console.warn('Could not parse dual response format, using content as-is');
+        if (aiMessage) {
+          aiMessage.content = streamedContent || 'I received your message but had no response to provide.';
+          chat.lastMessage = aiMessage.content;
+          await nextTick();
+        }
+        
+        // Also update sidebar with the full content
+        if (streamedContent) {
+          updateStory(chat.id, streamedContent, true);
+        }
+      }
       
       // Process tool calls if any
       if (toolCalls.length > 0) {
@@ -577,6 +606,26 @@ export const useChatStore = defineStore('chat', () => {
       isTyping.value = false;
       console.log('Typing indicator turned off');
     }
+  }
+
+  // Helper function to parse dual response format
+  function parseDualResponse(content: string): { chatResponse: string | null; aiPrompt: string | null } {
+    console.log('Parsing dual response from content:', content.substring(0, 200) + '...');
+    
+    const chatResponseMatch = content.match(/---CHAT_RESPONSE---([\s\S]*?)---AI_PROMPT---/);
+    const aiPromptMatch = content.match(/---AI_PROMPT---([\s\S]*?)---END---/);
+    
+    const chatResponse = chatResponseMatch ? chatResponseMatch[1].trim() : null;
+    const aiPrompt = aiPromptMatch ? aiPromptMatch[1].trim() : null;
+    
+    console.log('Parsed responses:', { 
+      hasChatResponse: !!chatResponse, 
+      hasAiPrompt: !!aiPrompt,
+      chatResponseLength: chatResponse?.length || 0,
+      aiPromptLength: aiPrompt?.length || 0
+    });
+    
+    return { chatResponse, aiPrompt };
   }
 
   function createNewChat() {

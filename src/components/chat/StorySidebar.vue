@@ -44,9 +44,13 @@ const parsedStoryContent = computed(() => {
   if (!story.value?.content) {
     return `
       <div class="empty-state">
-        <h4>🤖 Latest AI Prompt</h4>
-        <p>The most recent AI response will appear here automatically.</p>
-        <p>Start chatting and the AI's latest response will be displayed in this sidebar!</p>
+        <h4>🤖 AI Generated Prompt</h4>
+        <p>When you chat with the AI, it will generate two responses:</p>
+        <ul>
+          <li><strong>Chat Response:</strong> A friendly message shown in the conversation</li>
+          <li><strong>Technical Prompt:</strong> The detailed AI prompt that appears here</li>
+        </ul>
+        <p>Start chatting to see both responses in action!</p>
       </div>
     `;
   }
@@ -177,7 +181,7 @@ defineExpose({
     <div class="sidebar-content">
       <div class="sidebar-header">
         <div class="header-title">
-          <h3>AI Prompt</h3>
+          <h3>AI Generated Prompt</h3>
           <div class="header-actions">
             <button 
               v-if="story?.content && !isEditing" 

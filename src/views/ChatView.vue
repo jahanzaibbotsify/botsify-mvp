@@ -31,95 +31,22 @@ const scrollToBottom = async () => {
   }
 };
 
-// Watch for new messages to scroll to bottom and update story
+// Watch for new messages to scroll to bottom
 watch(() => chat.value?.messages.length, (newLength, oldLength) => {
   console.log('Messages length changed:', { newLength, oldLength });
   scrollToBottom();
-  
-  // Check if a new AI message was added
-  if (newLength && oldLength && newLength > oldLength) {
-    const lastMessage = chat.value?.messages[newLength - 1];
-    console.log('New message added:', lastMessage);
-    if (lastMessage && lastMessage.sender === 'assistant') {
-      console.log('New AI message detected, will watch for content updates');
-      // We'll handle the content update in the separate watcher below
-    }
-  }
 });
 
-// Watch for changes in the last message content (handles streaming responses)
-watch(() => {
-  const messages = chat.value?.messages || [];
-  const lastMessage = messages[messages.length - 1];
-  // Return an object with both content and sender to ensure proper tracking
-  return {
-    content: lastMessage?.content || '',
-    sender: lastMessage?.sender,
-    id: lastMessage?.id
-  };
-}, (newData, oldData) => {
-  console.log('Last message data changed:', { 
-    newContent: newData.content.substring(0, 50) + '...',
-    oldContent: oldData?.content?.substring(0, 50) + '...',
-    sender: newData.sender,
-    hasContent: !!newData.content
-  });
-  
-  // Update sidebar when AI message content changes and has actual content
-  if (newData.sender === 'assistant' && newData.content && newData.content !== oldData?.content) {
-    console.log('AI message content updated, updating sidebar');
-    updatePromptContent(newData.content);
-  }
-}, { deep: true });
-
-// Also watch for when typing stops (final update)
+// Watch for typing status to scroll to bottom
 watch(() => chatStore.isTyping, (isTyping, wasTyping) => {
   console.log('Typing status changed:', { isTyping, wasTyping });
   scrollToBottom();
-  
-  // When typing stops, make sure we have the final content in sidebar
-  if (wasTyping && !isTyping) {
-    const messages = chat.value?.messages || [];
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage && lastMessage.sender === 'assistant' && lastMessage.content) {
-      console.log('Typing finished, ensuring sidebar has final content');
-      updatePromptContent(lastMessage.content);
-    }
-  }
 });
-
-function updatePromptContent(message: string) {
-  console.log('updatePromptContent called with message:', message.substring(0, 100) + '...');
-  if (!chat.value) {
-    console.log('No chat found, returning');
-    return;
-  }
-  
-  // Replace the entire prompt content with just the latest AI response
-  const newPromptContent = `${message}`;
-  
-  console.log('Updating prompt with content:', newPromptContent.substring(0, 100) + '...');
-  // Update the prompt in the store (create new version for AI responses)
-  chatStore.updateStory(chatId.value, newPromptContent, true);
-  console.log('Prompt updated successfully');
-  
-  // Force save to ensure persistence
-  chatStore.forceSave();
-}
 
 onMounted(() => {
   // Set active chat when component mounts
   chatStore.setActiveChat(chatId.value);
   scrollToBottom();
-  
-  // Check if there's already an AI message and add it to sidebar
-  if (chat.value && chat.value.messages.length > 0) {
-    const lastMessage = chat.value.messages[chat.value.messages.length - 1];
-    if (lastMessage && lastMessage.sender === 'assistant' && lastMessage.content) {
-      console.log('Found existing AI message on mount, adding to sidebar');
-      updatePromptContent(lastMessage.content);
-    }
-  }
   
   // Toggle debug console with Ctrl+Shift+D
   const handleKeyDown = (e: KeyboardEvent) => {
