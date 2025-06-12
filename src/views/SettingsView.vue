@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import ApiKeySettings from '../components/settings/ApiKeySettings.vue';
 import SystemMessageSender from '../components/chat/SystemMessageSender.vue';
+import ConfigurationTester from '../components/chat/ConfigurationTester.vue';
 </script>
 
 <template>
@@ -18,6 +19,10 @@ import SystemMessageSender from '../components/chat/SystemMessageSender.vue';
       
       <div class="settings-section">
         <SystemMessageSender />
+      </div>
+      
+      <div class="settings-section">
+        <ConfigurationTester />
       </div>
     </div>
   </div>

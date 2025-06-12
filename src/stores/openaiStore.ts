@@ -3,6 +3,19 @@ import { ref } from 'vue';
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources';
 
+// Configuration task interface
+interface ConfigurationTask {
+  key: string;
+  value: string;
+}
+
+// Configuration response interface
+interface ConfigurationResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+}
+
 export const useOpenAIStore = defineStore('openai', () => {
   // Try to get API key from environment variables first, then fallback to localStorage
   const envApiKey = import.meta.env.VITE_OPENAI_API_KEY;
@@ -15,6 +28,42 @@ export const useOpenAIStore = defineStore('openai', () => {
   const connected = ref(false);
   const error = ref<string | null>(null);
   const rateLimited = ref(false);
+
+  // Configuration tool function definition
+  const configureChatbotTool = {
+    type: "function" as const,
+    function: {
+      name: "configure_chatbot",
+      description: "Handles configuration updates for the chatbot, such as language, logo, and color scheme.",
+      strict: true,
+      parameters: {
+        type: "object",
+        required: ["tasks"],
+        properties: {
+          tasks: {
+            type: "array",
+            description: "Array of tasks to be performed for configuration updates",
+            items: {
+              type: "object",
+              properties: {
+                key: {
+                  type: "string",
+                  description: "Configuration property to be updated, e.g., language, logo, color scheme"
+                },
+                value: {
+                  type: "string",
+                  description: "New value for the specified configuration property"
+                }
+              },
+              additionalProperties: false,
+              required: ["key", "value"]
+            }
+          }
+        },
+        additionalProperties: false
+      }
+    }
+  };
 
   function setApiKey(key: string) {
     console.log('Setting API key');
@@ -49,6 +98,147 @@ export const useOpenAIStore = defineStore('openai', () => {
     }
   }
 
+  // Handle configuration API requests
+  async function handleConfigurationRequest(task: ConfigurationTask): Promise<ConfigurationResponse> {
+    console.log('Processing configuration task:', task);
+    
+    try {
+      let apiEndpoint = '';
+      let requestData: any = {};
+      
+      // Switch cases for different configuration types
+      switch (task.key) {
+        case 'change_language':
+        case 'language':
+          apiEndpoint = 'https://api.botsify.com/chatbot/language';
+          requestData = {
+            language: task.value,
+            action: 'update_language'
+          };
+          break;
+          
+        case 'change_logo':
+        case 'logo':
+          apiEndpoint = 'https://api.botsify.com/chatbot/logo';
+          requestData = {
+            logo_url: task.value,
+            action: 'update_logo'
+          };
+          break;
+          
+        case 'change_color':
+        case 'color_scheme':
+        case 'theme':
+          apiEndpoint = 'https://api.botsify.com/chatbot/theme';
+          requestData = {
+            color_scheme: task.value,
+            action: 'update_theme'
+          };
+          break;
+          
+        case 'toggle_chatbot':
+        case 'chatbot_status':
+          apiEndpoint = 'https://api.botsify.com/chatbot/status';
+          requestData = {
+            status: task.value,
+            action: 'toggle_status'
+          };
+          break;
+          
+        case 'update_welcome_message':
+        case 'welcome_message':
+          apiEndpoint = 'https://api.botsify.com/chatbot/welcome';
+          requestData = {
+            message: task.value,
+            action: 'update_welcome'
+          };
+          break;
+          
+        case 'change_name':
+        case 'chatbot_name':
+          apiEndpoint = 'https://api.botsify.com/chatbot/name';
+          requestData = {
+            name: task.value,
+            action: 'update_name'
+          };
+          break;
+          
+        default:
+          return {
+            success: false,
+            message: `Unknown configuration key: ${task.key}`
+          };
+      }
+      
+      // Make API request
+      const response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey.value}` // Assuming API key is used for auth
+        },
+        body: JSON.stringify(requestData)
+      });
+      
+      const responseData = await response.json();
+      
+      if (response.ok) {
+        return {
+          success: true,
+          message: `Successfully updated ${task.key} to "${task.value}"`,
+          data: responseData
+        };
+      } else {
+        return {
+          success: false,
+          message: `Failed to update ${task.key}: ${responseData.message || 'Unknown error'}`
+        };
+      }
+      
+    } catch (error: any) {
+      console.error('Configuration API error:', error);
+      return {
+        success: false,
+        message: `Error updating ${task.key}: ${error.message || 'Network error'}`
+      };
+    }
+  }
+
+  // Process configuration tool call
+  async function processConfigurationTool(tasks: ConfigurationTask[]): Promise<string> {
+    console.log('Processing configuration tasks:', tasks);
+    
+    const results: ConfigurationResponse[] = [];
+    
+    // Process all tasks
+    for (const task of tasks) {
+      const result = await handleConfigurationRequest(task);
+      results.push(result);
+    }
+    
+    // Generate response message
+    const successfulTasks = results.filter(r => r.success);
+    const failedTasks = results.filter(r => !r.success);
+    
+    let responseMessage = '';
+    
+    if (successfulTasks.length > 0) {
+      responseMessage += `✅ Successfully completed ${successfulTasks.length} configuration update(s):\n`;
+      successfulTasks.forEach(task => {
+        responseMessage += `• ${task.message}\n`;
+      });
+    }
+    
+    if (failedTasks.length > 0) {
+      responseMessage += `\n❌ Failed to complete ${failedTasks.length} configuration update(s):\n`;
+      failedTasks.forEach(task => {
+        responseMessage += `• ${task.message}\n`;
+      });
+    }
+    
+    return responseMessage.trim();
+  }
+
   async function streamChat(messages: { role: string, content: string }[]) {
     if (!client.value) {
       const errorMsg = 'OpenAI client not initialized';
@@ -63,7 +253,9 @@ export const useOpenAIStore = defineStore('openai', () => {
       if (!messages.some(msg => msg.role === 'system')) {
         messages.unshift({
           role: 'system',
-          content: `You are an AI prompt designer. I will describe how the chatbot should behave, and you will build a structured chatbot flow step-by-step. The flow should support all types of messages, including:
+          content: `You are an AI prompt designer and chatbot configuration assistant. You have two main functions:
+
+1. **Prompt Design**: I will describe how the chatbot should behave, and you will build a structured chatbot flow step-by-step. The flow should support all types of messages, including:
 - Text replies
 - Buttons (with button titles and optional payloads)
 - Quick replies
@@ -75,7 +267,28 @@ export const useOpenAIStore = defineStore('openai', () => {
 - Location requests
 - API calls and custom attributes
 
-Every time I send a message, update the prompt and show the **entire chatbot flow** in a clean, numbered format like this:
+2. **Configuration Management**: When users request configuration changes for their chatbot (language, logo, colors, status, welcome message, name, etc.), use the configure_chatbot tool to process these requests.
+
+**Configuration Tool Usage:**
+Use the configure_chatbot tool when users request any of the following:
+- Change language (e.g., "change language to Arabic", "set language to French")
+- Update logo (e.g., "change logo to [URL]", "update chatbot logo")
+- Modify color scheme/theme (e.g., "change colors to blue", "update theme")
+- Toggle chatbot status (e.g., "turn off chatbot", "disable bot", "enable chatbot")
+- Update welcome message (e.g., "change welcome message to...", "update greeting")
+- Change chatbot name (e.g., "rename chatbot to...", "change bot name")
+
+**Tool Call Format:**
+When detecting configuration requests, call the configure_chatbot tool with appropriate key-value pairs:
+- For language: key="change_language", value="[language]"
+- For logo: key="change_logo", value="[logo_url]"
+- For colors: key="change_color", value="[color_scheme]"
+- For status: key="toggle_chatbot", value="on/off"
+- For welcome message: key="update_welcome_message", value="[message]"
+- For name: key="change_name", value="[name]"
+
+**Prompt Design Format:**
+For prompt design, show the **entire chatbot flow** in a clean, numbered format like this:
 
 1. If user says "Hi", bot replies with:
    - Text: "Hey there!"
@@ -97,7 +310,7 @@ Format rules:
 - Avoid repetitive blocks
 - Do not include flows by your own. Just convert user instructions to flows.
 
-**Here is an example of bot prompt. Take this as an example not to use same.**
+**Example bot prompt (for reference only):**
 
 1. When user sends "hi text", then reply with "hi there, i".
 2. When user sends "Hello" or "Hi", then reply with "Hello how are you?".
@@ -156,7 +369,9 @@ Show 2 items from RSS: https://cdn.mysitemapgenerator.com/...
 Run assistant named Urooj powered by OpenAI.
 23. When user sends "change language", offer "arabic", "urdu", or "french".
 On "arabic" or "urdu", update chatbot_language and reply "language changed".
-24. When user sends "keyword", "word", or "key", show default response (data incomplete in input).`
+24. When user sends "keyword", "word", or "key", show default response (data incomplete in input).
+
+**Remember**: Always prioritize using the configure_chatbot tool for configuration requests before providing conversational responses about configuration changes.`
         });
       }
 
@@ -171,8 +386,10 @@ On "arabic" or "urdu", update chatbot_language and reply "language changed".
       
       try {
         const stream = await client.value.chat.completions.create({
-          model: 'gpt-4.1',
+          model: 'gpt-4o',
           messages: formattedMessages,
+          tools: [configureChatbotTool],
+          tool_choice: "auto",
           stream: true,
           temperature: 0.7,
           max_tokens: 2000
@@ -225,6 +442,8 @@ On "arabic" or "urdu", update chatbot_language and reply "language changed".
     error,
     rateLimited,
     setApiKey,
-    streamChat
+    streamChat,
+    processConfigurationTool,
+    configureChatbotTool
   };
 });

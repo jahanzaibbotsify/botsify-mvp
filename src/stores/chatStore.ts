@@ -406,6 +406,7 @@ export const useChatStore = defineStore('chat', () => {
     console.log('Handling AI response for chat:', chat.id);
     isTyping.value = true;
     let streamedContent = '';
+    let toolCalls: any[] = [];
 
     try {
       const messages = chat.messages.map(msg => ({
@@ -437,8 +438,44 @@ export const useChatStore = defineStore('chat', () => {
       console.log('Starting to process stream');
       for await (const chunk of stream) {
         console.log('Received chunk:', chunk);
+        
+        // Handle regular content
         const content = chunk.choices[0]?.delta?.content || '';
         streamedContent += content;
+        
+        // Handle tool calls
+        const toolCallDelta = chunk.choices[0]?.delta?.tool_calls;
+        if (toolCallDelta) {
+          console.log('Tool call delta received:', toolCallDelta);
+          
+          // Process tool call deltas
+          for (const toolCall of toolCallDelta) {
+            if (toolCall.index !== undefined) {
+              // Initialize tool call if it doesn't exist
+              if (!toolCalls[toolCall.index]) {
+                toolCalls[toolCall.index] = {
+                  id: toolCall.id || '',
+                  type: toolCall.type || 'function',
+                  function: {
+                    name: toolCall.function?.name || '',
+                    arguments: toolCall.function?.arguments || ''
+                  }
+                };
+              } else {
+                // Append to existing tool call
+                if (toolCall.function?.arguments) {
+                  toolCalls[toolCall.index].function.arguments += toolCall.function.arguments;
+                }
+                if (toolCall.function?.name) {
+                  toolCalls[toolCall.index].function.name = toolCall.function.name;
+                }
+                if (toolCall.id) {
+                  toolCalls[toolCall.index].id = toolCall.id;
+                }
+              }
+            }
+          }
+        }
         
         // Update the message in real-time as chunks arrive
         aiMessage.content = streamedContent;
@@ -447,7 +484,65 @@ export const useChatStore = defineStore('chat', () => {
         // Force UI update after each chunk
         await nextTick();
       }
-      console.log('Stream processing complete, final content length:', streamedContent.length);
+      
+      console.log('Stream processing complete');
+      console.log('Final content length:', streamedContent.length);
+      console.log('Tool calls received:', toolCalls);
+      
+      // Process tool calls if any
+      if (toolCalls.length > 0) {
+        for (const toolCall of toolCalls) {
+          if (toolCall.function.name === 'configure_chatbot') {
+            try {
+              console.log('Processing configure_chatbot tool call:', toolCall);
+              
+              // Parse the arguments
+              const args = JSON.parse(toolCall.function.arguments);
+              console.log('Parsed tool arguments:', args);
+              
+              if (args.tasks && Array.isArray(args.tasks)) {
+                // Process configuration tasks
+                const configResult = await openAIStore.processConfigurationTool(args.tasks);
+                console.log('Configuration result:', configResult);
+                
+                // Add configuration result as a new message
+                const configMessage: Message = {
+                  id: Date.now().toString() + '_config',
+                  content: configResult,
+                  timestamp: new Date(),
+                  sender: 'assistant'
+                };
+                chat.messages.push(configMessage);
+                chat.lastMessage = configResult;
+                
+                // Force UI update
+                await nextTick();
+              } else {
+                console.error('Invalid tool call arguments:', args);
+                const errorMessage: Message = {
+                  id: Date.now().toString() + '_error',
+                  content: '❌ Invalid configuration request format.',
+                  timestamp: new Date(),
+                  sender: 'assistant'
+                };
+                chat.messages.push(errorMessage);
+                chat.lastMessage = errorMessage.content;
+              }
+            } catch (parseError: any) {
+              console.error('Error parsing tool call arguments:', parseError);
+              const errorMessage: Message = {
+                id: Date.now().toString() + '_parse_error',
+                content: `❌ Error processing configuration request: ${parseError.message}`,
+                timestamp: new Date(),
+                sender: 'assistant'
+              };
+              chat.messages.push(errorMessage);
+              chat.lastMessage = errorMessage.content;
+            }
+          }
+        }
+      }
+      
     } catch (error: any) {
       console.error('AI response error:', error);
       console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
