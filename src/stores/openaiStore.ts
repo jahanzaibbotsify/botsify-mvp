@@ -29,39 +29,37 @@ export const useOpenAIStore = defineStore('openai', () => {
   const error = ref<string | null>(null);
   const rateLimited = ref(false);
 
-  // Configuration tool function definition
+  // Configuration tool function definition for Responses API
   const configureChatbotTool = {
     type: "function" as const,
-    function: {
-      name: "configure_chatbot",
-      description: "Handles configuration updates for the chatbot, such as language, logo, and color scheme.",
-      strict: true,
-      parameters: {
-        type: "object",
-        required: ["tasks"],
-        properties: {
-          tasks: {
-            type: "array",
-            description: "Array of tasks to be performed for configuration updates",
-            items: {
-              type: "object",
-              properties: {
-                key: {
-                  type: "string",
-                  description: "Configuration property to be updated, e.g., language, logo, color scheme"
-                },
-                value: {
-                  type: "string",
-                  description: "New value for the specified configuration property"
-                }
+    name: "configure_chatbot",
+    description: "Handles configuration updates for the chatbot, such as language, logo, and color scheme.",
+    strict: true,
+    parameters: {
+      type: "object",
+      required: ["tasks"],
+      properties: {
+        tasks: {
+          type: "array",
+          description: "Array of tasks to be performed for configuration updates",
+          items: {
+            type: "object",
+            properties: {
+              key: {
+                type: "string",
+                description: "Configuration property to be updated, e.g., language, logo, color scheme"
               },
-              additionalProperties: false,
-              required: ["key", "value"]
-            }
+              value: {
+                type: "string",
+                description: "New value for the specified configuration property"
+              }
+            },
+            additionalProperties: false,
+            required: ["key", "value"]
           }
-        },
-        additionalProperties: false
-      }
+        }
+      },
+      additionalProperties: false
     }
   };
 
@@ -249,11 +247,13 @@ export const useOpenAIStore = defineStore('openai', () => {
     try {
       console.log('Preparing to stream chat with messages:', messages);
       
-      // Add system message if not present
-      if (!messages.some(msg => msg.role === 'system')) {
-        messages.unshift({
-          role: 'system',
-          content: `You are an AI prompt designer and chatbot configuration assistant. You have two main functions:
+      // Convert messages to Responses API format - use simple string input
+      const nonSystemMessages = messages.filter(msg => msg.role !== 'system');
+      const inputText = nonSystemMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+
+      // Extract system message for instructions
+      const systemMessage = messages.find(msg => msg.role === 'system');
+      const instructions = systemMessage?.content || `You are an AI prompt designer and chatbot configuration assistant. You have two main functions:
 
 1. **Prompt Design**: I will describe how the chatbot should behave, and you will build a structured chatbot flow step-by-step. The flow should support all types of messages, including:
 - Text replies
@@ -310,96 +310,27 @@ Format rules:
 - Avoid repetitive blocks
 - Do not include flows by your own. Just convert user instructions to flows.
 
-**Example bot prompt (for reference only):**
+**Remember**: Always prioritize using the configure_chatbot tool for configuration requests before providing conversational responses about configuration changes.`;
 
-1. When user sends "hi text", then reply with "hi there, i".
-2. When user sends "Hello" or "Hi", then reply with "Hello how are you?".
-3. When user sends "Media", "Block", "Media bloc", or "media block", then reply with:
-"Here is the some media blocks"
-Carousel of slides with images, titles, subtitles, and website buttons.
-4. When user sends "Intro Form" or "introduction", then collect name and email, and say "Thank you for contacting us. One of our agents will contact you soon."
-5. When user sends "User Attributes", then reply with "hello\nwhat you want to buy?" and quick replies "Men", "women".
-6. When user replies "women", then set Gender = Women and reply "Ok thankyou".
-7. When user replies "Men", then set Gender = Men and reply "Ok thankyou".
-8. When user sends "JSON APi", then fetch data from https://api.botsify.com/covid with GET.
-9. When user sends "Media block Video", then reply with quick replies: image, text, video, audio, file, slider.
-**For each quick reply:**
-"file" → send a file with CSV download.
-"slider" → show carousel media.
-"audo" → play an audio file.
-"video" → show a video with a button to call an API.
-"text" → reply with a long message and quick reply buttons: help (human help), form, phone number.
-"image" → send an image with options to reply with "hey", "media", or "prompt".
-10. When user sends "new flow", then reply with:
-"Thank you for contacting us..."
-11. If it's Friday, trigger prompt "(Hello,Hi)".
-Else, reply with "fallback msg".
-12. When user sends "Testing Prompt" or "prompts", then reply with:
-"hello\nyes\nhow can i help you?"
-Typing indicator (20s)
-Human help message
-13. When user sends "User input", then:
-Show info about SQA Connect services.
-Send audio.
-Collect name and email.
-Show quick replies: "delay", "link prompt".
-On "delay", call JSON API.
-On "link prompt", trigger "(User Attributes)".
-14. When user sends "link prompt", trigger prompt "(QR w link)".
-When user sends "QR w link", then reply "qr texts" with quick replies: new prompt, hi.
-On "new prompt", trigger "(typing in)".
-On "hi", no response.
-15. When user sends "typing in", then simulate typing for 7 seconds, then reply "Text response after d".
-16. When user sends "human help", then reply with "requesting human help" and notify agents.
-17. When user sends "Admission information" or "info", then:
-Say "hello how can i help you?"
-Collect admission-related info (name, email, date, time, options, etc.).
-Notify agent via email.
-18. When user sends "Desk", "help desk", or "help", reply "how can i help you?" and offer human help.
-19. When user sends "stripe" or "shopify", then:
-Reply "Stripe flow" with quick replies: Stripe, form.
-On "form", collect customer info.
-On "Stripe", show Stripe plugin with one-time payment.
-20. When user sends "Rss Feed", reply with:
-"Good day\nType anything...."
-Show 2 items from RSS: https://cdn.mysitemapgenerator.com/...
-21. When user sends "another", show 10 items from https://rss.app/feed/...
-22. When user sends "AI Assistant", reply:
-"hello {first_name}"
-Run assistant named Urooj powered by OpenAI.
-23. When user sends "change language", offer "arabic", "urdu", or "french".
-On "arabic" or "urdu", update chatbot_language and reply "language changed".
-24. When user sends "keyword", "word", or "key", show default response (data incomplete in input).
-
-**Remember**: Always prioritize using the configure_chatbot tool for configuration requests before providing conversational responses about configuration changes.`
-        });
-      }
-
-      // Map messages to the correct format expected by OpenAI
-      const formattedMessages: ChatCompletionMessageParam[] = messages.map(msg => ({
-        role: msg.role === 'user' ? 'user' : 
-              msg.role === 'assistant' ? 'assistant' : 'system',
-        content: msg.content
-      }));
-
-      console.log('Sending request to OpenAI API with formatted messages:', formattedMessages);
+      console.log('Sending request to OpenAI Responses API with input text:', inputText);
       
       try {
-        const stream = await client.value.chat.completions.create({
+        const stream = await client.value.responses.create({
           model: 'gpt-4o',
-          messages: formattedMessages,
+          input: inputText,
+          instructions: instructions,
           tools: [configureChatbotTool],
           tool_choice: "auto",
           stream: true,
           temperature: 0.7,
-          max_tokens: 2000
+          max_output_tokens: 2000
         });
   
-        console.log('Stream received from OpenAI API:', typeof stream, stream !== null);
+        console.log('Stream received from OpenAI Responses API:', typeof stream, stream !== null);
         
         // Verify the stream is valid
         if (!stream) {
-          throw new Error('Received null or undefined stream from OpenAI API');
+          throw new Error('Received null or undefined stream from OpenAI Responses API');
         }
         
         return stream;

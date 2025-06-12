@@ -29,8 +29,11 @@ async function testApiKey() {
     let response = '';
     
     for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content || '';
-      response += content;
+      // Handle Responses API streaming format
+      if (chunk.type === 'response.output_text.delta') {
+        const content = chunk.delta || '';
+        response += content;
+      }
     }
     
     console.log('API test response:', response);

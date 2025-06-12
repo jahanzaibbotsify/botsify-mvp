@@ -42,8 +42,11 @@ async function sendSystemMessage() {
     let response = '';
     
     for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content || '';
-      response += content;
+      // Handle Responses API streaming format
+      if (chunk.type === 'response.output_text.delta') {
+        const content = chunk.delta || '';
+        response += content;
+      }
     }
     
     console.log('Response with system message:', response);

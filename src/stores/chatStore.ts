@@ -439,50 +439,23 @@ export const useChatStore = defineStore('chat', () => {
       for await (const chunk of stream) {
         console.log('Received chunk:', chunk);
         
-        // Handle regular content
-        const content = chunk.choices[0]?.delta?.content || '';
-        streamedContent += content;
-        
-        // Handle tool calls
-        const toolCallDelta = chunk.choices[0]?.delta?.tool_calls;
-        if (toolCallDelta) {
-          console.log('Tool call delta received:', toolCallDelta);
+        // Handle Responses API streaming format
+        if (chunk.type === 'response.output_text.delta') {
+          const content = chunk.delta || '';
+          streamedContent += content;
           
-          // Process tool call deltas
-          for (const toolCall of toolCallDelta) {
-            if (toolCall.index !== undefined) {
-              // Initialize tool call if it doesn't exist
-              if (!toolCalls[toolCall.index]) {
-                toolCalls[toolCall.index] = {
-                  id: toolCall.id || '',
-                  type: toolCall.type || 'function',
-                  function: {
-                    name: toolCall.function?.name || '',
-                    arguments: toolCall.function?.arguments || ''
-                  }
-                };
-              } else {
-                // Append to existing tool call
-                if (toolCall.function?.arguments) {
-                  toolCalls[toolCall.index].function.arguments += toolCall.function.arguments;
-                }
-                if (toolCall.function?.name) {
-                  toolCalls[toolCall.index].function.name = toolCall.function.name;
-                }
-                if (toolCall.id) {
-                  toolCalls[toolCall.index].id = toolCall.id;
-                }
-              }
-            }
+          // Update the message in real-time
+          if (aiMessage) {
+            aiMessage.content = streamedContent;
+            chat.lastMessage = streamedContent;
+            await nextTick();
           }
+        } else if (chunk.type && chunk.type.includes('function_call')) {
+          // Handle tool calls for Responses API
+          console.log('Tool call delta received:', chunk);
+          // Tool call handling for Responses API format
+          // This will need to be implemented based on the actual tool call structure
         }
-        
-        // Update the message in real-time as chunks arrive
-        aiMessage.content = streamedContent;
-        chat.lastMessage = streamedContent;
-        
-        // Force UI update after each chunk
-        await nextTick();
       }
       
       console.log('Stream processing complete');
