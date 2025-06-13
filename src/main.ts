@@ -10,6 +10,15 @@ import '@fontsource/ubuntu/700.css'
 // Import routes
 import routes from './router'
 
+// Import OpenAI debug utility in development
+if (import.meta.env.DEV) {
+  import('./utils/openai-debug').then(({ OpenAIDebugger }) => {
+    // Make debugger available globally in development
+    (window as any).OpenAIDebugger = OpenAIDebugger;
+    console.log('🔧 OpenAI Debugger available globally as window.OpenAIDebugger');
+  });
+}
+
 // Check localStorage availability
 function checkLocalStorage() {
   try {

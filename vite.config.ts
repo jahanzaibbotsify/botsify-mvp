@@ -10,7 +10,24 @@ export default defineConfig({
     }
   },
   define: {
-    // Fix for crypto.getRandomValues issue with Node.js v16
-    __VITE_SKIP_NODE_POLYFILLS__: true
+    global: 'globalThis'
+  },
+  optimizeDeps: {
+    // Pre-bundle OpenAI SDK to avoid issues
+    include: ['openai']
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Separate OpenAI SDK into its own chunk for better caching
+          'openai-sdk': ['openai']
+        }
+      }
+    },
+    // Increase chunk size warning limit for OpenAI SDK
+    chunkSizeWarningLimit: 1000,
+    // Target modern browsers that support crypto.getRandomValues
+    target: 'es2020'
   }
 })

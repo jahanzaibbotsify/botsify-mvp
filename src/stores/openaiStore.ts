@@ -15,6 +15,9 @@ interface ConfigurationResponse {
   data?: any;
 }
 
+// OpenAI client instance - NOT reactive to avoid private member access issues
+let openaiClient: OpenAI | null = null;
+
 export const useOpenAIStore = defineStore('openai', () => {
   // Try to get API key from environment variables first, then fallback to localStorage
   const envApiKey = import.meta.env.VITE_OPENAI_API_KEY;
@@ -23,7 +26,8 @@ export const useOpenAIStore = defineStore('openai', () => {
   const apiKey = ref<string | null>(
     envApiKey || localStorage.getItem('openai_api_key')
   );
-  const client = ref<OpenAI | null>(null);
+  
+  // Reactive state - no OpenAI client here to avoid private member issues
   const connected = ref(false);
   const error = ref<string | null>(null);
   const rateLimited = ref(false);
@@ -73,25 +77,31 @@ export const useOpenAIStore = defineStore('openai', () => {
     if (!apiKey.value) {
       console.warn('No API key provided, client not initialized');
       connected.value = false;
-      client.value = null;
+      openaiClient = null;
       error.value = 'No API key provided. Please add your OpenAI API key in Settings.';
       return;
     }
 
     try {
       console.log('Initializing OpenAI client');
-      client.value = new OpenAI({
+      console.warn('⚠️ SECURITY WARNING: Using dangerouslyAllowBrowser: true exposes your API key in the browser. Consider implementing a backend proxy for production use.');
+      
+      // Initialize non-reactive OpenAI client
+      openaiClient = new OpenAI({
         apiKey: apiKey.value,
         dangerouslyAllowBrowser: true
       });
+      
       connected.value = true;
       error.value = null;
       console.log('OpenAI client initialized successfully');
+      console.log('Client type:', typeof openaiClient);
+      console.log('Client has responses:', !!openaiClient?.responses);
     } catch (e: any) {
       console.error('Failed to initialize OpenAI client:', e);
       error.value = `Failed to initialize OpenAI client: ${e.message || 'Unknown error'}`;
       connected.value = false;
-      client.value = null;
+      openaiClient = null;
     }
   }
 
@@ -236,15 +246,30 @@ export const useOpenAIStore = defineStore('openai', () => {
     return responseMessage.trim();
   }
 
-  async function streamChat(messages: { role: string, content: string }[]) {
-    if (!client.value) {
-      const errorMsg = 'OpenAI client not initialized';
-      console.error(errorMsg);
+  async function streamChat(messages: { role: string, content: string }[]): Promise<AsyncIterable<any>> {
+    // Debug: Check client state
+    console.log('🔍 DEBUG: OpenAI client state:', {
+      clientExists: !!openaiClient,
+      clientType: typeof openaiClient,
+      hasResponses: !!openaiClient?.responses,
+      connected: connected.value,
+      apiKeyExists: !!apiKey.value
+    });
+
+    if (!openaiClient) {
+      const errorMsg = 'OpenAI client not initialized. Please check your API key.';
+      console.error('❌', errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    if (!openaiClient.responses) {
+      const errorMsg = 'OpenAI Responses API not available. Please check SDK version.';
+      console.error('❌', errorMsg);
       throw new Error(errorMsg);
     }
 
     try {
-      console.log('Preparing to stream chat with messages:', messages);
+      console.log('🚀 Preparing to stream chat with messages:', messages);
       
       // Convert messages to Responses API format - use simple string input
       const nonSystemMessages = messages.filter(msg => msg.role !== 'system');
@@ -393,10 +418,11 @@ Run assistant named Urooj powered by OpenAI.
 On "arabic" or "urdu", update chatbot_language and reply "language changed".
 24. When user sends "keyword", "word", or "key", show default response (data incomplete in input).`;
 
-      console.log('Sending request to OpenAI Responses API with input text:', inputText);
+      console.log('📤 Sending request to OpenAI Responses API with input text:', inputText.substring(0, 100) + '...');
       
       try {
-        const stream = await client.value.responses.create({
+        // Use responses.create (NOT completions.create) with explicit typing
+        const stream: AsyncIterable<any> = await openaiClient.responses.create({
           model: 'gpt-4o',
           input: inputText,
           instructions: instructions,
@@ -407,7 +433,7 @@ On "arabic" or "urdu", update chatbot_language and reply "language changed".
           max_output_tokens: 2000
         });
   
-        console.log('Stream received from OpenAI Responses API:', typeof stream, stream !== null);
+        console.log('✅ Stream received from OpenAI Responses API:', typeof stream, stream !== null);
         
         // Verify the stream is valid
         if (!stream) {
@@ -416,12 +442,29 @@ On "arabic" or "urdu", update chatbot_language and reply "language changed".
         
         return stream;
       } catch (apiError: any) {
-        console.error('API call error:', apiError);
+        console.error('❌ API call error:', apiError);
         console.error('API error details:', JSON.stringify(apiError, Object.getOwnPropertyNames(apiError)));
+        
+        // Debug: Test non-streaming call
+        console.log('🔧 DEBUG: Testing non-streaming call...');
+        try {
+          const nonStreamResponse = await openaiClient.responses.create({
+            model: 'gpt-4o',
+            input: inputText,
+            instructions: instructions,
+            stream: false,
+            temperature: 0.7,
+            max_output_tokens: 500
+          });
+          console.log('✅ Non-streaming call successful:', !!nonStreamResponse);
+        } catch (nonStreamError) {
+          console.error('❌ Non-streaming call also failed:', nonStreamError);
+        }
+        
         throw apiError;
       }
     } catch (e: any) {
-      console.error('Error in streamChat:', e);
+      console.error('❌ Error in streamChat:', e);
       
       if (e.status === 429) {
         rateLimited.value = true;
