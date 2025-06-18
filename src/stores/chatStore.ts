@@ -514,19 +514,35 @@ export const useChatStore = defineStore('chat', () => {
         // Update the sidebar with the AI prompt
         updateStory(chat.id, parsedResponse.aiPrompt, true);
         console.log('Updated sidebar with AI prompt');
+      } else if (parsedResponse.chatResponse && !parsedResponse.aiPrompt) {
+        // Only chat response found, no AI prompt
+        if (aiMessage) {
+          aiMessage.content = parsedResponse.chatResponse;
+          chat.lastMessage = parsedResponse.chatResponse;
+          await nextTick();
+        }
+        console.log('Only chat response found, no AI prompt to update sidebar');
+      } else if (!parsedResponse.chatResponse && parsedResponse.aiPrompt) {
+        // Only AI prompt found, no chat response - this shouldn't happen but handle it
+        if (aiMessage) {
+          aiMessage.content = 'I\'ve updated your AI prompt. You can see the details in the sidebar.';
+          chat.lastMessage = aiMessage.content;
+          await nextTick();
+        }
+        
+        // Update the sidebar with the AI prompt
+        updateStory(chat.id, parsedResponse.aiPrompt, true);
+        console.log('Only AI prompt found, updated sidebar and provided generic chat message');
       } else {
-        // Fallback: use the entire content as both chat and prompt
-        console.warn('Could not parse dual response format, using content as-is');
+        // No structured format found - treat as regular chat response only
+        console.warn('No structured dual response format found, treating as regular chat response');
         if (aiMessage) {
           aiMessage.content = streamedContent || 'I received your message but had no response to provide.';
           chat.lastMessage = aiMessage.content;
           await nextTick();
         }
-        
-        // Also update sidebar with the full content
-        if (streamedContent) {
-          updateStory(chat.id, streamedContent, true);
-        }
+        // Do NOT update sidebar when no structured format is found
+        console.log('No sidebar update - content treated as regular chat response only');
       }
       
       // Process tool calls if any
@@ -623,20 +639,181 @@ export const useChatStore = defineStore('chat', () => {
 
   // Helper function to parse dual response format
   function parseDualResponse(content: string): { chatResponse: string | null; aiPrompt: string | null } {
-    console.log('Parsing dual response from content:', content.substring(0, 200) + '...');
+    console.log('=== PARSING DUAL RESPONSE ===');
+    console.log('Full content received:', content);
+    console.log('Content length:', content.length);
     
-    const chatResponseMatch = content.match(/---CHAT_RESPONSE---([\s\S]*?)---AI_PROMPT---/);
-    const aiPromptMatch = content.match(/---AI_PROMPT---([\s\S]*?)---END---/);
+    // Handle case where content might contain the markers but not in expected order
+    const chatResponseMatch = content.match(/---CHAT_RESPONSE---([\s\S]*?)(?=---AI_PROMPT---|---END---|$)/);
+    const aiPromptMatch = content.match(/---AI_PROMPT---([\s\S]*?)(?=---END---|$)/);
     
-    const chatResponse = chatResponseMatch ? chatResponseMatch[1].trim() : null;
-    const aiPrompt = aiPromptMatch ? aiPromptMatch[1].trim() : null;
+    let chatResponse = chatResponseMatch ? chatResponseMatch[1].trim() : null;
+    let aiPrompt = aiPromptMatch ? aiPromptMatch[1].trim() : null;
     
-    console.log('Parsed responses:', { 
-      hasChatResponse: !!chatResponse, 
-      hasAiPrompt: !!aiPrompt,
+    console.log('Initial parsing results:', { 
+      foundChatMarker: !!chatResponseMatch, 
+      foundAIMarker: !!aiPromptMatch,
       chatResponseLength: chatResponse?.length || 0,
       aiPromptLength: aiPrompt?.length || 0
     });
+    
+    // Additional validation - if we found markers but content is empty, set to null
+    if (chatResponse && chatResponse.length === 0) {
+      chatResponse = null;
+    }
+    if (aiPrompt && aiPrompt.length === 0) {
+      aiPrompt = null;
+    }
+    
+    // If we didn't find the structured format, try to detect patterns more aggressively
+    if (!chatResponse && !aiPrompt && content.trim()) {
+      console.log('No structured format found, analyzing content patterns...');
+      
+      const lowerContent = content.toLowerCase().trim();
+      const contentLines = content.trim().split('\n');
+      
+      // Check if it looks like a conversational chat response
+      const chatIndicators = [
+        'great!', 'perfect!', 'excellent!', 'awesome!', 'wonderful!',
+        'i\'ve updated', 'i\'ve created', 'i\'ve generated', 'i\'ve built',
+        'here you go', 'here\'s', 'let me help', 'how can i', 'how may i',
+        'what would you like', 'anything else', 'would you like me to',
+        'sure!', 'absolutely!', 'of course!', 'no problem!',
+        'i can help', 'happy to help', 'glad to help'
+      ];
+      
+      // Check if it looks like an AI prompt/instructions (more comprehensive)
+      const promptIndicators = [
+        'you are', 'act as', 'your role is', 'instructions:', 'system:',
+        'when user', 'if user', 'respond with', 'reply with',
+        'user says', 'user sends', 'user clicks', 'user types'
+      ];
+      
+      // Check for numbered list patterns that indicate AI prompts
+      const hasNumberedList = /^\d+\.\s/.test(content.trim()) || contentLines.some(line => /^\d+\.\s/.test(line.trim()));
+      const hasWhenUserPattern = /when user/i.test(content);
+      const hasIfUserPattern = /if user/i.test(content);
+      const hasBotRepliesPattern = /(bot replies|reply with|respond with)/i.test(content);
+      
+      // Count indicators
+      const chatIndicatorCount = chatIndicators.filter(indicator => lowerContent.includes(indicator)).length;
+      const promptIndicatorCount = promptIndicators.filter(indicator => lowerContent.includes(indicator)).length;
+      
+      console.log('Content analysis:', {
+        chatIndicatorCount,
+        promptIndicatorCount,
+        hasNumberedList,
+        hasWhenUserPattern,
+        hasIfUserPattern,
+        hasBotRepliesPattern,
+        contentPreview: content.substring(0, 150) + '...'
+      });
+      
+      // Determine if this is clearly an AI prompt based on multiple indicators
+      const isLikelyAIPrompt = (
+        (hasNumberedList && (hasWhenUserPattern || hasIfUserPattern)) ||
+        (promptIndicatorCount >= 2) ||
+        (hasWhenUserPattern && hasBotRepliesPattern) ||
+        (promptIndicatorCount > 0 && hasNumberedList)
+      );
+      
+      // Determine if this is clearly a chat response
+      const isLikelyChatResponse = (
+        chatIndicatorCount >= 1 && promptIndicatorCount === 0 && !hasNumberedList
+      );
+      
+      console.log('Classification:', { isLikelyAIPrompt, isLikelyChatResponse });
+      
+      if (isLikelyAIPrompt && !isLikelyChatResponse) {
+        // This looks like a structured AI prompt
+        aiPrompt = content.trim();
+        chatResponse = 'I\'ve created your AI prompt. You can see the details in the sidebar.';
+        console.log('✅ Content classified as AI prompt - separated into sidebar');
+      } else if (isLikelyChatResponse && !isLikelyAIPrompt) {
+        // This is clearly a chat response
+        chatResponse = content.trim();
+        console.log('✅ Content classified as chat response only');
+      } else {
+        // Ambiguous content - check for mixed content and try to separate
+        console.log('⚠️ Ambiguous content detected, attempting separation...');
+        
+        // Try to find where AI prompt might start within the content
+        const lines = contentLines;
+        let separationIndex = -1;
+        
+        // Look for transitions that might indicate AI prompt start
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].toLowerCase().trim();
+          
+          // Check if this line starts what looks like an AI prompt
+          if (
+            /^\d+\.\s/.test(lines[i].trim()) && 
+            (line.includes('when user') || line.includes('if user') || line.includes('user says'))
+          ) {
+            separationIndex = i;
+            break;
+          }
+          
+          // Check for explicit prompt indicators at line start
+          if (
+            line.startsWith('you are') || 
+            line.startsWith('act as') || 
+            line.startsWith('instructions:') ||
+            line.startsWith('system:')
+          ) {
+            separationIndex = i;
+            break;
+          }
+        }
+        
+        if (separationIndex > 0) {
+          // Found separation point
+          const chatPart = lines.slice(0, separationIndex).join('\n').trim();
+          const promptPart = lines.slice(separationIndex).join('\n').trim();
+          
+          if (chatPart.length > 0 && promptPart.length > 0) {
+            chatResponse = chatPart;
+            aiPrompt = promptPart;
+            console.log('✅ Successfully separated mixed content', {
+              chatLength: chatPart.length,
+              promptLength: promptPart.length
+            });
+          } else {
+            // Fallback to treating as chat response only
+            chatResponse = content.trim();
+            console.log('⚠️ Separation failed, treating as chat response only');
+          }
+        } else {
+          // No clear separation found - default to chat response only to avoid contamination
+          chatResponse = content.trim();
+          console.log('⚠️ No separation possible, defaulting to chat response only');
+        }
+      }
+    }
+    
+    // Final validation - don't allow AI prompts to leak into chat
+    if (chatResponse) {
+      // Check if chat response accidentally contains AI prompt content
+      const suspiciousPatterns = [
+        /^\d+\.\s.*when user/i,
+        /respond with.*:\s*-\s*text:/i,
+        /bot replies with.*buttons:/i,
+        /quick replies.*\[.*\]/i
+      ];
+      
+      const hasSuspiciousContent = suspiciousPatterns.some(pattern => pattern.test(chatResponse!));
+      
+      if (hasSuspiciousContent && !aiPrompt) {
+        console.log('🚨 Detected AI prompt content in chat response, moving to sidebar');
+        aiPrompt = chatResponse;
+        chatResponse = 'I\'ve created your AI prompt. You can see the details in the sidebar.';
+      }
+    }
+    
+    console.log('=== FINAL PARSING RESULTS ===');
+    console.log('Chat Response:', chatResponse ? `"${chatResponse.substring(0, 100)}..."` : 'null');
+    console.log('AI Prompt:', aiPrompt ? `"${aiPrompt.substring(0, 100)}..."` : 'null');
+    console.log('============================');
     
     return { chatResponse, aiPrompt };
   }
