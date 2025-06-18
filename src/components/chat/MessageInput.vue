@@ -17,6 +17,8 @@ const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const showFileUpload = ref(false);
 const attachments = ref<Attachment[]>([]);
 const showMCPModal = ref(false);
+const mcpBarExpanded = ref(false);
+const showMCPDropdown = ref(false);
 
 const resizeTextarea = () => {
   if (!textareaRef.value) return;
@@ -64,6 +66,23 @@ const removeAttachment = (id: string) => {
   attachments.value = attachments.value.filter(a => a.id !== id);
 };
 
+const toggleMCPBar = () => {
+  mcpBarExpanded.value = !mcpBarExpanded.value;
+};
+
+const toggleMCPDropdown = () => {
+  showMCPDropdown.value = !showMCPDropdown.value;
+};
+
+const closeMCPDropdown = () => {
+  showMCPDropdown.value = false;
+};
+
+const openMCPModalFromDropdown = () => {
+  showMCPModal.value = true;
+  closeMCPDropdown();
+};
+
 const openMCPModal = () => {
   showMCPModal.value = true;
 };
@@ -94,39 +113,78 @@ const handleMCPConnection = (serverId: string) => {
   <div class="message-input-container">
     <!-- MCP Connection Bar -->
     <div class="mcp-connection-bar">
-      <div class="mcp-info">
-        <div v-if="mcpStore.connectedServers.length > 0" class="connected-servers">
-          <span class="connection-status">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-            </svg>
-            {{ mcpStore.connectedServers.length }} MCP server{{ mcpStore.connectedServers.length === 1 ? '' : 's' }} connected
+      <!-- MCP Icon with Dropdown -->
+      <div class="mcp-dropdown-container" @click.stop>
+        <button 
+          class="mcp-icon-button" 
+          @click="toggleMCPDropdown" 
+          :title="mcpStore.connectedServers.length > 0 ? `${mcpStore.connectedServers.length} MCP server${mcpStore.connectedServers.length === 1 ? '' : 's'} connected` : 'Connect MCP Servers'"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+          </svg>
+          <!-- Connection indicator -->
+          <span v-if="mcpStore.connectedServers.length > 0" class="connection-indicator">
+            {{ mcpStore.connectedServers.length }}
           </span>
-          <div class="connected-server-icons">
-            <span 
-              v-for="config in mcpStore.connectedServers.slice(0, 3)" 
+        </button>
+
+        <!-- Dropdown Menu -->
+        <div v-if="showMCPDropdown" class="mcp-dropdown" @click.stop>
+          <div class="dropdown-header">
+            <h3>MCP Servers</h3>
+            <button class="dropdown-close" @click="closeMCPDropdown">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6L6 18"></path>
+                <path d="M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Connected Servers List -->
+          <div v-if="mcpStore.connectedServers.length > 0" class="connected-servers-list">
+            <div class="section-title">Connected Servers</div>
+            <div 
+              v-for="config in mcpStore.connectedServers" 
               :key="config.server.id"
-              class="server-icon-small"
-              :title="config.server.name"
+              class="dropdown-server-item"
             >
-              {{ config.server.icon }}
-            </span>
-            <span v-if="mcpStore.connectedServers.length > 3" class="more-servers">
-              +{{ mcpStore.connectedServers.length - 3 }}
-            </span>
+              <div class="server-icon-dropdown">{{ config.server.icon }}</div>
+              <div class="server-details">
+                <div class="server-name">{{ config.server.name }}</div>
+                <div class="server-description">{{ config.server.description }}</div>
+              </div>
+              <div class="server-status-dot"></div>
+            </div>
+          </div>
+
+          <!-- No Connections Message -->
+          <div v-else class="no-connections-message">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+            <p>No MCP servers connected</p>
+            <small>Connect to external services to enhance AI capabilities</small>
+          </div>
+
+          <!-- Connect Button -->
+          <div class="dropdown-footer">
+            <button class="dropdown-connect-button" @click="openMCPModalFromDropdown">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Connect MCP Servers
+            </button>
           </div>
         </div>
-        <span v-else class="no-connections">No MCP servers connected</span>
       </div>
-      
-      <button class="mcp-connect-button" @click="openMCPModal" title="Connect MCP Servers">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-        </svg>
-        Connect MCP
-      </button>
     </div>
+
+    <!-- Backdrop to close dropdown -->
+    <div v-if="showMCPDropdown" class="dropdown-backdrop" @click="closeMCPDropdown"></div>
 
     <!-- File upload area -->
     <div v-if="showFileUpload" class="file-upload-container">
@@ -212,86 +270,253 @@ const handleMCPConnection = (serverId: string) => {
 .mcp-connection-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: var(--space-2) var(--space-3);
+  justify-content: flex-start;
+  padding: var(--space-1);
   margin-bottom: var(--space-2);
-  background: linear-gradient(to right, rgba(0, 163, 255, 0.05), transparent 70%);
-  border: 1px solid rgba(0, 163, 255, 0.1);
+  background: transparent;
+  border: none;
   border-radius: var(--radius-md);
+  transition: all var(--transition-normal);
 }
 
-.mcp-info {
+.mcp-dropdown-container {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
 }
 
-.connected-servers {
+.mcp-icon-button {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  justify-content: center;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: var(--space-2);
+  border-radius: var(--radius-full);
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  box-shadow: 0 2px 8px rgba(0, 163, 255, 0.15);
 }
 
-.connection-status {
+.mcp-icon-button:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 163, 255, 0.25);
+}
+
+.connection-indicator {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  background: var(--color-success);
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-bg-secondary);
+  min-width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  font-size: 0.875rem;
-  color: var(--color-success);
-  font-weight: 500;
+  justify-content: center;
+  line-height: 1;
 }
 
-.connected-server-icons {
+.mcp-dropdown {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: 320px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.dropdown-header {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  justify-content: space-between;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(to right, rgba(0, 163, 255, 0.05), transparent);
 }
 
-.server-icon-small {
+.dropdown-header h3 {
+  margin: 0;
   font-size: 1rem;
-  width: 24px;
-  height: 24px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.dropdown-close {
+  background: transparent;
+  border: none;
+  padding: var(--space-1);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-normal);
+}
+
+.dropdown-close:hover {
+  color: var(--color-text-secondary);
+  background: var(--color-bg-tertiary);
+}
+
+.connected-servers-list {
+  padding: var(--space-2);
+}
+
+.section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-2);
+  padding: 0 var(--space-1);
+}
+
+.dropdown-server-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  margin-bottom: var(--space-1);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-normal);
+  cursor: pointer;
+}
+
+.dropdown-server-item:hover {
+  border-color: rgba(0, 163, 255, 0.3);
+  background: rgba(0, 163, 255, 0.05);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 163, 255, 0.1);
+}
+
+.dropdown-server-item:last-child {
+  margin-bottom: 0;
+}
+
+.server-icon-dropdown {
+  font-size: 1.25rem;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--color-bg-tertiary);
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(0, 163, 255, 0.2);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
 }
 
-.more-servers {
+.server-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.server-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.server-description {
   font-size: 0.75rem;
   color: var(--color-text-secondary);
-  background: var(--color-bg-tertiary);
-  padding: 2px var(--space-1);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.no-connections {
-  font-size: 0.875rem;
+.server-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success);
+  flex-shrink: 0;
+}
+
+.no-connections-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  text-align: center;
   color: var(--color-text-secondary);
 }
 
-.mcp-connect-button {
+.no-connections-message svg {
+  margin-bottom: var(--space-2);
+  opacity: 0.5;
+}
+
+.no-connections-message p {
+  margin: 0 0 var(--space-1);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.no-connections-message small {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  line-height: 1.3;
+}
+
+.dropdown-footer {
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.dropdown-connect-button {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-1);
   background: var(--color-primary);
   color: white;
   border: none;
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-normal);
+  width: 100%;
 }
 
-.mcp-connect-button:hover {
+.dropdown-connect-button:hover {
   background: var(--color-primary-hover);
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 163, 255, 0.2);
+}
+
+.dropdown-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  z-index: 999;
 }
 
 .input-area {
@@ -467,18 +692,10 @@ kbd {
     padding: var(--space-2);
   }
   
-  .mcp-connection-bar {
-    flex-direction: column;
-    gap: var(--space-2);
-    align-items: stretch;
-  }
-  
-  .mcp-info {
-    justify-content: center;
-  }
-  
-  .mcp-connect-button {
-    align-self: center;
+  .mcp-dropdown {
+    width: calc(100vw - 32px);
+    left: calc(-100vw + 100% + 16px);
+    max-width: 320px;
   }
   
   .input-area {
