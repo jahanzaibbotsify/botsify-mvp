@@ -33,9 +33,9 @@ const truncatedMessage = computed(() => {
     <div class="content">
       <div class="title-row">
         <h3 class="title">{{ chat.title }}</h3>
-        <span class="timestamp">{{ formattedTime }}</span>
       </div>
       <p class="preview">{{ truncatedMessage }}</p>
+      <span class="timestamp">{{ formattedTime }}</span>
     </div>
   </div>
 </template>

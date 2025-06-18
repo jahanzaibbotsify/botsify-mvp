@@ -649,7 +649,7 @@ export const useChatStore = defineStore('chat', () => {
     
     const newChat: Chat = {
       id: Date.now().toString(),
-      title: 'New Conversation',
+      title: '',
       timestamp: new Date(),
       messages: [
         {
