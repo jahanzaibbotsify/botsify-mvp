@@ -1,10 +1,12 @@
 import { defineStore } from 'pinia';
 import { ref, computed, nextTick, watch } from 'vue';
 import { useOpenAIStore } from './openaiStore';
+import { useMCPStore } from './mcpStore';
 import type { Chat, Message, Attachment, PromptVersion, GlobalPromptTemplate } from '../types';
 
 export const useChatStore = defineStore('chat', () => {
   const openAIStore = useOpenAIStore();
+  const mcpStore = useMCPStore();
   const chats = ref<Chat[]>([]);
   const activeChat = ref<string | null>(null);
   const isTyping = ref(false);
@@ -428,12 +430,23 @@ export const useChatStore = defineStore('chat', () => {
     let toolCalls: any[] = [];
 
     try {
-      const messages = chat.messages.map(msg => ({
+      // Prepare messages with MCP system prompt integration
+      const userMessages = chat.messages.map(msg => ({
         role: msg.sender,
         content: msg.content
       }));
 
-      console.log('Sending messages to OpenAI:', JSON.stringify(messages));
+      // Add MCP system prompt if there are connected servers
+      const mcpSystemPrompt = mcpStore.getCombinedSystemPrompt();
+      const messages = mcpSystemPrompt 
+        ? [{ role: 'system', content: mcpSystemPrompt }, ...userMessages]
+        : userMessages;
+
+      console.log('Sending messages to OpenAI with MCP integration:', {
+        hasMCPPrompt: !!mcpSystemPrompt,
+        connectedServers: mcpStore.connectedServers.length,
+        messageCount: messages.length
+      });
       
       // Check if OpenAI is connected
       if (!openAIStore.connected) {

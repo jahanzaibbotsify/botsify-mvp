@@ -65,3 +65,47 @@ export interface PricingTier {
   features: string[];
   isPopular?: boolean;
 }
+
+export interface MCPServer {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  icon?: string;
+  apiKeyRequired: boolean;
+  connectionUrl?: string;
+  isPopular?: boolean;
+  features: string[];
+  isCustom?: boolean;
+  authMethod?: 'api_key' | 'bearer_token' | 'basic_auth' | 'oauth' | 'none';
+  authLabel?: string;
+}
+
+export interface MCPConnection {
+  id: string;
+  serverId: string;
+  serverName: string;
+  apiKey?: string;
+  isConnected: boolean;
+  connectedAt?: Date;
+  lastUsed?: Date;
+  systemPrompt?: string;
+  connectionUrl?: string;
+  authMethod?: 'api_key' | 'bearer_token' | 'basic_auth' | 'oauth' | 'none';
+}
+
+export interface MCPServerConfig {
+  server: MCPServer;
+  connection?: MCPConnection;
+}
+
+export interface CustomMCPServerForm {
+  name: string;
+  description: string;
+  category: string;
+  icon: string;
+  connectionUrl: string;
+  authMethod: 'api_key' | 'bearer_token' | 'basic_auth' | 'oauth' | 'none';
+  authLabel: string;
+  features: string[];
+}

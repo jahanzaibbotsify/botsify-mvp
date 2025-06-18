@@ -1,18 +1,22 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useChatStore } from '../../stores/chatStore';
+import { useMCPStore } from '../../stores/mcpStore';
 import type { Attachment } from '../../types';
 import FileUpload from './FileUpload.vue';
+import MCPConnectionModal from './MCPConnectionModal.vue';
 
 const props = defineProps<{
   chatId: string;
 }>();
 
 const chatStore = useChatStore();
+const mcpStore = useMCPStore();
 const messageText = ref('');
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const showFileUpload = ref(false);
 const attachments = ref<Attachment[]>([]);
+const showMCPModal = ref(false);
 
 const resizeTextarea = () => {
   if (!textareaRef.value) return;
@@ -59,10 +63,71 @@ const removeAttachment = (id: string) => {
   }
   attachments.value = attachments.value.filter(a => a.id !== id);
 };
+
+const openMCPModal = () => {
+  showMCPModal.value = true;
+};
+
+const closeMCPModal = () => {
+  showMCPModal.value = false;
+};
+
+const handleMCPConnection = (serverId: string) => {
+  // Update the system prompt with MCP capabilities
+  const combinedPrompt = mcpStore.getCombinedSystemPrompt();
+  if (combinedPrompt) {
+    // Log the system prompt for debugging
+    console.log('MCP System Prompt Updated:', combinedPrompt);
+    
+    // Show a success message to the user
+    const connectedServer = mcpStore.connectedServers.find(config => config.server.id === serverId);
+    if (connectedServer) {
+      // You could add a toast notification here or update the UI
+      console.log(`Successfully connected to ${connectedServer.server.name}`);
+    }
+  }
+  closeMCPModal();
+};
 </script>
 
 <template>
   <div class="message-input-container">
+    <!-- MCP Connection Bar -->
+    <div class="mcp-connection-bar">
+      <div class="mcp-info">
+        <div v-if="mcpStore.connectedServers.length > 0" class="connected-servers">
+          <span class="connection-status">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+            </svg>
+            {{ mcpStore.connectedServers.length }} MCP server{{ mcpStore.connectedServers.length === 1 ? '' : 's' }} connected
+          </span>
+          <div class="connected-server-icons">
+            <span 
+              v-for="config in mcpStore.connectedServers.slice(0, 3)" 
+              :key="config.server.id"
+              class="server-icon-small"
+              :title="config.server.name"
+            >
+              {{ config.server.icon }}
+            </span>
+            <span v-if="mcpStore.connectedServers.length > 3" class="more-servers">
+              +{{ mcpStore.connectedServers.length - 3 }}
+            </span>
+          </div>
+        </div>
+        <span v-else class="no-connections">No MCP servers connected</span>
+      </div>
+      
+      <button class="mcp-connect-button" @click="openMCPModal" title="Connect MCP Servers">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </svg>
+        Connect MCP
+      </button>
+    </div>
+
     <!-- File upload area -->
     <div v-if="showFileUpload" class="file-upload-container">
       <FileUpload :onUpload="handleFileUpload" />
@@ -123,6 +188,13 @@ const removeAttachment = (id: string) => {
     <div class="keyboard-hint">
       Press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to send
     </div>
+
+    <!-- MCP Connection Modal -->
+    <MCPConnectionModal 
+      :isOpen="showMCPModal" 
+      @close="closeMCPModal"
+      @connected="handleMCPConnection"
+    />
   </div>
 </template>
 
@@ -134,6 +206,92 @@ const removeAttachment = (id: string) => {
   position: sticky;
   bottom: 0;
   z-index: var(--z-sticky);
+}
+
+/* MCP Connection Bar */
+.mcp-connection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2);
+  background: linear-gradient(to right, rgba(0, 163, 255, 0.05), transparent 70%);
+  border: 1px solid rgba(0, 163, 255, 0.1);
+  border-radius: var(--radius-md);
+}
+
+.mcp-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.connected-servers {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.875rem;
+  color: var(--color-success);
+  font-weight: 500;
+}
+
+.connected-server-icons {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.server-icon-small {
+  font-size: 1rem;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(0, 163, 255, 0.2);
+}
+
+.more-servers {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-tertiary);
+  padding: 2px var(--space-1);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.no-connections {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.mcp-connect-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.mcp-connect-button:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 163, 255, 0.2);
 }
 
 .input-area {
@@ -307,6 +465,20 @@ kbd {
 @media (max-width: 767px) {
   .message-input-container {
     padding: var(--space-2);
+  }
+  
+  .mcp-connection-bar {
+    flex-direction: column;
+    gap: var(--space-2);
+    align-items: stretch;
+  }
+  
+  .mcp-info {
+    justify-content: center;
+  }
+  
+  .mcp-connect-button {
+    align-self: center;
   }
   
   .input-area {
