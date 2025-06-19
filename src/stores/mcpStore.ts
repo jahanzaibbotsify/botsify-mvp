@@ -392,17 +392,7 @@ Use your web search access to provide users with current, accurate information f
       return '';
     }
 
-    // Generate configuration context for the prompt
-    const configurationData = generateMCPConfiguration('current_session');
-    
     const basePrompt = `You are an AI assistant with access to multiple services through MCP (Model Context Protocol) servers. 
-
-**CURRENT MCP CONFIGURATION:**
-The following JSON contains your current MCP server configuration. Use this information to understand your capabilities and provide accurate responses about available services:
-
-\`\`\`json
-${JSON.stringify(configurationData, null, 2)}
-\`\`\`
 
 **AVAILABLE MCP SERVICES:**
 ${connectedServers.value.map(config => 
@@ -450,7 +440,7 @@ Remember: You have access to ${connectedServers.value.length} MCP server${connec
         systemPrompt: config.connection?.systemPrompt || '',
         connectedAt: config.connection?.connectedAt || now
       })),
-      combinedSystemPrompt: getCombinedSystemPrompt(),
+      combinedSystemPrompt: '', // Remove circular reference - generate separately when needed
       version: '1.0.0'
     };
   };
