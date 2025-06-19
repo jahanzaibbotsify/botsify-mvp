@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { MCPServer, MCPConnection, MCPServerConfig, CustomMCPServerForm } from '../types';
+import type { MCPServer, MCPConnection, MCPServerConfig, CustomMCPServerForm, MCPConfiguration, MCPConfigurationFile } from '../types';
+import { botsifyApi } from '../services/botsifyApi';
 
 export const useMCPStore = defineStore('mcp', () => {
   // Popular MCP servers data
@@ -391,21 +392,208 @@ Use your web search access to provide users with current, accurate information f
       return '';
     }
 
-    const basePrompt = `You are an AI assistant with access to multiple services through MCP (Model Context Protocol). You have the following capabilities:
+    // Generate configuration context for the prompt
+    const configurationData = generateMCPConfiguration('current_session');
+    
+    const basePrompt = `You are an AI assistant with access to multiple services through MCP (Model Context Protocol) servers. 
 
-${connectedServers.value.map((config, index) => 
-  `${index + 1}. **${config.server.name}**: ${config.server.description}`
+**CURRENT MCP CONFIGURATION:**
+The following JSON contains your current MCP server configuration. Use this information to understand your capabilities and provide accurate responses about available services:
+
+\`\`\`json
+${JSON.stringify(configurationData, null, 2)}
+\`\`\`
+
+**AVAILABLE MCP SERVICES:**
+${connectedServers.value.map(config => 
+  `- **${config.server.name}** (${config.server.category}): ${config.server.description}
+    Features: ${config.server.features.join(', ')}
+    ${config.server.connectionUrl ? `URL: ${config.server.connectionUrl}` : ''}
+    Authentication: ${config.server.authMethod || 'api_key'} ${config.connection?.apiKey ? '✓ Configured' : '✗ Not configured'}`
 ).join('\n')}
 
-Specific instructions for each service:
+**MCP INTEGRATION GUIDELINES:**
+1. When users ask about your capabilities, reference the specific MCP servers you have access to
+2. For data operations, explain which MCP server would handle the request (e.g., PostgreSQL for database queries, GitHub for code operations)
+3. If authentication is missing for a required service, inform the user that authentication needs to be configured
+4. Provide context about what each connected service can do based on its features
+5. Use the MCP configuration data to give accurate, contextual responses
 
-${connectedPrompts.map((prompt, index) => 
-  `## ${connectedServers.value[index].server.name}\n${prompt}`
-).join('\n\n')}
+**INDIVIDUAL SERVER PROMPTS:**
+${connectedPrompts.join('\n\n---\n\n')}
 
-When responding to user requests, consider which of your available services would be most helpful and use them appropriately. Always be clear about which service you're using and what information you're retrieving.`;
+Remember: You have access to ${connectedServers.value.length} MCP server${connectedServers.value.length === 1 ? '' : 's'}. Always consider the available services when formulating responses and suggest appropriate MCP servers for specific tasks.`;
 
     return basePrompt;
+  };
+
+  // Generate MCP configuration JSON
+  const generateMCPConfiguration = (botId: string, name?: string, description?: string): MCPConfiguration => {
+    const now = new Date();
+    
+    return {
+      id: `mcp_config_${Date.now()}`,
+      botId,
+      name: name || `MCP Configuration for Bot ${botId}`,
+      description: description || `Automatically generated MCP configuration with ${connectedServers.value.length} connected servers`,
+      createdAt: now,
+      updatedAt: now,
+      connectedServers: connectedServers.value.map(config => ({
+        serverId: config.server.id,
+        serverName: config.server.name,
+        serverIcon: config.server.icon || '🔗',
+        category: config.server.category,
+        connectionUrl: config.server.connectionUrl,
+        authMethod: config.server.authMethod || 'none',
+        hasAuthentication: config.server.apiKeyRequired,
+        features: config.server.features,
+        systemPrompt: config.connection?.systemPrompt || '',
+        connectedAt: config.connection?.connectedAt || now
+      })),
+      combinedSystemPrompt: getCombinedSystemPrompt(),
+      version: '1.0.0'
+    };
+  };
+
+  // Create complete MCP configuration file
+  const createMCPConfigurationFile = (botId: string, name?: string, description?: string): MCPConfigurationFile => {
+    const configuration = generateMCPConfiguration(botId, name, description);
+    const categories = [...new Set(configuration.connectedServers.map(s => s.category))];
+    
+    return {
+      configuration,
+      metadata: {
+        generatedAt: new Date(),
+        version: '1.0.0',
+        serverCount: configuration.connectedServers.length,
+        categories
+      }
+    };
+  };
+
+  // Save MCP configuration to API
+  const saveMCPConfigurationToAPI = async (botId: string, name?: string, description?: string) => {
+    try {
+      if (connectedServers.value.length === 0) {
+        throw new Error('No MCP servers are connected. Please connect at least one server before saving configuration.');
+      }
+
+      console.log('Generating MCP configuration for bot:', botId);
+      const configFile = createMCPConfigurationFile(botId, name, description);
+      
+      console.log('Generated MCP configuration:', configFile);
+      
+      // Save to API
+      const response = await botsifyApi.saveMCPConfiguration(botId, configFile);
+      
+      if (response.success) {
+        console.log('✅ MCP configuration saved successfully to API');
+        
+        // Save the configuration reference locally
+        const configRef = {
+          botId,
+          configurationId: configFile.configuration.id,
+          lastSaved: new Date(),
+          serverCount: configFile.metadata.serverCount
+        };
+        
+        const existingConfigs = JSON.parse(localStorage.getItem('mcp_bot_configurations') || '[]');
+        const updatedConfigs = existingConfigs.filter((c: any) => c.botId !== botId);
+        updatedConfigs.push(configRef);
+        localStorage.setItem('mcp_bot_configurations', JSON.stringify(updatedConfigs));
+        
+        return {
+          success: true,
+          message: 'MCP configuration saved successfully',
+          configuration: configFile
+        };
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error: any) {
+      console.error('❌ Error saving MCP configuration:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to save MCP configuration',
+        error
+      };
+    }
+  };
+
+  // Load MCP configuration from API
+  const loadMCPConfigurationFromAPI = async (botId: string) => {
+    try {
+      console.log('Loading MCP configuration for bot:', botId);
+      
+      const response = await botsifyApi.getMCPConfiguration(botId);
+      
+      if (response.success && response.data) {
+        console.log('✅ MCP configuration loaded successfully from API');
+        return {
+          success: true,
+          message: 'MCP configuration loaded successfully',
+          configuration: response.data
+        };
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error: any) {
+      console.error('❌ Error loading MCP configuration:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to load MCP configuration',
+        error
+      };
+    }
+  };
+
+  // Get enhanced system prompt with MCP configuration reference
+  const getEnhancedSystemPrompt = (botId?: string): string => {
+    const basePrompt = getCombinedSystemPrompt();
+    
+    if (!basePrompt) {
+      return '';
+    }
+
+    const configInfo = botId ? `\n\n---MCP_CONFIGURATION---\nBot ID: ${botId}\nConfiguration includes ${connectedServers.value.length} connected MCP servers.\nLast updated: ${new Date().toISOString()}\n---END_MCP_CONFIGURATION---` : '';
+
+    return basePrompt + configInfo;
+  };
+
+  // Download MCP configuration as JSON file
+  const downloadMCPConfiguration = (botId: string, name?: string, description?: string) => {
+    try {
+      const configFile = createMCPConfigurationFile(botId, name, description);
+      
+      const dataStr = JSON.stringify(configFile, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      
+      const exportFileDefaultName = `mcp-config-${botId}-${Date.now()}.json`;
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+      
+      console.log('✅ MCP configuration downloaded as JSON file');
+      return true;
+    } catch (error) {
+      console.error('❌ Error downloading MCP configuration:', error);
+      return false;
+    }
+  };
+
+  // Get saved bot configurations
+  const getSavedBotConfigurations = () => {
+    try {
+      const configs = JSON.parse(localStorage.getItem('mcp_bot_configurations') || '[]');
+      return configs.map((config: any) => ({
+        ...config,
+        lastSaved: new Date(config.lastSaved)
+      }));
+    } catch {
+      return [];
+    }
   };
 
   // Initialize store
@@ -426,6 +614,13 @@ When responding to user requests, consider which of your available services woul
     disconnectServer,
     updateSystemPrompt,
     getCombinedSystemPrompt,
-    generateDefaultSystemPrompt
+    generateDefaultSystemPrompt,
+    generateMCPConfiguration,
+    createMCPConfigurationFile,
+    saveMCPConfigurationToAPI,
+    loadMCPConfigurationFromAPI,
+    getEnhancedSystemPrompt,
+    downloadMCPConfiguration,
+    getSavedBotConfigurations
   };
 }); 

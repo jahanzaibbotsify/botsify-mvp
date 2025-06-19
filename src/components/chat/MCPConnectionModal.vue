@@ -527,7 +527,7 @@ const handleKeydown = (event: KeyboardEvent) => {
           </div>
 
           <!-- System Prompt -->
-          <div class="input-group">
+          <div class="input-group system-prompt-hidden">
             <label for="systemPrompt">System Prompt (Optional)</label>
             <textarea
               id="systemPrompt"
@@ -1102,6 +1102,11 @@ const handleKeydown = (event: KeyboardEvent) => {
 .cancel-button:hover {
   background: var(--color-bg-tertiary);
   color: var(--color-text-primary);
+}
+
+/* Hide system prompt section */
+.system-prompt-hidden {
+  display: none !important;
 }
 
 /* Mobile styles */

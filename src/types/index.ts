@@ -109,3 +109,36 @@ export interface CustomMCPServerForm {
   authLabel: string;
   features: string[];
 }
+
+export interface MCPConfiguration {
+  id: string;
+  botId: string;
+  name: string;
+  description: string;
+  createdAt: Date;
+  updatedAt: Date;
+  connectedServers: {
+    serverId: string;
+    serverName: string;
+    serverIcon: string;
+    category: string;
+    connectionUrl?: string;
+    authMethod: string;
+    hasAuthentication: boolean;
+    features: string[];
+    systemPrompt: string;
+    connectedAt: Date;
+  }[];
+  combinedSystemPrompt: string;
+  version: string;
+}
+
+export interface MCPConfigurationFile {
+  configuration: MCPConfiguration;
+  metadata: {
+    generatedAt: Date;
+    version: string;
+    serverCount: number;
+    categories: string[];
+  };
+}
