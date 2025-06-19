@@ -20,6 +20,7 @@ const apiKey = ref('');
 const customSystemPrompt = ref('');
 const isConnecting = ref(false);
 const error = ref<string | null>(null);
+const connectionSuccess = ref(false);
 const showApiKeyInput = ref(false);
 const showAllServers = ref(false);
 const showCustomServerForm = ref(false);
@@ -184,20 +185,37 @@ const connectToServer = async () => {
   
   isConnecting.value = true;
   error.value = null;
+  connectionSuccess.value = false;
   
   try {
+    console.log(`🔗 Starting connection to ${selectedServer.value.name}...`);
+    
     await mcpStore.connectServer(
       selectedServer.value.id,
       apiKey.value,
       customSystemPrompt.value
     );
     
-    emit('connected', selectedServer.value.id);
-    closeModal();
-  } catch (err: any) {
-    error.value = err.message || 'Failed to connect to the server';
-  } finally {
+    console.log(`✅ Successfully connected to ${selectedServer.value.name}`);
+    
+    // Show success state
     isConnecting.value = false;
+    connectionSuccess.value = true;
+    error.value = null;
+    
+    // Emit connection event
+    emit('connected', selectedServer.value.id);
+    
+    // Close modal after showing success message
+    setTimeout(() => {
+      closeModal();
+    }, 2000);
+    
+  } catch (err: any) {
+    console.error(`❌ Failed to connect to ${selectedServer.value?.name}:`, err.message);
+    error.value = err.message || 'Failed to connect to the server';
+    isConnecting.value = false;
+    connectionSuccess.value = false;
   }
 };
 
@@ -214,6 +232,7 @@ const closeModal = () => {
   showCustomServerForm.value = false;
   editingCustomServer.value = null;
   error.value = null;
+  connectionSuccess.value = false;
   apiKey.value = '';
   customSystemPrompt.value = '';
   showAllServers.value = false;
@@ -543,7 +562,35 @@ const handleKeydown = (event: KeyboardEvent) => {
 
           <!-- Error Message -->
           <div v-if="error" class="error-message">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="15" y1="9" x2="9" y2="15"></line>
+              <line x1="9" y1="9" x2="15" y2="15"></line>
+            </svg>
             {{ error }}
+          </div>
+
+          <!-- Connection Success -->
+          <div v-if="connectionSuccess" class="success-status">
+            <div class="success-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </div>
+            <div class="status-text">
+              <strong>Successfully connected to {{ selectedServer?.name }}!</strong>
+              <small>Server endpoint validated and configuration saved. Closing in a moment...</small>
+            </div>
+          </div>
+
+          <!-- Connection Status -->
+          <div v-if="isConnecting" class="connection-status">
+            <div class="loading-spinner"></div>
+            <div class="status-text">
+              <strong>Pinging {{ selectedServer?.name }} server...</strong>
+              <small>Validating API credentials with the actual server endpoint. This may take a few seconds.</small>
+            </div>
           </div>
 
           <!-- Actions -->
@@ -552,7 +599,10 @@ const handleKeydown = (event: KeyboardEvent) => {
               Disconnect
             </button>
             <button type="submit" class="connect-button" :disabled="isConnecting || (selectedServer?.apiKeyRequired && !apiKey.trim())">
-              <span v-if="isConnecting">Connecting...</span>
+              <span v-if="isConnecting">
+                <div class="button-spinner"></div>
+                Connecting...
+              </span>
               <span v-else>{{ isServerConnected ? 'Update Connection' : 'Connect' }}</span>
             </button>
           </div>
@@ -1045,11 +1095,85 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 .error-message {
   background: rgba(239, 68, 68, 0.1);
-  color: var(--color-error);
-  padding: var(--space-2) var(--space-3);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--color-error, #ef4444);
+  padding: var(--space-3);
   border-radius: var(--radius-md);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  margin-bottom: var(--space-3);
   font-size: 0.875rem;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.error-message svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.connection-status {
+  background: rgba(0, 163, 255, 0.1);
+  border: 1px solid rgba(0, 163, 255, 0.3);
+  color: var(--color-primary);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.status-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.status-text strong {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.status-text small {
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(0, 163, 255, 0.2);
+  border-top: 2px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+}
+
+.button-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+  margin-right: var(--space-1);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.connect-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.connect-button span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .form-actions {
@@ -1071,11 +1195,6 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 .connect-button:hover:not(:disabled), .save-button:hover:not(:disabled) {
   background: var(--color-primary-hover);
-}
-
-.connect-button:disabled, .save-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .disconnect-button, .cancel-button {
@@ -1140,5 +1259,24 @@ const handleKeydown = (event: KeyboardEvent) => {
     flex-direction: column;
     gap: var(--space-1);
   }
+}
+
+.success-status {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: var(--color-success, #22c55e);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.success-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: var(--color-success, #22c55e);
 }
 </style> 

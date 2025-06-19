@@ -264,13 +264,27 @@ export const useMCPStore = defineStore('mcp', () => {
     }
 
     try {
-      // Simulate connection process (in real implementation, this would connect to the actual MCP server)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log(`🔗 Attempting to connect to ${server.name}...`);
 
-      // Remove existing connection if any
+      // Step 1: Validate the MCP connection with the API
+      const validationResult = await botsifyApi.validateMCPConnection(
+        server.id,
+        server.name,
+        apiKey?.trim(),
+        server.connectionUrl
+      );
+
+      if (!validationResult.success) {
+        console.error('❌ MCP connection validation failed:', validationResult.message);
+        throw new Error(validationResult.message);
+      }
+
+      console.log('✅ MCP connection validated successfully');
+
+      // Step 2: Remove existing connection if any
       connections.value = connections.value.filter(conn => conn.serverId !== serverId);
 
-      // Add new connection
+      // Step 3: Create new connection
       const newConnection: MCPConnection = {
         id: `${serverId}_${Date.now()}`,
         serverId,
@@ -286,10 +300,51 @@ export const useMCPStore = defineStore('mcp', () => {
       connections.value.push(newConnection);
       saveToStorage();
 
+      console.log('💾 Connection saved locally');
+
+      // Step 4: Send MCP configuration JSON to the API
+      try {
+        const mcpConfigurationData = {
+          serverId: server.id,
+          serverName: server.name,
+          serverIcon: server.icon || '🔗',
+          category: server.category,
+          connectionUrl: server.connectionUrl,
+          authMethod: server.authMethod || 'none',
+          hasAuthentication: server.apiKeyRequired,
+          features: server.features,
+          systemPrompt: newConnection.systemPrompt,
+          connectedAt: newConnection.connectedAt,
+          validationData: validationResult.data
+        };
+
+        const configResult = await botsifyApi.sendMCPConfigurationJSON(mcpConfigurationData);
+        
+        if (configResult.success) {
+          console.log('✅ MCP configuration sent to API successfully');
+        } else {
+          console.warn('⚠️ Failed to send MCP configuration to API:', configResult.message);
+          // Don't fail the connection if API call fails, just log the warning
+        }
+      } catch (apiError: any) {
+        console.warn('⚠️ API call failed but connection is established:', apiError.message);
+        // Connection is still successful even if API call fails
+      }
+
       return true;
-    } catch (error) {
-      console.error('Failed to connect to MCP server:', error);
-      throw new Error('Failed to connect to the server. Please check your configuration and try again.');
+    } catch (error: any) {
+      console.error('❌ Failed to connect to MCP server:', error);
+      
+      // Provide specific error messages for better user experience
+      if (error.message.includes('Invalid API key')) {
+        throw new Error('Invalid API key provided. Please check your authentication credentials and try again.');
+      } else if (error.message.includes('not found') || error.message.includes('invalid')) {
+        throw new Error('MCP server not found or connection URL is invalid. Please verify your configuration.');
+      } else if (error.message.includes('timeout')) {
+        throw new Error('Connection timeout. Please check your network connection and try again.');
+      }
+      
+      throw new Error(error.message || 'Failed to connect to the server. Please check your configuration and try again.');
     }
   };
 
