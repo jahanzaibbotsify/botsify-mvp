@@ -32,10 +32,12 @@ const truncatedMessage = computed(() => {
 
 <style scoped>
 .chat-list-item {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  margin: var(--space-1) 0;
   cursor: pointer;
-  border-bottom: 1px solid transparent;
+  border-radius: 8px;
   transition: background-color var(--transition-normal);
+  position: relative;
 }
 
 .chat-list-item:hover {
@@ -44,7 +46,30 @@ const truncatedMessage = computed(() => {
 
 .chat-list-item.active {
   background-color: var(--color-bg-active);
-  border-left: 3px solid var(--color-primary);
+}
+
+/* Override for ChatGPT-style dark mode */
+[data-theme="dark"] .chat-list-item:hover {
+  background-color: rgba(42, 42, 42, 0.8);
+  background-image: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(42, 42, 42, 0.8) 100%);
+}
+
+[data-theme="dark"] .chat-list-item.active {
+  background-color: rgba(42, 42, 42, 0.9);
+  background-image: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(42, 42, 42, 0.9) 100%);
+  border-left: 2px solid rgba(59, 130, 246, 0.4);
+}
+
+/* Light mode with subtle blue tints */
+[data-theme="light"] .chat-list-item:hover {
+  background-color: rgba(248, 250, 252, 0.8);
+  background-image: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(248, 250, 252, 0.8) 100%);
+}
+
+[data-theme="light"] .chat-list-item.active {
+  background-color: rgba(241, 245, 249, 0.9);
+  background-image: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(241, 245, 249, 0.9) 100%);
+  border-left: 2px solid rgba(59, 130, 246, 0.3);
 }
 
 .content {
@@ -61,14 +86,17 @@ const truncatedMessage = computed(() => {
 
 .title {
   margin: 0;
-  font-size: 0.9375rem;
-  font-weight: 500;
+  font-size: 0.875rem;
+  font-weight: 400;
   color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .preview {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -76,23 +104,46 @@ const truncatedMessage = computed(() => {
 }
 
 .unread .title {
-  font-weight: 600;
+  font-weight: 500;
+  color: var(--color-text-primary);
 }
 
 .unread .preview {
-  color: var(--color-text-primary);
+  color: var(--color-text-secondary);
+}
+
+/* Override for ChatGPT-style dark mode */
+[data-theme="dark"] .title {
+  color: #e5e5e5;
+}
+
+[data-theme="dark"] .preview {
+  color: #a3a3a3;
+}
+
+[data-theme="dark"] .unread .title {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .unread .preview {
+  color: #d4d4d4;
 }
 
 .unread::after {
   content: '';
   display: block;
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background-color: var(--color-primary);
+  background-color: var(--color-success);
   position: absolute;
   top: 50%;
-  right: var(--space-4);
+  right: var(--space-3);
   transform: translateY(-50%);
+}
+
+/* Override for ChatGPT-style dark mode */
+[data-theme="dark"] .unread::after {
+  background-color: #10b981;
 }
 </style>

@@ -21,7 +21,18 @@ const showDebug = ref(false);
 const showSystemMessageModal = ref(false);
 
 const chat = computed(() => {
-  return chatStore.chats.find(c => c.id === chatId.value);
+  let foundChat = chatStore.chats.find(c => c.id === chatId.value);
+  
+  // If chat doesn't exist, create it
+  if (!foundChat && chatId.value) {
+    console.log('Chat not found, creating new chat with ID:', chatId.value);
+    const newChat = chatStore.createNewChat();
+    // Update the chat ID to match the route
+    newChat.id = chatId.value;
+    foundChat = newChat;
+  }
+  
+  return foundChat;
 });
 
 const scrollToBottom = async () => {

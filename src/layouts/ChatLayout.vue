@@ -74,6 +74,7 @@ const toggleSidebar = () => {
     
     <!-- Sidebar toggle button (mobile) -->
     <button 
+      v-if="isMobile"
       class="sidebar-toggle icon-button"
       @click="toggleSidebar"
       :class="{ 'shifted': sidebarStore.isOpen }"
@@ -91,7 +92,7 @@ const toggleSidebar = () => {
     </button>
 
     <!-- Content wrapper that contains both sidebar and main content -->
-    <div class="content-wrapper" :class="{ 'sidebar-hidden': !sidebarStore.isOpen }">
+    <div class="content-wrapper">
       <!-- Left Sidebar -->
       <LeftSidebar :class="{ 'open': sidebarStore.isOpen }" />
 
@@ -143,11 +144,6 @@ const toggleSidebar = () => {
   height: 100%;
   width: 100%;
   position: relative;
-  transition: transform var(--transition-normal);
-}
-
-.content-wrapper.sidebar-hidden {
-  transform: translateX(-280px);
 }
 
 .main-content {
@@ -157,6 +153,9 @@ const toggleSidebar = () => {
   overflow: hidden;
   background-color: var(--color-bg-primary);
 }
+
+/* Desktop layout adjustments */
+/* Removed margin-left approach - sidebar now handles its own hide/show */
 
 .sidebar-overlay {
   position: fixed;
@@ -208,8 +207,8 @@ const toggleSidebar = () => {
 .desktop-sidebar-toggle {
   position: fixed;
   top: 50%;
-  left: 280px;
-  transform: translateY(-50%) translateX(-50%);
+  left: 260px;
+  transform: translateY(-50%);
   z-index: var(--z-fixed);
   background-color: var(--color-bg-tertiary);
   border-radius: var(--radius-full);
@@ -262,12 +261,8 @@ const toggleSidebar = () => {
 
 /* Mobile styles */
 @media (max-width: 767px) {
-  .content-wrapper {
-    transform: translateX(0);
-  }
-  
-  .content-wrapper.sidebar-hidden {
-    transform: translateX(0);
+  .main-content {
+    margin-left: 0 !important;
   }
   
   .sidebar-toggle {

@@ -117,7 +117,11 @@ const isLinkActive = (url: string) => {
 </script>
 
 <template>
-  <aside class="left-sidebar scrollbar" :class="{ 'open': sidebarStore.isOpen }">
+  <aside 
+    class="left-sidebar scrollbar" 
+    :class="{ 'open': sidebarStore.isOpen }"
+    :style="{ background: 'linear-gradient(135deg, #1a1f2e 0%, #171717 50%, #1a1c24 100%)' }"
+  >
     <div class="sidebar-header">
       <div class="header-content">
         <div class="app-title-container">
@@ -184,26 +188,45 @@ const isLinkActive = (url: string) => {
   width: 280px;
   min-width: 280px;
   height: 100%;
-  background-color: var(--color-bg-secondary);
-  border-right: 1px solid rgba(0, 163, 255, 0.1);
+  background: linear-gradient(135deg, #1a1f2e 0%, #171717 50%, #1a1c24 100%) !important;
+  border-right: 1px solid #303030;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   position: relative;
   z-index: var(--z-fixed);
-  box-shadow: 4px 0 10px rgba(0, 163, 255, 0.05);
-  background-image: 
-    radial-gradient(circle at left top, rgba(0, 163, 255, 0.15), transparent 70%),
-    radial-gradient(circle at left bottom, rgba(0, 163, 255, 0.10), transparent 50%);
+  transition: width var(--transition-normal), min-width var(--transition-normal);
+}
+
+/* Desktop collapse functionality */
+@media (min-width: 768px) {
+  .left-sidebar:not(.open) {
+    width: 0;
+    min-width: 0;
+    overflow: hidden;
+    border-right: none;
+  }
+}
+
+/* Override for ChatGPT-style dark mode with blue shade */
+[data-theme="dark"] .left-sidebar {
+  background: linear-gradient(135deg, #1a1f2e 0%, #171717 50%, #1a1c24 100%) !important;
+  border-right-color: #303030;
+}
+
+/* Light mode with subtle blue tint */
+[data-theme="light"] .left-sidebar {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%) !important;
+  border-right-color: #e2e8f0;
 }
 
 .sidebar-header {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-3);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(0, 163, 255, 0.08);
-  background: linear-gradient(to right, rgba(0, 163, 255, 0.08), rgba(0, 163, 255, 0) 80%);
+  border-bottom: none;
+  background: transparent;
 }
 
 .header-content {
@@ -211,6 +234,7 @@ const isLinkActive = (url: string) => {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+  width: 100%;
 }
 
 .app-title-container {
@@ -232,7 +256,7 @@ const isLinkActive = (url: string) => {
 }
 
 .logo-icon {
-  height: 32px;
+  height: 24px;
   width: auto;
 }
 
@@ -250,16 +274,28 @@ const isLinkActive = (url: string) => {
   font-size: 0.875rem;
   white-space: nowrap;
   min-width: fit-content;
-  background-color: var(--color-primary);
-  color: white;
-  border-radius: var(--radius-md);
-  border: none;
+  background-color: transparent;
+  color: var(--color-text-primary);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
   cursor: pointer;
-  transition: background-color var(--transition-normal);
+  transition: all var(--transition-normal);
 }
 
 .new-chat-button:hover {
-  background-color: var(--color-primary-hover);
+  background-color: var(--color-bg-hover);
+  border-color: var(--color-border);
+}
+
+/* Override for ChatGPT-style dark mode */
+[data-theme="dark"] .new-chat-button {
+  color: #e5e5e5;
+  border-color: #404040;
+}
+
+[data-theme="dark"] .new-chat-button:hover {
+  background-color: #2a2a2a;
+  border-color: #525252;
 }
 
 .menu-button {
@@ -267,7 +303,7 @@ const isLinkActive = (url: string) => {
   border: none;
   width: 36px;
   height: 36px;
-  border-radius: var(--radius-full);
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -279,8 +315,18 @@ const isLinkActive = (url: string) => {
 }
 
 .menu-button:hover {
-  background-color: rgba(0, 163, 255, 0.1);
-  color: var(--color-primary);
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+/* Override for ChatGPT-style dark mode */
+[data-theme="dark"] .menu-button {
+  color: #a3a3a3;
+}
+
+[data-theme="dark"] .menu-button:hover {
+  background-color: #2a2a2a;
+  color: #e5e5e5;
 }
 
 .dropdown-container {
@@ -293,11 +339,18 @@ const isLinkActive = (url: string) => {
   right: 0;
   width: 200px;
   background-color: var(--color-bg-primary);
-  border-radius: var(--radius-md);
-  box-shadow: 0 4px 12px rgba(0, 163, 255, 0.1);
-  border: 1px solid rgba(0, 163, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-border);
   z-index: var(--z-dropdown);
   overflow: hidden;
+}
+
+/* Override for ChatGPT-style dark mode */
+[data-theme="dark"] .nav-dropdown {
+  background-color: #262626;
+  border-color: #404040;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .dropdown-arrow {
@@ -309,7 +362,12 @@ const isLinkActive = (url: string) => {
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
   border-bottom: 8px solid var(--color-bg-primary);
-  filter: drop-shadow(0 -2px 2px rgba(0, 163, 255, 0.1));
+  filter: drop-shadow(0 -2px 2px rgba(0, 0, 0, 0.1));
+}
+
+/* Override for ChatGPT-style dark mode */
+[data-theme="dark"] .dropdown-arrow {
+  border-bottom-color: #262626;
 }
 
 .nav-item {
@@ -320,7 +378,7 @@ const isLinkActive = (url: string) => {
   cursor: pointer;
   color: var(--color-text-primary);
   transition: all var(--transition-normal);
-  border-bottom: 1px solid rgba(0, 163, 255, 0.05);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .nav-item:last-child {
@@ -328,12 +386,27 @@ const isLinkActive = (url: string) => {
 }
 
 .nav-item:hover {
-  background-color: rgba(0, 163, 255, 0.05);
+  background-color: var(--color-bg-hover);
 }
 
 .nav-item.active {
-  background-color: rgba(0, 163, 255, 0.08);
-  color: var(--color-primary);
+  background-color: var(--color-bg-active);
+  color: var(--color-text-primary);
+}
+
+/* Override for ChatGPT-style dark mode */
+[data-theme="dark"] .nav-item {
+  color: #e5e5e5;
+  border-bottom-color: #404040;
+}
+
+[data-theme="dark"] .nav-item:hover {
+  background-color: #2a2a2a;
+}
+
+[data-theme="dark"] .nav-item.active {
+  background-color: #2a2a2a;
+  color: #ffffff;
 }
 
 .nav-item-icon {
@@ -344,13 +417,22 @@ const isLinkActive = (url: string) => {
 }
 
 .nav-item.active .nav-item-icon {
-  color: var(--color-primary);
+  color: var(--color-text-primary);
+}
+
+/* Override for ChatGPT-style dark mode */
+[data-theme="dark"] .nav-item-icon {
+  color: #a3a3a3;
+}
+
+[data-theme="dark"] .nav-item.active .nav-item-icon {
+  color: #ffffff;
 }
 
 .chat-list {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-2) var(--space-3);
+  padding: 0 var(--space-2);
   position: relative;
 }
 
@@ -360,10 +442,20 @@ const isLinkActive = (url: string) => {
   color: var(--color-text-secondary);
 }
 
+/* Override for ChatGPT-style dark mode */
+[data-theme="dark"] .no-results {
+  color: #a3a3a3;
+}
+
 .sidebar-footer {
   padding: var(--space-3);
   border-top: 1px solid var(--color-border);
-  background-color: var(--color-bg-secondary);
+  background-color: transparent;
+}
+
+/* Override for ChatGPT-style dark mode */
+[data-theme="dark"] .sidebar-footer {
+  border-top-color: #404040;
 }
 
 .settings-link {
@@ -371,7 +463,7 @@ const isLinkActive = (url: string) => {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-3);
-  border-radius: var(--radius-md);
+  border-radius: 8px;
   color: var(--color-text-secondary);
   text-decoration: none;
   transition: background-color var(--transition-normal), color var(--transition-normal);
@@ -381,6 +473,17 @@ const isLinkActive = (url: string) => {
 .settings-link:hover, .settings-link.active {
   background-color: var(--color-bg-hover);
   color: var(--color-text-primary);
+}
+
+/* Override for ChatGPT-style dark mode */
+[data-theme="dark"] .settings-link {
+  color: #a3a3a3;
+}
+
+[data-theme="dark"] .settings-link:hover, 
+[data-theme="dark"] .settings-link.active {
+  background-color: #2a2a2a;
+  color: #e5e5e5;
 }
 
 .settings-link svg {
