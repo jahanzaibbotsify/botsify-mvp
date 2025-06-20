@@ -484,10 +484,15 @@ export class BotsifyApiService {
     try {
       console.log('Sending MCP configuration JSON to API:', mcpData);
       
-      const response = await axios.post(`${BOTSIFY_BASE_URL}/mcp/configuration`, {
-        ...mcpData,
-        timestamp: new Date().toISOString()
-      }, {
+      // Send the essential MCP configuration data with real API key
+      const simplifiedMCPData = {
+        serverName: mcpData.serverName,
+        apiKey: mcpData.apiKey || null, // Send real API key
+        availableTools: mcpData.features || [],
+        // prompt: mcpData.systemPrompt || this.generateDefaultMCPPrompt(mcpData)
+      };
+      
+      const response = await axios.post(`${BOTSIFY_BASE_URL}/mcp/configuration`, simplifiedMCPData, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -510,6 +515,63 @@ export class BotsifyApiService {
         data: error.response?.data
       };
     }
+  }
+
+  /**
+   * Generate default MCP calling prompt for servers
+   */
+  private generateDefaultMCPPrompt(mcpData: any): string {
+    const serverName = mcpData.serverName || 'MCP Server';
+    const features = mcpData.features || [];
+    const category = mcpData.category || 'General';
+    
+    return `You have access to ${serverName}, a ${category} MCP server with the following capabilities:
+
+AVAILABLE TOOLS:
+${features.map((feature: string) => `- ${feature}`).join('\n')}
+
+USAGE INSTRUCTIONS:
+1. Use this MCP server when users request operations related to: ${features.join(', ')}
+2. Authentication: ${mcpData.hasAuthentication ? `Required (${mcpData.authMethod})` : 'Not required'}
+3. Connection URL: ${mcpData.connectionUrl || 'Built-in server'}
+
+MCP CALLING GUIDELINES:
+- Always verify the server is available before making requests
+- Handle authentication errors gracefully
+- Provide clear feedback about server operations
+- Use appropriate error handling for network issues
+
+When calling this MCP server:
+1. Explain what operation you're performing
+2. Show the results clearly to the user
+3. Handle any errors with helpful messages
+4. Suggest alternatives if the operation fails
+
+Server Status: Connected and ready for use.`;
+  }
+
+  /**
+   * Test method to demonstrate simplified MCP configuration sending
+   */
+  async testEnhancedMCPConfiguration(): Promise<BotsifyResponse> {
+    // Example MCP configuration data (as it would come from mcpStore)
+    const testMCPData = {
+      serverId: 'github',
+      serverName: 'GitHub',
+      serverIcon: '🐙',
+      category: 'Development',
+      connectionUrl: 'https://api.github.com',
+      authMethod: 'api_key',
+      hasAuthentication: true,
+      apiKey: 'ghp_1234567890abcdef1234567890abcdef12345678', // Real API key now included
+      features: ['Repository access', 'Issue management', 'Pull requests', 'Code search'],
+      systemPrompt: 'You can access GitHub repositories, manage issues, and search code.',
+      connectedAt: new Date(),
+      validationData: { serverStatus: 'reachable', responseTime: Date.now() }
+    };
+
+    console.log('Testing MCP configuration with real API key...');
+    return await this.sendMCPConfigurationJSON(testMCPData);
   }
 }
 

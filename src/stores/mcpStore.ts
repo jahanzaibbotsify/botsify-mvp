@@ -312,6 +312,7 @@ export const useMCPStore = defineStore('mcp', () => {
           connectionUrl: server.connectionUrl,
           authMethod: server.authMethod || 'none',
           hasAuthentication: server.apiKeyRequired,
+          apiKey: newConnection.apiKey,
           features: server.features,
           systemPrompt: newConnection.systemPrompt,
           connectedAt: newConnection.connectedAt,
