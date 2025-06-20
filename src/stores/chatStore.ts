@@ -470,24 +470,7 @@ export const useChatStore = defineStore('chat', () => {
           const content = chunk.delta || '';
           streamedContent += content;
           
-          // Create AI message on first content chunk
-          if (!aiMessage && content) {
-            aiMessage = {
-              id: Date.now().toString(),
-              content: '',
-              timestamp: new Date(),
-              sender: 'assistant'
-            };
-            chat.messages.push(aiMessage);
-            console.log('Created AI message on first content chunk');
-          }
-          
-          // For now, just show "AI is processing..." until we have the full response
-          if (aiMessage) {
-            aiMessage.content = 'AI is processing your request...';
-            chat.lastMessage = 'AI is processing your request...';
-            await nextTick();
-          }
+          // Just collect content - don't create message bubble yet
         } else if (chunk.type && chunk.type.includes('function_call')) {
           // Handle tool calls for Responses API
           console.log('Tool call delta received:', chunk);
@@ -503,32 +486,45 @@ export const useChatStore = defineStore('chat', () => {
       // Parse the dual response format
       const parsedResponse = parseDualResponse(streamedContent);
       
+      // Only create AI message when we have content to show
       if (parsedResponse.chatResponse && parsedResponse.aiPrompt) {
-        // Update the AI message with the chat response
-        if (aiMessage) {
-          aiMessage.content = parsedResponse.chatResponse;
-          chat.lastMessage = parsedResponse.chatResponse;
-          await nextTick();
-        }
+        // Create AI message with the chat response
+        aiMessage = {
+          id: Date.now().toString(),
+          content: parsedResponse.chatResponse,
+          timestamp: new Date(),
+          sender: 'assistant'
+        };
+        chat.messages.push(aiMessage);
+        chat.lastMessage = parsedResponse.chatResponse;
+        await nextTick();
         
         // Update the sidebar with the AI prompt
         updateStory(chat.id, parsedResponse.aiPrompt, true);
         console.log('Updated sidebar with AI prompt');
       } else if (parsedResponse.chatResponse && !parsedResponse.aiPrompt) {
         // Only chat response found, no AI prompt
-        if (aiMessage) {
-          aiMessage.content = parsedResponse.chatResponse;
-          chat.lastMessage = parsedResponse.chatResponse;
-          await nextTick();
-        }
+        aiMessage = {
+          id: Date.now().toString(),
+          content: parsedResponse.chatResponse,
+          timestamp: new Date(),
+          sender: 'assistant'
+        };
+        chat.messages.push(aiMessage);
+        chat.lastMessage = parsedResponse.chatResponse;
+        await nextTick();
         console.log('Only chat response found, no AI prompt to update sidebar');
       } else if (!parsedResponse.chatResponse && parsedResponse.aiPrompt) {
         // Only AI prompt found, no chat response - this shouldn't happen but handle it
-        if (aiMessage) {
-          aiMessage.content = 'I\'ve updated your AI prompt. You can see the details in the sidebar.';
-          chat.lastMessage = aiMessage.content;
-          await nextTick();
-        }
+        aiMessage = {
+          id: Date.now().toString(),
+          content: 'I\'ve updated your AI prompt. You can see the details in the sidebar.',
+          timestamp: new Date(),
+          sender: 'assistant'
+        };
+        chat.messages.push(aiMessage);
+        chat.lastMessage = aiMessage.content;
+        await nextTick();
         
         // Update the sidebar with the AI prompt
         updateStory(chat.id, parsedResponse.aiPrompt, true);
@@ -536,9 +532,15 @@ export const useChatStore = defineStore('chat', () => {
       } else {
         // No structured format found - treat as regular chat response only
         console.warn('No structured dual response format found, treating as regular chat response');
-        if (aiMessage) {
-          aiMessage.content = streamedContent || 'I received your message but had no response to provide.';
-          chat.lastMessage = aiMessage.content;
+        if (streamedContent) {
+          aiMessage = {
+            id: Date.now().toString(),
+            content: streamedContent,
+            timestamp: new Date(),
+            sender: 'assistant'
+          };
+          chat.messages.push(aiMessage);
+          chat.lastMessage = streamedContent;
           await nextTick();
         }
         // Do NOT update sidebar when no structured format is found

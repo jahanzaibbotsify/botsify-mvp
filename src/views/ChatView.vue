@@ -102,7 +102,7 @@ function clearMessageHistory() {
       <div class="chat-actions">
         <!-- Clear History Dropdown -->
         <div class="dropdown">
-          <button class="icon-button" title="Clear History">
+          <button class="icon-button" title="Delete">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 6h18"></path>
               <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
@@ -110,14 +110,11 @@ function clearMessageHistory() {
             </svg>
           </button>
           <div class="dropdown-content">
-            <button @click="clearMessageHistory" class="dropdown-item">
-              Clear Message History
-            </button>
-            <button @click="clearVersionHistory" class="dropdown-item">
-              Clear Version History
-            </button>
             <button @click="clearAllChats" class="dropdown-item danger">
-              Clear All Conversations
+              Delete Conversations
+            </button>
+            <button @click="clearVersionHistory" class="dropdown-item danger">
+              Delete Version History
             </button>
           </div>
         </div>

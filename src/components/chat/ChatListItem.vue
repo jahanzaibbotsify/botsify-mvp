@@ -1,20 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
 import type { Chat } from '../../types';
-
-dayjs.extend(relativeTime);
 
 const props = defineProps<{
   chat: Chat;
   isActive: boolean;
 }>();
-
-// Format timestamp as relative time (e.g. "5m ago", "2h ago")
-const formattedTime = computed(() => {
-  return dayjs(props.chat.timestamp).fromNow();
-});
 
 // Truncate message if it's too long
 const truncatedMessage = computed(() => {
@@ -35,7 +26,6 @@ const truncatedMessage = computed(() => {
         <h3 class="title">{{ chat.title }}</h3>
       </div>
       <p class="preview">{{ truncatedMessage }}</p>
-      <span class="timestamp">{{ formattedTime }}</span>
     </div>
   </div>
 </template>
@@ -74,11 +64,6 @@ const truncatedMessage = computed(() => {
   font-size: 0.9375rem;
   font-weight: 500;
   color: var(--color-text-primary);
-}
-
-.timestamp {
-  font-size: 0.75rem;
-  color: var(--color-text-tertiary);
 }
 
 .preview {

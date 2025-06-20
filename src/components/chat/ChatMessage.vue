@@ -1,23 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue';
-import dayjs from 'dayjs';
 import type { Message } from '../../types';
 import { marked } from 'marked';
-import { useChatStore } from '../../stores/chatStore';
-import { useRoute } from 'vue-router';
 
 const props = defineProps<{
   message: Message;
 }>();
-
-const chatStore = useChatStore();
-const route = useRoute();
-const chatId = computed(() => route.params.id as string);
-
-// Format timestamp to display time (e.g. "14:30")
-const formattedTime = computed(() => {
-  return dayjs(props.message.timestamp).format('HH:mm');
-});
 
 // Parse markdown content
 const parsedContent = computed(() => {
@@ -54,30 +42,6 @@ const formatFileSize = (bytes: number) => {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
-
-function addToStory() {
-  if (!props.message.content) return;
-  
-  // Get current prompt content
-  const chat = chatStore.chats.find(c => c.id === chatId.value);
-  const currentPrompt = chat?.story?.content || '';
-  
-  // Add new content to prompt
-  let newPromptContent = currentPrompt;
-  if (currentPrompt) {
-    newPromptContent += '\n\n---\n\n'; // Add a separator between entries
-  }
-  
-  // Add timestamp and the new prompt content
-  const timestamp = new Date().toLocaleTimeString();
-  newPromptContent += `**[${timestamp}] Manual Addition**\n\n${props.message.content}`;
-  
-  // Update the prompt in the store (create new version for manual additions)
-  chatStore.updateStory(chatId.value, newPromptContent, true);
-  
-  // Force save to ensure persistence
-  chatStore.forceSave();
-}
 
 onMounted(() => {
   console.log('ChatMessage mounted:', {
@@ -123,24 +87,6 @@ onMounted(() => {
           </a>
         </div>
       </div>
-      
-      <div class="message-meta">
-        <div class="meta-left">
-          <span class="sender">{{ props.message.sender === 'user' ? 'You' : 'AI' }}</span>
-          <span class="time">{{ formattedTime }}</span>
-        </div>
-        <div v-if="props.message.sender === 'assistant'" class="meta-actions">
-          <button @click="addToStory" class="add-to-story-btn" title="Add to Prompt">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-          </button>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -163,7 +109,7 @@ onMounted(() => {
 }
 
 .message {
-  border-radius: var(--radius-lg);
+  border-radius: 24px;
   padding: var(--space-3) var(--space-4);
   position: relative;
   box-shadow: var(--shadow-sm);
@@ -178,22 +124,34 @@ onMounted(() => {
   color: white;
   box-shadow: 0 4px 12px rgba(0, 163, 255, 0.15);
   background-image: linear-gradient(to right, rgba(0, 163, 255, 0.9), var(--color-primary));
+  border-radius: 24px;
 }
 
 .ai-message .message {
-  background-color: var(--color-bg-tertiary);
-  border-color: rgba(0, 163, 255, 0.1);
-  box-shadow: 0 4px 12px rgba(0, 163, 255, 0.05);
-  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.03), transparent);
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ai-message .message {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .ai-message .message:hover {
-  border-color: rgba(0, 163, 255, 0.2);
-  box-shadow: 0 4px 15px rgba(0, 163, 255, 0.08);
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .ai-message .message:hover {
+  border-color: var(--color-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .content {
-  margin-bottom: var(--space-2);
+  margin-bottom: 0;
 }
 
 .empty-content {
@@ -241,47 +199,6 @@ onMounted(() => {
 .content :deep(.error-text) {
   color: var(--color-error);
   font-weight: 500;
-}
-
-.message-meta {
-  display: flex;
-  font-size: 0.75rem;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: var(--space-2);
-  opacity: 0.8;
-}
-
-.meta-left {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.meta-actions {
-  display: flex;
-  gap: var(--space-1);
-}
-
-.add-to-story-btn {
-  background: transparent;
-  border: none;
-  padding: var(--space-1);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  color: var(--color-text-secondary);
-  transition: all var(--transition-fast);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.add-to-story-btn:hover {
-  background-color: rgba(0, 163, 255, 0.1);
-  color: var(--color-primary);
-}
-
-.ai-message .message-meta {
-  color: var(--color-text-secondary);
 }
 
 .attachments {
