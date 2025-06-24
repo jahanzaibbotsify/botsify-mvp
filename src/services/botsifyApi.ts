@@ -490,15 +490,19 @@ export class BotsifyApiService {
     try {
       console.log('Sending MCP configuration JSON to API:', mcpData);
       
-      // Send the essential MCP configuration data with real API key
-      const simplifiedMCPData = {
-        serverName: mcpData.serverName,
-        apiKey: mcpData.apiKey || null, // Send real API key
-        availableTools: mcpData.features || [],
-        // prompt: mcpData.systemPrompt || this.generateDefaultMCPPrompt(mcpData)
+      // Create the new payload structure
+      const mcpPayload = {
+        type: "mcp",
+        server_label: mcpData.serverId || mcpData.serverName?.toLowerCase().replace(/\s+/g, '_'),
+        server_url: mcpData.connectionUrl || this.getDefaultServerUrl(mcpData.serverId),
+        headers: this.buildMCPHeaders(mcpData),
+        allowed_tools: this.mapFeaturesToTools(mcpData.features || []),
+        require_approval: "never"
       };
       
-      const response = await axios.post(`${BOTSIFY_BASE_URL}/mcp/configuration`, simplifiedMCPData, {
+      console.log('MCP payload structure:', mcpPayload);
+      
+      const response = await axios.post(`${BOTSIFY_BASE_URL}/mcp/configuration`, mcpPayload, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -524,26 +528,244 @@ export class BotsifyApiService {
   }
 
   /**
-   * Test method to demonstrate simplified MCP configuration sending
+   * Build headers object for MCP configuration based on authentication method
+   */
+  private buildMCPHeaders(mcpData: any): Record<string, string> {
+    const headers: Record<string, string> = {};
+    
+    if (mcpData.apiKey && mcpData.apiKey.trim()) {
+      const authMethod = mcpData.authMethod || 'api_key';
+      
+      switch (authMethod) {
+        case 'bearer_token':
+          headers['Authorization'] = `Bearer ${mcpData.apiKey.trim()}`;
+          break;
+        case 'api_key':
+          // For API key, we might use different header names based on the service
+          if (mcpData.serverId === 'stripe') {
+            headers['Authorization'] = `Bearer ${mcpData.apiKey.trim()}`;
+          } else if (mcpData.serverId === 'github') {
+            headers['Authorization'] = `token ${mcpData.apiKey.trim()}`;
+          } else if (mcpData.serverId === 'notion') {
+            headers['Authorization'] = `Bearer ${mcpData.apiKey.trim()}`;
+            headers['Notion-Version'] = '2022-06-28';
+          } else if (mcpData.serverId === 'slack') {
+            headers['Authorization'] = `Bearer ${mcpData.apiKey.trim()}`;
+          } else {
+            headers['X-API-Key'] = mcpData.apiKey.trim();
+          }
+          break;
+        case 'basic_auth':
+          // For basic auth, apiKey should contain "username:password"
+          const encoded = btoa(mcpData.apiKey.trim());
+          headers['Authorization'] = `Basic ${encoded}`;
+          break;
+        case 'oauth':
+          headers['Authorization'] = `Bearer ${mcpData.apiKey.trim()}`;
+          break;
+        default:
+          headers['X-API-Key'] = mcpData.apiKey.trim();
+      }
+    }
+    
+    return headers;
+  }
+
+  /**
+   * Map features to standardized tool names
+   */
+  private mapFeaturesToTools(features: string[]): string[] {
+    const toolMapping: Record<string, string[]> = {
+      // GitHub tools
+      'Repository access': ['list_repositories', 'get_repository', 'search_repositories'],
+      'Issue management': ['list_issues', 'create_issue', 'update_issue', 'close_issue'],
+      'Pull requests': ['list_pull_requests', 'create_pull_request', 'merge_pull_request'],
+      'Code search': ['search_code', 'get_file_content'],
+      
+      // Stripe tools
+      'Payment processing': ['create_payment_intent', 'capture_payment', 'list_payment_intents'],
+      'Subscription billing': ['create_subscription', 'list_subscriptions', 'update_subscription', 'cancel_subscription'],
+      'Invoice management': ['create_invoice', 'list_invoices', 'create_invoice_item', 'finalize_invoice'],
+      'Financial reporting': ['retrieve_balance', 'list_transactions'],
+      'Refund processing': ['create_refund', 'list_refunds'],
+      'Dispute handling': ['update_dispute', 'list_disputes'],
+      'Payment links': ['create_payment_link'],
+      'Coupon management': ['create_coupon', 'list_coupons'],
+      
+      // Customer management (shared across multiple services)
+      'Customer management': ['create_customer', 'list_customers', 'update_customer', 'get_customer'],
+      
+      // Product management (shared across e-commerce services)
+      'Product management': ['create_product', 'list_products', 'update_product', 'create_price', 'list_prices'],
+      
+      // Shopify-specific tools
+      'Order processing': ['list_orders', 'create_order', 'update_order'],
+      'Inventory management': ['list_inventory', 'update_inventory', 'list_catalog', 'create_catalog_item'],
+      
+      // Notion tools
+      'Database access': ['query_database', 'create_database_entry', 'update_database_entry'],
+      'Page management': ['get_page', 'create_page', 'update_page'],
+      'Content management': ['search_content', 'get_block_children'],
+      
+      // Slack tools
+      'Message sending': ['send_message', 'send_direct_message'],
+      'Channel management': ['list_channels', 'join_channel', 'create_channel'],
+      'User management': ['list_users', 'get_user_info'],
+      
+      // Google Drive tools
+      'File management': ['list_files', 'create_file', 'update_file', 'delete_file'],
+      'Folder management': ['list_folders', 'create_folder'],
+      'Sharing management': ['share_file', 'update_permissions'],
+      
+      // Database tools
+      'Query execution': ['execute_query', 'execute_select', 'execute_insert', 'execute_update'],
+      'Schema inspection': ['describe_table', 'list_tables', 'get_schema'],
+      'Data analysis': ['analyze_data', 'generate_report'],
+      
+      // Web search tools
+      'Web search': ['search_web', 'get_page_content', 'analyze_content'],
+      'Real-time data': ['get_current_data', 'fetch_news'],
+      
+      // PayPal-specific tools
+      'PayPal payments': ['create_payment', 'execute_payment', 'list_payments'],
+      'Refund management': ['create_refund', 'get_refund'],
+      'Transaction history': ['list_transactions', 'get_transaction'],
+      
+      // Square-specific tools
+      'POS transactions': ['create_payment', 'list_payments'],
+      'Square inventory': ['list_catalog', 'create_catalog_item', 'update_inventory'],
+      'Analytics': ['list_orders', 'get_payment_analytics'],
+      
+      // Plaid tools
+      'Account linking': ['create_link_token', 'exchange_public_token'],
+      'Transaction data': ['get_transactions', 'get_accounts'],
+      'Balance checks': ['get_balances'],
+      'Financial insights': ['get_categories', 'analyze_spending'],
+      
+      // Zapier tools
+      'Workflow automation': ['create_zap', 'trigger_zap', 'list_zaps'],
+      'App connections': ['list_apps', 'authenticate_app'],
+      'Data transformation': ['transform_data', 'map_fields']
+    };
+
+    const tools: string[] = [];
+    
+    features.forEach(feature => {
+      const mappedTools = toolMapping[feature];
+      if (mappedTools) {
+        tools.push(...mappedTools);
+      } else {
+        // If no mapping found, create a generic tool name
+        const toolName = feature.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+        tools.push(toolName);
+      }
+    });
+    
+    // Remove duplicates and return
+    return [...new Set(tools)];
+  }
+
+  /**
+   * Get default server URL for known services
+   */
+  private getDefaultServerUrl(serverId: string): string {
+    const defaultUrls: Record<string, string> = {
+      github: 'https://api.github.com',
+      stripe: 'https://mcp.stripe.com',
+      shopify: 'https://api.shopify.com',
+      notion: 'https://api.notion.com/v1',
+      slack: 'https://slack.com/api',
+      'google-drive': 'https://www.googleapis.com/drive/v3',
+      postgres: 'postgresql://localhost:5432',
+      zapier: 'https://zapier.com/api/v1',
+      paypal: 'https://api.paypal.com',
+      square: 'https://connect.squareup.com',
+      plaid: 'https://production.plaid.com',
+      'web-search': 'https://api.openweathermap.org/data/2.5', // Weather API as fallback
+      weather: 'https://api.openweathermap.org/data/2.5'
+    };
+    
+    return defaultUrls[serverId] || 'https://localhost:3000';
+  }
+
+  /**
+   * Test method to demonstrate the new MCP configuration payload structure
    */
   async testEnhancedMCPConfiguration(): Promise<BotsifyResponse> {
-    // Example MCP configuration data (as it would come from mcpStore)
+    // Example MCP configuration data for Stripe (as it would come from mcpStore)
     const testMCPData = {
-      serverId: 'github',
-      serverName: 'GitHub',
-      serverIcon: '🐙',
-      category: 'Development',
-      connectionUrl: 'https://api.github.com',
-      authMethod: 'api_key',
+      serverId: 'stripe',
+      serverName: 'Stripe',
+      serverIcon: '💳',
+      category: 'Payments',
+      connectionUrl: 'https://mcp.stripe.com',
+      authMethod: 'bearer_token',
       hasAuthentication: true,
-      apiKey: 'ghp_1234567890abcdef1234567890abcdef12345678', // Real API key now included
-      features: ['Repository access', 'Issue management', 'Pull requests', 'Code search'],
-      systemPrompt: 'You can access GitHub repositories, manage issues, and search code.',
+      apiKey: process.env.STRIPE_SECRET_KEY || 'sk_test_example', // Example Stripe secret key
+      features: [
+        'Payment processing',
+        'Customer management', 
+        'Subscription billing',
+        'Product management',
+        'Invoice management',
+        'Financial reporting',
+        'Refund processing',
+        'Dispute handling',
+        'Payment links',
+        'Coupon management'
+      ],
+      systemPrompt: 'You can access Stripe payments, manage customers, and handle billing.',
       connectedAt: new Date(),
       validationData: { serverStatus: 'reachable', responseTime: Date.now() }
     };
 
-    console.log('Testing MCP configuration with real API key...');
+    console.log('Testing MCP configuration with new payload structure...');
+    console.log('Expected payload format:');
+    
+    // Show what the new payload will look like
+    const expectedPayload = {
+      type: "mcp",
+      server_label: "stripe",
+      server_url: "https://mcp.stripe.com",
+      headers: {
+        Authorization: `Bearer ${testMCPData.apiKey}`
+      },
+      allowed_tools: [
+        "create_payment_intent",
+        "capture_payment", 
+        "list_payment_intents",
+        "create_customer",
+        "list_customers",
+        "update_customer",
+        "get_customer",
+        "create_subscription",
+        "list_subscriptions",
+        "update_subscription",
+        "cancel_subscription",
+        "create_product",
+        "list_products",
+        "update_product",
+        "create_price",
+        "list_prices",
+        "create_invoice",
+        "list_invoices",
+        "create_invoice_item",
+        "finalize_invoice",
+        "retrieve_balance",
+        "list_transactions",
+        "create_refund",
+        "list_refunds",
+        "update_dispute",
+        "list_disputes",
+        "create_payment_link",
+        "create_coupon",
+        "list_coupons"
+      ],
+      require_approval: "never"
+    };
+    
+    console.log('Expected Stripe payload:', JSON.stringify(expectedPayload, null, 2));
+    
     return await this.sendMCPConfigurationJSON(testMCPData);
   }
 
