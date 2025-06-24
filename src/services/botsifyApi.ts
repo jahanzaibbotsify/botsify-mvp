@@ -2,6 +2,7 @@ import axios from 'axios';
 import type { MCPConfigurationFile } from '../types';
 
 const BOTSIFY_BASE_URL = import.meta.env.VITE_BOTSIFY_BASE_URL || 'https://botsify.com/api';
+const BOTSIFY_AUTH_TOKEN = import.meta.env.VITE_BOTSIFY_AUTH_TOKEN || '';
 
 export interface BotsifyResponse {
   success: boolean;
@@ -22,6 +23,23 @@ export class BotsifyApiService {
   }
 
   /**
+   * Get Botsify authorization headers for API requests
+   */
+  private getBotsifyHeaders(additionalHeaders: Record<string, string> = {}): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...additionalHeaders
+    };
+
+    // Add Botsify authorization header if token is available
+    if (BOTSIFY_AUTH_TOKEN && BOTSIFY_AUTH_TOKEN.trim()) {
+      headers['botsify_authorization'] = `Bearer ${BOTSIFY_AUTH_TOKEN.trim()}`;
+    }
+
+    return headers;
+  }
+
+  /**
    * Test AI Agent with the latest generated story
    */
   async testAiAgent(storyContent: string): Promise<BotsifyResponse> {
@@ -33,9 +51,7 @@ export class BotsifyApiService {
         timestamp: new Date().toISOString(),
         action: 'test'
       }, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getBotsifyHeaders(),
         timeout: 30000 // 30 seconds timeout
       });
 
@@ -69,9 +85,7 @@ export class BotsifyApiService {
         timestamp: new Date().toISOString(),
         action: 'deploy'
       }, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getBotsifyHeaders(),
         timeout: 60000 // 60 seconds timeout for deployment
       });
 
@@ -105,9 +119,7 @@ export class BotsifyApiService {
         configuration,
         timestamp: new Date().toISOString()
       }, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getBotsifyHeaders(),
         timeout: 30000 // 30 seconds timeout
       });
 
@@ -137,6 +149,7 @@ export class BotsifyApiService {
       console.log('Getting MCP configuration for bot:', botId);
       
       const response = await axios.get(`${BOTSIFY_BASE_URL}/bots/${botId}/mcp-configuration`, {
+        headers: this.getBotsifyHeaders(),
         timeout: 30000 // 30 seconds timeout
       });
 
@@ -166,6 +179,7 @@ export class BotsifyApiService {
       console.log('Deleting MCP configuration for bot:', botId);
       
       const response = await axios.delete(`${BOTSIFY_BASE_URL}/bots/${botId}/mcp-configuration`, {
+        headers: this.getBotsifyHeaders(),
         timeout: 30000 // 30 seconds timeout
       });
 
@@ -503,9 +517,7 @@ export class BotsifyApiService {
       console.log('MCP payload structure:', mcpPayload);
       
       const response = await axios.post(`${BOTSIFY_BASE_URL}/mcp/configuration`, mcpPayload, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getBotsifyHeaders(),
         timeout: 30000 // 30 seconds timeout
       });
 
@@ -777,6 +789,7 @@ export class BotsifyApiService {
       console.log('Getting File Search data for bot assistant:', botAssistantId);
       
       const response = await axios.get(`${BOTSIFY_BASE_URL}/file-search/${botAssistantId}`, {
+        headers: this.getBotsifyHeaders(),
         timeout: 30000 // 30 seconds timeout
       });
 
@@ -812,9 +825,7 @@ export class BotsifyApiService {
       };
       
       const response = await axios.post(`${BOTSIFY_BASE_URL}/file-search/${botAssistantId}`, requestData, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getBotsifyHeaders(),
         timeout: 60000 // 60 seconds timeout for file operations
       });
 
@@ -844,6 +855,7 @@ export class BotsifyApiService {
       console.log('Deleting File Search with ID:', id);
       
       const response = await axios.delete(`${BOTSIFY_BASE_URL}/file-search/${id}`, {
+        headers: this.getBotsifyHeaders(),
         timeout: 30000 // 30 seconds timeout
       });
 
@@ -873,6 +885,7 @@ export class BotsifyApiService {
       console.log('Getting Web Search data for bot assistant:', botAssistantId);
       
       const response = await axios.get(`${BOTSIFY_BASE_URL}/web-search/${botAssistantId}`, {
+        headers: this.getBotsifyHeaders(),
         timeout: 30000 // 30 seconds timeout
       });
 
@@ -922,9 +935,7 @@ export class BotsifyApiService {
       }
       
       const response = await axios.post(`${BOTSIFY_BASE_URL}/web-search/${botAssistantId}`, requestData, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getBotsifyHeaders(),
         timeout: 30000 // 30 seconds timeout
       });
 
@@ -954,6 +965,7 @@ export class BotsifyApiService {
       console.log('Deleting Web Search with ID:', id);
       
       const response = await axios.delete(`${BOTSIFY_BASE_URL}/web-search/${id}`, {
+        headers: this.getBotsifyHeaders(),
         timeout: 30000 // 30 seconds timeout
       });
 
@@ -1022,10 +1034,13 @@ export class BotsifyApiService {
       formData.append('fileName', file.name);
       formData.append('purpose', 'chat_attachment'); // Specify this is for chat usage
       
+      // For FormData uploads, we need special header handling
+      const headers = this.getBotsifyHeaders();
+      // Remove Content-Type for FormData - axios will set it automatically with boundary
+      delete headers['Content-Type'];
+      
       const response = await axios.post(`${BOTSIFY_BASE_URL}/upload-file`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers,
         timeout: 120000 // 2 minutes timeout for large files
       });
 
