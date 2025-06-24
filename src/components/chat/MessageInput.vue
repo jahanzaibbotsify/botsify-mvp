@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useChatStore } from '../../stores/chatStore';
 import { useMCPStore } from '../../stores/mcpStore';
 import type { Attachment } from '../../types';
 import FileUpload from './FileUpload.vue';
 import MCPConnectionModal from './MCPConnectionModal.vue';
+import { botsifyApi } from '../../services/botsifyApi';
 
 const props = defineProps<{
   chatId: string;
@@ -17,8 +18,34 @@ const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const showFileUpload = ref(false);
 const attachments = ref<Attachment[]>([]);
 const showMCPModal = ref(false);
-const mcpBarExpanded = ref(false);
 const showMCPDropdown = ref(false);
+const showCustomServerOnOpen = ref(false);
+
+// New refs for File Search and Web Search
+const showFileSearchModal = ref(false);
+const showWebSearchModal = ref(false);
+const fileSearchResults = ref<any[]>([]);
+const fileSearchLoading = ref(false);
+const webSearchUrl = ref('');
+const webSearchLoading = ref(false);
+const webSearchResults = ref<any>(null);
+
+// New refs for file upload in File Search
+const selectedFile = ref<File | null>(null);
+const uploadProgress = ref(0);
+const isUploading = ref(false);
+
+// New refs for Web Search configuration
+const showWebSearchConfig = ref(false);
+const webSearchConfig = ref({
+  location: {
+    country: '',
+    region: '',
+    city: '',
+    timezone: ''
+  },
+  searchContextSize: 'medium'
+});
 
 const resizeTextarea = () => {
   if (!textareaRef.value) return;
@@ -26,10 +53,100 @@ const resizeTextarea = () => {
   textareaRef.value.style.height = `${textareaRef.value.scrollHeight}px`;
 };
 
-const sendMessage = () => {
+const sendMessage = async () => {
   if (!messageText.value.trim() && attachments.value.length === 0) return;
   
-  chatStore.addMessage(props.chatId, messageText.value.trim(), 'user', attachments.value);
+  let finalMessageText = messageText.value.trim();
+  let processedAttachments = [...attachments.value];
+  
+  // If there are attachments (images/videos), upload them first
+  if (attachments.value.length > 0) {
+    const mediaAttachments = attachments.value.filter(att => 
+      att.type.startsWith('image/') || att.type.startsWith('video/')
+    );
+    
+    if (mediaAttachments.length > 0) {
+      try {
+        console.log('Uploading media files for AI prompt...');
+        
+        // Show uploading status
+        const originalText = finalMessageText;
+        finalMessageText = finalMessageText + (finalMessageText ? '\n\n' : '') + '📤 Uploading files...';
+        
+        // Add temporary message to show upload progress
+        chatStore.addMessage(props.chatId, finalMessageText, 'user', processedAttachments);
+        
+        // Convert blob URLs to File objects for upload
+        const filesToUpload: File[] = [];
+        for (const attachment of mediaAttachments) {
+          try {
+            const response = await fetch(attachment.url);
+            const blob = await response.blob();
+            const file = new File([blob], attachment.name, { type: attachment.type });
+            filesToUpload.push(file);
+          } catch (error) {
+            console.error('Error converting attachment to file:', error);
+          }
+        }
+        
+        if (filesToUpload.length > 0) {
+          // Upload files to get URLs using new endpoint
+          const uploadResult = await botsifyApi.uploadMultipleFilesNew(filesToUpload);
+          
+          if (uploadResult.success && uploadResult.data.uploadedFiles.length > 0) {
+            // Update attachments with uploaded URLs
+            uploadResult.data.uploadedFiles.forEach((uploadedFile: any, index: number) => {
+              const attachmentIndex = processedAttachments.findIndex(att => 
+                att.name === uploadedFile.fileName && att.type === uploadedFile.fileType
+              );
+              
+              if (attachmentIndex !== -1) {
+                processedAttachments[attachmentIndex] = {
+                  ...processedAttachments[attachmentIndex],
+                  uploadedUrl: uploadedFile.url,
+                  fileId: uploadedFile.fileId,
+                  uploadedAt: uploadedFile.uploadedAt,
+                  isUploaded: true
+                };
+              }
+            });
+            
+            // Append file URLs to the AI prompt
+            const fileUrls = uploadResult.data.uploadedFiles.map((file: any) => {
+              const fileType = file.fileType.startsWith('image/') ? 'Image' : 
+                              file.fileType.startsWith('video/') ? 'Video' : 'Document';
+              return `${fileType}: ${file.url}`;
+            }).join('\n');
+            
+            finalMessageText = originalText + (originalText ? '\n\n' : '') + 
+              'Attached files:\n' + fileUrls;
+            
+            console.log('Files uploaded successfully, URLs added to prompt:', fileUrls);
+          } else {
+            console.error('File upload failed:', uploadResult.message);
+            finalMessageText = originalText + (originalText ? '\n\n' : '') + 
+              '❌ File upload failed: ' + uploadResult.message;
+          }
+        }
+        
+        // Remove the temporary uploading message
+        chatStore.removeLastMessage(props.chatId);
+        
+      } catch (error: any) {
+        console.error('Error uploading files:', error);
+        finalMessageText = messageText.value.trim() + (messageText.value.trim() ? '\n\n' : '') + 
+          '❌ File upload error: ' + error.message;
+        
+        // Remove the temporary uploading message
+        chatStore.removeLastMessage(props.chatId);
+      }
+    }
+  }
+  
+  // Send the final message with uploaded file URLs
+  chatStore.addMessage(props.chatId, finalMessageText, 'user', processedAttachments);
+  
+  // Clear the input
   messageText.value = '';
   attachments.value = [];
   showFileUpload.value = false;
@@ -66,10 +183,6 @@ const removeAttachment = (id: string) => {
   attachments.value = attachments.value.filter(a => a.id !== id);
 };
 
-const toggleMCPBar = () => {
-  mcpBarExpanded.value = !mcpBarExpanded.value;
-};
-
 const toggleMCPDropdown = () => {
   showMCPDropdown.value = !showMCPDropdown.value;
 };
@@ -78,17 +191,152 @@ const closeMCPDropdown = () => {
   showMCPDropdown.value = false;
 };
 
-const openMCPModalFromDropdown = () => {
+// New methods for dropdown actions
+const openMCPServers = () => {
   showMCPModal.value = true;
   closeMCPDropdown();
 };
 
-const openMCPModal = () => {
+const openFileSearch = () => {
+  showFileSearchModal.value = true;
+  closeMCPDropdown();
+};
+
+const openWebSearch = () => {
+  showWebSearchModal.value = true;
+  closeMCPDropdown();
+};
+
+const openCustomServerDialog = () => {
+  showCustomServerOnOpen.value = true;
   showMCPModal.value = true;
+  closeMCPDropdown();
 };
 
 const closeMCPModal = () => {
   showMCPModal.value = false;
+  showCustomServerOnOpen.value = false;
+};
+
+const closeFileSearchModal = () => {
+  showFileSearchModal.value = false;
+  fileSearchResults.value = [];
+  selectedFile.value = null;
+  uploadProgress.value = 0;
+  isUploading.value = false;
+};
+
+const closeWebSearchModal = () => {
+  showWebSearchModal.value = false;
+  webSearchUrl.value = '';
+  webSearchResults.value = null;
+  showWebSearchConfig.value = false;
+};
+
+// File Search functionality with upload
+const handleFileSelect = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files && target.files.length > 0) {
+    selectedFile.value = target.files[0];
+  }
+};
+
+const removeSelectedFile = () => {
+  selectedFile.value = null;
+  uploadProgress.value = 0;
+};
+
+const connectFileSearch = async () => {
+  // File is now mandatory, so we only need to handle file upload
+  if (!selectedFile.value) {
+    alert('Please select a file to upload first');
+    return;
+  }
+
+  try {
+    fileSearchLoading.value = true;
+    console.log('Uploading file and creating File Search for bot assistant:', props.chatId);
+    console.log('Selected file:', selectedFile.value.name);
+    isUploading.value = true;
+    
+    // First upload the file using the new upload endpoint
+    const uploadResult = await botsifyApi.uploadFileNew(selectedFile.value);
+    
+    if (!uploadResult.success) {
+      throw new Error(uploadResult.message || 'File upload failed');
+    }
+    
+    uploadProgress.value = 50;
+    
+    // Then create file search with the uploaded file data
+    const fileData = {
+      fileUrl: uploadResult.data.url,
+      fileName: uploadResult.data.fileName,
+      fileType: uploadResult.data.fileType,
+      fileId: uploadResult.data.fileId
+    };
+    
+    const response = await botsifyApi.createFileSearch(props.chatId, fileData);
+    
+    uploadProgress.value = 100;
+    isUploading.value = false;
+    
+    if (response.success) {
+      fileSearchResults.value = response.data?.files || [];
+      console.log('File Search created successfully:', response.data);
+      
+      // Add success message to chat
+      const successMessage = `✅ File "${selectedFile.value.name}" uploaded and File Search connected successfully!`;
+      await chatStore.addMessage(props.chatId, successMessage, 'assistant');
+    } else {
+      console.error('Failed to create File Search:', response.message);
+      alert('Failed to create File Search: ' + response.message);
+    }
+  } catch (error: any) {
+    console.error('Error creating File Search:', error);
+    alert('Error creating File Search: ' + error.message);
+  } finally {
+    fileSearchLoading.value = false;
+    isUploading.value = false;
+  }
+};
+
+// Web Search functionality
+const connectWebSearch = async () => {
+  if (!webSearchUrl.value.trim()) {
+    alert('Please enter a website URL');
+    return;
+  }
+
+  try {
+    webSearchLoading.value = true;
+    console.log('Creating Web Search for bot assistant:', props.chatId);
+    console.log('Web Search URL:', webSearchUrl.value);
+    console.log('Web Search configuration:', webSearchConfig.value);
+    
+    const response = await botsifyApi.createWebSearch(props.chatId, webSearchUrl.value.trim(), webSearchConfig.value);
+    
+    if (response.success) {
+      webSearchResults.value = response.data;
+      console.log('Web Search created successfully:', response.data);
+      
+      // Add success message to chat
+      const successMessage = `✅ Web Search connected successfully for: ${webSearchUrl.value}`;
+      await chatStore.addMessage(props.chatId, successMessage, 'assistant');
+    } else {
+      console.error('Failed to create Web Search:', response.message);
+      alert('Failed to create Web Search: ' + response.message);
+    }
+  } catch (error: any) {
+    console.error('Error creating Web Search:', error);
+    alert('Error creating Web Search: ' + error.message);
+  } finally {
+    webSearchLoading.value = false;
+  }
+};
+
+const toggleWebSearchConfig = () => {
+  showWebSearchConfig.value = !showWebSearchConfig.value;
 };
 
 const handleMCPConnection = (serverId: string) => {
@@ -107,6 +355,103 @@ const handleMCPConnection = (serverId: string) => {
   }
   closeMCPModal();
 };
+
+// Load existing File Search data for this bot assistant
+const loadFileSearchData = async () => {
+  try {
+    console.log('Loading existing File Search data for bot assistant:', props.chatId);
+    const response = await botsifyApi.getFileSearch(props.chatId);
+    
+    if (response.success) {
+      fileSearchResults.value = response.data?.files || [];
+      console.log('File Search data loaded:', fileSearchResults.value);
+    } else {
+      console.log('No existing File Search data found or failed to load:', response.message);
+    }
+  } catch (error: any) {
+    console.error('Error loading File Search data:', error);
+  }
+};
+
+// Load existing Web Search data for this bot assistant
+const loadWebSearchData = async () => {
+  try {
+    console.log('Loading existing Web Search data for bot assistant:', props.chatId);
+    const response = await botsifyApi.getWebSearch(props.chatId);
+    
+    if (response.success) {
+      webSearchResults.value = response.data;
+      console.log('Web Search data loaded:', webSearchResults.value);
+    } else {
+      console.log('No existing Web Search data found or failed to load:', response.message);
+    }
+  } catch (error: any) {
+    console.error('Error loading Web Search data:', error);
+  }
+};
+
+// Delete File Search entry
+const deleteFileSearchEntry = async (fileSearchId: string) => {
+  if (!confirm('Are you sure you want to delete this File Search entry?')) {
+    return;
+  }
+
+  try {
+    console.log('Deleting File Search entry:', fileSearchId);
+    const response = await botsifyApi.deleteFileSearch(fileSearchId);
+    
+    if (response.success) {
+      // Remove from local results
+      fileSearchResults.value = fileSearchResults.value.filter(result => result.id !== fileSearchId);
+      console.log('File Search entry deleted successfully');
+      
+      // Add success message to chat
+      const successMessage = `✅ File Search entry deleted successfully`;
+      await chatStore.addMessage(props.chatId, successMessage, 'assistant');
+    } else {
+      console.error('Failed to delete File Search entry:', response.message);
+      alert('Failed to delete File Search entry: ' + response.message);
+    }
+  } catch (error: any) {
+    console.error('Error deleting File Search entry:', error);
+    alert('Error deleting File Search entry: ' + error.message);
+  }
+};
+
+// Delete Web Search entry
+const deleteWebSearchEntry = async (webSearchId: string) => {
+  if (!confirm('Are you sure you want to delete this Web Search entry?')) {
+    return;
+  }
+
+  try {
+    console.log('Deleting Web Search entry:', webSearchId);
+    const response = await botsifyApi.deleteWebSearch(webSearchId);
+    
+    if (response.success) {
+      // Clear web search results if this was the active one
+      if (webSearchResults.value && webSearchResults.value.id === webSearchId) {
+        webSearchResults.value = null;
+      }
+      console.log('Web Search entry deleted successfully');
+      
+      // Add success message to chat
+      const successMessage = `✅ Web Search entry deleted successfully`;
+      await chatStore.addMessage(props.chatId, successMessage, 'assistant');
+    } else {
+      console.error('Failed to delete Web Search entry:', response.message);
+      alert('Failed to delete Web Search entry: ' + response.message);
+    }
+  } catch (error: any) {
+    console.error('Error deleting Web Search entry:', error);
+    alert('Error deleting Web Search entry: ' + error.message);
+  }
+};
+
+onMounted(() => {
+  loadFileSearchData();
+  loadWebSearchData();
+});
 </script>
 
 <template>
@@ -132,6 +477,9 @@ const handleMCPConnection = (serverId: string) => {
         <div class="attachment-info">
           <span class="attachment-name">{{ file.name }}</span>
           <span class="attachment-size">{{ (file.size / 1024).toFixed(1) }}KB</span>
+          <span v-if="file.isUploaded" class="attachment-status uploaded">✅ Ready for AI</span>
+          <span v-else-if="file.type.startsWith('image/') || file.type.startsWith('video/')" class="attachment-status pending">📤 Will upload</span>
+          <span v-else class="attachment-status unsupported">⚠️ Not supported</span>
         </div>
         <button class="remove-attachment" @click.stop="removeAttachment(file.id)">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -161,12 +509,12 @@ const handleMCPConnection = (serverId: string) => {
             </svg>
           </button>
           
-          <!-- MCP Icon moved here -->
+          <!-- Chain Icon with New Dropdown -->
           <div class="mcp-dropdown-container" @click.stop>
             <button 
               class="icon-button mcp-icon-button" 
               @click="toggleMCPDropdown" 
-              :title="mcpStore.connectedServers.length > 0 ? `${mcpStore.connectedServers.length} MCP server${mcpStore.connectedServers.length === 1 ? '' : 's'} connected` : 'Connect MCP Servers'"
+              title="Connect to external services"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
@@ -178,10 +526,10 @@ const handleMCPConnection = (serverId: string) => {
               </span>
             </button>
 
-            <!-- Dropdown Menu -->
+            <!-- New Dropdown Menu with 3 Options -->
             <div v-if="showMCPDropdown" class="mcp-dropdown" @click.stop>
               <div class="dropdown-header">
-                <h3>MCP Servers</h3>
+                <h3>Tools</h3>
                 <button class="dropdown-close" @click="closeMCPDropdown">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M18 6L6 18"></path>
@@ -190,42 +538,71 @@ const handleMCPConnection = (serverId: string) => {
                 </button>
               </div>
 
-              <!-- Connected Servers List -->
-              <div v-if="mcpStore.connectedServers.length > 0" class="connected-servers-list">
-                <div class="section-title">Connected Servers</div>
-                <div 
-                  v-for="config in mcpStore.connectedServers" 
-                  :key="config.server.id"
-                  class="dropdown-server-item"
-                >
-                  <div class="server-icon-dropdown">{{ config.server.icon }}</div>
-                  <div class="server-details">
-                    <div class="server-name">{{ config.server.name }}</div>
-                    <div class="server-description">{{ config.server.description }}</div>
+              <!-- Three Service Options -->
+              <div class="service-options">
+                <!-- MCP Servers Option -->
+                <div class="service-option" @click="openMCPServers">
+                  <div class="service-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                    </svg>
                   </div>
-                  <div class="server-status-dot"></div>
+                  <div class="service-info">
+                    <div class="service-name">MCP Servers</div>
+                    <div class="service-description">Connect to external APIs and services</div>
+                    <div v-if="mcpStore.connectedServers.length > 0" class="service-status">
+                      {{ mcpStore.connectedServers.length }} connected
+                    </div>
+                  </div>
+                  <div class="service-arrow">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </div>
                 </div>
-              </div>
 
-              <!-- No Connections Message -->
-              <div v-else class="no-connections-message">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                </svg>
-                <p>No MCP servers connected</p>
-                <small>Connect to external services to enhance AI capabilities</small>
-              </div>
+                <!-- File Search Option -->
+                <div class="service-option" @click="openFileSearch">
+                  <div class="service-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                      <polyline points="14 2 14 9 21 9"></polyline>
+                      <circle cx="9" cy="12" r="1"></circle>
+                      <path d="M8.5 13.5L10.5 15.5"></path>
+                    </svg>
+                  </div>
+                  <div class="service-info">
+                    <div class="service-name">File Search</div>
+                    <div class="service-description">Search and access your files</div>
+                  </div>
+                  <div class="service-arrow">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </div>
+                </div>
 
-              <!-- Connect Button -->
-              <div class="dropdown-footer">
-                <button class="dropdown-connect-button" @click="openMCPModalFromDropdown">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                  Connect MCP Servers
-                </button>
+                <!-- Web Search Option -->
+                <div class="service-option" @click="openWebSearch">
+                  <div class="service-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="2" y1="12" x2="22" y2="12"></line>
+                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    </svg>
+                  </div>
+                  <div class="service-info">
+                    <div class="service-name">Web Search</div>
+                    <div class="service-description">Connect to websites and web content</div>
+                  </div>
+                  <div class="service-arrow">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
@@ -247,9 +624,216 @@ const handleMCPConnection = (serverId: string) => {
     <!-- MCP Connection Modal -->
     <MCPConnectionModal 
       :isOpen="showMCPModal" 
+      :showCustomServer="showCustomServerOnOpen"
       @close="closeMCPModal"
       @connected="handleMCPConnection"
     />
+
+    <!-- File Search Modal -->
+    <div v-if="showFileSearchModal" class="modal-overlay" @click="closeFileSearchModal">
+      <div class="modal-content file-search-modal" @click.stop>
+        <div class="modal-header">
+          <h2>File Search</h2>
+          <button class="modal-close" @click="closeFileSearchModal">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6L6 18"></path>
+              <path d="M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="file-search-content">
+            <div class="search-description">
+              <p>Upload a file and connect to the File Search API to access and search through your files.</p>
+            </div>
+            
+            <!-- File Upload Section -->
+            <div class="file-upload-section">
+              <h3>Upload File <span class="required">(Required)</span></h3>
+              <div class="file-upload-area" :class="{ 'has-file': selectedFile }">
+                <input 
+                  type="file" 
+                  id="file-search-upload" 
+                  @change="handleFileSelect"
+                  class="file-input"
+                  accept="*/*"
+                />
+                
+                <div v-if="!selectedFile" class="upload-placeholder">
+                  <label for="file-search-upload" class="upload-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span>Choose a file to upload</span>
+                    <small>File selection is required to connect</small>
+                  </label>
+                </div>
+                
+                <div v-if="selectedFile" class="selected-file">
+                  <div class="file-preview">
+                    <div class="file-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                        <polyline points="14 2 14 9 21 9"></polyline>
+                      </svg>
+                    </div>
+                    <div class="file-details">
+                      <div class="file-name">{{ selectedFile.name }}</div>
+                      <div class="file-size">{{ (selectedFile.size / 1024).toFixed(1) }}KB</div>
+                    </div>
+                    <button class="remove-file" @click="removeSelectedFile" type="button">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6L6 18"></path>
+                        <path d="M6 6l12 12"></path>
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <!-- Upload Progress -->
+                  <div v-if="isUploading" class="upload-progress">
+                    <div class="progress-bar">
+                      <div class="progress-fill" :style="{ width: uploadProgress + '%' }"></div>
+                    </div>
+                    <div class="progress-text">{{ uploadProgress }}% uploaded</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="search-actions">
+              <button 
+                class="connect-button primary" 
+                @click="connectFileSearch"
+                :disabled="fileSearchLoading || isUploading || !selectedFile"
+              >
+                <span v-if="fileSearchLoading || isUploading" class="loading-spinner"></span>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+                {{ 
+                  isUploading ? 'Uploading...' : 
+                  fileSearchLoading ? 'Connecting...' : 
+                  !selectedFile ? 'Select a file to connect' : 'Upload & Connect to File Search API' 
+                }}
+              </button>
+            </div>
+
+            <!-- File Search Results -->
+            <div v-if="fileSearchResults.length > 0" class="search-results">
+              <h3>Connected Files</h3>
+              <div class="file-list">
+                <div v-for="file in fileSearchResults" :key="file.id" class="file-item">
+                  <div class="file-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                      <polyline points="14 2 14 9 21 9"></polyline>
+                    </svg>
+                  </div>
+                  <div class="file-info">
+                    <div class="file-name">{{ file.name || file.filename || 'Unknown File' }}</div>
+                    <div class="file-meta">{{ file.size || file.type || 'File' }}</div>
+                  </div>
+                  <button 
+                    class="delete-button" 
+                    @click="deleteFileSearchEntry(file.id)"
+                    title="Delete this file search entry"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Web Search Modal -->
+    <div v-if="showWebSearchModal" class="modal-overlay" @click="closeWebSearchModal">
+      <div class="modal-content web-search-modal" @click.stop>
+        <div class="modal-header">
+          <h2>Web Search</h2>
+          <button class="modal-close" @click="closeWebSearchModal">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6L6 18"></path>
+              <path d="M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="web-search-content">
+            <div class="search-description">
+              <p>Enter a website URL to connect and search web content.</p>
+            </div>
+            
+            <div class="url-input-section">
+              <label for="website-url">Website URL</label>
+              <div class="input-group">
+                <input 
+                  id="website-url"
+                  v-model="webSearchUrl" 
+                  type="url" 
+                  placeholder="https://example.com"
+                  class="url-input"
+                  @keydown.enter="connectWebSearch"
+                />
+                <button 
+                  class="connect-button primary" 
+                  @click="connectWebSearch"
+                  :disabled="webSearchLoading || !webSearchUrl.trim()"
+                >
+                  <span v-if="webSearchLoading" class="loading-spinner"></span>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                  </svg>
+                  {{ webSearchLoading ? 'Connecting...' : 'Connect' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Web Search Results -->
+            <div v-if="webSearchResults" class="search-results">
+              <h3>Website Connected</h3>
+              <div class="website-info">
+                <div class="website-item">
+                  <div class="website-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="2" y1="12" x2="22" y2="12"></line>
+                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    </svg>
+                  </div>
+                  <div class="website-details">
+                    <div class="website-url">{{ webSearchResults.url || webSearchUrl }}</div>
+                    <div class="website-title">{{ webSearchResults.title || 'Website' }}</div>
+                    <div class="website-status">{{ webSearchResults.status || 'Connected' }}</div>
+                  </div>
+                  <button 
+                    class="delete-button" 
+                    @click="deleteWebSearchEntry(webSearchResults.id)"
+                    title="Delete this web search entry"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -415,26 +999,18 @@ const handleMCPConnection = (serverId: string) => {
   background: var(--color-bg-tertiary);
 }
 
-.connected-servers-list {
+.service-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   padding: var(--space-2);
 }
 
-.section-title {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: var(--space-2);
-  padding: 0 var(--space-1);
-}
-
-.dropdown-server-item {
+.service-option {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2);
-  margin-bottom: var(--space-1);
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -442,18 +1018,14 @@ const handleMCPConnection = (serverId: string) => {
   cursor: pointer;
 }
 
-.dropdown-server-item:hover {
+.service-option:hover {
   border-color: rgba(0, 163, 255, 0.3);
   background: rgba(0, 163, 255, 0.05);
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 163, 255, 0.1);
 }
 
-.dropdown-server-item:last-child {
-  margin-bottom: 0;
-}
-
-.server-icon-dropdown {
+.service-icon {
   font-size: 1.25rem;
   width: 32px;
   height: 32px;
@@ -465,12 +1037,12 @@ const handleMCPConnection = (serverId: string) => {
   flex-shrink: 0;
 }
 
-.server-details {
+.service-info {
   flex: 1;
   min-width: 0;
 }
 
-.server-name {
+.service-name {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--color-text-primary);
@@ -480,7 +1052,7 @@ const handleMCPConnection = (serverId: string) => {
   text-overflow: ellipsis;
 }
 
-.server-description {
+.service-description {
   font-size: 0.75rem;
   color: var(--color-text-secondary);
   line-height: 1.3;
@@ -489,67 +1061,15 @@ const handleMCPConnection = (serverId: string) => {
   text-overflow: ellipsis;
 }
 
-.server-status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-success);
-  flex-shrink: 0;
-}
-
-.no-connections-message {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-4);
-  text-align: center;
-  color: var(--color-text-secondary);
-}
-
-.no-connections-message svg {
-  margin-bottom: var(--space-2);
-  opacity: 0.5;
-}
-
-.no-connections-message p {
-  margin: 0 0 var(--space-1);
-  font-weight: 500;
-  color: var(--color-text-primary);
-}
-
-.no-connections-message small {
+.service-status {
   font-size: 0.75rem;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   line-height: 1.3;
 }
 
-.dropdown-footer {
-  padding: var(--space-3);
-  border-top: 1px solid var(--color-border);
-}
-
-.dropdown-connect-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  width: 100%;
-}
-
-.dropdown-connect-button:hover {
-  background: var(--color-primary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 163, 255, 0.2);
+.service-arrow {
+  font-size: 1rem;
+  color: var(--color-text-secondary);
 }
 
 .dropdown-backdrop {
@@ -635,6 +1155,25 @@ const handleMCPConnection = (serverId: string) => {
   color: var(--color-text-secondary);
 }
 
+.attachment-status {
+  display: block;
+  font-size: 0.7rem;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.attachment-status.uploaded {
+  color: var(--color-success);
+}
+
+.attachment-status.pending {
+  color: var(--color-primary);
+}
+
+.attachment-status.unsupported {
+  color: var(--color-warning);
+}
+
 .remove-attachment {
   padding: var(--space-1);
   color: var(--color-text-tertiary);
@@ -678,6 +1217,114 @@ const handleMCPConnection = (serverId: string) => {
   .attachment-item {
     min-width: 100%;
   }
+
+  .modal-content {
+    width: 95%;
+    max-width: none;
+    margin: var(--space-2);
+    max-height: calc(100vh - 32px);
+  }
+
+  .modal-header {
+    padding: var(--space-3);
+  }
+
+  .modal-body {
+    padding: var(--space-3);
+  }
+
+  .input-group {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .connect-button {
+    min-width: 100%;
+  }
+
+  .service-option {
+    padding: var(--space-3);
+  }
+
+  .service-name {
+    font-size: 1rem;
+  }
+
+  .service-description {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  /* File Upload Mobile Styles */
+  .file-upload-section h3 {
+    font-size: 0.875rem;
+  }
+
+  .file-upload-area {
+    padding: var(--space-3);
+  }
+
+  .upload-label span {
+    font-size: 0.8rem;
+  }
+
+  .upload-label small {
+    font-size: 0.7rem;
+  }
+
+  .file-preview {
+    padding: var(--space-2);
+    gap: var(--space-2);
+  }
+
+  .file-details .file-name {
+    font-size: 0.8rem;
+  }
+
+  .progress-text {
+    font-size: 0.7rem;
+  }
+
+  /* Web Search Configuration Mobile Styles */
+  .config-header {
+    padding: var(--space-2);
+  }
+
+  .config-header h3 {
+    font-size: 0.875rem;
+  }
+
+  .config-content {
+    padding: var(--space-2);
+  }
+
+  .location-fields {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .field-group label {
+    font-size: 0.7rem;
+  }
+
+  .config-input,
+  .config-select {
+    padding: var(--space-2);
+    font-size: 0.8rem;
+  }
+
+  .radio-option {
+    padding: var(--space-2);
+  }
+
+  .radio-label strong {
+    font-size: 0.8rem;
+  }
+
+  .radio-label small {
+    font-size: 0.7rem;
+  }
 }
 
 .attachment-button, .send-button {
@@ -717,5 +1364,621 @@ const handleMCPConnection = (serverId: string) => {
 [data-theme="dark"] .send-button:disabled {
   color: var(--color-text-tertiary);
   background-color: var(--color-bg-tertiary);
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  background-image: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.6) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+}
+
+.modal-content {
+  width: 90%;
+  max-width: 500px;
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-border);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(to right, rgba(0, 163, 255, 0.05), transparent);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  padding: var(--space-1);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-normal);
+}
+
+.modal-close:hover {
+  color: var(--color-text-secondary);
+  background: var(--color-bg-tertiary);
+}
+
+.modal-body {
+  padding: var(--space-4);
+}
+
+/* File Search Modal Styles */
+.file-search-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.search-description {
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.search-description p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.search-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.connect-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  min-width: 200px;
+  justify-content: center;
+}
+
+.connect-button:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 163, 255, 0.3);
+}
+
+.connect-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.search-results {
+  margin-top: var(--space-4);
+}
+
+.search-results h3 {
+  margin: 0 0 var(--space-3);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-normal);
+}
+
+.file-item:hover {
+  border-color: rgba(0, 163, 255, 0.3);
+  background: rgba(0, 163, 255, 0.05);
+}
+
+.file-item:hover .delete-button {
+  opacity: 1;
+}
+
+.file-icon {
+  color: var(--color-text-secondary);
+}
+
+.file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-name {
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: 2px;
+}
+
+.file-meta {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+/* File Upload Styles */
+.file-upload-section {
+  margin-bottom: var(--space-4);
+}
+
+.file-upload-section h3 {
+  margin: 0 0 var(--space-3);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.file-upload-area {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  transition: all var(--transition-normal);
+  background: var(--color-bg-secondary);
+}
+
+.file-upload-area:hover {
+  border-color: rgba(0, 163, 255, 0.3);
+  background: rgba(0, 163, 255, 0.02);
+}
+
+.file-upload-area.has-file {
+  border-color: var(--color-success);
+  background: rgba(16, 185, 129, 0.02);
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-placeholder {
+  text-align: center;
+}
+
+.upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: color var(--transition-normal);
+}
+
+.upload-label:hover {
+  color: var(--color-text-primary);
+}
+
+.upload-label span {
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.upload-label small {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.selected-file {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.file-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.file-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-details .file-name {
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: 2px;
+  word-break: break-all;
+}
+
+.file-details .file-size {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.remove-file {
+  background: transparent;
+  border: none;
+  padding: var(--space-1);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-normal);
+}
+
+.remove-file:hover {
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.upload-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--color-success);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-normal);
+}
+
+.progress-text {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* Web Search Modal Styles */
+.web-search-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.url-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.url-input-section label {
+  font-weight: 500;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+}
+
+.input-group {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.url-input {
+  flex: 1;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  transition: all var(--transition-normal);
+}
+
+.url-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.1);
+}
+
+.url-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.website-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.website-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-normal);
+}
+
+.website-item:hover {
+  border-color: rgba(0, 163, 255, 0.3);
+  background: rgba(0, 163, 255, 0.05);
+}
+
+.website-item:hover .delete-button {
+  opacity: 1;
+}
+
+.website-icon {
+  color: var(--color-text-secondary);
+}
+
+.website-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.website-url {
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: 2px;
+  word-break: break-all;
+}
+
+.website-title {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 2px;
+}
+
+.website-status {
+  font-size: 0.75rem;
+  color: var(--color-success);
+  font-weight: 500;
+}
+
+/* Configuration Section Styles */
+.config-section {
+  margin-top: var(--space-4);
+}
+
+.config-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(to right, rgba(0, 163, 255, 0.05), transparent);
+  cursor: pointer;
+}
+
+.config-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.config-toggle {
+  background: transparent;
+  border: none;
+  padding: var(--space-1);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-normal);
+}
+
+.config-toggle:hover {
+  color: var(--color-text-secondary);
+  background: var(--color-bg-tertiary);
+}
+
+.config-toggle svg {
+  transition: transform var(--transition-normal);
+}
+
+.config-toggle svg.rotated {
+  transform: rotate(180deg);
+}
+
+.config-content {
+  padding: var(--space-4);
+  background: var(--color-bg-secondary);
+}
+
+.config-group {
+  margin-bottom: var(--space-4);
+}
+
+.config-group:last-child {
+  margin-bottom: 0;
+}
+
+.config-group h4 {
+  margin: 0 0 var(--space-3);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+}
+
+.required {
+  font-weight: 400;
+  color: var(--color-error);
+  font-size: 0.75rem;
+}
+
+.location-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.field-group label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.config-input,
+.config-select {
+  width: 100%;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  transition: all var(--transition-normal);
+}
+
+.config-input:focus,
+.config-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.1);
+}
+
+.config-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.context-size-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.radio-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-primary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.radio-option:hover {
+  border-color: rgba(0, 163, 255, 0.3);
+  background: rgba(0, 163, 255, 0.05);
+}
+
+.radio-option input[type="radio"] {
+  margin: 0;
+  margin-top: 2px;
+}
+
+.radio-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.radio-label strong {
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+}
+
+.radio-label small {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.radio-option input[type="radio"]:checked + .radio-label {
+  color: var(--color-primary);
+}
+
+.radio-label strong {
+  color: var(--color-text-primary);
+}
+
+.radio-label small {
+  color: var(--color-text-secondary);
+}
+
+/* Delete button styles */
+.delete-button {
+  background: transparent;
+  border: none;
+  padding: var(--space-2);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-normal);
+  opacity: 0.7;
+}
+
+.delete-button:hover {
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.1);
+  opacity: 1;
+}
+
+.delete-button:active {
+  transform: scale(0.95);
 }
 </style>

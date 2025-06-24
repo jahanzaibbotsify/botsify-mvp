@@ -27,10 +27,25 @@ const handleFileSelect = (event: Event) => {
 const handleFiles = async (files: File[]) => {
   const attachments: Attachment[] = [];
   
+  // Define supported types for AI prompts (images and videos)
+  const supportedTypes = [
+    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+    'video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm'
+  ];
+  
   for (const file of files) {
-    // Validate file size (20MB limit)
-    if (file.size > 20 * 1024 * 1024) {
-      alert(`File ${file.name} is too large. Maximum size is 20MB.`);
+    // Validate file type
+    if (!supportedTypes.includes(file.type)) {
+      alert(`File ${file.name} is not supported. Please upload images (JPEG, PNG, GIF, WebP, SVG) or videos (MP4, MPEG, MOV, AVI, WebM).`);
+      continue;
+    }
+
+    // Validate file size (50MB limit for videos, 20MB for images)
+    const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 20 * 1024 * 1024;
+    const maxSizeMB = maxSize / (1024 * 1024);
+    
+    if (file.size > maxSize) {
+      alert(`File ${file.name} is too large. Maximum size is ${maxSizeMB}MB for ${file.type.startsWith('video/') ? 'videos' : 'images'}.`);
       continue;
     }
 
@@ -46,7 +61,8 @@ const handleFiles = async (files: File[]) => {
       type: file.type,
       size: file.size,
       url: URL.createObjectURL(file),
-      preview
+      preview,
+      isUploaded: false
     });
   }
 
@@ -82,6 +98,7 @@ const openFileDialog = () => {
       ref="fileInputRef"
       type="file"
       multiple
+      accept="image/*,video/*"
       class="file-input"
       @change="handleFileSelect"
     />
@@ -95,8 +112,8 @@ const openFileDialog = () => {
         </svg>
       </div>
       <div class="upload-text">
-        <span class="primary-text">Choose files or drag here</span>
-        <span class="secondary-text">Up to 20MB per file</span>
+        <span class="primary-text">Choose images/videos or drag here</span>
+        <span class="secondary-text">For AI prompt analysis • Max 20MB images, 50MB videos</span>
       </div>
     </div>
   </div>

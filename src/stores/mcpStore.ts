@@ -125,6 +125,78 @@ export const useMCPStore = defineStore('mcp', () => {
       authMethod: 'basic_auth',
       authLabel: 'SMTP Username/Password',
       features: ['Email sending', 'Template support', 'Attachment handling', 'Delivery tracking']
+    },
+    {
+      id: 'zapier',
+      name: 'Zapier',
+      description: 'Automate workflows and connect apps',
+      category: 'Automation',
+      icon: '⚡',
+      apiKeyRequired: true,
+      isPopular: true,
+      authMethod: 'api_key',
+      authLabel: 'Zapier API Key',
+      features: ['Workflow automation', 'App integrations', 'Trigger management', 'Data transformation']
+    },
+    {
+      id: 'stripe',
+      name: 'Stripe',
+      description: 'Process payments and manage billing',
+      category: 'Payments',
+      icon: '💳',
+      apiKeyRequired: true,
+      isPopular: true,
+      authMethod: 'api_key',
+      authLabel: 'Stripe Secret Key',
+      features: ['Payment processing', 'Subscription management', 'Customer billing', 'Financial reporting']
+    },
+    {
+      id: 'shopify',
+      name: 'Shopify',
+      description: 'Manage e-commerce store and products',
+      category: 'E-commerce',
+      icon: '🛒',
+      apiKeyRequired: true,
+      isPopular: true,
+      authMethod: 'api_key',
+      authLabel: 'Shopify API Key',
+      features: ['Product management', 'Order processing', 'Customer data', 'Store analytics']
+    },
+    {
+      id: 'paypal',
+      name: 'PayPal',
+      description: 'Manage PayPal payments and transactions',
+      category: 'Payments',
+      icon: '💰',
+      apiKeyRequired: true,
+      isPopular: true,
+      authMethod: 'oauth',
+      authLabel: 'PayPal OAuth Token',
+      features: ['Payment processing', 'Transaction history', 'Refund management', 'Merchant services']
+    },
+    {
+      id: 'square',
+      name: 'Square',
+      description: 'Handle Square payments and point-of-sale',
+      category: 'Payments',
+      icon: '🟦',
+      apiKeyRequired: true,
+      isPopular: true,
+      authMethod: 'bearer_token',
+      authLabel: 'Square Access Token',
+      features: ['POS transactions', 'Inventory management', 'Customer management', 'Analytics']
+    },
+    {
+      id: 'plaid',
+      name: 'Plaid',
+      description: 'Access bank account and financial data',
+      category: 'Financial',
+      icon: '🏦',
+      apiKeyRequired: true,
+      isPopular: true,
+      authMethod: 'api_key',
+      authLabel: 'Plaid Client ID & Secret',
+      features: ['Account linking', 'Transaction data', 'Balance checks', 'Financial insights']
     }
   ]);
 
@@ -432,7 +504,55 @@ Use your file system access to help users manage their local files and data.`,
 - Analyze web content
 - Provide up-to-date research
 
-Use your web search access to provide users with current, accurate information from the internet.`
+Use your web search access to provide users with current, accurate information from the internet.`,
+
+      zapier: `You are an AI assistant with access to Zapier through MCP. You can:
+- Automate workflows between different apps
+- Create and manage Zaps (automated workflows)
+- Connect various services and APIs
+- Handle data transformation and routing
+
+Use your Zapier access to help users automate repetitive tasks and connect their favorite apps.`,
+
+      stripe: `You are an AI assistant with access to Stripe through MCP. You can:
+- Process payments and manage transactions
+- Handle subscription billing and management
+- Access customer and payment data
+- Generate financial reports and analytics
+
+Use your Stripe access to help users manage their payment processing and billing operations.`,
+
+      shopify: `You are an AI assistant with access to Shopify through MCP. You can:
+- Manage products, inventory, and collections
+- Process and track orders
+- Handle customer data and support
+- Analyze store performance and sales
+
+Use your Shopify access to help users manage their e-commerce store operations.`,
+
+      paypal: `You are an AI assistant with access to PayPal through MCP. You can:
+- Process PayPal payments and transactions
+- Manage refunds and disputes
+- Access transaction history and reports
+- Handle merchant account operations
+
+Use your PayPal access to help users manage their PayPal payment processing and merchant services.`,
+
+      square: `You are an AI assistant with access to Square through MCP. You can:
+- Process point-of-sale transactions
+- Manage inventory and product catalogs
+- Handle customer management and loyalty
+- Generate sales analytics and reports
+
+Use your Square access to help users manage their point-of-sale operations and business analytics.`,
+
+      plaid: `You are an AI assistant with access to Plaid through MCP. You can:
+- Connect and verify bank accounts
+- Access transaction data and balances
+- Retrieve financial account information
+- Provide financial insights and analysis
+
+Use your Plaid access to help users integrate banking data and financial services into their applications.`
     };
 
     return prompts[server.id] || `You are an AI assistant with access to ${server.name} through MCP. Use this integration to help users with ${server.description.toLowerCase()}.`;

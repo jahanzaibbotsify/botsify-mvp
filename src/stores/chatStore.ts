@@ -253,22 +253,39 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   async function updateMessage(messageId: string, content: string) {
-    console.log(`Updating message ${messageId} with content:`, content.substring(0, 50) + '...');
-    
-    // Find the message across all chats
-    for (const chat of chats.value) {
-      const message = chat.messages.find(m => m.id === messageId);
-      if (message) {
-        message.content = content;
+    const chat = chats.value.find(c => c.messages.some(m => m.id === messageId));
+    if (!chat) return;
+
+    const message = chat.messages.find(m => m.id === messageId);
+    if (message) {
+      message.content = content;
+      message.timestamp = new Date();
+      
+      // Update the chat's last message if this was the latest message
+      const isLastMessage = chat.messages[chat.messages.length - 1].id === messageId;
+      if (isLastMessage) {
         chat.lastMessage = content;
-        console.log('Message updated successfully');
-        await nextTick();
-        return message;
+        chat.timestamp = new Date();
       }
     }
+  }
+
+  function removeLastMessage(chatId: string) {
+    const chat = chats.value.find(c => c.id === chatId);
+    if (!chat || chat.messages.length === 0) return;
+
+    // Remove the last message
+    chat.messages.pop();
     
-    console.warn('Message not found with ID:', messageId);
-    return null;
+    // Update the chat's last message and timestamp
+    if (chat.messages.length > 0) {
+      const lastMessage = chat.messages[chat.messages.length - 1];
+      chat.lastMessage = lastMessage.content;
+      chat.timestamp = lastMessage.timestamp;
+    } else {
+      chat.lastMessage = undefined;
+      chat.timestamp = new Date();
+    }
   }
 
   function createPromptVersion(content: string, isActive: boolean = true): PromptVersion {
@@ -959,6 +976,7 @@ Keep flows organized, clear, and user-friendly.`,
     forceSave,
     clearAllChatsExceptActive,
     clearVersionHistory,
-    clearChatMessages
+    clearChatMessages,
+    removeLastMessage
   };
 });

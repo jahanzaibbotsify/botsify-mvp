@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useMCPStore } from '../../stores/mcpStore';
-import type { MCPServer, MCPServerConfig, CustomMCPServerForm } from '../../types';
+import type { MCPServer, CustomMCPServerForm } from '../../types';
 
 const props = defineProps<{
   isOpen: boolean;
+  showCustomServer?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -245,6 +246,13 @@ const handleKeydown = (event: KeyboardEvent) => {
     closeModal();
   }
 };
+
+// Watch for when the modal opens with showCustomServer flag
+watch(() => [props.isOpen, props.showCustomServer], ([isOpen, shouldShowCustom]) => {
+  if (isOpen && shouldShowCustom) {
+    showAddCustomServer();
+  }
+}, { immediate: true });
 </script>
 
 <template>
@@ -447,13 +455,6 @@ const handleKeydown = (event: KeyboardEvent) => {
           <div class="section-header">
             <h3>{{ showAllServers ? 'All Servers' : 'Popular Servers' }}</h3>
             <div class="header-actions">
-              <button class="add-custom-button" @click="showAddCustomServer" title="Add Custom Server">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                Add Custom
-              </button>
               <button class="toggle-button" @click="showAllServers = !showAllServers">
                 {{ showAllServers ? 'Show Popular' : 'Show All' }}
               </button>

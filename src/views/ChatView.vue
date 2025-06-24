@@ -91,16 +91,16 @@ function clearVersionHistory() {
 }
 
 function clearAllChats() {
-  if (confirm('Are you sure you want to clear all conversations except this one? This cannot be undone.')) {
+  if (confirm('Are you sure you want to clear all conversations and version history? This cannot be undone.')) {
     chatStore.clearAllChatsExceptActive();
   }
 }
 
-function clearMessageHistory() {
-  if (confirm('Are you sure you want to clear the message history for this conversation? This cannot be undone.')) {
-    chatStore.clearChatMessages(chatId.value);
-  }
-}
+// function clearMessageHistory() {
+//   if (confirm('Are you sure you want to clear the message history for this conversation? This cannot be undone.')) {
+//     chatStore.clearChatMessages(chatId.value);
+//   }
+// }
 </script>
 
 <template>

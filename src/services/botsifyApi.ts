@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { MCPConfigurationFile } from '../types';
 
-const BOTSIFY_BASE_URL = 'https://botsify.com/api';
+const BOTSIFY_BASE_URL = import.meta.env.VITE_BOTSIFY_BASE_URL || 'https://botsify.com/api';
 
 export interface BotsifyResponse {
   success: boolean;
@@ -372,7 +372,13 @@ export class BotsifyApiService {
       'web-search': 'https://api.bing.microsoft.com/v7.0/search?q=test', // Example search API with test query
       'weather': 'https://api.openweathermap.org/data/2.5/weather?q=London&units=metric', // Weather API with test query
       'calendar': 'https://www.googleapis.com/calendar/v3/users/me/settings',
-      'email': '' // SMTP doesn't have REST endpoints
+      'email': '', // SMTP doesn't have REST endpoints
+      'zapier': 'https://zapier.com/api/v1/user',
+      'stripe': 'https://api.stripe.com/v1/account',
+      'shopify': 'https://shopify.dev/api/admin-rest/2023-10/resources/shop',
+      'paypal': 'https://api.paypal.com/v1/identity/oauth2/userinfo',
+      'square': 'https://connect.squareup.com/v2/locations',
+      'plaid': 'https://api.plaid.com/accounts/get'
     };
 
     return validationEndpoints[serverId] || null;
@@ -518,39 +524,6 @@ export class BotsifyApiService {
   }
 
   /**
-   * Generate default MCP calling prompt for servers
-   */
-  private generateDefaultMCPPrompt(mcpData: any): string {
-    const serverName = mcpData.serverName || 'MCP Server';
-    const features = mcpData.features || [];
-    const category = mcpData.category || 'General';
-    
-    return `You have access to ${serverName}, a ${category} MCP server with the following capabilities:
-
-AVAILABLE TOOLS:
-${features.map((feature: string) => `- ${feature}`).join('\n')}
-
-USAGE INSTRUCTIONS:
-1. Use this MCP server when users request operations related to: ${features.join(', ')}
-2. Authentication: ${mcpData.hasAuthentication ? `Required (${mcpData.authMethod})` : 'Not required'}
-3. Connection URL: ${mcpData.connectionUrl || 'Built-in server'}
-
-MCP CALLING GUIDELINES:
-- Always verify the server is available before making requests
-- Handle authentication errors gracefully
-- Provide clear feedback about server operations
-- Use appropriate error handling for network issues
-
-When calling this MCP server:
-1. Explain what operation you're performing
-2. Show the results clearly to the user
-3. Handle any errors with helpful messages
-4. Suggest alternatives if the operation fails
-
-Server Status: Connected and ready for use.`;
-  }
-
-  /**
    * Test method to demonstrate simplified MCP configuration sending
    */
   async testEnhancedMCPConfiguration(): Promise<BotsifyResponse> {
@@ -572,6 +545,407 @@ Server Status: Connected and ready for use.`;
 
     console.log('Testing MCP configuration with real API key...');
     return await this.sendMCPConfigurationJSON(testMCPData);
+  }
+
+  /**
+   * Get File Search data for a specific bot assistant
+   */
+  async getFileSearch(botAssistantId: string): Promise<BotsifyResponse> {
+    try {
+      console.log('Getting File Search data for bot assistant:', botAssistantId);
+      
+      const response = await axios.get(`${BOTSIFY_BASE_URL}/file-search/${botAssistantId}`, {
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('File Search GET response:', response.data);
+      
+      return {
+        success: true,
+        message: 'File Search data retrieved successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error getting File Search data:', error);
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to get File Search data',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Create/Connect File Search for a specific bot assistant
+   */
+  async createFileSearch(botAssistantId: string, fileData?: any): Promise<BotsifyResponse> {
+    try {
+      console.log('Creating File Search for bot assistant:', botAssistantId);
+      
+      const requestData = {
+        timestamp: new Date().toISOString(),
+        action: 'create_file_search',
+        ...(fileData && { fileData })
+      };
+      
+      const response = await axios.post(`${BOTSIFY_BASE_URL}/file-search/${botAssistantId}`, requestData, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 60000 // 60 seconds timeout for file operations
+      });
+
+      console.log('File Search POST response:', response.data);
+      
+      return {
+        success: true,
+        message: 'File Search created successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error creating File Search:', error);
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to create File Search',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Delete File Search by ID
+   */
+  async deleteFileSearch(id: string): Promise<BotsifyResponse> {
+    try {
+      console.log('Deleting File Search with ID:', id);
+      
+      const response = await axios.delete(`${BOTSIFY_BASE_URL}/file-search/${id}`, {
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('File Search DELETE response:', response.data);
+      
+      return {
+        success: true,
+        message: 'File Search deleted successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error deleting File Search:', error);
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to delete File Search',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Get Web Search data for a specific bot assistant
+   */
+  async getWebSearch(botAssistantId: string): Promise<BotsifyResponse> {
+    try {
+      console.log('Getting Web Search data for bot assistant:', botAssistantId);
+      
+      const response = await axios.get(`${BOTSIFY_BASE_URL}/web-search/${botAssistantId}`, {
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Web Search GET response:', response.data);
+      
+      return {
+        success: true,
+        message: 'Web Search data retrieved successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error getting Web Search data:', error);
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to get Web Search data',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Create/Connect Web Search for a specific bot assistant
+   */
+  async createWebSearch(botAssistantId: string, websiteUrl: string, config?: any): Promise<BotsifyResponse> {
+    try {
+      console.log('Creating Web Search for bot assistant:', botAssistantId);
+      console.log('Web Search URL:', websiteUrl);
+      console.log('Web Search configuration:', config);
+      
+      // Validate URL format
+      try {
+        new URL(websiteUrl);
+      } catch {
+        throw new Error('Invalid URL format. Please enter a valid website URL.');
+      }
+      
+      const requestData: any = {
+        url: websiteUrl,
+        timestamp: new Date().toISOString(),
+        action: 'create_web_search'
+      };
+
+      // Include configuration if provided
+      if (config) {
+        requestData.configuration = config;
+      }
+      
+      const response = await axios.post(`${BOTSIFY_BASE_URL}/web-search/${botAssistantId}`, requestData, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Web Search POST response:', response.data);
+      
+      return {
+        success: true,
+        message: 'Web Search created successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error creating Web Search:', error);
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to create Web Search',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Delete Web Search by ID
+   */
+  async deleteWebSearch(id: string): Promise<BotsifyResponse> {
+    try {
+      console.log('Deleting Web Search with ID:', id);
+      
+      const response = await axios.delete(`${BOTSIFY_BASE_URL}/web-search/${id}`, {
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Web Search DELETE response:', response.data);
+      
+      return {
+        success: true,
+        message: 'Web Search deleted successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error deleting Web Search:', error);
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to delete Web Search',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Upload file using the new upload-file endpoint
+   */
+  async uploadFileNew(file: File): Promise<BotsifyResponse> {
+    try {
+      console.log('Uploading file using new endpoint:', file.name, file.type, file.size);
+      
+      // Validate file type (images, videos, and documents)
+      const supportedTypes = [
+        // Images
+        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+        // Videos
+        'video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm',
+        // Documents
+        'application/pdf', 'text/plain', 'text/csv',
+        'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+      ];
+      
+      if (!supportedTypes.includes(file.type)) {
+        throw new Error('Unsupported file type. Please upload images, videos, or documents (PDF, Word, Excel, PowerPoint, TXT, CSV).');
+      }
+      
+      // Validate file size (50MB limit for videos, 20MB for images, 10MB for documents)
+      let maxSize = 10 * 1024 * 1024; // Default 10MB for documents
+      if (file.type.startsWith('video/')) {
+        maxSize = 50 * 1024 * 1024; // 50MB for videos
+      } else if (file.type.startsWith('image/')) {
+        maxSize = 20 * 1024 * 1024; // 20MB for images
+      }
+      
+      if (file.size > maxSize) {
+        const maxSizeMB = maxSize / (1024 * 1024);
+        const fileTypeCategory = file.type.startsWith('video/') ? 'videos' : 
+                                file.type.startsWith('image/') ? 'images' : 'documents';
+        throw new Error(`File is too large. Maximum size is ${maxSizeMB}MB for ${fileTypeCategory}.`);
+      }
+      
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('timestamp', new Date().toISOString());
+      formData.append('fileType', file.type);
+      formData.append('fileName', file.name);
+      formData.append('purpose', 'chat_attachment'); // Specify this is for chat usage
+      
+      const response = await axios.post(`${BOTSIFY_BASE_URL}/upload-file`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 120000 // 2 minutes timeout for large files
+      });
+
+      console.log('File upload response (new endpoint):', response.data);
+      
+      if (response.data && response.data.url) {
+        return {
+          success: true,
+          message: 'File uploaded successfully',
+          data: {
+            url: response.data.url,
+            fileId: response.data.fileId || response.data.id || null,
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size,
+            uploadedAt: new Date().toISOString()
+          }
+        };
+      } else {
+        throw new Error('Upload successful but no URL returned from server');
+      }
+    } catch (error: any) {
+      console.error('Error uploading file (new endpoint):', error);
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to upload file',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Upload multiple files using the new endpoint
+   */
+  async uploadMultipleFilesNew(files: File[]): Promise<BotsifyResponse> {
+    try {
+      console.log('Uploading multiple files using new endpoint:', files.length);
+      
+      const uploadResults: any[] = [];
+      const errors: string[] = [];
+      
+      // Upload files in parallel for better performance
+      const uploadPromises = files.map(async (file, index) => {
+        try {
+          const result = await this.uploadFileNew(file);
+          if (result.success) {
+            uploadResults.push(result.data);
+          } else {
+            errors.push(`${file.name}: ${result.message}`);
+          }
+        } catch (error: any) {
+          errors.push(`${file.name}: ${error.message}`);
+        }
+      });
+      
+      await Promise.all(uploadPromises);
+      
+      if (uploadResults.length === 0 && errors.length > 0) {
+        return {
+          success: false,
+          message: 'All file uploads failed: ' + errors.join(', '),
+          data: { errors }
+        };
+      }
+      
+      return {
+        success: true,
+        message: `Successfully uploaded ${uploadResults.length} of ${files.length} files`,
+        data: {
+          uploadedFiles: uploadResults,
+          errors: errors.length > 0 ? errors : undefined,
+          uploadedCount: uploadResults.length,
+          totalCount: files.length
+        }
+      };
+    } catch (error: any) {
+      console.error('Error uploading multiple files (new endpoint):', error);
+      
+      return {
+        success: false,
+        message: error.message || 'Failed to upload files',
+        data: error
+      };
+    }
+  }
+
+  /**
+   * Connect to File Search API to fetch and access files
+   * @deprecated Use createFileSearch instead
+   */
+  async connectFileSearch(): Promise<BotsifyResponse> {
+    console.warn('connectFileSearch is deprecated. Use createFileSearch instead.');
+    return {
+      success: false,
+      message: 'This method is deprecated. Please use createFileSearch with bot assistant ID.',
+      data: null
+    };
+  }
+
+  /**
+   * Connect to File Search API with file upload
+   * @deprecated Use createFileSearch instead
+   */
+  async connectFileSearchWithUpload(formData: FormData): Promise<BotsifyResponse> {
+    console.warn('connectFileSearchWithUpload is deprecated. Use createFileSearch instead.');
+    return {
+      success: false,
+      message: 'This method is deprecated. Please use createFileSearch with bot assistant ID.',
+      data: null
+    };
+  }
+
+  /**
+   * Connect to Web Search API with a specific website URL
+   * @deprecated Use createWebSearch instead
+   */
+  async connectWebSearch(websiteUrl: string, config?: any): Promise<BotsifyResponse> {
+    console.warn('connectWebSearch is deprecated. Use createWebSearch instead.');
+    return {
+      success: false,
+      message: 'This method is deprecated. Please use createWebSearch with bot assistant ID.',
+      data: null
+    };
+  }
+
+  /**
+   * Upload a file to get a URL for use in AI prompts
+   * @deprecated Use uploadFileNew instead
+   */
+  async uploadFile(file: File): Promise<BotsifyResponse> {
+    console.warn('uploadFile is deprecated. Use uploadFileNew instead.');
+    return await this.uploadFileNew(file);
+  }
+
+  /**
+   * Upload multiple files and return their URLs
+   * @deprecated Use uploadMultipleFilesNew instead
+   */
+  async uploadMultipleFiles(files: File[]): Promise<BotsifyResponse> {
+    console.warn('uploadMultipleFiles is deprecated. Use uploadMultipleFilesNew instead.');
+    return await this.uploadMultipleFilesNew(files);
   }
 }
 

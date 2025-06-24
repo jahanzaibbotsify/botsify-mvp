@@ -56,6 +56,10 @@ export interface Attachment {
   url: string;
   size: number;
   preview?: string;
+  uploadedUrl?: string;
+  fileId?: string;
+  uploadedAt?: string;
+  isUploaded?: boolean;
 }
 
 export interface PricingTier {
