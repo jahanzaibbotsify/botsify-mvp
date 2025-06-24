@@ -400,7 +400,6 @@ defineExpose({
   border-left: 1px solid rgba(0, 163, 255, 0.1);
   display: flex;
   flex-direction: column;
-  z-index: var(--z-sidebar);
   box-shadow: -4px 0 15px rgba(0, 163, 255, 0.08);
   transition: transform var(--transition-normal);
   background-image: 
