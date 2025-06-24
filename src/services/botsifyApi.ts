@@ -32,10 +32,11 @@ export class BotsifyApiService {
     };
 
     // Add Botsify authorization header if token is available
-    if (BOTSIFY_AUTH_TOKEN && BOTSIFY_AUTH_TOKEN.trim()) {
-      headers['botsify_authorization'] = `Bearer ${BOTSIFY_AUTH_TOKEN.trim()}`;
-    }
+    console.log('Botsify headers:', BOTSIFY_AUTH_TOKEN && BOTSIFY_AUTH_TOKEN.trim());
 
+    if (BOTSIFY_AUTH_TOKEN && BOTSIFY_AUTH_TOKEN.trim()) {
+      headers['Authorization'] = `Bearer ${BOTSIFY_AUTH_TOKEN}`;
+    }
     return headers;
   }
 
