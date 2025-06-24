@@ -3,6 +3,7 @@ import { ref, computed, nextTick, watch } from 'vue';
 import { useOpenAIStore } from './openaiStore';
 import { useMCPStore } from './mcpStore';
 import type { Chat, Message, Attachment, PromptVersion, GlobalPromptTemplate } from '../types';
+import { botsifyApi } from '../services/botsifyApi';
 
 export const useChatStore = defineStore('chat', () => {
   const openAIStore = useOpenAIStore();
@@ -453,14 +454,36 @@ export const useChatStore = defineStore('chat', () => {
         content: msg.content
       }));
 
-      // Add MCP system prompt if there are connected servers
+      // Get MCP system prompt if there are connected servers
       const mcpSystemPrompt = mcpStore.getCombinedSystemPrompt();
-      const messages = mcpSystemPrompt 
-        ? [{ role: 'system', content: mcpSystemPrompt }, ...userMessages]
+      
+      // Get connected services JSON to append to system prompt
+      const connectedServicesJson = await getConnectedServicesJson(chat.id);
+      
+      // Combine MCP prompt with connected services information
+      let finalSystemPrompt = mcpSystemPrompt;
+      if (connectedServicesJson) {
+        const servicesInfo = `
+
+---CONNECTED_SERVICES---
+${connectedServicesJson}
+---END_CONNECTED_SERVICES---
+
+Use the above connected services information to understand what tools and data sources are available for this chat session. When users ask about capabilities or need to access files/web content, refer to these connected services.`;
+        
+        finalSystemPrompt = finalSystemPrompt ? finalSystemPrompt + servicesInfo : servicesInfo;
+        console.log('✅ Connected services JSON appended to system prompt');
+      } else {
+        console.log('ℹ️ No connected services found for this chat session');
+      }
+
+      const messages = finalSystemPrompt 
+        ? [{ role: 'system', content: finalSystemPrompt }, ...userMessages]
         : userMessages;
 
-      console.log('Sending messages to OpenAI with MCP integration:', {
+      console.log('Sending messages to OpenAI with enhanced system prompt:', {
         hasMCPPrompt: !!mcpSystemPrompt,
+        hasConnectedServices: !!connectedServicesJson,
         connectedServers: mcpStore.connectedServers.length,
         messageCount: messages.length
       });
@@ -837,6 +860,108 @@ export const useChatStore = defineStore('chat', () => {
     return { chatResponse, aiPrompt };
   }
 
+  /**
+   * Generate connected services JSON for the current chat session
+   * 
+   * This function collects information about all connected services for a specific chat:
+   * - MCP Servers: Connected Model Context Protocol servers with their features and auth status
+   * - File Search: Uploaded files available for search and retrieval
+   * - Web Search: Connected websites for web content search
+   * 
+   * The generated JSON is appended to the system prompt to inform the AI about
+   * available tools and data sources, enabling context-aware responses.
+   * 
+   * @param chatId - The unique identifier for the chat session
+   * @returns JSON string containing connected services information, or null if no services
+   */
+  async function getConnectedServicesJson(chatId: string): Promise<string | null> {
+    try {
+      const connectedServices: any = {
+        chatId: chatId,
+        timestamp: new Date().toISOString(),
+        services: {}
+      };
+
+      let hasServices = false;
+
+      // Get MCP servers information
+      if (mcpStore.connectedServers.length > 0) {
+        connectedServices.services.mcp_servers = mcpStore.connectedServers.map(serverConfig => ({
+          id: serverConfig.server.id,
+          name: serverConfig.server.name,
+          category: serverConfig.server.category,
+          description: serverConfig.server.description,
+          features: serverConfig.server.features,
+          connectionUrl: serverConfig.server.connectionUrl,
+          authMethod: serverConfig.server.authMethod,
+          hasAuthentication: !!serverConfig.connection?.apiKey,
+          connectedAt: serverConfig.connection?.connectedAt,
+          status: 'connected'
+        }));
+        hasServices = true;
+      }
+
+      // Check for File Search data
+      try {
+        const fileSearchResponse = await botsifyApi.getFileSearch(chatId);
+        if (fileSearchResponse.success && fileSearchResponse.data?.files?.length > 0) {
+          connectedServices.services.file_search = {
+            status: 'connected',
+            files: fileSearchResponse.data.files.map((file: any) => ({
+              id: file.id,
+              name: file.name || file.filename,
+              type: file.type || file.fileType,
+              size: file.size,
+              uploadedAt: file.uploadedAt || file.createdAt
+            })),
+            totalFiles: fileSearchResponse.data.files.length,
+            lastUpdated: new Date().toISOString()
+          };
+          hasServices = true;
+        }
+      } catch (error) {
+        console.log('No file search data or error loading:', error);
+      }
+
+      // Check for Web Search data
+      try {
+        const webSearchResponse = await botsifyApi.getWebSearch(chatId);
+        if (webSearchResponse.success && webSearchResponse.data) {
+          connectedServices.services.web_search = {
+            status: 'connected',
+            url: webSearchResponse.data.url,
+            title: webSearchResponse.data.title,
+            domain: webSearchResponse.data.domain,
+            connectedAt: webSearchResponse.data.connectedAt,
+            lastUpdated: new Date().toISOString()
+          };
+          hasServices = true;
+        }
+      } catch (error) {
+        console.log('No web search data or error loading:', error);
+      }
+
+      // Return JSON only if we have connected services
+      if (hasServices) {
+        const jsonString = JSON.stringify(connectedServices, null, 2);
+        console.log('Connected services JSON generated:', {
+          chatId: chatId,
+          mcpServers: connectedServices.services.mcp_servers?.length || 0,
+          hasFileSearch: !!connectedServices.services.file_search,
+          hasWebSearch: !!connectedServices.services.web_search,
+          totalServices: Object.keys(connectedServices.services).length
+        });
+        return jsonString;
+      }
+
+      console.log('No connected services found for chat:', chatId);
+      return null;
+    } catch (error) {
+      console.error('Error generating connected services JSON:', error);
+      return null;
+    }
+  }
+
   function createNewChat() {
     console.log('Creating new chat');
     
@@ -977,6 +1102,7 @@ Keep flows organized, clear, and user-friendly.`,
     clearAllChatsExceptActive,
     clearVersionHistory,
     clearChatMessages,
-    removeLastMessage
+    removeLastMessage,
+    getConnectedServicesJson
   };
 });

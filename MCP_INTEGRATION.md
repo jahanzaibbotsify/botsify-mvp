@@ -142,7 +142,101 @@ Use this integration to help users with ${server.description.toLowerCase()}.`;
 4. **Configure System Prompt**: Customize the system prompt or use the default
 5. **Connect**: Click "Connect" to establish the connection
 
-### Adding Custom Servers
+## Connected Services Integration
+
+The system automatically appends information about connected services to the AI's system prompt, enabling context-aware responses about available tools and data sources.
+
+### How It Works
+
+When a user sends a message, the system:
+
+1. **Collects Service Information**: Gathers data about all connected services for the current chat session
+2. **Generates JSON**: Creates a structured JSON object containing service details
+3. **Appends to System Prompt**: Adds the JSON to the end of the system prompt with clear markers
+4. **Informs AI**: The AI can now reference available tools and data in its responses
+
+### Connected Services JSON Structure
+
+```json
+{
+  "chatId": "1672531200000",
+  "timestamp": "2024-01-01T12:00:00.000Z",
+  "services": {
+    "mcp_servers": [
+      {
+        "id": "github",
+        "name": "GitHub",
+        "category": "Development",
+        "description": "Access GitHub repositories and manage development workflows",
+        "features": ["Repository access", "Issue management", "Pull requests", "Code search"],
+        "connectionUrl": "https://api.github.com",
+        "authMethod": "api_key",
+        "hasAuthentication": true,
+        "connectedAt": "2024-01-01T11:30:00.000Z",
+        "status": "connected"
+      }
+    ],
+    "file_search": {
+      "status": "connected",
+      "files": [
+        {
+          "id": "file_123",
+          "name": "project_docs.pdf",
+          "type": "application/pdf",
+          "size": 2048576,
+          "uploadedAt": "2024-01-01T11:45:00.000Z"
+        }
+      ],
+      "totalFiles": 1,
+      "lastUpdated": "2024-01-01T12:00:00.000Z"
+    },
+    "web_search": {
+      "status": "connected",
+      "url": "https://example.com",
+      "title": "Example Website",
+      "domain": "example.com",
+      "connectedAt": "2024-01-01T11:50:00.000Z",
+      "lastUpdated": "2024-01-01T12:00:00.000Z"
+    }
+  }
+}
+```
+
+### System Prompt Integration
+
+The JSON is automatically appended to the system prompt with clear markers:
+
+```
+[Existing MCP system prompt...]
+
+---CONNECTED_SERVICES---
+{
+  "chatId": "1672531200000",
+  "timestamp": "2024-01-01T12:00:00.000Z",
+  "services": { ... }
+}
+---END_CONNECTED_SERVICES---
+
+Use the above connected services information to understand what tools and data sources are available for this chat session. When users ask about capabilities or need to access files/web content, refer to these connected services.
+```
+
+### Benefits
+
+- **Context Awareness**: AI knows exactly what tools and data are available
+- **Accurate Responses**: Can provide specific information about connected services
+- **Tool Recommendations**: Can suggest appropriate services for user requests
+- **File References**: Can reference specific uploaded files by name
+- **Web Content**: Can mention connected websites and their domains
+
+### Example AI Responses
+
+With connected services JSON, the AI can provide responses like:
+
+- "I can help you search through your uploaded project_docs.pdf file using the connected File Search service."
+- "I have access to GitHub through the MCP integration, so I can help you with repository management, issues, and code search."
+- "I can search the connected example.com website for relevant information using the Web Search service."
+
+## Adding Custom Servers
 
 1. **Open the MCP Modal**: Click the "Connect MCP" button
 2. **Add Custom Server**: Click the "Add Custom" button in the available servers section
