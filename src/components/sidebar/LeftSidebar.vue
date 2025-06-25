@@ -179,7 +179,7 @@ const isLinkActive = (url: string) => {
     </div>
 
     <!-- Sidebar Pricing (keeping this at the bottom) -->
-    <SidebarPricing />
+    <SidebarPricing style="display: none;"/>
   </aside>
 </template>
 
