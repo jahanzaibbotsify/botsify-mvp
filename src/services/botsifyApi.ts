@@ -3,6 +3,7 @@ import type { MCPConfigurationFile } from '../types';
 
 const BOTSIFY_BASE_URL = import.meta.env.VITE_BOTSIFY_BASE_URL || 'https://botsify.com/api';
 const BOTSIFY_AUTH_TOKEN = import.meta.env.VITE_BOTSIFY_AUTH_TOKEN || '';
+const BOTSIFY_BOT_ID = import.meta.env.VITE_BOTSIFY_BOT_ID || '';
 
 export interface BotsifyResponse {
   success: boolean;
@@ -512,7 +513,11 @@ export class BotsifyApiService {
         server_url: mcpData.connectionUrl || this.getDefaultServerUrl(mcpData.serverId),
         headers: this.buildMCPHeaders(mcpData),
         allowed_tools: this.mapFeaturesToTools(mcpData.features || []),
-        require_approval: "never"
+        require_approval: "never",
+        settings: {
+          apikey : "",
+        },
+        bot_id: BOTSIFY_BOT_ID
       };
       
       console.log('MCP payload structure:', mcpPayload);
