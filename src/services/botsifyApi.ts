@@ -512,7 +512,11 @@ export class BotsifyApiService {
         server_url: mcpData.connectionUrl || this.getDefaultServerUrl(mcpData.serverId),
         headers: this.buildMCPHeaders(mcpData),
         allowed_tools: this.mapFeaturesToTools(mcpData.features || []),
-        require_approval: "never"
+        require_approval: "never",
+        settings: {
+          apikey : "",
+        },
+        bot_id: "120669"
       };
       
       console.log('MCP payload structure:', mcpPayload);
