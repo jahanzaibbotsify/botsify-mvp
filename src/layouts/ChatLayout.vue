@@ -209,7 +209,6 @@ const toggleSidebar = () => {
   top: 50%;
   left: 260px;
   transform: translateY(-50%);
-  z-index: var(--z-fixed);
   background-color: var(--color-bg-tertiary);
   border-radius: var(--radius-full);
   width: 32px;

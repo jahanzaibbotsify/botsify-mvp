@@ -194,7 +194,6 @@ const isLinkActive = (url: string) => {
   flex-direction: column;
   overflow-y: auto;
   position: relative;
-  z-index: var(--z-fixed);
   transition: width var(--transition-normal), min-width var(--transition-normal);
 }
 
