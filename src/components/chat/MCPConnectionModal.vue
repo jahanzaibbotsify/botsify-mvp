@@ -18,7 +18,7 @@ const mcpStore = useMCPStore();
 // Modal state
 const selectedServer = ref<MCPServer | null>(null);
 const apiKey = ref('');
-const botId = ref(120669);
+const botId = ref('1226');
 const customSystemPrompt = ref('');
 const isConnecting = ref(false);
 const error = ref<string | null>(null);
