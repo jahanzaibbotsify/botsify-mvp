@@ -396,6 +396,7 @@ export const useMCPStore = defineStore('mcp', () => {
       saveToStorage();
 
       console.log('💾 Connection saved locally');
+      let configError = null; // use to get errors from config result
 
       // Step 4: Send MCP configuration JSON to the API
       try {
@@ -422,10 +423,15 @@ export const useMCPStore = defineStore('mcp', () => {
         } else {
           console.warn('⚠️ Failed to send MCP configuration to API:', configResult.message);
           // Don't fail the connection if API call fails, just log the warning
+          configError = configResult;
         }
       } catch (apiError: any) {
         console.warn('⚠️ API call failed but connection is established:', apiError.message);
         // Connection is still successful even if API call fails
+      }
+
+      if (configError) {
+          throw new Error(configError.message);
       }
 
       return true;
@@ -433,7 +439,9 @@ export const useMCPStore = defineStore('mcp', () => {
       console.error('❌ Failed to connect to MCP server:', error);
       
       // Provide specific error messages for better user experience
-      if (error.message.includes('Invalid API key')) {
+      if (error.message.includes('bot id')){
+        throw new Error(error.message);
+      }else if (error.message.includes('Invalid API key')) {
         throw new Error('Invalid API key provided. Please check your authentication credentials and try again.');
       } else if (error.message.includes('not found') || error.message.includes('invalid')) {
         throw new Error('MCP server not found or connection URL is invalid. Please verify your configuration.');
