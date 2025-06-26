@@ -91,7 +91,7 @@ export interface MCPConnection {
   serverId: string;
   serverName: string;
   apiKey?: string;
-  botId?: string,
+  botId?: number,
   isConnected: boolean;
   connectedAt?: Date;
   lastUsed?: Date;

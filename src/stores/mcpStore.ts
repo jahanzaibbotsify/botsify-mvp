@@ -336,7 +336,7 @@ export const useMCPStore = defineStore('mcp', () => {
   };
 
   // Connect to an MCP server
-  const connectServer = async (serverId: string, botId: string, apiKey?: string, systemPrompt?: string): Promise<boolean> => {
+  const connectServer = async (serverId: string, botId: number, apiKey?: string, systemPrompt?: string): Promise<boolean> => {
     const server = allServers.value.find(s => s.id === serverId);
     if (!server) {
       throw new Error('Server not found');
@@ -348,7 +348,7 @@ export const useMCPStore = defineStore('mcp', () => {
     }
 
     // Validate API key if required
-    if (server.botIdRequired && !botId?.trim()) {
+    if (server.botIdRequired && botId <= 0) {
       throw new Error("Bot id required for server connection");
     }
 
@@ -384,7 +384,7 @@ export const useMCPStore = defineStore('mcp', () => {
         serverId,
         serverName: server.name,
         apiKey: apiKey?.trim(),
-        botId: botId?.trim(),
+        botId: botId,
         isConnected: true,
         connectedAt: new Date(),
         connectionUrl: server.connectionUrl,
