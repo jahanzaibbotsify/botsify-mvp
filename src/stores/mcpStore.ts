@@ -13,6 +13,7 @@ export const useMCPStore = defineStore('mcp', () => {
       category: 'Development',
       icon: '🐙',
       apiKeyRequired: true,
+      botIdRequired: true,
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'GitHub Personal Access Token',
@@ -25,6 +26,7 @@ export const useMCPStore = defineStore('mcp', () => {
       category: 'Productivity',
       icon: '📝',
       apiKeyRequired: true,
+      botIdRequired: true,
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'Notion Integration Token',
@@ -37,6 +39,7 @@ export const useMCPStore = defineStore('mcp', () => {
       category: 'Communication',
       icon: '💬',
       apiKeyRequired: true,
+      botIdRequired: true,
       isPopular: true,
       authMethod: 'bearer_token',
       authLabel: 'Slack Bot Token',
@@ -49,6 +52,7 @@ export const useMCPStore = defineStore('mcp', () => {
       category: 'Storage',
       icon: '📁',
       apiKeyRequired: true,
+      botIdRequired: true,
       isPopular: true,
       authMethod: 'oauth',
       authLabel: 'Google OAuth Token',
@@ -61,6 +65,7 @@ export const useMCPStore = defineStore('mcp', () => {
       category: 'Database',
       icon: '🐘',
       apiKeyRequired: false,
+      botIdRequired: true,
       isPopular: true,
       authMethod: 'none',
       authLabel: '',
@@ -73,6 +78,7 @@ export const useMCPStore = defineStore('mcp', () => {
       category: 'System',
       icon: '💾',
       apiKeyRequired: false,
+      botIdRequired: true,
       isPopular: true,
       authMethod: 'none',
       authLabel: '',
@@ -85,6 +91,7 @@ export const useMCPStore = defineStore('mcp', () => {
       category: 'Research',
       icon: '🔍',
       apiKeyRequired: true,
+      botIdRequired: true,
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'Search API Key',
@@ -97,6 +104,7 @@ export const useMCPStore = defineStore('mcp', () => {
       category: 'Data',
       icon: '🌤️',
       apiKeyRequired: true,
+      botIdRequired: true,
       isPopular: false,
       authMethod: 'api_key',
       authLabel: 'Weather API Key',
@@ -109,6 +117,7 @@ export const useMCPStore = defineStore('mcp', () => {
       category: 'Productivity',
       icon: '📅',
       apiKeyRequired: true,
+      botIdRequired: true,
       isPopular: false,
       authMethod: 'oauth',
       authLabel: 'Google OAuth Token',
@@ -121,6 +130,7 @@ export const useMCPStore = defineStore('mcp', () => {
       category: 'Communication',
       icon: '📧',
       apiKeyRequired: true,
+      botIdRequired: true,
       isPopular: false,
       authMethod: 'basic_auth',
       authLabel: 'SMTP Username/Password',
@@ -133,6 +143,7 @@ export const useMCPStore = defineStore('mcp', () => {
       category: 'Automation',
       icon: '⚡',
       apiKeyRequired: true,
+      botIdRequired: true,
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'Zapier API Key',
@@ -145,6 +156,7 @@ export const useMCPStore = defineStore('mcp', () => {
       category: 'Payments',
       icon: '💳',
       apiKeyRequired: true,
+      botIdRequired: true,
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'Stripe Secret Key',
@@ -157,6 +169,7 @@ export const useMCPStore = defineStore('mcp', () => {
       category: 'E-commerce',
       icon: '🛒',
       apiKeyRequired: true,
+      botIdRequired: true,
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'Shopify API Key',
@@ -169,6 +182,7 @@ export const useMCPStore = defineStore('mcp', () => {
       category: 'Payments',
       icon: '💰',
       apiKeyRequired: true,
+      botIdRequired: true,
       isPopular: true,
       authMethod: 'oauth',
       authLabel: 'PayPal OAuth Token',
@@ -181,6 +195,7 @@ export const useMCPStore = defineStore('mcp', () => {
       category: 'Payments',
       icon: '🟦',
       apiKeyRequired: true,
+      botIdRequired: true,
       isPopular: true,
       authMethod: 'bearer_token',
       authLabel: 'Square Access Token',
@@ -193,6 +208,7 @@ export const useMCPStore = defineStore('mcp', () => {
       category: 'Financial',
       icon: '🏦',
       apiKeyRequired: true,
+      botIdRequired: true,
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'Plaid Client ID & Secret',
@@ -271,6 +287,7 @@ export const useMCPStore = defineStore('mcp', () => {
       icon: formData.icon || '🔗',
       connectionUrl: formData.connectionUrl,
       apiKeyRequired: formData.authMethod !== 'none',
+      botIdRequired: true,
       authMethod: formData.authMethod,
       authLabel: formData.authLabel,
       features: formData.features,
@@ -319,7 +336,7 @@ export const useMCPStore = defineStore('mcp', () => {
   };
 
   // Connect to an MCP server
-  const connectServer = async (serverId: string, apiKey?: string, systemPrompt?: string): Promise<boolean> => {
+  const connectServer = async (serverId: string, botId: string, apiKey?: string, systemPrompt?: string): Promise<boolean> => {
     const server = allServers.value.find(s => s.id === serverId);
     if (!server) {
       throw new Error('Server not found');
@@ -328,6 +345,11 @@ export const useMCPStore = defineStore('mcp', () => {
     // Validate API key if required
     if (server.apiKeyRequired && !apiKey?.trim()) {
       throw new Error(`${server.authLabel || 'Authentication'} is required for this server`);
+    }
+
+    // Validate API key if required
+    if (server.botIdRequired && !botId?.trim()) {
+      throw new Error("Bot id required for server connection");
     }
 
     // Validate connection URL for custom servers
@@ -362,6 +384,7 @@ export const useMCPStore = defineStore('mcp', () => {
         serverId,
         serverName: server.name,
         apiKey: apiKey?.trim(),
+        botId: botId?.trim(),
         isConnected: true,
         connectedAt: new Date(),
         connectionUrl: server.connectionUrl,
@@ -385,6 +408,7 @@ export const useMCPStore = defineStore('mcp', () => {
           authMethod: server.authMethod || 'none',
           hasAuthentication: server.apiKeyRequired,
           apiKey: newConnection.apiKey,
+          botId: newConnection.botId,
           features: server.features,
           systemPrompt: newConnection.systemPrompt,
           connectedAt: newConnection.connectedAt,

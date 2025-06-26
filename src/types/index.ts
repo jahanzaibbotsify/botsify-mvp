@@ -77,6 +77,7 @@ export interface MCPServer {
   category: string;
   icon?: string;
   apiKeyRequired: boolean;
+  botIdRequired: boolean;
   connectionUrl?: string;
   isPopular?: boolean;
   features: string[];
@@ -90,6 +91,7 @@ export interface MCPConnection {
   serverId: string;
   serverName: string;
   apiKey?: string;
+  botId?: string,
   isConnected: boolean;
   connectedAt?: Date;
   lastUsed?: Date;

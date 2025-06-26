@@ -3,7 +3,6 @@ import type { MCPConfigurationFile } from '../types';
 
 const BOTSIFY_BASE_URL = import.meta.env.VITE_BOTSIFY_BASE_URL || 'https://botsify.com/api';
 const BOTSIFY_AUTH_TOKEN = import.meta.env.VITE_BOTSIFY_AUTH_TOKEN || '';
-const BOTSIFY_BOT_ID = import.meta.env.VITE_BOTSIFY_BOT_ID || '';
 
 export interface BotsifyResponse {
   success: boolean;
@@ -517,7 +516,7 @@ export class BotsifyApiService {
         settings: {
           apikey : "",
         },
-        bot_id: BOTSIFY_BOT_ID
+        bot_id: mcpData.botId
       };
       
       console.log('MCP payload structure:', mcpPayload);
