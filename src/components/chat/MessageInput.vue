@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useChatStore } from '../../stores/chatStore';
 import { useMCPStore } from '../../stores/mcpStore';
 import type { Attachment } from '../../types';
@@ -27,6 +27,7 @@ const showWebSearchModal = ref(false);
 const fileSearchResults = ref<any[]>([]);
 const fileSearchLoading = ref(false);
 const webSearchUrl = ref('');
+const webSearchUrls = reactive<string[]>([]);
 const webSearchLoading = ref(false);
 const webSearchResults = ref<any>(null);
 
@@ -314,6 +315,8 @@ const connectWebSearch = async () => {
     console.log('Web Search URL:', webSearchUrl.value);
     console.log('Web Search configuration:', webSearchConfig.value);
     
+    webSearchUrls.push(webSearchUrl.value);
+
     const response = await botsifyApi.createWebSearch(props.chatId, webSearchUrl.value.trim(), webSearchConfig.value);
     
     if (response.success) {
@@ -520,10 +523,6 @@ onMounted(() => {
                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
               </svg>
-              <!-- Connection indicator -->
-              <span v-if="mcpStore.connectedServers.length > 0" class="connection-indicator">
-                {{ mcpStore.connectedServers.length }}
-              </span>
             </button>
 
             <!-- New Dropdown Menu with 3 Options -->
@@ -540,28 +539,6 @@ onMounted(() => {
 
               <!-- Three Service Options -->
               <div class="service-options">
-                <!-- MCP Servers Option -->
-                <div class="service-option" @click="openMCPServers">
-                  <div class="service-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                    </svg>
-                  </div>
-                  <div class="service-info">
-                    <div class="service-name">MCP Servers</div>
-                    <div class="service-description">Connect to external APIs and services</div>
-                    <div v-if="mcpStore.connectedServers.length > 0" class="service-status">
-                      {{ mcpStore.connectedServers.length }} connected
-                    </div>
-                  </div>
-                  <div class="service-arrow">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
-                  </div>
-                </div>
-
                 <!-- File Search Option -->
                 <div class="service-option" @click="openFileSearch">
                   <div class="service-icon">
@@ -606,6 +583,16 @@ onMounted(() => {
               </div>
             </div>
           </div>
+          <button class="icon-button mcp-icon-button" @click="openMCPServers" title="MCP Servers">           
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" color="#000000" fill="none">
+                  <path d="M3.49994 11.7501L11.6717 3.57855C12.7762 2.47398 14.5672 2.47398 15.6717 3.57855C16.7762 4.68312 16.7762 6.47398 15.6717 7.57855M15.6717 7.57855L9.49994 13.7501M15.6717 7.57855C16.7762 6.47398 18.5672 6.47398 19.6717 7.57855C20.7762 8.68312 20.7762 10.474 19.6717 11.5785L12.7072 18.543C12.3167 18.9335 12.3167 19.5667 12.7072 19.9572L13.9999 21.2499" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                  <path d="M17.4999 9.74921L11.3282 15.921C10.2237 17.0255 8.43272 17.0255 7.32823 15.921C6.22373 14.8164 6.22373 13.0255 7.32823 11.921L13.4999 5.74939" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <!-- Connection indicator -->
+              <span v-if="mcpStore.connectedServers.length > 0" class="connection-indicator">
+                {{ mcpStore.connectedServers.length }}
+              </span>
+          </button>
         </div>
         
         <button 
@@ -717,7 +704,7 @@ onMounted(() => {
                 {{ 
                   isUploading ? 'Uploading...' : 
                   fileSearchLoading ? 'Connecting...' : 
-                  !selectedFile ? 'Select a file to connect' : 'Upload & Connect to File Search API' 
+                  !selectedFile ? 'Select a file to connect' : 'Upload & Connect' 
                 }}
               </button>
             </div>
