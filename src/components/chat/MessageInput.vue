@@ -265,23 +265,23 @@ const connectFileSearch = async () => {
     isUploading.value = true;
     
     // First upload the file using the new upload endpoint
-    const uploadResult = await botsifyApi.uploadFileNew(selectedFile.value);
+    const response = await botsifyApi.uploadFileNew(selectedFile.value);
     
-    if (!uploadResult.success) {
-      throw new Error(uploadResult.message || 'File upload failed');
+    if (!response.success) {
+      throw new Error(response.message || 'File upload failed');
     }
     
     uploadProgress.value = 50;
     
     // Then create file search with the uploaded file data
-    const fileData = {
-      fileUrl: uploadResult.data.url,
-      fileName: uploadResult.data.fileName,
-      fileType: uploadResult.data.fileType,
-      fileId: uploadResult.data.fileId
-    };
+    // const fileData = {
+    //   fileUrl: uploadResult.data.url,
+    //   fileName: uploadResult.data.fileName,
+    //   fileType: uploadResult.data.fileType,
+    //   fileId: uploadResult.data.fileId
+    // };
     
-    const response = await botsifyApi.createFileSearch(props.chatId, fileData);
+    // const response = await botsifyApi.createFileSearch(props.chatId, fileData);
     
     uploadProgress.value = 100;
     isUploading.value = false;
@@ -293,6 +293,8 @@ const connectFileSearch = async () => {
       // Add success message to chat
       const successMessage = `✅ File "${selectedFile.value.name}" uploaded and File Search connected successfully!`;
       await chatStore.addMessage(props.chatId, successMessage, 'assistant');
+
+      closeFileSearchModal();
     } else {
       console.error('Failed to create File Search:', response.message);
       alert('Failed to create File Search: ' + response.message);
@@ -815,7 +817,7 @@ onMounted(() => {
             </div>
             
             <div class="url-input-section">
-              <label for="website-url">Website URL </label>
+              <label for="website-url">Website URL</label>
               <div class="input-group">
                 <input 
                   id="website-url"
@@ -1543,7 +1545,6 @@ onMounted(() => {
   border-top: 2px solid currentColor;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  z-index: 10;
 }
 
 @keyframes spin {

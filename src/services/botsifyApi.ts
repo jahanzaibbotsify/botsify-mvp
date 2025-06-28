@@ -1077,11 +1077,12 @@ export class BotsifyApiService {
       formData.append('file', file);
       
       const response = await axios.post(
-        `${BOTSIFY_BASE_URL}/upload-file`,
+        `${BOTSIFY_BASE_URL}/v1/upload-file`,
         formData,
         { 
           headers: {
-            ...this.getBotsifyHeaders()
+            ...this.getBotsifyHeaders(),
+            'Content-Type': 'multipart/form-data'
             // Note: Don't set Content-Type for FormData, let axios handle it
           }
         }
