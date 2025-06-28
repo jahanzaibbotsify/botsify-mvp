@@ -21,15 +21,20 @@ const showMCPModal = ref(false);
 const showMCPDropdown = ref(false);
 const showCustomServerOnOpen = ref(false);
 
-// New refs for File Search and Web Search
+// New refs for File Search
 const showFileSearchModal = ref(false);
 const showWebSearchModal = ref(false);
 const fileSearchResults = ref<any[]>([]);
 const fileSearchLoading = ref(false);
+
+// for web search
+const webSearcApiKey = 'H9MzZn62ZISSYhzzABbNfPs6tfL1QPLv8wFK06o1';
 const webSearchUrl = ref('');
-const webSearchUrls = reactive<string[]>([]);
+const webSearchResults = reactive<any[]>([]);
 const webSearchLoading = ref(false);
-const webSearchResults = ref<any>(null);
+const webSearchDeleteLoading = ref(false);
+const webSearchDeleteAllLoading = ref(false);
+const webSearchSelectedUrlId = ref('0');
 
 // New refs for file upload in File Search
 const selectedFile = ref<File | null>(null);
@@ -230,7 +235,6 @@ const closeFileSearchModal = () => {
 const closeWebSearchModal = () => {
   showWebSearchModal.value = false;
   webSearchUrl.value = '';
-  webSearchResults.value = null;
   showWebSearchConfig.value = false;
 };
 
@@ -315,17 +319,21 @@ const connectWebSearch = async () => {
     console.log('Web Search URL:', webSearchUrl.value);
     console.log('Web Search configuration:', webSearchConfig.value);
     
-    webSearchUrls.push(webSearchUrl.value);
-
-    const response = await botsifyApi.createWebSearch(props.chatId, webSearchUrl.value.trim(), webSearchConfig.value);
+    const response = await botsifyApi.createWebSearch(webSearcApiKey, webSearchUrl.value.trim(), webSearchConfig.value);
     
     if (response.success) {
-      webSearchResults.value = response.data;
       console.log('Web Search created successfully:', response.data);
       
+      webSearchResults.push({
+        id: response.data.id,
+        url: webSearchUrl.value
+      });
+
       // Add success message to chat
       const successMessage = `✅ Web Search connected successfully for: ${webSearchUrl.value}`;
       await chatStore.addMessage(props.chatId, successMessage, 'assistant');
+
+      closeWebSearchModal();
     } else {
       console.error('Failed to create Web Search:', response.message);
       alert('Failed to create Web Search: ' + response.message);
@@ -380,11 +388,14 @@ const loadFileSearchData = async () => {
 const loadWebSearchData = async () => {
   try {
     console.log('Loading existing Web Search data for bot assistant:', props.chatId);
-    const response = await botsifyApi.getWebSearch(props.chatId);
+    const response = await botsifyApi.getWebSearch(webSearcApiKey);
     
     if (response.success) {
-      webSearchResults.value = response.data;
-      console.log('Web Search data loaded:', webSearchResults.value);
+      // webSearchResults.value = response.data;
+      // console.log('Web Search data loaded:', webSearchResults.value);
+      console.log('web search result:', response.data);
+      
+      webSearchResults.push(...response.data);
     } else {
       console.log('No existing Web Search data found or failed to load:', response.message);
     }
@@ -422,25 +433,33 @@ const deleteFileSearchEntry = async (fileSearchId: string) => {
 };
 
 // Delete Web Search entry
-const deleteWebSearchEntry = async (webSearchId: string) => {
+const deleteWebSearchEntry = async (webSearchId: string, webSearchUrl: string) => {
   if (!confirm('Are you sure you want to delete this Web Search entry?')) {
     return;
   }
 
   try {
-    console.log('Deleting Web Search entry:', webSearchId);
-    const response = await botsifyApi.deleteWebSearch(webSearchId);
+    webSearchDeleteLoading.value = true;
+    webSearchSelectedUrlId.value = webSearchId;
+    console.log('Deleting Web Search entry:', webSearchId, '-', webSearchUrl);
+    // const response = await botsifyApi.deleteWebSearch(webSearcApiKey, webSearchId, webSearchUrl);
     
+    const response = await botsifyApi.deleteAllWebSearch([webSearchId]);
     if (response.success) {
       // Clear web search results if this was the active one
-      if (webSearchResults.value && webSearchResults.value.id === webSearchId) {
-        webSearchResults.value = null;
-      }
+      // if (webSearchResults.value && webSearchResults.value.id === webSearchId) {
+      //   webSearchResults.value = null;
+      // }
       console.log('Web Search entry deleted successfully');
-      
+      const index = webSearchResults.findIndex(item => item.id === webSearchId);
+      if (index !== -1) {
+        webSearchResults.splice(index, 1);
+      }
       // Add success message to chat
-      const successMessage = `✅ Web Search entry deleted successfully`;
+      const successMessage = `✅ Web Search for ${webSearchUrl} removed successfully`;
       await chatStore.addMessage(props.chatId, successMessage, 'assistant');
+
+      closeWebSearchModal();
     } else {
       console.error('Failed to delete Web Search entry:', response.message);
       alert('Failed to delete Web Search entry: ' + response.message);
@@ -448,6 +467,40 @@ const deleteWebSearchEntry = async (webSearchId: string) => {
   } catch (error: any) {
     console.error('Error deleting Web Search entry:', error);
     alert('Error deleting Web Search entry: ' + error.message);
+  }finally{
+    webSearchDeleteLoading.value = false;
+  }
+};
+
+// Delete Web Search entry
+const deleteWebSearchAllEntry = async () => {
+  if (!confirm('Are you sure you want to delete this Web Search entry?')) {
+    return;
+  }
+
+  const ids = webSearchResults.map(item=>item.id);
+
+  try {
+    webSearchDeleteAllLoading.value = true;
+    const response = await botsifyApi.deleteAllWebSearch(ids);
+    
+    if (response.success) {
+      console.log('Web Search entry deleted successfully');
+      webSearchResults.splice(0, webSearchResults.length);
+      // Add success message to chat
+      const successMessage = `✅ All Web Search removed successfully`;
+      await chatStore.addMessage(props.chatId, successMessage, 'assistant');
+
+      closeWebSearchModal();
+    } else {
+      console.error('Failed to delete Web Search entry:', response.message);
+      alert('Failed to delete Web Search entry: ' + response.message);
+    }
+  } catch (error: any) {
+    console.error('Error deleting Web Search entry:', error);
+    alert('Error deleting Web Search entry: ' + error.message);
+  }finally{
+    webSearchDeleteAllLoading.value = false;
   }
 };
 
@@ -762,7 +815,7 @@ onMounted(() => {
             </div>
             
             <div class="url-input-section">
-              <label for="website-url">Website URL</label>
+              <label for="website-url">Website URL </label>
               <div class="input-group">
                 <input 
                   id="website-url"
@@ -788,34 +841,52 @@ onMounted(() => {
             </div>
 
             <!-- Web Search Results -->
-            <div v-if="webSearchResults" class="search-results">
-              <h3>Website Connected</h3>
-              <div class="website-info">
-                <div class="website-item">
-                  <div class="website-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <line x1="2" y1="12" x2="22" y2="12"></line>
-                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                    </svg>
-                  </div>
-                  <div class="website-details">
-                    <div class="website-url">{{ webSearchResults.url || webSearchUrl }}</div>
-                    <div class="website-title">{{ webSearchResults.title || 'Website' }}</div>
-                    <div class="website-status">{{ webSearchResults.status || 'Connected' }}</div>
-                  </div>
-                  <button 
-                    class="delete-button" 
-                    @click="deleteWebSearchEntry(webSearchResults.id)"
-                    title="Delete this web search entry"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    </svg>
-                  </button>
-                </div>
+
+            <div v-if="webSearchResults.length" class="search-results">
+              
+              <div class="websites-connected-header">
+                <h3>Websites Connected</h3>
+                <button 
+                  class="delete-button" 
+                  @click="deleteWebSearchAllEntry()"
+                  title="Delete all web search entries"
+                >
+                  <span v-if="webSearchDeleteAllLoading" class="loading-spinner"></span>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
               </div>
+              <template v-for="webSearchResult of webSearchResults">
+                <div class="website-info">
+                  <div class="website-item">
+                    <div class="website-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                      </svg>
+                    </div>
+                    <div class="website-details">
+                      <div class="website-url">{{ webSearchResult.url }}</div>
+                      <div class="website-title">{{ 'Website' }}</div>
+                      <div class="website-status">{{'Connected' }}</div>
+                    </div>
+                    <button 
+                      class="delete-button" 
+                      @click="deleteWebSearchEntry(webSearchResult.id, webSearchResult.url)"
+                      title="Delete this web search entry"
+                    >
+                      <span v-if="webSearchDeleteLoading && webSearchSelectedUrlId ==  webSearchResult.id" class="loading-spinner"></span>
+                      <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </template>
             </div>
           </div>
         </div>
@@ -1472,6 +1543,7 @@ onMounted(() => {
   border-top: 2px solid currentColor;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  z-index: 10;
 }
 
 @keyframes spin {
@@ -1723,6 +1795,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  margin-bottom: 5px;
 }
 
 .website-item {
@@ -1773,6 +1846,15 @@ onMounted(() => {
   font-weight: 500;
 }
 
+.websites-connected-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.search-results .loading-spinner{
+  display: inline-block;
+}
 /* Configuration Section Styles */
 .config-section {
   margin-top: var(--space-4);
@@ -1952,7 +2034,7 @@ onMounted(() => {
   background: transparent;
   border: none;
   padding: var(--space-2);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-danger);
   cursor: pointer;
   border-radius: var(--radius-sm);
   transition: all var(--transition-normal);
@@ -1967,5 +2049,10 @@ onMounted(() => {
 
 .delete-button:active {
   transform: scale(0.95);
+}
+
+.delete-button:focus {
+  outline: none;
+  box-shadow: none;
 }
 </style>
