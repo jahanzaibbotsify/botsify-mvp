@@ -904,12 +904,17 @@ export class BotsifyApiService {
   /**
    * Get Web Search data for a specific bot assistant
    */
-  async getWebSearch(botAssistantId: string): Promise<BotsifyResponse> {
+  async getWebSearch(apikey: string): Promise<BotsifyResponse> {
     try {
-      console.log('Getting web search URLs for bot assistant:', botAssistantId);
+      console.log('Getting web search URLs for bot assistant:', apikey);
       
+      // const response = await axios.get(
+      //   `${BOTSIFY_BASE_URL}/web-search/${botAssistantId}`,
+      //   { headers: this.getBotsifyHeaders() }
+      // );
+
       const response = await axios.get(
-        `${BOTSIFY_BASE_URL}/web-search/${botAssistantId}`,
+        `${BOTSIFY_BASE_URL}/web-search?apikey=${apikey}`,
         { headers: this.getBotsifyHeaders() }
       );
       
@@ -931,14 +936,15 @@ export class BotsifyApiService {
   /**
    * Add a new web URL for search
    */
-  async createWebSearch(botAssistantId: string, url: string, title?: string): Promise<BotsifyResponse> {
+  async createWebSearch(apikey: string, url: string, title?: string): Promise<BotsifyResponse> {
     try {
-      console.log('Adding web URL for bot assistant:', { botAssistantId, url, title });
+      console.log('Adding web URL for bot assistant:', { apikey, url, title });
       
       const response = await axios.post(
         `${BOTSIFY_BASE_URL}/web-search`,
         {
-          bot_assistant_id: botAssistantId,
+          // bot_assistant_id: botAssistantId,
+          apikey: apikey,
           url: url,
           title: title
         },
@@ -963,12 +969,12 @@ export class BotsifyApiService {
   /**
    * Delete a web search URL
    */
-  async deleteWebSearch(id: string, url: string): Promise<BotsifyResponse> {
+  async deleteWebSearch(apikey: string, id: string, url: string): Promise<BotsifyResponse> {
     try {
       console.log('Deleting web URL:', { id, url });
       
       const response = await axios.delete(
-        `${BOTSIFY_BASE_URL}/web-search/${id}`,
+        `${BOTSIFY_BASE_URL}/web-search/${id}?apikey=${apikey}`,
         { 
           headers: this.getBotsifyHeaders(),
           data: { url: url }
@@ -983,6 +989,38 @@ export class BotsifyApiService {
       };
     } catch (error: any) {
       console.error('Error deleting web URL:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to delete web URL'
+      };
+    }
+  }
+
+  /**
+   * Delete a web search URL
+   */
+  async deleteAllWebSearch(ids: string[]): Promise<BotsifyResponse> {
+    try {
+     console.log("passed ids:", ids);
+     
+      const response = await axios.delete(
+        `${BOTSIFY_BASE_URL}/web-search`, 
+        { 
+          headers: this.getBotsifyHeaders(),
+          data: {
+            apikey: 'H9MzZn62ZISSYhzzABbNfPs6tfL1QPLv8wFK06o1',
+            ids: ids,
+          },
+      });
+
+      console.log('Web URL deleted successfully:', response.data);
+      return {
+        success: true,
+        message: 'All Web URLs deleted successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error deleting all web URLs:', error);
       return {
         success: false,
         message: error.response?.data?.message || 'Failed to delete web URL'
@@ -1039,11 +1077,12 @@ export class BotsifyApiService {
       formData.append('file', file);
       
       const response = await axios.post(
-        `${BOTSIFY_BASE_URL}/upload-file`,
+        `${BOTSIFY_BASE_URL}/v1/upload-file`,
         formData,
         { 
           headers: {
-            ...this.getBotsifyHeaders()
+            ...this.getBotsifyHeaders(),
+            'Content-Type': 'multipart/form-data'
             // Note: Don't set Content-Type for FormData, let axios handle it
           }
         }

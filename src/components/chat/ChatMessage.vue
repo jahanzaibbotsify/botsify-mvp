@@ -56,7 +56,7 @@ onMounted(() => {
 <template>
   <div 
     class="message-container" 
-    :class="{ 'user-message': props.message.sender === 'user', 'ai-message': props.message.sender === 'assistant' }"
+    :class="{ 'user-message': props.message.sender === 'user', '': props.message.sender === 'assistant' }"
   >
     <div class="message">
       <div v-if="props.message.content" class="content" v-html="parsedContent"></div>
@@ -112,7 +112,6 @@ onMounted(() => {
   border-radius: 24px;
   padding: var(--space-3) var(--space-4);
   position: relative;
-  box-shadow: var(--shadow-sm);
   word-break: break-word;
   overflow-wrap: break-word;
   transition: all var(--transition-normal);

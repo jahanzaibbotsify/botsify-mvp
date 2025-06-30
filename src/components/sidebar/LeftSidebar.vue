@@ -131,13 +131,6 @@ const isLinkActive = (url: string) => {
           </a>
         </div>
         <div class="sidebar-actions">
-          <button class="new-chat-button primary" @click="createNewChat">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            <span>New Chat</span>
-          </button>
           
           <!-- 3-dot menu button -->
           <div class="dropdown-container">
@@ -251,11 +244,11 @@ const isLinkActive = (url: string) => {
 
 .logo-link:hover {
   opacity: 0.9;
-  transform: scale(1.02);
+  transform: scale(1.1);
 }
 
 .logo-icon {
-  height: 24px;
+  height: 34px;
   width: auto;
 }
 
@@ -518,7 +511,7 @@ const isLinkActive = (url: string) => {
   }
   
   .logo-icon {
-    max-height: 24px;
+    max-height: 34px;
   }
   
   .nav-dropdown {

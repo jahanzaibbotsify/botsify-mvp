@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useChatStore } from '../../stores/chatStore';
 import { useMCPStore } from '../../stores/mcpStore';
 import type { Attachment } from '../../types';
@@ -21,14 +21,20 @@ const showMCPModal = ref(false);
 const showMCPDropdown = ref(false);
 const showCustomServerOnOpen = ref(false);
 
-// New refs for File Search and Web Search
+// New refs for File Search
 const showFileSearchModal = ref(false);
 const showWebSearchModal = ref(false);
 const fileSearchResults = ref<any[]>([]);
 const fileSearchLoading = ref(false);
+
+// for web search
+const webSearcApiKey = 'H9MzZn62ZISSYhzzABbNfPs6tfL1QPLv8wFK06o1';
 const webSearchUrl = ref('');
+const webSearchResults = reactive<any[]>([]);
 const webSearchLoading = ref(false);
-const webSearchResults = ref<any>(null);
+const webSearchDeleteLoading = ref(false);
+const webSearchDeleteAllLoading = ref(false);
+const webSearchSelectedUrlId = ref('0');
 
 // New refs for file upload in File Search
 const selectedFile = ref<File | null>(null);
@@ -229,7 +235,6 @@ const closeFileSearchModal = () => {
 const closeWebSearchModal = () => {
   showWebSearchModal.value = false;
   webSearchUrl.value = '';
-  webSearchResults.value = null;
   showWebSearchConfig.value = false;
 };
 
@@ -260,23 +265,23 @@ const connectFileSearch = async () => {
     isUploading.value = true;
     
     // First upload the file using the new upload endpoint
-    const uploadResult = await botsifyApi.uploadFileNew(selectedFile.value);
+    const response = await botsifyApi.uploadFileNew(selectedFile.value);
     
-    if (!uploadResult.success) {
-      throw new Error(uploadResult.message || 'File upload failed');
+    if (!response.success) {
+      throw new Error(response.message || 'File upload failed');
     }
     
     uploadProgress.value = 50;
     
     // Then create file search with the uploaded file data
-    const fileData = {
-      fileUrl: uploadResult.data.url,
-      fileName: uploadResult.data.fileName,
-      fileType: uploadResult.data.fileType,
-      fileId: uploadResult.data.fileId
-    };
+    // const fileData = {
+    //   fileUrl: uploadResult.data.url,
+    //   fileName: uploadResult.data.fileName,
+    //   fileType: uploadResult.data.fileType,
+    //   fileId: uploadResult.data.fileId
+    // };
     
-    const response = await botsifyApi.createFileSearch(props.chatId, fileData);
+    // const response = await botsifyApi.createFileSearch(props.chatId, fileData);
     
     uploadProgress.value = 100;
     isUploading.value = false;
@@ -288,6 +293,8 @@ const connectFileSearch = async () => {
       // Add success message to chat
       const successMessage = `✅ File "${selectedFile.value.name}" uploaded and File Search connected successfully!`;
       await chatStore.addMessage(props.chatId, successMessage, 'assistant');
+
+      closeFileSearchModal();
     } else {
       console.error('Failed to create File Search:', response.message);
       alert('Failed to create File Search: ' + response.message);
@@ -314,15 +321,21 @@ const connectWebSearch = async () => {
     console.log('Web Search URL:', webSearchUrl.value);
     console.log('Web Search configuration:', webSearchConfig.value);
     
-    const response = await botsifyApi.createWebSearch(props.chatId, webSearchUrl.value.trim(), webSearchConfig.value);
+    const response = await botsifyApi.createWebSearch(webSearcApiKey, webSearchUrl.value.trim(), webSearchConfig.value);
     
     if (response.success) {
-      webSearchResults.value = response.data;
       console.log('Web Search created successfully:', response.data);
       
+      webSearchResults.push({
+        id: response.data.id,
+        url: webSearchUrl.value
+      });
+
       // Add success message to chat
       const successMessage = `✅ Web Search connected successfully for: ${webSearchUrl.value}`;
       await chatStore.addMessage(props.chatId, successMessage, 'assistant');
+
+      closeWebSearchModal();
     } else {
       console.error('Failed to create Web Search:', response.message);
       alert('Failed to create Web Search: ' + response.message);
@@ -377,11 +390,14 @@ const loadFileSearchData = async () => {
 const loadWebSearchData = async () => {
   try {
     console.log('Loading existing Web Search data for bot assistant:', props.chatId);
-    const response = await botsifyApi.getWebSearch(props.chatId);
+    const response = await botsifyApi.getWebSearch(webSearcApiKey);
     
     if (response.success) {
-      webSearchResults.value = response.data;
-      console.log('Web Search data loaded:', webSearchResults.value);
+      // webSearchResults.value = response.data;
+      // console.log('Web Search data loaded:', webSearchResults.value);
+      console.log('web search result:', response.data);
+      
+      webSearchResults.push(...response.data);
     } else {
       console.log('No existing Web Search data found or failed to load:', response.message);
     }
@@ -419,25 +435,33 @@ const deleteFileSearchEntry = async (fileSearchId: string) => {
 };
 
 // Delete Web Search entry
-const deleteWebSearchEntry = async (webSearchId: string) => {
+const deleteWebSearchEntry = async (webSearchId: string, webSearchUrl: string) => {
   if (!confirm('Are you sure you want to delete this Web Search entry?')) {
     return;
   }
 
   try {
-    console.log('Deleting Web Search entry:', webSearchId);
-    const response = await botsifyApi.deleteWebSearch(webSearchId);
+    webSearchDeleteLoading.value = true;
+    webSearchSelectedUrlId.value = webSearchId;
+    console.log('Deleting Web Search entry:', webSearchId, '-', webSearchUrl);
+    // const response = await botsifyApi.deleteWebSearch(webSearcApiKey, webSearchId, webSearchUrl);
     
+    const response = await botsifyApi.deleteAllWebSearch([webSearchId]);
     if (response.success) {
       // Clear web search results if this was the active one
-      if (webSearchResults.value && webSearchResults.value.id === webSearchId) {
-        webSearchResults.value = null;
-      }
+      // if (webSearchResults.value && webSearchResults.value.id === webSearchId) {
+      //   webSearchResults.value = null;
+      // }
       console.log('Web Search entry deleted successfully');
-      
+      const index = webSearchResults.findIndex(item => item.id === webSearchId);
+      if (index !== -1) {
+        webSearchResults.splice(index, 1);
+      }
       // Add success message to chat
-      const successMessage = `✅ Web Search entry deleted successfully`;
+      const successMessage = `✅ Web Search for ${webSearchUrl} removed successfully`;
       await chatStore.addMessage(props.chatId, successMessage, 'assistant');
+
+      closeWebSearchModal();
     } else {
       console.error('Failed to delete Web Search entry:', response.message);
       alert('Failed to delete Web Search entry: ' + response.message);
@@ -445,6 +469,40 @@ const deleteWebSearchEntry = async (webSearchId: string) => {
   } catch (error: any) {
     console.error('Error deleting Web Search entry:', error);
     alert('Error deleting Web Search entry: ' + error.message);
+  }finally{
+    webSearchDeleteLoading.value = false;
+  }
+};
+
+// Delete Web Search entry
+const deleteWebSearchAllEntry = async () => {
+  if (!confirm('Are you sure you want to delete this Web Search entry?')) {
+    return;
+  }
+
+  const ids = webSearchResults.map(item=>item.id);
+
+  try {
+    webSearchDeleteAllLoading.value = true;
+    const response = await botsifyApi.deleteAllWebSearch(ids);
+    
+    if (response.success) {
+      console.log('Web Search entry deleted successfully');
+      webSearchResults.splice(0, webSearchResults.length);
+      // Add success message to chat
+      const successMessage = `✅ All Web Search removed successfully`;
+      await chatStore.addMessage(props.chatId, successMessage, 'assistant');
+
+      closeWebSearchModal();
+    } else {
+      console.error('Failed to delete Web Search entry:', response.message);
+      alert('Failed to delete Web Search entry: ' + response.message);
+    }
+  } catch (error: any) {
+    console.error('Error deleting Web Search entry:', error);
+    alert('Error deleting Web Search entry: ' + error.message);
+  }finally{
+    webSearchDeleteAllLoading.value = false;
   }
 };
 
@@ -520,10 +578,6 @@ onMounted(() => {
                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
               </svg>
-              <!-- Connection indicator -->
-              <span v-if="mcpStore.connectedServers.length > 0" class="connection-indicator">
-                {{ mcpStore.connectedServers.length }}
-              </span>
             </button>
 
             <!-- New Dropdown Menu with 3 Options -->
@@ -540,28 +594,6 @@ onMounted(() => {
 
               <!-- Three Service Options -->
               <div class="service-options">
-                <!-- MCP Servers Option -->
-                <div class="service-option" @click="openMCPServers">
-                  <div class="service-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                    </svg>
-                  </div>
-                  <div class="service-info">
-                    <div class="service-name">MCP Servers</div>
-                    <div class="service-description">Connect to external APIs and services</div>
-                    <div v-if="mcpStore.connectedServers.length > 0" class="service-status">
-                      {{ mcpStore.connectedServers.length }} connected
-                    </div>
-                  </div>
-                  <div class="service-arrow">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
-                  </div>
-                </div>
-
                 <!-- File Search Option -->
                 <div class="service-option" @click="openFileSearch">
                   <div class="service-icon">
@@ -606,6 +638,16 @@ onMounted(() => {
               </div>
             </div>
           </div>
+          <button class="icon-button mcp-icon-button" @click="openMCPServers" title="MCP Servers">           
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" color="#000000" fill="none">
+                  <path d="M3.49994 11.7501L11.6717 3.57855C12.7762 2.47398 14.5672 2.47398 15.6717 3.57855C16.7762 4.68312 16.7762 6.47398 15.6717 7.57855M15.6717 7.57855L9.49994 13.7501M15.6717 7.57855C16.7762 6.47398 18.5672 6.47398 19.6717 7.57855C20.7762 8.68312 20.7762 10.474 19.6717 11.5785L12.7072 18.543C12.3167 18.9335 12.3167 19.5667 12.7072 19.9572L13.9999 21.2499" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                  <path d="M17.4999 9.74921L11.3282 15.921C10.2237 17.0255 8.43272 17.0255 7.32823 15.921C6.22373 14.8164 6.22373 13.0255 7.32823 11.921L13.4999 5.74939" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <!-- Connection indicator -->
+              <span v-if="mcpStore.connectedServers.length > 0" class="connection-indicator">
+                {{ mcpStore.connectedServers.length }}
+              </span>
+          </button>
         </div>
         
         <button 
@@ -717,7 +759,7 @@ onMounted(() => {
                 {{ 
                   isUploading ? 'Uploading...' : 
                   fileSearchLoading ? 'Connecting...' : 
-                  !selectedFile ? 'Select a file to connect' : 'Upload & Connect to File Search API' 
+                  !selectedFile ? 'Select a file to connect' : 'Upload & Connect' 
                 }}
               </button>
             </div>
@@ -801,34 +843,52 @@ onMounted(() => {
             </div>
 
             <!-- Web Search Results -->
-            <div v-if="webSearchResults" class="search-results">
-              <h3>Website Connected</h3>
-              <div class="website-info">
-                <div class="website-item">
-                  <div class="website-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <line x1="2" y1="12" x2="22" y2="12"></line>
-                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                    </svg>
-                  </div>
-                  <div class="website-details">
-                    <div class="website-url">{{ webSearchResults.url || webSearchUrl }}</div>
-                    <div class="website-title">{{ webSearchResults.title || 'Website' }}</div>
-                    <div class="website-status">{{ webSearchResults.status || 'Connected' }}</div>
-                  </div>
-                  <button 
-                    class="delete-button" 
-                    @click="deleteWebSearchEntry(webSearchResults.id)"
-                    title="Delete this web search entry"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    </svg>
-                  </button>
-                </div>
+
+            <div v-if="webSearchResults.length" class="search-results">
+              
+              <div class="websites-connected-header">
+                <h3>Websites Connected</h3>
+                <button 
+                  class="delete-button" 
+                  @click="deleteWebSearchAllEntry()"
+                  title="Delete all web search entries"
+                >
+                  <span v-if="webSearchDeleteAllLoading" class="loading-spinner"></span>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
               </div>
+              <template v-for="webSearchResult of webSearchResults">
+                <div class="website-info">
+                  <div class="website-item">
+                    <div class="website-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                      </svg>
+                    </div>
+                    <div class="website-details">
+                      <div class="website-url">{{ webSearchResult.url }}</div>
+                      <div class="website-title">{{ 'Website' }}</div>
+                      <div class="website-status">{{'Connected' }}</div>
+                    </div>
+                    <button 
+                      class="delete-button" 
+                      @click="deleteWebSearchEntry(webSearchResult.id, webSearchResult.url)"
+                      title="Delete this web search entry"
+                    >
+                      <span v-if="webSearchDeleteLoading && webSearchSelectedUrlId ==  webSearchResult.id" class="loading-spinner"></span>
+                      <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </template>
             </div>
           </div>
         </div>
@@ -1736,6 +1796,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  margin-bottom: 5px;
 }
 
 .website-item {
@@ -1786,6 +1847,15 @@ onMounted(() => {
   font-weight: 500;
 }
 
+.websites-connected-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.search-results .loading-spinner{
+  display: inline-block;
+}
 /* Configuration Section Styles */
 .config-section {
   margin-top: var(--space-4);
@@ -1965,7 +2035,7 @@ onMounted(() => {
   background: transparent;
   border: none;
   padding: var(--space-2);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-danger);
   cursor: pointer;
   border-radius: var(--radius-sm);
   transition: all var(--transition-normal);
@@ -1980,5 +2050,10 @@ onMounted(() => {
 
 .delete-button:active {
   transform: scale(0.95);
+}
+
+.delete-button:focus {
+  outline: none;
+  box-shadow: none;
 }
 </style>

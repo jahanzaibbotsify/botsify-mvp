@@ -3,6 +3,7 @@ import { computed, ref, watch, onMounted } from 'vue';
 import { useChatStore } from '../../stores/chatStore';
 import { marked } from 'marked';
 import AiAgentActions from '../sidebar/AiAgentActions.vue';
+import BotsifyLoader from '../../components/ui/BotsifyLoader.vue';
 
 const props = defineProps<{
   chatId: string;
@@ -28,6 +29,8 @@ const story = computed(() => {
   console.log('Story data computed:', storyData);
   return storyData;
 });
+
+const isTyping = computed(() => chatStore.isTyping);
 
 // Watch for story changes
 watch(story, (newStory, oldStory) => {
@@ -382,7 +385,13 @@ defineExpose({
       
       <!-- Normal View -->
       <div v-else class="story-content scrollbar" v-html="parsedStoryContent"></div>
-      
+
+      <!-- loader -->
+      <div v-if="isTyping" class="loader-container">
+        <BotsifyLoader/>
+      </div>
+
+
       <!-- AI Agent Actions moved to right sidebar -->
       <AiAgentActions />
     </div>
@@ -890,6 +899,11 @@ defineExpose({
   border: none;
   border-top: 1px solid var(--color-border);
   margin: var(--space-4) 0;
+}
+
+.loader-container{
+  margin: auto;
+  padding: 1rem;
 }
 
 /* Mobile styles */
