@@ -61,7 +61,7 @@ onMounted(() => {
     <div class="message">
       <div v-if="props.message.content" class="content" v-html="parsedContent"></div>
       <div v-else class="empty-content">
-        <em>Empty message</em>
+        <!-- <em>Empty message</em> -->
       </div>
       
       <!-- Attachments -->

@@ -789,15 +789,15 @@ export class BotsifyApiService {
   /**
    * Get File Search data for a specific bot assistant
    */
-  async getFileSearch(botAssistantId: string): Promise<BotsifyResponse> {
+  async getFileSearch(apikey: string): Promise<BotsifyResponse> {
     try {
-      console.log('Getting file search files for bot assistant:', botAssistantId);
+      console.log('Getting file search files for bot assistant:', apikey);
       
       const response = await axios.get(
-        `${BOTSIFY_BASE_URL}/file-search/${botAssistantId}`,
+        `${BOTSIFY_BASE_URL}/file-search?apikey=${apikey}`,
         { headers: this.getBotsifyHeaders() }
       );
-      
+
       console.log('File search files retrieved successfully:', response.data);
       return {
         success: true,
@@ -816,40 +816,42 @@ export class BotsifyApiService {
   /**
    * Create/Connect File Search for a specific bot assistant
    */
-  async createFileSearch(botAssistantId: string, file: File): Promise<BotsifyResponse> {
+  async createFileSearch(apikey: string, file: File): Promise<BotsifyResponse> {
     try {
-      console.log('Uploading file for search:', { botAssistantId, fileName: file.name, fileSize: file.size });
+      // console.log('Uploading file for search:', { botAssistantId, fileName: file.fileName, fileSize: file.size });
+      // console.log(file);
       
-      // Validate file type (documents only for file search)
-      const supportedTypes = [
-        'application/pdf', 'text/plain', 'text/csv',
-        'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-      ];
+      // // Validate file type (documents only for file search)
+      // const supportedTypes = [
+      //   'application/pdf', 'text/plain', 'text/csv',
+      //   'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      //   'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      //   'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+      // ];
       
-      if (!supportedTypes.includes(file.type)) {
-        return {
-          success: false,
-          message: 'Unsupported file type. Please upload PDF, Word, Excel, PowerPoint, TXT, or CSV files.'
-        };
-      }
+      // if (!supportedTypes.includes(file.fileType)) {
+      //   return {
+      //     success: false,
+      //     message: 'Unsupported file type. Please upload PDF, Word, Excel, PowerPoint, TXT, or CSV files.'
+      //   };
+      // }
       
-      // Validate file size (10MB limit for documents)
-      const maxSize = 10 * 1024 * 1024; // 10MB
-      if (file.size > maxSize) {
-        return {
-          success: false,
-          message: 'File size too large. Maximum size is 10MB for documents.'
-        };
-      }
+      // // Validate file size (10MB limit for documents)
+      // const maxSize = 10 * 1024 * 1024; // 10MB
+      // if (file.size > maxSize) {
+      //   return {
+      //     success: false,
+      //     message: 'File size too large. Maximum size is 10MB for documents.'
+      //   };
+      // }
       
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('bot_assistant_id', botAssistantId);
+      // formData.append('file', file);
+      // formData.append('bot_assistant_id', botAssistantId);
+      formData.append('file', file)
       
       const response = await axios.post(
-        `${BOTSIFY_BASE_URL}/file-search`,
+        `${BOTSIFY_BASE_URL}/file-search?apikey=${apikey}`,
         formData,
         { 
           headers: {
@@ -877,13 +879,46 @@ export class BotsifyApiService {
   /**
    * Delete File Search by ID
    */
-  async deleteFileSearch(id: string): Promise<BotsifyResponse> {
+  async deleteFileSearch(apikey: string, id: string): Promise<BotsifyResponse> {
     try {
       console.log('Deleting file from search:', id);
       
       const response = await axios.delete(
-        `${BOTSIFY_BASE_URL}/file-search/${id}`,
+        `${BOTSIFY_BASE_URL}/file-search/${id}?apikey=${apikey}`,
         { headers: this.getBotsifyHeaders() }
+      );
+      
+      console.log('File deleted from search successfully:', response.data);
+      return {
+        success: true,
+        message: 'File deleted from search successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error deleting file from search:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to delete file from search'
+      };
+    }
+  }
+
+  /**
+   * Delete File Search by ID
+   */
+  async deleteAllFileSearch(apikey: string, ids: string[]): Promise<BotsifyResponse> {
+    try {
+      console.log('Deleting file from search:', ids);
+      
+      const response = await axios.delete(
+        `${BOTSIFY_BASE_URL}/file-search`,
+        { 
+          headers: this.getBotsifyHeaders(),
+          data: {
+            "apikey": apikey,
+            "ids": ids
+          }
+        }
       );
       
       console.log('File deleted from search successfully:', response.data);

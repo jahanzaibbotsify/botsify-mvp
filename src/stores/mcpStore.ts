@@ -437,7 +437,9 @@ export const useMCPStore = defineStore('mcp', () => {
       return true;
     } catch (error: any) {
       console.error('❌ Failed to connect to MCP server:', error);
-      
+      connections.value.pop();
+      saveToStorage();
+
       // Provide specific error messages for better user experience
       if (error.message.includes('bot id')){
         throw new Error(error.message);

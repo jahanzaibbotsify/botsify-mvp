@@ -1135,12 +1135,13 @@ Use the above connected services information to understand what tools and data s
       messages: [
         {
           id: '1',
-          content: 'Hello! Start creating your AI prompt here.',
+          // content: 'Hello! Start creating your AI prompt here.',
+          content: '',
           timestamp: new Date(),
           sender: 'assistant'
         }
       ],
-      lastMessage: 'Hello! Start creating your AI prompt here.'
+      lastMessage: 'Hello!'
     };
 
     // If there's a default template, initialize the story with it
