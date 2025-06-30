@@ -28,6 +28,7 @@ const showWebSearchModal = ref(false);
 const fileSearchResults = reactive<any[]>([]);
 const fileSearchLoading = ref(false);
 const fileSearchDeleteLoading = ref(false);
+const fileSearchAllDeleteLoading = ref(false);
 const fileSearchSelectedId = ref('0');
 
 // for web search
@@ -276,11 +277,7 @@ const connectFileSearch = async () => {
     uploadProgress.value = 50;
 
     // File data which need to display
-    const fileData = {
-      id: 0,
-      file_name: selectedFile.value.name,
-      url: uploadResult.data.url
-    }
+    
     
     // Then create file search with the uploaded file data
     // const fileData = {
@@ -301,7 +298,11 @@ const connectFileSearch = async () => {
     if (response.success) {
       // fileSearchResults.value = response.data?.files || [];
       console.log('File Search created successfully:', response.data);
-      
+      const fileData = {
+        id: response.data.data.id,
+        file_name: selectedFile.value.name,
+        url: response.data.data.url
+      }
 
       fileSearchResults.push(fileData);
 
@@ -434,7 +435,7 @@ const deleteFileSearchEntry = async (fileSearchId: string, fileSearchName: strin
     fileSearchDeleteLoading.value = true;
     fileSearchSelectedId.value = fileSearchId;
     console.log('Deleting File Search entry:', fileSearchId);
-    const response = await botsifyApi.deleteFileSearch(apikey, fileSearchId);
+    const response = await botsifyApi.deleteAllFileSearch(apikey, [fileSearchId]);
     
     if (response.success) {
       // Remove from local results
@@ -461,6 +462,37 @@ const deleteFileSearchEntry = async (fileSearchId: string, fileSearchName: strin
     alert('Error deleting File Search entry: ' + error.message);
   }finally{
     fileSearchDeleteLoading.value = false;
+  }
+};
+
+// Delete File Search entry
+const deleteAllFileSearchEntry = async () => {
+  if (!confirm('Are you sure you want to delete this File Search entry?')) {
+    return;
+  }
+
+  try {
+    fileSearchAllDeleteLoading.value = true;
+    const ids = fileSearchResults.map(file=>file.id);
+    const response = await botsifyApi.deleteAllFileSearch(apikey, ids);
+    
+    if (response.success) {
+      console.log('All File Search entry deleted successfully');
+      fileSearchResults.splice(0, fileSearchResults.length);
+      // Add success message to chat
+      const successMessage = `✅ All File Search removed successfully`;
+      await chatStore.addMessage(props.chatId, successMessage, 'assistant');
+
+      closeFileSearchModal();
+    } else {
+      console.error('Failed to delete File Search entry:', response.message);
+      alert('Failed to delete File Search entry: ' + response.message);
+    }
+  } catch (error: any) {
+    console.error('Error deleting File Search entry:', error);
+    alert('Error deleting File Search entry: ' + error.message);
+  }finally{
+    fileSearchAllDeleteLoading.value = false;
   }
 };
 
@@ -796,7 +828,20 @@ onMounted(() => {
 
             <!-- File Search Results -->
             <div v-if="fileSearchResults.length > 0" class="search-results">
-              <h3>Connected Files</h3>
+              <div class="file-connected-header">
+                <h3>Connected Files</h3>
+                <button 
+                  class="delete-button" 
+                  @click="deleteAllFileSearchEntry()"
+                  title="Delete this file search entry"
+                >
+                  <span v-if="fileSearchAllDeleteLoading" class="loading-spinner"></span>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
+              </div>
               <div class="file-list">
                 <div v-for="file in fileSearchResults" :key="file.id" class="file-item">
                   <div class="file-icon">
@@ -1756,6 +1801,12 @@ onMounted(() => {
 .remove-file:hover {
   color: var(--color-error);
   background: rgba(239, 68, 68, 0.1);
+}
+
+.file-connected-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
 }
 
 .upload-progress {

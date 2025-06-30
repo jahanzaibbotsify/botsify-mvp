@@ -904,6 +904,39 @@ export class BotsifyApiService {
   }
 
   /**
+   * Delete File Search by ID
+   */
+  async deleteAllFileSearch(apikey: string, ids: string[]): Promise<BotsifyResponse> {
+    try {
+      console.log('Deleting file from search:', ids);
+      
+      const response = await axios.delete(
+        `${BOTSIFY_BASE_URL}/file-search`,
+        { 
+          headers: this.getBotsifyHeaders(),
+          data: {
+            "apikey": apikey,
+            "ids": ids
+          }
+        }
+      );
+      
+      console.log('File deleted from search successfully:', response.data);
+      return {
+        success: true,
+        message: 'File deleted from search successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error deleting file from search:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to delete file from search'
+      };
+    }
+  }
+
+  /**
    * Get Web Search data for a specific bot assistant
    */
   async getWebSearch(apikey: string): Promise<BotsifyResponse> {
