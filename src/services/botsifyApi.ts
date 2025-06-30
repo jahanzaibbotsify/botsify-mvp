@@ -202,6 +202,28 @@ export class BotsifyApiService {
     }
   }
 
+  async getAllConnectedMCPs(apikey:string) {
+    try {
+      const response = await axios.get(
+        `${BOTSIFY_BASE_URL}/ai-tools/mcp?apikey=${apikey}`,
+        {
+          headers: this.getBotsifyHeaders()
+        }
+      );
+      return {
+        success: true,
+        message: 'Connected MCPs retrieved successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to get connected MCPs',
+        data: error.response?.data
+      };
+    }
+  }
+
   /**
    * Validate MCP server connection by pinging the actual server endpoint
    */
