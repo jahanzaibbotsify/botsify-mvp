@@ -11,6 +11,7 @@ const props = defineProps<{
   chatId: string;
 }>();
 
+const apikey = 'H9MzZn62ZISSYhzzABbNfPs6tfL1QPLv8wFK06o1';
 const chatStore = useChatStore();
 const mcpStore = useMCPStore();
 const messageText = ref('');
@@ -24,11 +25,12 @@ const showCustomServerOnOpen = ref(false);
 // New refs for File Search
 const showFileSearchModal = ref(false);
 const showWebSearchModal = ref(false);
-const fileSearchResults = ref<any[]>([]);
+const fileSearchResults = reactive<any[]>([]);
 const fileSearchLoading = ref(false);
+const fileSearchDeleteLoading = ref(false);
+const fileSearchSelectedId = ref('0');
 
 // for web search
-const webSearcApiKey = 'H9MzZn62ZISSYhzzABbNfPs6tfL1QPLv8wFK06o1';
 const webSearchUrl = ref('');
 const webSearchResults = reactive<any[]>([]);
 const webSearchLoading = ref(false);
@@ -226,7 +228,7 @@ const closeMCPModal = () => {
 
 const closeFileSearchModal = () => {
   showFileSearchModal.value = false;
-  fileSearchResults.value = [];
+  // fileSearchResults.value = [];
   selectedFile.value = null;
   uploadProgress.value = 0;
   isUploading.value = false;
@@ -265,13 +267,20 @@ const connectFileSearch = async () => {
     isUploading.value = true;
     
     // First upload the file using the new upload endpoint
-    const response = await botsifyApi.uploadFileNew(selectedFile.value);
+    let uploadResult = await botsifyApi.uploadFileNew(selectedFile.value);
     
-    if (!response.success) {
-      throw new Error(response.message || 'File upload failed');
+    if (!uploadResult.success) {
+      throw new Error(uploadResult.message || 'File upload failed');
     }
     
     uploadProgress.value = 50;
+
+    // File data which need to display
+    const fileData = {
+      id: 0,
+      file_name: selectedFile.value.name,
+      url: uploadResult.data.url
+    }
     
     // Then create file search with the uploaded file data
     // const fileData = {
@@ -280,16 +289,22 @@ const connectFileSearch = async () => {
     //   fileType: uploadResult.data.fileType,
     //   fileId: uploadResult.data.fileId
     // };
+
     
     // const response = await botsifyApi.createFileSearch(props.chatId, fileData);
     
+    const response = await botsifyApi.createFileSearch(apikey, selectedFile.value);
+
     uploadProgress.value = 100;
     isUploading.value = false;
     
     if (response.success) {
-      fileSearchResults.value = response.data?.files || [];
+      // fileSearchResults.value = response.data?.files || [];
       console.log('File Search created successfully:', response.data);
       
+
+      fileSearchResults.push(fileData);
+
       // Add success message to chat
       const successMessage = `✅ File "${selectedFile.value.name}" uploaded and File Search connected successfully!`;
       await chatStore.addMessage(props.chatId, successMessage, 'assistant');
@@ -321,7 +336,7 @@ const connectWebSearch = async () => {
     console.log('Web Search URL:', webSearchUrl.value);
     console.log('Web Search configuration:', webSearchConfig.value);
     
-    const response = await botsifyApi.createWebSearch(webSearcApiKey, webSearchUrl.value.trim(), webSearchConfig.value);
+    const response = await botsifyApi.createWebSearch(apikey, webSearchUrl.value.trim(), webSearchConfig.value);
     
     if (response.success) {
       console.log('Web Search created successfully:', response.data);
@@ -373,11 +388,14 @@ const handleMCPConnection = (serverId: string) => {
 const loadFileSearchData = async () => {
   try {
     console.log('Loading existing File Search data for bot assistant:', props.chatId);
-    const response = await botsifyApi.getFileSearch(props.chatId);
+    // const response = await botsifyApi.getFileSearch(props.chatId);
+    const response = await botsifyApi.getFileSearch(apikey);
     
     if (response.success) {
-      fileSearchResults.value = response.data?.files || [];
-      console.log('File Search data loaded:', fileSearchResults.value);
+      // fileSearchResults.value = response.data?.files || [];
+      // console.log('File Search data loaded:', fileSearchResults.value);
+      console.log('file search result:', response.data);
+      fileSearchResults.push(...response.data);
     } else {
       console.log('No existing File Search data found or failed to load:', response.message);
     }
@@ -390,7 +408,7 @@ const loadFileSearchData = async () => {
 const loadWebSearchData = async () => {
   try {
     console.log('Loading existing Web Search data for bot assistant:', props.chatId);
-    const response = await botsifyApi.getWebSearch(webSearcApiKey);
+    const response = await botsifyApi.getWebSearch(apikey);
     
     if (response.success) {
       // webSearchResults.value = response.data;
@@ -407,23 +425,33 @@ const loadWebSearchData = async () => {
 };
 
 // Delete File Search entry
-const deleteFileSearchEntry = async (fileSearchId: string) => {
+const deleteFileSearchEntry = async (fileSearchId: string, fileSearchName: string) => {
   if (!confirm('Are you sure you want to delete this File Search entry?')) {
     return;
   }
 
   try {
+    fileSearchDeleteLoading.value = true;
+    fileSearchSelectedId.value = fileSearchId;
     console.log('Deleting File Search entry:', fileSearchId);
-    const response = await botsifyApi.deleteFileSearch(fileSearchId);
+    const response = await botsifyApi.deleteFileSearch(apikey, fileSearchId);
     
     if (response.success) {
       // Remove from local results
-      fileSearchResults.value = fileSearchResults.value.filter(result => result.id !== fileSearchId);
+      // fileSearchResults.value = fileSearchResults.value.filter(result => result.id !== fileSearchId);
       console.log('File Search entry deleted successfully');
+
+      const index = fileSearchResults.findIndex(file => file.id === fileSearchId);
+
+      if (index !== -1) {
+        fileSearchResults.splice(index, 1);
+      }
       
       // Add success message to chat
-      const successMessage = `✅ File Search entry deleted successfully`;
+      const successMessage = `✅ File Search ${fileSearchName} removed successfully`;
       await chatStore.addMessage(props.chatId, successMessage, 'assistant');
+
+      closeFileSearchModal();
     } else {
       console.error('Failed to delete File Search entry:', response.message);
       alert('Failed to delete File Search entry: ' + response.message);
@@ -431,6 +459,8 @@ const deleteFileSearchEntry = async (fileSearchId: string) => {
   } catch (error: any) {
     console.error('Error deleting File Search entry:', error);
     alert('Error deleting File Search entry: ' + error.message);
+  }finally{
+    fileSearchDeleteLoading.value = false;
   }
 };
 
@@ -444,7 +474,7 @@ const deleteWebSearchEntry = async (webSearchId: string, webSearchUrl: string) =
     webSearchDeleteLoading.value = true;
     webSearchSelectedUrlId.value = webSearchId;
     console.log('Deleting Web Search entry:', webSearchId, '-', webSearchUrl);
-    // const response = await botsifyApi.deleteWebSearch(webSearcApiKey, webSearchId, webSearchUrl);
+    // const response = await botsifyApi.deleteWebSearch(apikey, webSearchId, webSearchUrl);
     
     const response = await botsifyApi.deleteAllWebSearch([webSearchId]);
     if (response.success) {
@@ -776,15 +806,20 @@ onMounted(() => {
                     </svg>
                   </div>
                   <div class="file-info">
-                    <div class="file-name">{{ file.name || file.filename || 'Unknown File' }}</div>
-                    <div class="file-meta">{{ file.size || file.type || 'File' }}</div>
+                    <div class="file-name">{{ file.file_name || file.filename || 'Unknown File' }}</div>
+                    <!-- <div class="file-meta">{{ file.size || file.type || 'File' }}</div> -->
+                    <div class="file-download">
+                      <a v-if="file.url" :href="file.url" download>Download</a>
+                    </div>
                   </div>
                   <button 
+                    v-if="file.id"
                     class="delete-button" 
-                    @click="deleteFileSearchEntry(file.id)"
+                    @click="deleteFileSearchEntry(file.id, file.file_name)"
                     title="Delete this file search entry"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <span v-if="fileSearchDeleteLoading && fileSearchSelectedId ==  file.id" class="loading-spinner"></span>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <polyline points="3 6 5 6 21 6"></polyline>
                       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                     </svg>
@@ -843,9 +878,7 @@ onMounted(() => {
             </div>
 
             <!-- Web Search Results -->
-
             <div v-if="webSearchResults.length" class="search-results">
-              
               <div class="websites-connected-header">
                 <h3>Websites Connected</h3>
                 <button 
@@ -1700,7 +1733,12 @@ onMounted(() => {
   word-break: break-all;
 }
 
-.file-details .file-size {
+.file-details .file-size{
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.file-info .file-download{
   font-size: 0.75rem;
   color: var(--color-text-secondary);
 }
