@@ -48,6 +48,13 @@ watch(() => chat.value?.messages.length, (newLength, oldLength) => {
   scrollToBottom();
 });
 
+watch(
+  () => chat.value?.messages.map(m => m.content).join(''),
+  () => {
+    scrollToBottom();
+  }
+);
+
 // Watch for typing status to scroll to bottom
 watch(() => chatStore.isTyping, (isTyping, wasTyping) => {
   console.log('Typing status changed:', { isTyping, wasTyping });
