@@ -22,6 +22,10 @@ const showMCPModal = ref(false);
 const showMCPDropdown = ref(false);
 const showCustomServerOnOpen = ref(false);
 
+
+const loadingData = ref(false);
+
+
 // New refs for File Search
 const showFileSearchModal = ref(false);
 const showWebSearchModal = ref(false);
@@ -206,13 +210,23 @@ const openMCPServers = () => {
   closeMCPDropdown();
 };
 
-const openFileSearch = () => {
+const openFileSearch = async () => {
   showFileSearchModal.value = true;
+  if(fileSearchResults.length === 0){
+    loadingData.value = true;
+    await loadFileSearchData();
+    loadingData.value = false;
+  }
   closeMCPDropdown();
 };
 
-const openWebSearch = () => {
+const openWebSearch = async () => {
   showWebSearchModal.value = true;
+  if(webSearchResults.length === 0){
+    loadingData.value = true;
+    await loadWebSearchData();
+    loadingData.value = false;
+  }
   closeMCPDropdown();
 };
 
@@ -586,8 +600,6 @@ const deleteWebSearchAllEntry = async () => {
 };
 
 onMounted(() => {
-  loadFileSearchData();
-  loadWebSearchData();
   loadMCPsData();
 });
 </script>
@@ -753,7 +765,8 @@ onMounted(() => {
 
     <!-- File Search Modal -->
     <div v-if="showFileSearchModal" class="modal-overlay" @click="closeFileSearchModal">
-      <div class="modal-content file-search-modal" @click.stop>
+      <span v-if="loadingData" class="loading-spinner loading-spinner-large"></span>
+      <div v-else class="modal-content file-search-modal" @click.stop>
         <div class="modal-header">
           <h2>File Search</h2>
           <button class="modal-close" @click="closeFileSearchModal">
@@ -897,7 +910,8 @@ onMounted(() => {
 
     <!-- Web Search Modal -->
     <div v-if="showWebSearchModal" class="modal-overlay" @click="closeWebSearchModal">
-      <div class="modal-content web-search-modal" @click.stop>
+      <span v-if="loadingData" class="loading-spinner loading-spinner-large"></span>
+      <div v-else class="modal-content web-search-modal" @click.stop>
         <div class="modal-header">
           <h2>Web Search</h2>
           <button class="modal-close" @click="closeWebSearchModal">
@@ -1641,6 +1655,11 @@ onMounted(() => {
   border-top: 2px solid currentColor;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+
+.loading-spinner-large{
+  scale: 4;
+  color: var(--color-primary);
 }
 
 @keyframes spin {
