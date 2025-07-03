@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted } from 'vue';
+import { computed, ref, watch, onMounted, nextTick } from 'vue';
 import { useChatStore } from '../../stores/chatStore';
 import { marked } from 'marked';
 import AiAgentActions from '../sidebar/AiAgentActions.vue';
@@ -16,6 +16,8 @@ const editContent = ref('');
 const showVersionHistory = ref(false);
 const showTemplateManager = ref(false);
 const newTemplateName = ref('');
+const messagesContainer = ref<HTMLElement | null>(null);
+
 
 // Check if we're on mobile and set initial collapsed state
 onMounted(() => {
@@ -30,7 +32,7 @@ const story = computed(() => {
   return storyData;
 });
 
-const isTyping = computed(() => chatStore.isTyping);
+const isAIPromptGenerating = computed(() => chatStore.isAIPromptGenerating);
 
 // Watch for story changes
 watch(story, (newStory, oldStory) => {
@@ -66,6 +68,11 @@ const parsedStoryContent = computed(() => {
     console.error('Error parsing markdown:', error);
     return `<p class="error-text">Error rendering content</p>`;
   }
+});
+
+watch(() => parsedStoryContent.value.length, (newLength, oldLength) => {
+  console.log('Messages length changed:', { newLength, oldLength });
+  scrollToBottom();
 });
 
 const sortedVersions = computed(() => {
@@ -166,6 +173,13 @@ function clearAllVersionHistory() {
     chatStore.clearVersionHistory(props.chatId);
   }
 }
+
+const scrollToBottom = async () => {
+  await nextTick();
+  if (messagesContainer.value) {
+    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+  }
+};
 
 // Expose the toggleSidebar function to parent components
 defineExpose({
@@ -384,10 +398,10 @@ defineExpose({
       </div>
       
       <!-- Normal View -->
-      <div v-else class="story-content scrollbar" v-html="parsedStoryContent"></div>
+      <div ref="messagesContainer" v-else class="story-content scrollbar" v-html="parsedStoryContent"></div>
 
       <!-- loader -->
-      <div v-if="isTyping" class="loader-container">
+      <div v-if="isAIPromptGenerating" class="loader-container">
         <BotsifyLoader/>
       </div>
 

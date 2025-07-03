@@ -783,6 +783,60 @@ Remember: You have access to ${connectedServers.value.length} MCP server${connec
     }
   };
 
+  const getConnectedMCPs = async (apikey: string) => {
+    try {
+      let message = '';
+      localStorage.removeItem('mcp_connections');
+
+      const response = await botsifyApi.getAllConnectedMCPs(apikey);
+
+      if (response.success && Array.isArray(response.data)) {
+        response.data.forEach((mcp: any) => {
+          const server = allServers.value.find(s => s.id === mcp.setting.server_label);
+          if(server){
+            const newConnection: MCPConnection = {
+              id: `${server.id}_${Date.now()}`,
+              serverId: server.id,
+              serverName: server.name,
+              apiKey: apikey?.trim(),
+              botId: mcp.setting.bot_id || '',
+              isConnected: true,
+              connectedAt: new Date(),
+              connectionUrl: server.connectionUrl,
+              authMethod: server.authMethod,
+              systemPrompt: generateDefaultSystemPrompt(server)
+            };
+            connections.value.push(newConnection);
+            saveToStorage();
+          }else{
+            message += message.length > 0 ? `, ${mcp.setting.server_label}` : mcp.setting.server_label;
+          }
+        });
+
+        // error if any server not matched
+        if (message.length) {
+          return {
+            success: false,
+            message: 'Doesnt match servers ' + message
+          }
+        }
+
+        return{
+          success: true,
+        }
+      }
+      return{
+        success: false,
+        message: 'failed to load'
+      }
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Failed to get connected MCPs'
+      }
+    }
+  }
+
   // Get saved bot configurations
   const getSavedBotConfigurations = () => {
     try {
@@ -821,6 +875,7 @@ Remember: You have access to ${connectedServers.value.length} MCP server${connec
     loadMCPConfigurationFromAPI,
     getEnhancedSystemPrompt,
     downloadMCPConfiguration,
-    getSavedBotConfigurations
+    getSavedBotConfigurations,
+    getConnectedMCPs
   };
 }); 

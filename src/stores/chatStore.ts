@@ -11,6 +11,7 @@ export const useChatStore = defineStore('chat', () => {
   const chats = ref<Chat[]>([]);
   const activeChat = ref<string | null>(null);
   const isTyping = ref(false);
+  const isAIPromptGenerating = ref(false);
   const globalPromptTemplates = ref<GlobalPromptTemplate[]>([]);
 
   // Load data from localStorage on initialization
@@ -659,6 +660,17 @@ Use the above connected services information to understand what tools and data s
 
       // Don't add initial AI message yet - wait for first content
       let aiMessage: Message | null = null;
+      let eachStreamContent = '';
+      let isChatResponse = false;
+
+      aiMessage = {
+        id: Date.now().toString(),
+        content: eachStreamContent,
+        timestamp: new Date(),
+        sender: 'assistant'
+      };
+      chat.messages.push(aiMessage);
+
       console.log('Waiting for first content chunk to create AI message');
 
       console.log('Starting to process stream');
@@ -668,8 +680,32 @@ Use the above connected services information to understand what tools and data s
         // Handle Responses API streaming format
         if (chunk.type === 'response.output_text.delta') {
           const content = chunk.delta || '';
-          streamedContent += content;
+          eachStreamContent = content;
           
+          if( // check is 
+            eachStreamContent.includes('---') || 
+            eachStreamContent.includes('AI') ||
+            eachStreamContent.includes('_PROM') || 
+            eachStreamContent.includes('PT')
+          ){}else if (isChatResponse && eachStreamContent) {
+            const content = eachStreamContent;
+            setTimeout(() => {
+              chat.messages[chat.messages.length - 1].content += content;
+            }, 200);
+          }
+
+          streamedContent += eachStreamContent;
+          eachStreamContent = '';
+
+          if (!isChatResponse && streamedContent.length > 19) {
+            isTyping.value = false;
+            isChatResponse = true;
+          }
+
+          if (streamedContent.includes('---AI_PROMPT---')) {
+            isAIPromptGenerating.value = true;
+            isChatResponse = false;
+          }
           // Just collect content - don't create message bubble yet
         } else if (chunk.type && chunk.type.includes('function_call')) {
           // Handle tool calls for Responses API
@@ -687,66 +723,76 @@ Use the above connected services information to understand what tools and data s
       const parsedResponse = parseDualResponse(streamedContent);
       
       // Only create AI message when we have content to show
-      if (parsedResponse.chatResponse && parsedResponse.aiPrompt) {
-        // Create AI message with the chat response
-        aiMessage = {
-          id: Date.now().toString(),
-          content: parsedResponse.chatResponse,
-          timestamp: new Date(),
-          sender: 'assistant'
-        };
-        chat.messages.push(aiMessage);
-        chat.lastMessage = parsedResponse.chatResponse;
-        await nextTick();
+      // if (parsedResponse.chatResponse && parsedResponse.aiPrompt) {
+      //   // Create AI message with the chat response
+      //   aiMessage = {
+      //     id: Date.now().toString(),
+      //     content: parsedResponse.chatResponse,
+      //     timestamp: new Date(),
+      //     sender: 'assistant'
+      //   };
+      //   chat.messages.push(aiMessage);
+      //   chat.lastMessage = parsedResponse.chatResponse;
+      //   await nextTick();
         
-        // Update the sidebar with the AI prompt
-        updateStory(chat.id, parsedResponse.aiPrompt, true);
-        console.log('Updated sidebar with AI prompt');
-      } else if (parsedResponse.chatResponse && !parsedResponse.aiPrompt) {
-        // Only chat response found, no AI prompt
-        aiMessage = {
-          id: Date.now().toString(),
-          content: parsedResponse.chatResponse,
-          timestamp: new Date(),
-          sender: 'assistant'
-        };
-        chat.messages.push(aiMessage);
-        chat.lastMessage = parsedResponse.chatResponse;
-        await nextTick();
-        console.log('Only chat response found, no AI prompt to update sidebar');
-      } else if (!parsedResponse.chatResponse && parsedResponse.aiPrompt) {
-        // Only AI prompt found, no chat response - this shouldn't happen but handle it
-        aiMessage = {
-          id: Date.now().toString(),
-          content: 'I\'ve updated your AI prompt. You can see the details in the sidebar.',
-          timestamp: new Date(),
-          sender: 'assistant'
-        };
-        chat.messages.push(aiMessage);
-        chat.lastMessage = aiMessage.content;
-        await nextTick();
+      //   // Update the sidebar with the AI prompt
+      //   updateStory(chat.id, parsedResponse.aiPrompt, true);
+      //   console.log('Updated sidebar with AI prompt');
+      // } else if (parsedResponse.chatResponse && !parsedResponse.aiPrompt) {
+      //   // Only chat response found, no AI prompt
+      //   aiMessage = {
+      //     id: Date.now().toString(),
+      //     content: parsedResponse.chatResponse,
+      //     timestamp: new Date(),
+      //     sender: 'assistant'
+      //   };
+      //   chat.messages.push(aiMessage);
+      //   chat.lastMessage = parsedResponse.chatResponse;
+      //   await nextTick();
+      //   console.log('Only chat response found, no AI prompt to update sidebar');
+      // } else if (!parsedResponse.chatResponse && parsedResponse.aiPrompt) {
+      //   // Only AI prompt found, no chat response - this shouldn't happen but handle it
+      //   aiMessage = {
+      //     id: Date.now().toString(),
+      //     content: 'I\'ve updated your AI prompt. You can see the details in the sidebar.',
+      //     timestamp: new Date(),
+      //     sender: 'assistant'
+      //   };
+      //   chat.messages.push(aiMessage);
+      //   chat.lastMessage = aiMessage.content;
+      //   await nextTick();
         
-        // Update the sidebar with the AI prompt
-        updateStory(chat.id, parsedResponse.aiPrompt, true);
-        console.log('Only AI prompt found, updated sidebar and provided generic chat message');
-      } else {
-        // No structured format found - treat as regular chat response only
-        console.warn('No structured dual response format found, treating as regular chat response');
-        if (streamedContent) {
-          aiMessage = {
-            id: Date.now().toString(),
-            content: streamedContent,
-            timestamp: new Date(),
-            sender: 'assistant'
-          };
-          chat.messages.push(aiMessage);
-          chat.lastMessage = streamedContent;
-          await nextTick();
-        }
-        // Do NOT update sidebar when no structured format is found
-        console.log('No sidebar update - content treated as regular chat response only');
+      //   // Update the sidebar with the AI prompt
+      //   updateStory(chat.id, parsedResponse.aiPrompt, true);
+      //   console.log('Only AI prompt found, updated sidebar and provided generic chat message');
+      // } else {
+      //   // No structured format found - treat as regular chat response only
+      //   console.warn('No structured dual response format found, treating as regular chat response');
+      //   if (streamedContent) {
+      //     aiMessage = {
+      //       id: Date.now().toString(),
+      //       content: streamedContent,
+      //       timestamp: new Date(),
+      //       sender: 'assistant'
+      //     };
+      //     chat.messages.push(aiMessage);
+      //     chat.lastMessage = streamedContent;
+      //     await nextTick();
+      //   }
+      //   // Do NOT update sidebar when no structured format is found
+      //   console.log('No sidebar update - content treated as regular chat response only');
+      // }
+
+      if (parsedResponse.chatResponse) {
+        chat.lastMessage = parsedResponse.chatResponse;    
       }
-      
+      if (parsedResponse.aiPrompt) {
+        updateStory(chat.id, parsedResponse.aiPrompt, true);                
+      }
+
+      await nextTick(); 
+
+
       // Process tool calls if any
       if (toolCalls.length > 0) {
         for (const toolCall of toolCalls) {
@@ -834,7 +880,7 @@ Use the above connected services information to understand what tools and data s
       );
     } finally {
       // Always set typing to false when done
-      isTyping.value = false;
+      isAIPromptGenerating.value = false;
       console.log('Typing indicator turned off');
     }
   }
@@ -1245,6 +1291,7 @@ Keep flows organized, clear, and user-friendly.`,
     activeChat,
     currentChat,
     isTyping,
+    isAIPromptGenerating,
     globalPromptTemplates,
     defaultPromptTemplate,
     setActiveChat,
