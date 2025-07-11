@@ -108,7 +108,7 @@ const sendMessage = async () => {
           
           if (uploadResult.success && uploadResult.data.uploadedFiles.length > 0) {
             // Update attachments with uploaded URLs
-            uploadResult.data.uploadedFiles.forEach((uploadedFile: any, index: number) => {
+            uploadResult.data.uploadedFiles.forEach((uploadedFile: any) => {
               const attachmentIndex = processedAttachments.findIndex(att => 
                 att.name === uploadedFile.fileName && att.type === uploadedFile.fileType
               );
@@ -230,11 +230,11 @@ const openWebSearch = async () => {
   closeMCPDropdown();
 };
 
-const openCustomServerDialog = () => {
-  showCustomServerOnOpen.value = true;
-  showMCPModal.value = true;
-  closeMCPDropdown();
-};
+// const openCustomServerDialog = () => {
+//   showCustomServerOnOpen.value = true;
+//   showMCPModal.value = true;
+//   closeMCPDropdown();
+// };
 
 const closeMCPModal = () => {
   showMCPModal.value = false;
@@ -351,7 +351,7 @@ const connectWebSearch = async () => {
     console.log('Web Search URL:', webSearchUrl.value);
     console.log('Web Search configuration:', webSearchConfig.value);
     
-    const response = await botsifyApi.createWebSearch(apikey, webSearchUrl.value.trim(), webSearchConfig.value);
+    const response = await botsifyApi.createWebSearch(apikey, webSearchUrl.value.trim(), JSON.stringify(webSearchConfig.value));
     
     if (response.success) {
       console.log('Web Search created successfully:', response.data);
@@ -378,9 +378,9 @@ const connectWebSearch = async () => {
   }
 };
 
-const toggleWebSearchConfig = () => {
-  showWebSearchConfig.value = !showWebSearchConfig.value;
-};
+// const toggleWebSearchConfig = () => {
+//   showWebSearchConfig.value = !showWebSearchConfig.value;
+// };
 
 const handleMCPConnection = (serverId: string) => {
   // Update the system prompt with MCP capabilities
