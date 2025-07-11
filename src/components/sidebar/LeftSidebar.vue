@@ -19,10 +19,10 @@ const filteredChats = computed(() => {
   return chatStore.chats;
 });
 
-const createNewChat = () => {
-  const newChat = chatStore.createNewChat();
-  router.push(`/chat/${newChat.id}`);
-};
+// const createNewChat = () => {
+//   const newChat = chatStore.createNewChat();
+//   router.push(`/chat/${newChat.id}`);
+// };
 
 const navigateToChat = (chatId: string) => {
   router.push(`/chat/${chatId}`);

@@ -202,6 +202,28 @@ export class BotsifyApiService {
     }
   }
 
+  async getAllConnectedMCPs(apikey:string) {
+    try {
+      const response = await axios.get(
+        `${BOTSIFY_BASE_URL}/ai-tools/mcp?apikey=${apikey}`,
+        {
+          headers: this.getBotsifyHeaders()
+        }
+      );
+      return {
+        success: true,
+        message: 'Connected MCPs retrieved successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to get connected MCPs',
+        data: error.response?.data
+      };
+    }
+  }
+
   /**
    * Validate MCP server connection by pinging the actual server endpoint
    */
@@ -1149,7 +1171,7 @@ export class BotsifyApiService {
       const errors: string[] = [];
       
       // Upload files in parallel for better performance
-      const uploadPromises = files.map(async (file, index) => {
+      const uploadPromises = files.map(async (file) => {
         try {
           const result = await this.uploadFileNew(file);
           if (result.success) {
@@ -1210,7 +1232,7 @@ export class BotsifyApiService {
    * Connect to File Search API with file upload
    * @deprecated Use createFileSearch instead
    */
-  async connectFileSearchWithUpload(formData: FormData): Promise<BotsifyResponse> {
+  async connectFileSearchWithUpload(): Promise<BotsifyResponse> {
     console.warn('connectFileSearchWithUpload is deprecated. Use createFileSearch instead.');
     return {
       success: false,
@@ -1223,7 +1245,7 @@ export class BotsifyApiService {
    * Connect to Web Search API with a specific website URL
    * @deprecated Use createWebSearch instead
    */
-  async connectWebSearch(websiteUrl: string, config?: any): Promise<BotsifyResponse> {
+  async connectWebSearch(): Promise<BotsifyResponse> {
     console.warn('connectWebSearch is deprecated. Use createWebSearch instead.');
     return {
       success: false,
@@ -1261,7 +1283,7 @@ export class BotsifyApiService {
   /**
    * @deprecated Use createFileSearch() instead
    */
-  async createFileSearchOld(botAssistantId: string, fileData?: any): Promise<BotsifyResponse> {
+  async createFileSearchOld(): Promise<BotsifyResponse> {
     console.warn('createFileSearchOld is deprecated. Use createFileSearch() with actual File object instead.');
     return {
       success: false,
@@ -1274,7 +1296,7 @@ export class BotsifyApiService {
    */
   async deleteFileSearchOld(id: string): Promise<BotsifyResponse> {
     console.warn('deleteFileSearchOld is deprecated. Use deleteFileSearch() instead.');
-    return this.deleteFileSearch(id);
+    return this.deleteFileSearch('', id);
   }
 
   /**
@@ -1298,7 +1320,7 @@ export class BotsifyApiService {
   /**
    * @deprecated Use deleteWebSearch() instead
    */
-  async deleteWebSearchOld(id: string): Promise<BotsifyResponse> {
+  async deleteWebSearchOld(): Promise<BotsifyResponse> {
     console.warn('deleteWebSearchOld is deprecated. Use deleteWebSearch() instead.');
     return {
       success: false,

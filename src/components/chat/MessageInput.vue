@@ -22,6 +22,10 @@ const showMCPModal = ref(false);
 const showMCPDropdown = ref(false);
 const showCustomServerOnOpen = ref(false);
 
+
+const loadingData = ref(false);
+
+
 // New refs for File Search
 const showFileSearchModal = ref(false);
 const showWebSearchModal = ref(false);
@@ -104,7 +108,7 @@ const sendMessage = async () => {
           
           if (uploadResult.success && uploadResult.data.uploadedFiles.length > 0) {
             // Update attachments with uploaded URLs
-            uploadResult.data.uploadedFiles.forEach((uploadedFile: any, index: number) => {
+            uploadResult.data.uploadedFiles.forEach((uploadedFile: any) => {
               const attachmentIndex = processedAttachments.findIndex(att => 
                 att.name === uploadedFile.fileName && att.type === uploadedFile.fileType
               );
@@ -206,21 +210,31 @@ const openMCPServers = () => {
   closeMCPDropdown();
 };
 
-const openFileSearch = () => {
+const openFileSearch = async () => {
   showFileSearchModal.value = true;
+  if(fileSearchResults.length === 0){
+    loadingData.value = true;
+    await loadFileSearchData();
+    loadingData.value = false;
+  }
   closeMCPDropdown();
 };
 
-const openWebSearch = () => {
+const openWebSearch = async () => {
   showWebSearchModal.value = true;
+  if(webSearchResults.length === 0){
+    loadingData.value = true;
+    await loadWebSearchData();
+    loadingData.value = false;
+  }
   closeMCPDropdown();
 };
 
-const openCustomServerDialog = () => {
-  showCustomServerOnOpen.value = true;
-  showMCPModal.value = true;
-  closeMCPDropdown();
-};
+// const openCustomServerDialog = () => {
+//   showCustomServerOnOpen.value = true;
+//   showMCPModal.value = true;
+//   closeMCPDropdown();
+// };
 
 const closeMCPModal = () => {
   showMCPModal.value = false;
@@ -337,7 +351,7 @@ const connectWebSearch = async () => {
     console.log('Web Search URL:', webSearchUrl.value);
     console.log('Web Search configuration:', webSearchConfig.value);
     
-    const response = await botsifyApi.createWebSearch(apikey, webSearchUrl.value.trim(), webSearchConfig.value);
+    const response = await botsifyApi.createWebSearch(apikey, webSearchUrl.value.trim(), JSON.stringify(webSearchConfig.value));
     
     if (response.success) {
       console.log('Web Search created successfully:', response.data);
@@ -364,9 +378,9 @@ const connectWebSearch = async () => {
   }
 };
 
-const toggleWebSearchConfig = () => {
-  showWebSearchConfig.value = !showWebSearchConfig.value;
-};
+// const toggleWebSearchConfig = () => {
+//   showWebSearchConfig.value = !showWebSearchConfig.value;
+// };
 
 const handleMCPConnection = (serverId: string) => {
   // Update the system prompt with MCP capabilities
@@ -417,6 +431,23 @@ const loadWebSearchData = async () => {
       console.log('web search result:', response.data);
       
       webSearchResults.push(...response.data);
+    } else {
+      console.log('No existing Web Search data found or failed to load:', response.message);
+    }
+  } catch (error: any) {
+    console.error('Error loading Web Search data:', error);
+  }
+};
+
+// Load existing Web Search data for this bot assistant
+const loadMCPsData = async () => {
+  try {
+    console.log('Loading already connected MCP servers:', props.chatId);
+    const response = await mcpStore.getConnectedMCPs(apikey);
+    
+    if (response.success) {
+      console.log('Fetched MCP data result:', response);
+      
     } else {
       console.log('No existing Web Search data found or failed to load:', response.message);
     }
@@ -569,8 +600,7 @@ const deleteWebSearchAllEntry = async () => {
 };
 
 onMounted(() => {
-  loadFileSearchData();
-  loadWebSearchData();
+  loadMCPsData();
 });
 </script>
 
@@ -735,7 +765,8 @@ onMounted(() => {
 
     <!-- File Search Modal -->
     <div v-if="showFileSearchModal" class="modal-overlay" @click="closeFileSearchModal">
-      <div class="modal-content file-search-modal" @click.stop>
+      <span v-if="loadingData" class="loading-spinner loading-spinner-large"></span>
+      <div v-else class="modal-content file-search-modal" @click.stop>
         <div class="modal-header">
           <h2>File Search</h2>
           <button class="modal-close" @click="closeFileSearchModal">
@@ -879,7 +910,8 @@ onMounted(() => {
 
     <!-- Web Search Modal -->
     <div v-if="showWebSearchModal" class="modal-overlay" @click="closeWebSearchModal">
-      <div class="modal-content web-search-modal" @click.stop>
+      <span v-if="loadingData" class="loading-spinner loading-spinner-large"></span>
+      <div v-else class="modal-content web-search-modal" @click.stop>
         <div class="modal-header">
           <h2>Web Search</h2>
           <button class="modal-close" @click="closeWebSearchModal">
@@ -1623,6 +1655,11 @@ onMounted(() => {
   border-top: 2px solid currentColor;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+
+.loading-spinner-large{
+  scale: 4;
+  color: var(--color-primary);
 }
 
 @keyframes spin {

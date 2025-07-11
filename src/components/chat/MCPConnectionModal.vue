@@ -18,7 +18,7 @@ const mcpStore = useMCPStore();
 // Modal state
 const selectedServer = ref<MCPServer | null>(null);
 const apiKey = ref('');
-const botId = ref('1226');
+const botId = 1226;
 const customSystemPrompt = ref('');
 const isConnecting = ref(false);
 const error = ref<string | null>(null);
@@ -194,7 +194,7 @@ const connectToServer = async () => {
     
     await mcpStore.connectServer(
       selectedServer.value.id,
-      botId.value,
+      Number(botId),
       apiKey.value,
       customSystemPrompt.value
     );
