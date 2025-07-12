@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { MCPServer, MCPConnection, MCPServerConfig, CustomMCPServerForm, MCPConfiguration, MCPConfigurationFile } from '../types';
+import type { MCPServer, MCPConnection, CustomMCPServerForm } from '../types';
 import { botsifyApi } from '../services/botsifyApi';
 
 export const useMCPStore = defineStore('mcp', () => {
-  // Popular MCP servers data
-  const popularServers = ref<MCPServer[]>([
+  // All MCP servers (popular + custom)
+  const servers = ref<MCPServer[]>([
     {
       id: 'github',
       name: 'GitHub',
@@ -17,7 +17,13 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'GitHub Personal Access Token',
-      features: ['Repository access', 'Issue management', 'Pull requests', 'Code search']
+      features: ['Repository access', 'Issue management', 'Pull requests', 'Code search'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
     },
     {
       id: 'notion',
@@ -30,7 +36,13 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'Notion Integration Token',
-      features: ['Database queries', 'Page creation', 'Content management', 'Team collaboration']
+      features: ['Database queries', 'Page creation', 'Content management', 'Team collaboration'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
     },
     {
       id: 'slack',
@@ -43,7 +55,13 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: true,
       authMethod: 'bearer_token',
       authLabel: 'Slack Bot Token',
-      features: ['Send messages', 'Channel management', 'User lookup', 'File sharing']
+      features: ['Send messages', 'Channel management', 'User lookup', 'File sharing'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
     },
     {
       id: 'google-drive',
@@ -56,7 +74,13 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: true,
       authMethod: 'oauth',
       authLabel: 'Google OAuth Token',
-      features: ['File access', 'Folder management', 'Document creation', 'Sharing controls']
+      features: ['File access', 'Folder management', 'Document creation', 'Sharing controls'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
     },
     {
       id: 'postgres',
@@ -69,7 +93,13 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: true,
       authMethod: 'none',
       authLabel: '',
-      features: ['Query execution', 'Schema inspection', 'Data analysis', 'Performance monitoring']
+      features: ['Query execution', 'Schema inspection', 'Data analysis', 'Performance monitoring'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
     },
     {
       id: 'filesystem',
@@ -82,7 +112,13 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: true,
       authMethod: 'none',
       authLabel: '',
-      features: ['File operations', 'Directory listing', 'Text processing', 'Search capabilities']
+      features: ['File operations', 'Directory listing', 'Text processing', 'Search capabilities'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
     },
     {
       id: 'web-search',
@@ -95,7 +131,13 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'Search API Key',
-      features: ['Web search', 'Real-time data', 'News updates', 'Content analysis']
+      features: ['Web search', 'Real-time data', 'News updates', 'Content analysis'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
     },
     {
       id: 'weather',
@@ -108,7 +150,13 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: false,
       authMethod: 'api_key',
       authLabel: 'Weather API Key',
-      features: ['Current weather', 'Forecasts', 'Historical data', 'Weather alerts']
+      features: ['Current weather', 'Forecasts', 'Historical data', 'Weather alerts'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
     },
     {
       id: 'calendar',
@@ -121,7 +169,13 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: false,
       authMethod: 'oauth',
       authLabel: 'Google OAuth Token',
-      features: ['Event management', 'Schedule viewing', 'Meeting creation', 'Reminder setup']
+      features: ['Event management', 'Schedule viewing', 'Meeting creation', 'Reminder setup'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
     },
     {
       id: 'email',
@@ -134,7 +188,13 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: false,
       authMethod: 'basic_auth',
       authLabel: 'SMTP Username/Password',
-      features: ['Email sending', 'Template support', 'Attachment handling', 'Delivery tracking']
+      features: ['Email sending', 'Template support', 'Attachment handling', 'Delivery tracking'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
     },
     {
       id: 'zapier',
@@ -147,7 +207,13 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'Zapier API Key',
-      features: ['Workflow automation', 'App integrations', 'Trigger management', 'Data transformation']
+      features: ['Workflow automation', 'App integrations', 'Trigger management', 'Data transformation'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
     },
     {
       id: 'stripe',
@@ -160,7 +226,13 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'Stripe Secret Key',
-      features: ['Payment processing', 'Subscription management', 'Customer billing', 'Financial reporting']
+      features: ['Payment processing', 'Subscription management', 'Customer billing', 'Financial reporting'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
     },
     {
       id: 'shopify',
@@ -173,7 +245,13 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'Shopify API Key',
-      features: ['Product management', 'Order processing', 'Customer data', 'Store analytics']
+      features: ['Product management', 'Order processing', 'Customer data', 'Store analytics'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
     },
     {
       id: 'paypal',
@@ -182,11 +260,17 @@ export const useMCPStore = defineStore('mcp', () => {
       category: 'Payments',
       icon: '💰',
       apiKeyRequired: true,
-      botIdRequired: true,
+      botIdRequired: false,
       isPopular: true,
       authMethod: 'oauth',
       authLabel: 'PayPal OAuth Token',
-      features: ['Payment processing', 'Transaction history', 'Refund management', 'Merchant services']
+      features: ['Payment processing', 'Transaction history', 'Refund management', 'Merchant services'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
     },
     {
       id: 'square',
@@ -199,7 +283,13 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: true,
       authMethod: 'bearer_token',
       authLabel: 'Square Access Token',
-      features: ['POS transactions', 'Inventory management', 'Customer management', 'Analytics']
+      features: ['POS transactions', 'Inventory management', 'Customer management', 'Analytics'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
     },
     {
       id: 'plaid',
@@ -212,15 +302,15 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'Plaid Client ID & Secret',
-      features: ['Account linking', 'Transaction data', 'Balance checks', 'Financial insights']
+      features: ['Account linking', 'Transaction data', 'Balance checks', 'Financial insights'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
     }
   ]);
-
-  // Custom servers added by users
-  const customServers = ref<MCPServer[]>([]);
-
-  // Connected servers
-  const connections = ref<MCPConnection[]>([]);
 
   // Load connections and custom servers from localStorage
   const loadFromStorage = () => {
@@ -229,11 +319,17 @@ export const useMCPStore = defineStore('mcp', () => {
     if (storedConnections) {
       try {
         const parsed = JSON.parse(storedConnections);
-        connections.value = parsed.map((conn: any) => ({
-          ...conn,
-          connectedAt: conn.connectedAt ? new Date(conn.connectedAt) : undefined,
-          lastUsed: conn.lastUsed ? new Date(conn.lastUsed) : undefined
-        }));
+        servers.value.forEach((server: MCPServer) => {
+          const connection = parsed.find((conn: MCPConnection) => conn.serverId === server.id);
+          if (connection) {
+            server.connection = {
+              isConnected: true,
+              mcp_id: connection.mcp_id,
+              apiKey: connection.apiKey,
+              systemPrompt: connection.systemPrompt
+            };
+          }
+        });
       } catch (error) {
         console.error('Failed to load MCP connections:', error);
       }
@@ -243,7 +339,28 @@ export const useMCPStore = defineStore('mcp', () => {
     const storedCustomServers = localStorage.getItem('mcp_custom_servers');
     if (storedCustomServers) {
       try {
-        customServers.value = JSON.parse(storedCustomServers);
+        const parsedCustomServers = JSON.parse(storedCustomServers);
+        parsedCustomServers.forEach((server: MCPServer) => {
+          servers.value.push({
+            id: server.id,
+            name: server.name,
+            description: server.description,
+            category: server.category,
+            icon: server.icon,
+            apiKeyRequired: server.apiKeyRequired,
+            botIdRequired: server.botIdRequired,
+            isPopular: server.isPopular,
+            authMethod: server.authMethod,
+            authLabel: server.authLabel,
+            features: server.features,
+            connection: {
+              isConnected: false,
+              mcp_id: null,
+              apiKey: null,
+              systemPrompt: null
+            }
+          });
+        });
       } catch (error) {
         console.error('Failed to load custom MCP servers:', error);
       }
@@ -252,65 +369,72 @@ export const useMCPStore = defineStore('mcp', () => {
 
   // Save data to localStorage
   const saveToStorage = () => {
-    localStorage.setItem('mcp_connections', JSON.stringify(connections.value));
-    localStorage.setItem('mcp_custom_servers', JSON.stringify(customServers.value));
+    const connections = servers.value.filter((server: MCPServer) => server.connection.isConnected === true).map(server => ({
+      serverId: server.id,
+      mcp_id: server.connection.mcp_id,
+      apiKey: server.connection.apiKey,
+      systemPrompt: server.connection.systemPrompt
+    }));
+    localStorage.setItem('mcp_connections', JSON.stringify(connections));
+    const customServers = servers.value.filter(server => !server.isPopular).map(server => ({
+      id: server.id,
+      name: server.name,
+      description: server.description,
+      category: server.category,
+      icon: server.icon,
+      apiKeyRequired: server.apiKeyRequired,
+      botIdRequired: server.botIdRequired,
+      isPopular: server.isPopular,
+      authMethod: server.authMethod,
+      authLabel: server.authLabel,
+      features: server.features
+    }));
+    localStorage.setItem('mcp_custom_servers', JSON.stringify(customServers));
   };
 
-  // Get all servers (popular + custom)
-  const allServers = computed(() => [...popularServers.value, ...customServers.value]);
-
-  // Get server configurations (server + connection info)
-  const serverConfigs = computed<MCPServerConfig[]>(() => {
-    return allServers.value.map(server => ({
-      server,
-      connection: connections.value.find(conn => conn.serverId === server.id)
-    }));
-  });
 
   // Get connected servers
   const connectedServers = computed(() => {
-    return serverConfigs.value.filter(config => config.connection?.isConnected);
-  });
-
-  // Get popular servers
-  const popularServerConfigs = computed(() => {
-    return serverConfigs.value.filter(config => config.server.isPopular);
+    return servers.value.filter(config => config.connection.isConnected === true);
   });
 
   // Add a custom MCP server
   const addCustomServer = (formData: CustomMCPServerForm): MCPServer => {
-    const customServer: MCPServer = {
+    const customServer = {
       id: `custom_${Date.now()}`,
       name: formData.name,
       description: formData.description,
       category: formData.category,
       icon: formData.icon || '🔗',
-      connectionUrl: formData.connectionUrl,
       apiKeyRequired: formData.authMethod !== 'none',
       botIdRequired: true,
+      isPopular: false,
       authMethod: formData.authMethod,
       authLabel: formData.authLabel,
       features: formData.features,
-      isCustom: true,
-      isPopular: false
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
     };
 
-    customServers.value.push(customServer);
+    servers.value.push(customServer);
     saveToStorage();
     return customServer;
   };
 
   // Update a custom MCP server
-  const updateCustomServer = (serverId: string, formData: Partial<CustomMCPServerForm>): boolean => {
-    const serverIndex = customServers.value.findIndex(s => s.id === serverId);
+  const updateCustomServer = (serverId: string, formData: Partial<CustomMCPServerForm>) => {
+    const serverIndex = servers.value.findIndex(s => s.id === serverId);
     if (serverIndex === -1) return false;
 
-    const server = customServers.value[serverIndex];
+    const server = servers.value[serverIndex];
     if (formData.name !== undefined) server.name = formData.name;
     if (formData.description !== undefined) server.description = formData.description;
     if (formData.category !== undefined) server.category = formData.category;
     if (formData.icon !== undefined) server.icon = formData.icon;
-    if (formData.connectionUrl !== undefined) server.connectionUrl = formData.connectionUrl;
     if (formData.authMethod !== undefined) {
       server.authMethod = formData.authMethod;
       server.apiKeyRequired = formData.authMethod !== 'none';
@@ -323,33 +447,23 @@ export const useMCPStore = defineStore('mcp', () => {
   };
 
   // Delete a custom MCP server
-  const deleteCustomServer = (serverId: string): boolean => {
-    const serverIndex = customServers.value.findIndex(s => s.id === serverId);
+  const deleteCustomServer = (serverId: string) => {
+    const serverIndex = servers.value.findIndex(s => s.id === serverId);
     if (serverIndex === -1) return false;
 
-    // Also remove any connections to this server
-    connections.value = connections.value.filter(conn => conn.serverId !== serverId);
-    
-    customServers.value.splice(serverIndex, 1);
+    servers.value.splice(serverIndex, 1);
     saveToStorage();
     return true;
   };
 
   // Connect to an MCP server
-  const connectServer = async (serverId: string, botId: number, apiKey?: string, systemPrompt?: string): Promise<boolean> => {
-    const server = allServers.value.find(s => s.id === serverId);
-    if (!server) {
-      throw new Error('Server not found');
-    }
+  const connectServer = async (serverId: string, apiKey?: string, systemPrompt?: string): Promise<boolean> => {
+    const server = servers.value.find(s => s.id === serverId);
+    if (!server) throw new Error('Server not found');
 
     // Validate API key if required
     if (server.apiKeyRequired && !apiKey?.trim()) {
       throw new Error(`${server.authLabel || 'Authentication'} is required for this server`);
-    }
-
-    // Validate API key if required
-    if (server.botIdRequired && botId <= 0) {
-      throw new Error("Bot id required for server connection");
     }
 
     // Validate connection URL for custom servers
@@ -357,9 +471,11 @@ export const useMCPStore = defineStore('mcp', () => {
       throw new Error('Connection URL is required for custom servers');
     }
 
-    try {
-      console.log(`🔗 Attempting to connect to ${server.name}...`);
 
+    try {
+      // Generate a unique mcp_id if not provided
+      const mcp_id = server.connection.mcp_id || '';
+    
       // Step 1: Validate the MCP connection with the API
       const validationResult = await botsifyApi.validateMCPConnection(
         server.id,
@@ -369,77 +485,33 @@ export const useMCPStore = defineStore('mcp', () => {
       );
 
       if (!validationResult.success) {
-        console.error('❌ MCP connection validation failed:', validationResult.message);
         throw new Error(validationResult.message);
       }
-
-      console.log('✅ MCP connection validated successfully');
-
-      // Step 2: Remove existing connection if any
-      connections.value = connections.value.filter(conn => conn.serverId !== serverId);
-
-      // Step 3: Create new connection
-      const newConnection: MCPConnection = {
-        id: `${serverId}_${Date.now()}`,
-        serverId,
-        serverName: server.name,
-        apiKey: apiKey?.trim(),
-        botId: botId,
-        isConnected: true,
-        connectedAt: new Date(),
-        connectionUrl: server.connectionUrl,
-        authMethod: server.authMethod,
-        systemPrompt: systemPrompt?.trim() || generateDefaultSystemPrompt(server)
-      };
-
-      connections.value.push(newConnection);
-      saveToStorage();
-
-      console.log('💾 Connection saved locally');
-      let configError = null; // use to get errors from config result
-
-      // Step 4: Send MCP configuration JSON to the API
-      try {
-        const mcpConfigurationData = {
-          serverId: server.id,
-          serverName: server.name,
-          serverIcon: server.icon || '🔗',
-          category: server.category,
-          connectionUrl: server.connectionUrl,
-          authMethod: server.authMethod || 'none',
-          hasAuthentication: server.apiKeyRequired,
-          apiKey: newConnection.apiKey,
-          botId: newConnection.botId,
-          features: server.features,
-          systemPrompt: newConnection.systemPrompt,
-          connectedAt: newConnection.connectedAt,
-          validationData: validationResult.data
-        };
-
-        const configResult = await botsifyApi.sendMCPConfigurationJSON(mcpConfigurationData);
-        
-        if (configResult.success) {
-          console.log('✅ MCP configuration sent to API successfully');
+     try {
+       server.connection = {
+         isConnected: true,
+         mcp_id: mcp_id || null,
+         apiKey: apiKey?.trim() || null,
+         systemPrompt: systemPrompt || generateDefaultSystemPrompt(server)
+       };
+       const configResult = mcp_id ? await botsifyApi.updateMCPConfiguration(mcp_id, server) : await botsifyApi.sendMCPConfigurationJSON(server);
+       if (configResult.success) {
+          server.connection.mcp_id = configResult.data.id;
+          saveToStorage();
         } else {
           console.warn('⚠️ Failed to send MCP configuration to API:', configResult.message);
           // Don't fail the connection if API call fails, just log the warning
-          configError = configResult;
         }
       } catch (apiError: any) {
         console.warn('⚠️ API call failed but connection is established:', apiError.message);
         // Connection is still successful even if API call fails
       }
 
-      if (configError) {
-          throw new Error(configError.message);
-      }
-
       return true;
     } catch (error: any) {
       console.error('❌ Failed to connect to MCP server:', error);
-      connections.value.pop();
       saveToStorage();
-
+      
       // Provide specific error messages for better user experience
       if (error.message.includes('bot id')){
         throw new Error(error.message);
@@ -454,25 +526,26 @@ export const useMCPStore = defineStore('mcp', () => {
       throw new Error(error.message || 'Failed to connect to the server. Please check your configuration and try again.');
     }
   };
-
   // Disconnect from an MCP server
-  const disconnectServer = (serverId: string) => {
-    connections.value = connections.value.filter(conn => conn.serverId !== serverId);
-    saveToStorage();
-  };
+  const disconnectServer = async (serverId: string) => {
+    const server = servers.value.find(s => s.id === serverId);
+    if (!server) return;
 
-  // Update system prompt for a connected server
-  const updateSystemPrompt = (serverId: string, systemPrompt: string) => {
-    const connection = connections.value.find(conn => conn.serverId === serverId);
-    if (connection) {
-      connection.systemPrompt = systemPrompt.trim();
-      connection.lastUsed = new Date();
+    try {
+      // If mcp_id exists, try to disconnect
+      if (server.connection?.mcp_id) {
+        await botsifyApi.disconnectMCP(server.connection.mcp_id);
+        server.connection.mcp_id = null;
+      }
+      server.connection.isConnected = false;
       saveToStorage();
+    } catch (error) {
+      console.error('Failed to disconnect from MCP server:', error);
     }
   };
 
   // Generate default system prompt for a server
-  const generateDefaultSystemPrompt = (server: MCPServer): string => {
+  const generateDefaultSystemPrompt = (server: MCPServer) => {
     if (server.isCustom) {
       return `You are an AI assistant with access to ${server.name} through MCP. You can:
 ${server.features.map(feature => `- ${feature}`).join('\n')}
@@ -483,7 +556,7 @@ Authentication: ${server.authMethod === 'none' ? 'No authentication required' : 
 Use this integration to help users with ${server.description.toLowerCase()}.`;
     }
 
-    const prompts: Record<string, string> = {
+    const prompts = {
       github: `You are an AI assistant with access to GitHub through MCP. You can:
 - Search repositories and code
 - Read issues and pull requests
@@ -589,11 +662,11 @@ Use your Square access to help users manage their point-of-sale operations and b
 Use your Plaid access to help users integrate banking data and financial services into their applications.`
     };
 
-    return prompts[server.id] || `You are an AI assistant with access to ${server.name} through MCP. Use this integration to help users with ${server.description.toLowerCase()}.`;
+    return (prompts as Record<string, string>)[server.id] || `You are an AI assistant with access to ${server.name} through MCP. Use this integration to help users with ${server.description.toLowerCase()}.`;
   };
 
   // Get system prompt for connected servers (combined)
-  const getCombinedSystemPrompt = (): string => {
+  const getCombinedSystemPrompt = () => {
     const connectedPrompts = connectedServers.value
       .map(config => config.connection?.systemPrompt)
       .filter(Boolean);
@@ -606,10 +679,10 @@ Use your Plaid access to help users integrate banking data and financial service
 
 **AVAILABLE MCP SERVICES:**
 ${connectedServers.value.map(config => 
-  `- **${config.server.name}** (${config.server.category}): ${config.server.description}
-    Features: ${config.server.features.join(', ')}
-    ${config.server.connectionUrl ? `URL: ${config.server.connectionUrl}` : ''}
-    Authentication: ${config.server.authMethod || 'api_key'} ${config.connection?.apiKey ? '✓ Configured' : '✗ Not configured'}`
+  `- **${config.name}** (${config.category}): ${config.description}
+    Features: ${config.features.join(', ')}
+    ${config.connectionUrl ? `URL: ${config.connectionUrl}` : ''}
+    Authentication: ${config.authMethod || 'api_key'} ${config.connection?.apiKey ? '✓ Configured' : '✗ Not configured'}`
 ).join('\n')}
 
 **MCP INTEGRATION GUIDELINES:**
@@ -627,255 +700,71 @@ Remember: You have access to ${connectedServers.value.length} MCP server${connec
     return basePrompt;
   };
 
-  // Generate MCP configuration JSON
-  const generateMCPConfiguration = (botId: string, name?: string, description?: string): MCPConfiguration => {
-    const now = new Date();
-    
-    return {
-      id: `mcp_config_${Date.now()}`,
-      botId,
-      name: name || `MCP Configuration for Bot ${botId}`,
-      description: description || `Automatically generated MCP configuration with ${connectedServers.value.length} connected servers`,
-      createdAt: now,
-      updatedAt: now,
-      connectedServers: connectedServers.value.map(config => ({
-        serverId: config.server.id,
-        serverName: config.server.name,
-        serverIcon: config.server.icon || '🔗',
-        category: config.server.category,
-        connectionUrl: config.server.connectionUrl,
-        authMethod: config.server.authMethod || 'none',
-        hasAuthentication: config.server.apiKeyRequired,
-        features: config.server.features,
-        systemPrompt: config.connection?.systemPrompt || '',
-        connectedAt: config.connection?.connectedAt || now
-      })),
-      combinedSystemPrompt: '', // Remove circular reference - generate separately when needed
-      version: '1.0.0'
-    };
-  };
-
-  // Create complete MCP configuration file
-  const createMCPConfigurationFile = (botId: string, name?: string, description?: string): MCPConfigurationFile => {
-    const configuration = generateMCPConfiguration(botId, name, description);
-    const categories = [...new Set(configuration.connectedServers.map(s => s.category))];
-    
-    return {
-      configuration,
-      metadata: {
-        generatedAt: new Date(),
-        version: '1.0.0',
-        serverCount: configuration.connectedServers.length,
-        categories
-      }
-    };
-  };
-
-  // Save MCP configuration to API
-  const saveMCPConfigurationToAPI = async (botId: string, name?: string, description?: string) => {
+  const getConnectedMCPs = async () => {
     try {
-      if (connectedServers.value.length === 0) {
-        throw new Error('No MCP servers are connected. Please connect at least one server before saving configuration.');
-      }
-
-      console.log('Generating MCP configuration for bot:', botId);
-      const configFile = createMCPConfigurationFile(botId, name, description);
-      
-      console.log('Generated MCP configuration:', configFile);
-      
-      // Save to API
-      const response = await botsifyApi.saveMCPConfiguration(botId, configFile);
-      
-      if (response.success) {
-        console.log('✅ MCP configuration saved successfully to API');
-        
-        // Save the configuration reference locally
-        const configRef = {
-          botId,
-          configurationId: configFile.configuration.id,
-          lastSaved: new Date(),
-          serverCount: configFile.metadata.serverCount
-        };
-        
-        const existingConfigs = JSON.parse(localStorage.getItem('mcp_bot_configurations') || '[]');
-        const updatedConfigs = existingConfigs.filter((c: any) => c.botId !== botId);
-        updatedConfigs.push(configRef);
-        localStorage.setItem('mcp_bot_configurations', JSON.stringify(updatedConfigs));
-        
-        return {
-          success: true,
-          message: 'MCP configuration saved successfully',
-          configuration: configFile
-        };
-      } else {
-        throw new Error(response.message);
-      }
-    } catch (error: any) {
-      console.error('❌ Error saving MCP configuration:', error);
-      return {
-        success: false,
-        message: error.message || 'Failed to save MCP configuration',
-        error
-      };
-    }
-  };
-
-  // Load MCP configuration from API
-  const loadMCPConfigurationFromAPI = async (botId: string) => {
-    try {
-      console.log('Loading MCP configuration for bot:', botId);
-      
-      const response = await botsifyApi.getMCPConfiguration(botId);
-      
-      if (response.success && response.data) {
-        console.log('✅ MCP configuration loaded successfully from API');
-        return {
-          success: true,
-          message: 'MCP configuration loaded successfully',
-          configuration: response.data
-        };
-      } else {
-        throw new Error(response.message);
-      }
-    } catch (error: any) {
-      console.error('❌ Error loading MCP configuration:', error);
-      return {
-        success: false,
-        message: error.message || 'Failed to load MCP configuration',
-        error
-      };
-    }
-  };
-
-  // Get enhanced system prompt with MCP configuration reference
-  const getEnhancedSystemPrompt = (botId?: string): string => {
-    const basePrompt = getCombinedSystemPrompt();
-    
-    if (!basePrompt) {
-      return '';
-    }
-
-    const configInfo = botId ? `\n\n---MCP_CONFIGURATION---\nBot ID: ${botId}\nConfiguration includes ${connectedServers.value.length} connected MCP servers.\nLast updated: ${new Date().toISOString()}\n---END_MCP_CONFIGURATION---` : '';
-
-    return basePrompt + configInfo;
-  };
-
-  // Download MCP configuration as JSON file
-  const downloadMCPConfiguration = (botId: string, name?: string, description?: string) => {
-    try {
-      const configFile = createMCPConfigurationFile(botId, name, description);
-      
-      const dataStr = JSON.stringify(configFile, null, 2);
-      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-      
-      const exportFileDefaultName = `mcp-config-${botId}-${Date.now()}.json`;
-      
-      const linkElement = document.createElement('a');
-      linkElement.setAttribute('href', dataUri);
-      linkElement.setAttribute('download', exportFileDefaultName);
-      linkElement.click();
-      
-      console.log('✅ MCP configuration downloaded as JSON file');
-      return true;
-    } catch (error) {
-      console.error('❌ Error downloading MCP configuration:', error);
-      return false;
-    }
-  };
-
-  const getConnectedMCPs = async (apikey: string) => {
-    try {
-      let message = '';
+      let unmatchedServers: string[] = [];
       localStorage.removeItem('mcp_connections');
 
-      const response = await botsifyApi.getAllConnectedMCPs(apikey);
+      const response = await botsifyApi.getAllConnectedMCPs();
 
       if (response.success && Array.isArray(response.data)) {
-        response.data.forEach((mcp: any) => {
-          const server = allServers.value.find(s => s.id === mcp.setting.server_label);
-          if(server){
-            const newConnection: MCPConnection = {
-              id: `${server.id}_${Date.now()}`,
-              serverId: server.id,
-              serverName: server.name,
-              apiKey: apikey?.trim(),
-              botId: mcp.setting.bot_id || '',
+        response.data.forEach((mcp) => {
+          const server = servers.value.find(s => s.id === mcp.setting.server_label);
+          if (server) {
+            // Update the server's connection state
+            server.connection = {
               isConnected: true,
-              connectedAt: new Date(),
-              connectionUrl: server.connectionUrl,
-              authMethod: server.authMethod,
-              systemPrompt: generateDefaultSystemPrompt(server)
+              mcp_id: mcp.id,
+              apiKey: mcp.setting.headers?.Authorization?.split(' ')[1] || '',
+              systemPrompt: mcp.setting.system_prompt || generateDefaultSystemPrompt(server),
             };
-            connections.value.push(newConnection);
+            
+            // Save to storage
             saveToStorage();
-          }else{
-            message += message.length > 0 ? `, ${mcp.setting.server_label}` : mcp.setting.server_label;
+          } else {
+            unmatchedServers.push(mcp.setting.server_label);
           }
         });
 
-        // error if any server not matched
-        if (message.length) {
+        if (unmatchedServers.length > 0) {
           return {
             success: false,
-            message: 'Doesnt match servers ' + message
-          }
+            message: `Unmatched servers: ${unmatchedServers.join(', ')}`
+          };
         }
 
-        return{
+        return {
           success: true,
-        }
+          message: 'Successfully loaded connected MCP servers'
+        };
       }
-      return{
-        success: false,
-        message: 'failed to load'
-      }
-    } catch (error: any) {
+
       return {
         success: false,
-        message: error.message || 'Failed to get connected MCPs'
-      }
+        message: 'Failed to load connected MCP servers'
+      };
+    } catch (error: any) {
+      console.error('❌ Error getting connected MCPs:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to get connected MCP servers'
+      };
     }
   }
-
-  // Get saved bot configurations
-  const getSavedBotConfigurations = () => {
-    try {
-      const configs = JSON.parse(localStorage.getItem('mcp_bot_configurations') || '[]');
-      return configs.map((config: any) => ({
-        ...config,
-        lastSaved: new Date(config.lastSaved)
-      }));
-    } catch {
-      return [];
-    }
-  };
 
   // Initialize store
   loadFromStorage();
 
   return {
-    popularServers,
-    customServers,
-    allServers,
-    connections,
-    serverConfigs,
+    servers,
     connectedServers,
-    popularServerConfigs,
     addCustomServer,
     updateCustomServer,
     deleteCustomServer,
     connectServer,
     disconnectServer,
-    updateSystemPrompt,
     getCombinedSystemPrompt,
     generateDefaultSystemPrompt,
-    generateMCPConfiguration,
-    createMCPConfigurationFile,
-    saveMCPConfigurationToAPI,
-    loadMCPConfigurationFromAPI,
-    getEnhancedSystemPrompt,
-    downloadMCPConfiguration,
-    getSavedBotConfigurations,
     getConnectedMCPs
   };
 }); 

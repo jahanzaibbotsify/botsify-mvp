@@ -41,27 +41,39 @@ const closeNavDropdown = () => {
 
 // Navigation links for the dropdown with icons
 const navLinks = [
-  { 
-    name: 'Chatbot Platform', 
-    url: 'https://botsify.com/chatbot-platform',
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`
+  {
+    name: 'Legacy Platform',
+    url: '/bot',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" ...></svg>`
   },
-  { 
-    name: 'Vocallify', 
-    url: 'https://vocallify.com/',
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>`
+  {
+    name: 'Video Guide',
+    url: '/bot/youtube-guide',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" ...></svg>`
   },
-  { 
-    name: 'Book a Demo', 
-    url: 'https://botsify.com/book-demo',
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`
+  {
+    name: 'Documentation',
+    url: 'https://botsify.zendesk.com/hc/en-us',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" ...></svg>`
   },
-  { 
-    name: 'Pricing', 
-    url: 'https://botsify.com/pricing',
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>`
+  {
+    name: 'Developer Hub',
+    url: 'https://documenter.getpostman.com/view/13814537/TVmTdF7W#d1e2a194-6d34-4d64-8dff-9628a2dc1077',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" ...></svg>`
+  },
+  {
+    name: 'Billing',
+    url: '/account-settings/billing',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" ...></svg>`
   }
 ];
+
+const showZen = () => {
+    // zE(function() {
+    //     zE.activate();
+    // });  
+    closeNavDropdown();
+}
 
 // Open external link
 const openExternalLink = (url: string) => {
@@ -102,17 +114,20 @@ const getCurrentHostname = () => {
 
 // Check if a link is active by comparing with current URL
 const isLinkActive = (url: string) => {
-  if (typeof window !== 'undefined') {
-    const linkUrl = new URL(url);
-    const currentHostname = getCurrentHostname();
-    
-    // Compare hostnames and paths
-    return (
-      linkUrl.hostname === currentHostname &&
-      window.location.pathname.startsWith(linkUrl.pathname)
-    );
-  }
-  return false;
+  try {
+        const currentPath = window.location.pathname;
+        // Handle relative or same-origin paths
+        if (url.startsWith('/')) {
+          return currentPath.startsWith(url);
+        }
+
+        // Parse full external URLs
+        const linkUrl = new URL(url);
+        const isSameHost = linkUrl.hostname === window.location.hostname;
+        return isSameHost && currentPath.startsWith(linkUrl.pathname);
+      } catch (e) {
+        return false;
+      }
 };
 </script>
 
@@ -150,6 +165,28 @@ const isLinkActive = (url: string) => {
               >
                 <div class="nav-item-icon" v-html="link.icon"></div>
                 <span>{{ link.name }}</span>
+              </div>
+
+              
+              <div 
+                class="nav-item" 
+                role="button"
+                data-toggle="modal" data-target="#meetingModal"
+              >
+                <div class="nav-item-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"></svg>
+                </div>
+                <span>Book a Meeting</span>
+              </div>
+
+              <div 
+                class="nav-item" 
+                id="showWidget" @click="showZen()"
+              >
+                <div class="nav-item-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"></svg>
+                </div>
+                <span>Support</span>
               </div>
             </div>
           </div>

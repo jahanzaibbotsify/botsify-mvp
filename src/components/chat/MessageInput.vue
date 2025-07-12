@@ -11,7 +11,6 @@ const props = defineProps<{
   chatId: string;
 }>();
 
-const apikey = 'H9MzZn62ZISSYhzzABbNfPs6tfL1QPLv8wFK06o1';
 const chatStore = useChatStore();
 const mcpStore = useMCPStore();
 const messageText = ref('');
@@ -108,7 +107,12 @@ const sendMessage = async () => {
           
           if (uploadResult.success && uploadResult.data.uploadedFiles.length > 0) {
             // Update attachments with uploaded URLs
-            uploadResult.data.uploadedFiles.forEach((uploadedFile: any) => {
+            uploadResult.data.uploadedFiles.forEach((uploadedFile: any, index: number) => {
+              if (!uploadedFile.url) throw new Error(`File ${index + 1} upload failed.`);
+              if(attachments.value[index].type.startsWith('image/')){
+                attachments.value[index].preview = uploadedFile.url;
+              }
+              
               const attachmentIndex = processedAttachments.findIndex(att => 
                 att.name === uploadedFile.fileName && att.type === uploadedFile.fileType
               );
@@ -304,7 +308,7 @@ const connectFileSearch = async () => {
     
     // const response = await botsifyApi.createFileSearch(props.chatId, fileData);
     
-    const response = await botsifyApi.createFileSearch(apikey, selectedFile.value);
+    const response = await botsifyApi.createFileSearch(selectedFile.value);
 
     uploadProgress.value = 100;
     isUploading.value = false;
@@ -351,7 +355,7 @@ const connectWebSearch = async () => {
     console.log('Web Search URL:', webSearchUrl.value);
     console.log('Web Search configuration:', webSearchConfig.value);
     
-    const response = await botsifyApi.createWebSearch(apikey, webSearchUrl.value.trim(), JSON.stringify(webSearchConfig.value));
+    const response = await botsifyApi.createWebSearch(webSearchUrl.value.trim(), JSON.stringify(webSearchConfig.value));
     
     if (response.success) {
       console.log('Web Search created successfully:', response.data);
@@ -390,10 +394,10 @@ const handleMCPConnection = (serverId: string) => {
     console.log('MCP System Prompt Updated:', combinedPrompt);
     
     // Show a success message to the user
-    const connectedServer = mcpStore.connectedServers.find(config => config.server.id === serverId);
+    const connectedServer = mcpStore.connectedServers.find(config => config.id === serverId);
     if (connectedServer) {
       // You could add a toast notification here or update the UI
-      console.log(`Successfully connected to ${connectedServer.server.name}`);
+      console.log(`Successfully connected to ${connectedServer.name}`);
     }
   }
   closeMCPModal();
@@ -404,7 +408,7 @@ const loadFileSearchData = async () => {
   try {
     console.log('Loading existing File Search data for bot assistant:', props.chatId);
     // const response = await botsifyApi.getFileSearch(props.chatId);
-    const response = await botsifyApi.getFileSearch(apikey);
+    const response = await botsifyApi.getFileSearch();
     
     if (response.success) {
       // fileSearchResults.value = response.data?.files || [];
@@ -423,7 +427,7 @@ const loadFileSearchData = async () => {
 const loadWebSearchData = async () => {
   try {
     console.log('Loading existing Web Search data for bot assistant:', props.chatId);
-    const response = await botsifyApi.getWebSearch(apikey);
+    const response = await botsifyApi.getWebSearch();
     
     if (response.success) {
       // webSearchResults.value = response.data;
@@ -443,7 +447,7 @@ const loadWebSearchData = async () => {
 const loadMCPsData = async () => {
   try {
     console.log('Loading already connected MCP servers:', props.chatId);
-    const response = await mcpStore.getConnectedMCPs(apikey);
+    const response = await mcpStore.getConnectedMCPs();
     
     if (response.success) {
       console.log('Fetched MCP data result:', response);
@@ -466,7 +470,7 @@ const deleteFileSearchEntry = async (fileSearchId: string, fileSearchName: strin
     fileSearchDeleteLoading.value = true;
     fileSearchSelectedId.value = fileSearchId;
     console.log('Deleting File Search entry:', fileSearchId);
-    const response = await botsifyApi.deleteAllFileSearch(apikey, [fileSearchId]);
+    const response = await botsifyApi.deleteAllFileSearch([fileSearchId]);
     
     if (response.success) {
       // Remove from local results
@@ -505,7 +509,7 @@ const deleteAllFileSearchEntry = async () => {
   try {
     fileSearchAllDeleteLoading.value = true;
     const ids = fileSearchResults.map(file=>file.id);
-    const response = await botsifyApi.deleteAllFileSearch(apikey, ids);
+    const response = await botsifyApi.deleteAllFileSearch(ids);
     
     if (response.success) {
       console.log('All File Search entry deleted successfully');

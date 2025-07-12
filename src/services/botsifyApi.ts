@@ -1,8 +1,11 @@
 import axios from 'axios';
-import type { MCPConfigurationFile } from '../types';
+import type { MCPConfigurationFile, MCPServer } from '../types';
 
+const url = window.location.pathname
 const BOTSIFY_BASE_URL = import.meta.env.VITE_BOTSIFY_BASE_URL || 'https://botsify.com/api';
 const BOTSIFY_AUTH_TOKEN = import.meta.env.VITE_BOTSIFY_AUTH_TOKEN || '';
+// const BOTSIFY_APIKEY = url.split('/agent/')[1]
+const BOTSIFY_APIKEY = "H9MzZn62ZISSYhzzABbNfPs6tfL1QPLv8wFK06o1"
 
 export interface BotsifyResponse {
   success: boolean;
@@ -201,29 +204,101 @@ export class BotsifyApiService {
       };
     }
   }
+  
+  /**
+   * Get all connected MCP servers
+  */
+  
+    async getAllConnectedMCPs() {
+      try {
+        const response = await axios.get(
+          `${BOTSIFY_BASE_URL}/ai-tools/mcp`,
+          {
+            headers: this.getBotsifyHeaders(),
+             params: { apikey: BOTSIFY_APIKEY }
+          }
+        );
+        return {
+          success: true,
+          message: 'Connected MCPs retrieved successfully',
+          data: response.data
+        };
+      } catch (error: any) {
+        return {
+          success: false,
+          message: error.response?.data?.message || error.message || 'Failed to get connected MCPs',
+          data: error.response?.data
+        };
+      }
+    }
 
-  async getAllConnectedMCPs(apikey:string) {
+  /**
+   * Update an MCP server configuration
+   */
+  async updateMCPConfiguration(id: string, mcpData: MCPServer): Promise<BotsifyResponse> {
     try {
-      const response = await axios.get(
-        `${BOTSIFY_BASE_URL}/ai-tools/mcp?apikey=${apikey}`,
-        {
-          headers: this.getBotsifyHeaders()
-        }
-      );
+      // Create the new payload structure
+      const mcpPayload = {
+        settings: {
+          type: "mcp",
+          server_label: mcpData.id || mcpData.name?.toLowerCase().replace(/\s+/g, '_'),
+          server_url: mcpData.connectionUrl || this.getDefaultServerUrl(mcpData.id),
+          headers: this.buildMCPHeaders(mcpData),
+          allowed_tools: this.mapFeaturesToTools(mcpData.features || []),
+          require_approval: "never",
+        },
+        apikey: BOTSIFY_APIKEY
+      };
+      
+      const response = await axios.put(`${BOTSIFY_BASE_URL}/mcp/${id}`, mcpPayload, {
+        headers: this.getBotsifyHeaders(),
+        timeout: 30000
+      });
+
       return {
         success: true,
-        message: 'Connected MCPs retrieved successfully',
+        message: 'MCP server updated successfully',
         data: response.data
       };
     } catch (error: any) {
+      console.error('Error updating MCP server:', error);
+      
       return {
         success: false,
-        message: error.response?.data?.message || error.message || 'Failed to get connected MCPs',
+        message: error.response?.data?.message || error.message || 'Failed to update MCP server',
         data: error.response?.data
       };
     }
   }
 
+  /**
+   * Delete an MCP server
+   */
+  async disconnectMCP(id: string): Promise<BotsifyResponse> {
+    try {
+      const response = await axios.delete(
+        `${BOTSIFY_BASE_URL}/mcp/${id}`,
+        {
+          headers: this.getBotsifyHeaders(),
+          data: { apikey: BOTSIFY_APIKEY }
+        }
+      );
+
+      return {
+        success: true,
+        message: 'MCP server disconnected successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error disconnecting MCP server:', error);
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to delete MCP server',
+        data: error.response?.data
+      };
+    }
+  }
   /**
    * Validate MCP server connection by pinging the actual server endpoint
    */
@@ -529,16 +604,16 @@ export class BotsifyApiService {
       
       // Create the new payload structure
       const mcpPayload = {
-        type: "mcp",
-        server_label: mcpData.serverId || mcpData.serverName?.toLowerCase().replace(/\s+/g, '_'),
-        server_url: mcpData.connectionUrl || this.getDefaultServerUrl(mcpData.serverId),
-        headers: this.buildMCPHeaders(mcpData),
-        allowed_tools: this.mapFeaturesToTools(mcpData.features || []),
-        require_approval: "never",
         settings: {
           apikey : "",
+          type: "mcp",
+          server_label: mcpData.serverId || mcpData.serverName?.toLowerCase().replace(/\s+/g, '_'),
+          server_url: mcpData.connectionUrl || this.getDefaultServerUrl(mcpData.serverId),
+          headers: this.buildMCPHeaders(mcpData),
+          allowed_tools: this.mapFeaturesToTools(mcpData.features || []),
+          require_approval: "never",
         },
-        bot_id: mcpData.botId
+        apikey: BOTSIFY_APIKEY
       };
       
       console.log('MCP payload structure:', mcpPayload);
@@ -811,13 +886,16 @@ export class BotsifyApiService {
   /**
    * Get File Search data for a specific bot assistant
    */
-  async getFileSearch(apikey: string): Promise<BotsifyResponse> {
+  async getFileSearch(): Promise<BotsifyResponse> {
     try {
-      console.log('Getting file search files for bot assistant:', apikey);
+      console.log('Getting file search files for bot assistant:', BOTSIFY_APIKEY);
       
       const response = await axios.get(
-        `${BOTSIFY_BASE_URL}/file-search?apikey=${apikey}`,
-        { headers: this.getBotsifyHeaders() }
+        `${BOTSIFY_BASE_URL}/file-search`,
+        {
+            headers: this.getBotsifyHeaders(),
+             params: { apikey: BOTSIFY_APIKEY }
+          }
       );
 
       console.log('File search files retrieved successfully:', response.data);
@@ -838,42 +916,15 @@ export class BotsifyApiService {
   /**
    * Create/Connect File Search for a specific bot assistant
    */
-  async createFileSearch(apikey: string, file: File): Promise<BotsifyResponse> {
+  async createFileSearch(file: File): Promise<BotsifyResponse> {
     try {
-      // console.log('Uploading file for search:', { botAssistantId, fileName: file.fileName, fileSize: file.size });
-      // console.log(file);
-      
-      // // Validate file type (documents only for file search)
-      // const supportedTypes = [
-      //   'application/pdf', 'text/plain', 'text/csv',
-      //   'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      //   'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      //   'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-      // ];
-      
-      // if (!supportedTypes.includes(file.fileType)) {
-      //   return {
-      //     success: false,
-      //     message: 'Unsupported file type. Please upload PDF, Word, Excel, PowerPoint, TXT, or CSV files.'
-      //   };
-      // }
-      
-      // // Validate file size (10MB limit for documents)
-      // const maxSize = 10 * 1024 * 1024; // 10MB
-      // if (file.size > maxSize) {
-      //   return {
-      //     success: false,
-      //     message: 'File size too large. Maximum size is 10MB for documents.'
-      //   };
-      // }
-      
       const formData = new FormData();
       // formData.append('file', file);
       // formData.append('bot_assistant_id', botAssistantId);
       formData.append('file', file)
       
       const response = await axios.post(
-        `${BOTSIFY_BASE_URL}/file-search?apikey=${apikey}`,
+        `${BOTSIFY_BASE_URL}/file-search?apikey=${BOTSIFY_APIKEY}`,
         formData,
         { 
           headers: {
@@ -901,12 +952,12 @@ export class BotsifyApiService {
   /**
    * Delete File Search by ID
    */
-  async deleteFileSearch(apikey: string, id: string): Promise<BotsifyResponse> {
+  async deleteFileSearch(id: string): Promise<BotsifyResponse> {
     try {
       console.log('Deleting file from search:', id);
       
       const response = await axios.delete(
-        `${BOTSIFY_BASE_URL}/file-search/${id}?apikey=${apikey}`,
+        `${BOTSIFY_BASE_URL}/file-search/${id}?apikey=${BOTSIFY_APIKEY}`,
         { headers: this.getBotsifyHeaders() }
       );
       
@@ -928,7 +979,7 @@ export class BotsifyApiService {
   /**
    * Delete File Search by ID
    */
-  async deleteAllFileSearch(apikey: string, ids: string[]): Promise<BotsifyResponse> {
+  async deleteAllFileSearch(ids: string[]): Promise<BotsifyResponse> {
     try {
       console.log('Deleting file from search:', ids);
       
@@ -937,7 +988,7 @@ export class BotsifyApiService {
         { 
           headers: this.getBotsifyHeaders(),
           data: {
-            "apikey": apikey,
+            "apikey": BOTSIFY_APIKEY,
             "ids": ids
           }
         }
@@ -961,9 +1012,9 @@ export class BotsifyApiService {
   /**
    * Get Web Search data for a specific bot assistant
    */
-  async getWebSearch(apikey: string): Promise<BotsifyResponse> {
+  async getWebSearch(): Promise<BotsifyResponse> {
     try {
-      console.log('Getting web search URLs for bot assistant:', apikey);
+      console.log('Getting web search URLs for bot assistant:', BOTSIFY_APIKEY);
       
       // const response = await axios.get(
       //   `${BOTSIFY_BASE_URL}/web-search/${botAssistantId}`,
@@ -971,7 +1022,7 @@ export class BotsifyApiService {
       // );
 
       const response = await axios.get(
-        `${BOTSIFY_BASE_URL}/web-search?apikey=${apikey}`,
+        `${BOTSIFY_BASE_URL}/web-search?apikey=${BOTSIFY_APIKEY}`,
         { headers: this.getBotsifyHeaders() }
       );
       
@@ -993,15 +1044,15 @@ export class BotsifyApiService {
   /**
    * Add a new web URL for search
    */
-  async createWebSearch(apikey: string, url: string, title?: string): Promise<BotsifyResponse> {
+  async createWebSearch(url: string, title?: string): Promise<BotsifyResponse> {
     try {
-      console.log('Adding web URL for bot assistant:', { apikey, url, title });
+      console.log('Adding web URL for bot assistant:', { BOTSIFY_APIKEY, url, title });
       
       const response = await axios.post(
         `${BOTSIFY_BASE_URL}/web-search`,
         {
           // bot_assistant_id: botAssistantId,
-          apikey: apikey,
+          apikey: BOTSIFY_APIKEY,
           url: url,
           title: title
         },
@@ -1026,36 +1077,6 @@ export class BotsifyApiService {
   /**
    * Delete a web search URL
    */
-  async deleteWebSearch(apikey: string, id: string, url: string): Promise<BotsifyResponse> {
-    try {
-      console.log('Deleting web URL:', { id, url });
-      
-      const response = await axios.delete(
-        `${BOTSIFY_BASE_URL}/web-search/${id}?apikey=${apikey}`,
-        { 
-          headers: this.getBotsifyHeaders(),
-          data: { url: url }
-        }
-      );
-      
-      console.log('Web URL deleted successfully:', response.data);
-      return {
-        success: true,
-        message: 'Web URL deleted successfully',
-        data: response.data
-      };
-    } catch (error: any) {
-      console.error('Error deleting web URL:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Failed to delete web URL'
-      };
-    }
-  }
-
-  /**
-   * Delete a web search URL
-   */
   async deleteAllWebSearch(ids: string[]): Promise<BotsifyResponse> {
     try {
      console.log("passed ids:", ids);
@@ -1065,7 +1086,7 @@ export class BotsifyApiService {
         { 
           headers: this.getBotsifyHeaders(),
           data: {
-            apikey: 'H9MzZn62ZISSYhzzABbNfPs6tfL1QPLv8wFK06o1',
+            apikey: BOTSIFY_APIKEY,
             ids: ids,
           },
       });
@@ -1213,119 +1234,6 @@ export class BotsifyApiService {
         data: error
       };
     }
-  }
-
-  /**
-   * Connect to File Search API to fetch and access files
-   * @deprecated Use createFileSearch instead
-   */
-  async connectFileSearch(): Promise<BotsifyResponse> {
-    console.warn('connectFileSearch is deprecated. Use createFileSearch instead.');
-    return {
-      success: false,
-      message: 'This method is deprecated. Please use createFileSearch with bot assistant ID.',
-      data: null
-    };
-  }
-
-  /**
-   * Connect to File Search API with file upload
-   * @deprecated Use createFileSearch instead
-   */
-  async connectFileSearchWithUpload(): Promise<BotsifyResponse> {
-    console.warn('connectFileSearchWithUpload is deprecated. Use createFileSearch instead.');
-    return {
-      success: false,
-      message: 'This method is deprecated. Please use createFileSearch with bot assistant ID.',
-      data: null
-    };
-  }
-
-  /**
-   * Connect to Web Search API with a specific website URL
-   * @deprecated Use createWebSearch instead
-   */
-  async connectWebSearch(): Promise<BotsifyResponse> {
-    console.warn('connectWebSearch is deprecated. Use createWebSearch instead.');
-    return {
-      success: false,
-      message: 'This method is deprecated. Please use createWebSearch with bot assistant ID.',
-      data: null
-    };
-  }
-
-  /**
-   * Upload a file to get a URL for use in AI prompts
-   * @deprecated Use uploadFileNew instead
-   */
-  async uploadFile(file: File): Promise<BotsifyResponse> {
-    console.warn('uploadFile is deprecated. Use uploadFileNew instead.');
-    return this.uploadFileNew(file);
-  }
-
-  /**
-   * Upload multiple files and return their URLs
-   * @deprecated Use uploadMultipleFilesNew instead
-   */
-  async uploadMultipleFiles(files: File[]): Promise<BotsifyResponse> {
-    console.warn('uploadMultipleFiles is deprecated. Use uploadMultipleFilesNew instead.');
-    return this.uploadMultipleFilesNew(files);
-  }
-
-  /**
-   * @deprecated Use getFileSearch() instead
-   */
-  async getFileSearchOld(botAssistantId: string): Promise<BotsifyResponse> {
-    console.warn('getFileSearchOld is deprecated. Use getFileSearch() instead.');
-    return this.getFileSearch(botAssistantId);
-  }
-
-  /**
-   * @deprecated Use createFileSearch() instead
-   */
-  async createFileSearchOld(): Promise<BotsifyResponse> {
-    console.warn('createFileSearchOld is deprecated. Use createFileSearch() with actual File object instead.');
-    return {
-      success: false,
-      message: 'This method is deprecated. Please use createFileSearch() with a File object or uploadFileNew() for file uploads.'
-    };
-  }
-
-  /**
-   * @deprecated Use deleteFileSearch() instead
-   */
-  async deleteFileSearchOld(id: string): Promise<BotsifyResponse> {
-    console.warn('deleteFileSearchOld is deprecated. Use deleteFileSearch() instead.');
-    return this.deleteFileSearch('', id);
-  }
-
-  /**
-   * @deprecated Use getWebSearch() instead
-   */
-  async getWebSearchOld(botAssistantId: string): Promise<BotsifyResponse> {
-    console.warn('getWebSearchOld is deprecated. Use getWebSearch() instead.');
-    return this.getWebSearch(botAssistantId);
-  }
-
-  /**
-   * @deprecated Use createWebSearch() instead
-   */
-  async createWebSearchOld(botAssistantId: string, websiteUrl: string, config?: any): Promise<BotsifyResponse> {
-    console.warn('createWebSearchOld is deprecated. Use createWebSearch() instead.');
-    // Try to extract title from config if available
-    const title = config?.title || config?.name || undefined;
-    return this.createWebSearch(botAssistantId, websiteUrl, title);
-  }
-
-  /**
-   * @deprecated Use deleteWebSearch() instead
-   */
-  async deleteWebSearchOld(): Promise<BotsifyResponse> {
-    console.warn('deleteWebSearchOld is deprecated. Use deleteWebSearch() instead.');
-    return {
-      success: false,
-      message: 'This method is deprecated. Please use deleteWebSearch(id, url) with the URL parameter.'
-    };
   }
 }
 

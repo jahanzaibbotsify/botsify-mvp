@@ -84,7 +84,14 @@ export interface MCPServer {
   isCustom?: boolean;
   authMethod?: 'api_key' | 'bearer_token' | 'basic_auth' | 'oauth' | 'none';
   authLabel?: string;
+  connection: {
+    isConnected: boolean;
+    mcp_id: string | null;
+    apiKey: string | null;
+    systemPrompt: string | null;
+  };
 }
+
 
 export interface MCPConnection {
   id: string;
