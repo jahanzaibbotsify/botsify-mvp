@@ -26,6 +26,10 @@ const showAllServers = ref(false);
 const showCustomServerForm = ref(false);
 const editingCustomServer = ref<string | null>(null);
 
+// Shopify custom fields
+const shopifyDomain = ref('');
+const shopifyAuthMethod = ref('none');
+
 const customServerForm = ref<CustomMCPServerForm>({
   name: '',
   description: '',
@@ -88,6 +92,12 @@ function selectServer(server: MCPServer) {
   const existing = mcpStore.servers.find(s => s.id === server.id)?.connection;
   apiKey.value = existing?.apiKey || '';
   customSystemPrompt.value = existing?.systemPrompt || defaultSystemPrompt.value;
+  
+  // Reset Shopify custom fields
+  if (server.id === 'shopify') {
+    shopifyDomain.value = '';
+    shopifyAuthMethod.value = 'none';
+  }
 }
 
 function goBack() {
@@ -98,6 +108,8 @@ function goBack() {
   error.value = null;
   apiKey.value = '';
   customSystemPrompt.value = '';
+  shopifyDomain.value = '';
+  shopifyAuthMethod.value = 'none';
   resetCustomServerForm();
 }
 
@@ -179,13 +191,26 @@ async function connectToServer() {
 
   const connection = mcpStore.servers.find(s => s.id === server.id)?.connection;
 
-  if (server.apiKeyRequired && !apiKey.value.trim()) {
-    error.value = 'API key is required for this server';
-    return;
-  }
-  if (server.isCustom && !server.connectionUrl?.trim()) {
-    error.value = 'Connection URL is required for custom servers';
-    return;
+  // Shopify-specific validation
+  if (server.id === 'shopify') {
+    if (!shopifyDomain.value.trim()) {
+      error.value = 'Shopify domain is required';
+      return;
+    }
+    if (shopifyAuthMethod.value !== 'none' && !apiKey.value.trim()) {
+      error.value = `${getShopifyAuthLabel()} is required for this authentication method`;
+      return;
+    }
+  } else {
+    // Standard validation for other servers
+    if (server.apiKeyRequired && !apiKey.value.trim()) {
+      error.value = 'API key is required for this server';
+      return;
+    }
+    if (server.isCustom && !server.connectionUrl?.trim()) {
+      error.value = 'Connection URL is required for custom servers';
+      return;
+    }
   }
 
   isConnecting.value = true;
@@ -193,7 +218,15 @@ async function connectToServer() {
   connectionSuccess.value = false;
 
   try {
-    await mcpStore.connectServer(server.id, apiKey.value, customSystemPrompt.value);
+    // For Shopify, pass the domain and auth method as additional parameters
+    if (server.id === 'shopify') {
+      await mcpStore.connectServer(server.id, apiKey.value, customSystemPrompt.value, {
+        domain: shopifyDomain.value.trim(),
+        authMethod: shopifyAuthMethod.value
+      });
+    } else {
+      await mcpStore.connectServer(server.id, apiKey.value, customSystemPrompt.value);
+    }
     connectionSuccess.value = true;
     goBack();
   } catch (err: any) {
@@ -211,6 +244,18 @@ async function disconnectFromServer() {
     goBack();
   } catch (err: any) {
     error.value = 'Failed to disconnect: ' + err.message;
+  }
+}
+
+// Shopify helper methods
+function getShopifyAuthLabel(): string {
+  switch (shopifyAuthMethod.value) {
+    case 'bearer_token':
+      return 'Access Token';
+    case 'api_key':
+      return 'API Key';
+    default:
+      return 'Authentication';
   }
 }
 
@@ -517,8 +562,56 @@ onBeforeUnmount(() => {
         </div>
 
         <form @submit.prevent="connectToServer" class="connection-form">
-          <!-- API Key Input -->
-          <div v-if="selectedServer?.apiKeyRequired" class="input-group">
+          <!-- Shopify Custom Fields -->
+          <div v-if="selectedServer?.id === 'shopify'" class="shopify-custom-fields">
+            <!-- Domain Input -->
+            <div class="input-group">
+              <label for="shopifyDomain">Shopify Domain *</label>
+              <input
+                id="shopifyDomain"
+                v-model="shopifyDomain"
+                type="text"
+                placeholder="your-store.myshopify.com"
+                :disabled="isConnecting"
+                required
+              />
+              <small class="input-help">
+                Enter your Shopify store domain (e.g., mystore.myshopify.com)
+              </small>
+            </div>
+
+            <!-- Authentication Method -->
+            <div class="input-group">
+              <label for="shopifyAuthMethod">Authentication Method</label>
+              <select id="shopifyAuthMethod" v-model="shopifyAuthMethod" :disabled="isConnecting">
+                <option value="none">No Authentication</option>
+                <option value="bearer_token">Bearer Token</option>
+                <option value="api_key">API Key</option>
+              </select>
+              <small class="input-help">
+                Choose how to authenticate with your Shopify store
+              </small>
+            </div>
+
+            <!-- API Key/Token Input (conditional) -->
+            <div v-if="shopifyAuthMethod !== 'none'" class="input-group">
+              <label for="shopifyApiKey">{{ getShopifyAuthLabel() }}</label>
+              <input
+                id="shopifyApiKey"
+                v-model="apiKey"
+                type="password"
+                :placeholder="`Enter your ${getShopifyAuthLabel().toLowerCase()}...`"
+                :disabled="isConnecting"
+                required
+              />
+              <small class="input-help">
+                This {{ getShopifyAuthLabel().toLowerCase() }} will be used to authenticate with your Shopify store.
+              </small>
+            </div>
+          </div>
+
+          <!-- Standard API Key Input for other servers -->
+          <div v-else-if="selectedServer?.apiKeyRequired" class="input-group">
             <label for="apiKey">{{ selectedServer?.authLabel || 'API Key' }}</label>
             <input
               id="apiKey"
@@ -1214,6 +1307,18 @@ onBeforeUnmount(() => {
 /* Hide system prompt section */
 .system-prompt-hidden {
   display: none !important;
+}
+
+/* Shopify custom fields */
+.shopify-custom-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.shopify-custom-fields .input-group {
+  margin-bottom: 0;
 }
 
 /* Mobile styles */

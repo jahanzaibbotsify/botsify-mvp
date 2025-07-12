@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { MCPServer, MCPConnection, CustomMCPServerForm } from '../types';
+import type { MCPServer, MCPConnection, CustomMCPServerForm } from '../types/mcp';
 import { botsifyApi } from '../services/botsifyApi';
 
 export const useMCPStore = defineStore('mcp', () => {
@@ -237,14 +237,14 @@ export const useMCPStore = defineStore('mcp', () => {
     {
       id: 'shopify',
       name: 'Shopify',
-      description: 'Manage e-commerce store and products',
+      description: 'Manage e-commerce store and products (custom domain)',
       category: 'E-commerce',
       icon: '🛒',
-      apiKeyRequired: true,
+      apiKeyRequired: false,
       botIdRequired: true,
       isPopular: true,
-      authMethod: 'api_key',
-      authLabel: 'Shopify API Key',
+      authMethod: 'none',
+      authLabel: 'Shopify Access Token',
       features: ['Product management', 'Order processing', 'Customer data', 'Store analytics'],
       connection: {
         isConnected: false,
@@ -457,18 +457,28 @@ export const useMCPStore = defineStore('mcp', () => {
   };
 
   // Connect to an MCP server
-  const connectServer = async (serverId: string, apiKey?: string, systemPrompt?: string): Promise<boolean> => {
+  const connectServer = async (serverId: string, apiKey?: string, systemPrompt?: string, customParams?: any): Promise<boolean> => {
     const server = servers.value.find(s => s.id === serverId);
     if (!server) throw new Error('Server not found');
 
-    // Validate API key if required
-    if (server.apiKeyRequired && !apiKey?.trim()) {
-      throw new Error(`${server.authLabel || 'Authentication'} is required for this server`);
-    }
+    // Shopify-specific validation
+    if (serverId === 'shopify') {
+      if (!customParams?.domain?.trim()) {
+        throw new Error('Shopify domain is required');
+      }
+      if (customParams?.authMethod !== 'none' && !apiKey?.trim()) {
+        throw new Error('Authentication is required for this method');
+      }
+    } else {
+      // Standard validation for other servers
+      if (server.apiKeyRequired && !apiKey?.trim()) {
+        throw new Error(`${server.authLabel || 'Authentication'} is required for this server`);
+      }
 
-    // Validate connection URL for custom servers
-    if (server.isCustom && !server.connectionUrl?.trim()) {
-      throw new Error('Connection URL is required for custom servers');
+      // Validate connection URL for custom servers
+      if (server.isCustom && !server.connectionUrl?.trim()) {
+        throw new Error('Connection URL is required for custom servers');
+      }
     }
 
 
@@ -477,11 +487,17 @@ export const useMCPStore = defineStore('mcp', () => {
       const mcp_id = server.connection.mcp_id || '';
     
       // Step 1: Validate the MCP connection with the API
+      let connectionUrl = server.connectionUrl;
+      if (serverId === 'shopify' && customParams?.domain) {
+        // For Shopify, construct the URL from the domain
+        connectionUrl = `https://${customParams.domain}/api/mcp`;
+      }
+      
       const validationResult = await botsifyApi.validateMCPConnection(
         server.id,
         server.name,
         apiKey?.trim(),
-        server.connectionUrl
+        connectionUrl
       );
 
       if (!validationResult.success) {
@@ -494,7 +510,17 @@ export const useMCPStore = defineStore('mcp', () => {
          apiKey: apiKey?.trim() || null,
          systemPrompt: systemPrompt || generateDefaultSystemPrompt(server)
        };
-       const configResult = mcp_id ? await botsifyApi.updateMCPConfiguration(mcp_id, server) : await botsifyApi.sendMCPConfigurationJSON(server);
+       // For Shopify, add custom parameters to the server object
+       let serverConfig: any = { ...server };
+       if (serverId === 'shopify' && customParams) {
+         serverConfig = {
+           ...server,
+           domain: customParams.domain,
+           authMethod: customParams.authMethod
+         };
+       }
+       
+       const configResult = mcp_id ? await botsifyApi.updateMCPConfiguration(mcp_id, serverConfig) : await botsifyApi.sendMCPConfigurationJSON(serverConfig);
        if (configResult.success) {
           server.connection.mcp_id = configResult.data.id;
           saveToStorage();
@@ -706,7 +732,7 @@ Remember: You have access to ${connectedServers.value.length} MCP server${connec
       localStorage.removeItem('mcp_connections');
 
       const response = await botsifyApi.getAllConnectedMCPs();
-
+      console.log(response, "connected mcp")
       if (response.success && Array.isArray(response.data)) {
         response.data.forEach((mcp) => {
           const server = servers.value.find(s => s.id === mcp.setting.server_label);

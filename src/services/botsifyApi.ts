@@ -1,7 +1,7 @@
 import axios from 'axios';
-import type { MCPConfigurationFile, MCPServer } from '../types';
+import type { MCPConfigurationFile, MCPServer } from '../types/mcp';
 
-const url = window.location.pathname
+// const url = window.location.pathname
 const BOTSIFY_BASE_URL = import.meta.env.VITE_BOTSIFY_BASE_URL || 'https://botsify.com/api';
 const BOTSIFY_AUTH_TOKEN = import.meta.env.VITE_BOTSIFY_AUTH_TOKEN || '';
 // const BOTSIFY_APIKEY = url.split('/agent/')[1]
@@ -35,8 +35,6 @@ export class BotsifyApiService {
     };
 
     // Add Botsify authorization header if token is available
-    console.log('Botsify headers:', BOTSIFY_AUTH_TOKEN && BOTSIFY_AUTH_TOKEN.trim());
-
     if (BOTSIFY_AUTH_TOKEN && BOTSIFY_AUTH_TOKEN.trim()) {
       headers['Authorization'] = `Bearer ${BOTSIFY_AUTH_TOKEN}`;
     }
@@ -240,10 +238,11 @@ export class BotsifyApiService {
       // Create the new payload structure
       const mcpPayload = {
         settings: {
+          apikey : mcpData.connection.apiKey,
           type: "mcp",
           server_label: mcpData.id || mcpData.name?.toLowerCase().replace(/\s+/g, '_'),
-          server_url: mcpData.connectionUrl || this.getDefaultServerUrl(mcpData.id),
-          headers: this.buildMCPHeaders(mcpData),
+          server_url: this.getDefaultServerUrl(mcpData.id),
+          headers: this.buildMCPHeaders(mcpData.id, mcpData.connection?.apiKey || '', mcpData.authMethod || 'api_key'),
           allowed_tools: this.mapFeaturesToTools(mcpData.features || []),
           require_approval: "never",
         },
@@ -307,7 +306,12 @@ export class BotsifyApiService {
       console.log('🔍 Validating MCP connection for server:', serverName);
       
       // For built-in servers, we have predefined validation endpoints
-      const validationEndpoint = this.getMCPValidationEndpoint(serverId, connectionUrl);
+      let validationEndpoint = this.getMCPValidationEndpoint(serverId, connectionUrl);
+      
+      // For Shopify, construct the validation endpoint from the connection URL
+      if (serverId === 'shopify' && connectionUrl) {
+        validationEndpoint = connectionUrl;
+      }
       
       if (!validationEndpoint) {
         // Handle special servers that don't have HTTP endpoints
@@ -343,49 +347,112 @@ export class BotsifyApiService {
       console.log('🌐 Final validation URL:', finalValidationUrl);
       console.log('🔑 Headers:', headers);
 
-      // Ping the actual MCP server endpoint
-      const response = await axios.get(finalValidationUrl, {
-        headers,
-        timeout: 10000, // 10 seconds timeout for real server ping
-        validateStatus: (status) => status < 500 // Accept all responses except server errors
-      });
-
-      console.log('✅ MCP server responded with status:', response.status);
-      console.log('📄 Response data:', response.data);
-
-      // Check if the response indicates a successful connection
-      if (response.status === 200) {
-        return {
-          success: true,
-          message: 'MCP server connection validated successfully',
-          data: {
-            serverStatus: 'reachable',
-            responseTime: Date.now(),
-            serverInfo: response.data
+      // For Shopify, use POST with JSON-RPC format
+      if (serverId === 'shopify') {
+        const jsonRpcPayload = {
+          jsonrpc: "2.0",
+          method: "tools/call",
+          id: 1,
+          params: {
+            name: "search_shop_catalog",
+            arguments: {
+              query: "",
+              context: "order products on the basis of behaviour of user"
+            }
           }
         };
-      } else if (response.status === 401) {
-        if (apiKey && apiKey.trim()) {
-          // 401 with API key provided = invalid credentials
-          throw new Error('Invalid API key provided. Please check your authentication credentials.');
-        } else {
-          // 401 without API key = server reachable but auth required
+
+        console.log('🛒 Shopify MCP validation payload:', JSON.stringify(jsonRpcPayload, null, 2));
+        console.log('🛒 Shopify MCP validation URL:', finalValidationUrl);
+        console.log('🛒 Shopify MCP validation headers:', headers);
+
+        const response = await axios.post(finalValidationUrl, jsonRpcPayload, {
+          headers: {
+            ...headers,
+            'Content-Type': 'application/json'
+          },
+          timeout: 30000, // Increased timeout for Shopify requests
+          validateStatus: (status) => status < 500
+        });
+
+        console.log('✅ Shopify MCP server responded with status:', response.status);
+        console.log('📄 Response data:', response.data);
+
+        // Check if the response indicates a successful connection
+        if (response.status === 200) {
           return {
             success: true,
-            message: 'MCP server connection validated successfully (authentication required)',
+            message: 'Shopify MCP server connection validated successfully',
             data: {
               serverStatus: 'reachable',
               responseTime: Date.now(),
-              authRequired: true
+              serverInfo: response.data
             }
           };
+        } else if (response.status === 401) {
+          if (apiKey?.trim()) {
+            throw new Error('Invalid access token provided. Please check your Shopify access token.');
+          } else {
+            return {
+              success: true,
+              message: 'Shopify MCP server connection validated successfully (authentication required)',
+              data: {
+                serverStatus: 'reachable',
+                responseTime: Date.now(),
+                authRequired: true
+              }
+            };
+          }
+        } else if (response.status === 403) {
+          throw new Error('Invalid access token provided. Please check your Shopify access token.');
+        } else {
+          throw new Error(`Shopify server returned unexpected status: ${response.status}`);
         }
-      } else if (response.status === 403) {
-        throw new Error('Invalid API key provided. Please check your authentication credentials.');
-      } else if (response.status === 404) {
-        throw new Error('MCP server endpoint not found. Please verify the connection URL.');
       } else {
-        throw new Error(`Server returned unexpected status: ${response.status}`);
+        // For other servers, use GET method
+        const response = await axios.get(finalValidationUrl, {
+          headers,
+          timeout: 10000, // 10 seconds timeout for real server ping
+          validateStatus: (status) => status < 500 // Accept all responses except server errors
+        });
+
+        console.log('✅ MCP server responded with status:', response.status);
+        console.log('📄 Response data:', response.data);
+
+        // Check if the response indicates a successful connection
+        if (response.status === 200) {
+          return {
+            success: true,
+            message: 'MCP server connection validated successfully',
+            data: {
+              serverStatus: 'reachable',
+              responseTime: Date.now(),
+              serverInfo: response.data
+            }
+          };
+        } else if (response.status === 401) {
+          if (apiKey && apiKey.trim()) {
+            // 401 with API key provided = invalid credentials
+            throw new Error('Invalid API key provided. Please check your authentication credentials.');
+          } else {
+            // 401 without API key = server reachable but auth required
+            return {
+              success: true,
+              message: 'MCP server connection validated successfully (authentication required)',
+              data: {
+                serverStatus: 'reachable',
+                responseTime: Date.now(),
+                authRequired: true
+              }
+            };
+          }
+        } else if (response.status === 403) {
+          throw new Error('Invalid API key provided. Please check your authentication credentials.');
+        } else if (response.status === 404) {
+          throw new Error('MCP server endpoint not found. Please verify the connection URL.');
+        } else {
+          throw new Error(`Server returned unexpected status: ${response.status}`);
+        }
       }
 
     } catch (error: any) {
@@ -393,9 +460,12 @@ export class BotsifyApiService {
       
       // Handle specific error types
       if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+        const timeoutMessage = serverId === 'shopify' 
+          ? 'Shopify MCP server connection timed out. Please check your domain and access token, or try again in a few moments.'
+          : 'Connection timeout. Please check your network and server availability.';
         return {
           success: false,
-          message: 'Connection timeout. Please check your network and server availability.',
+          message: timeoutMessage,
           data: { errorType: 'timeout' }
         };
       } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
@@ -423,16 +493,19 @@ export class BotsifyApiService {
           message: 'Network error connecting to the server.',
           data: { errorType: 'network_error' }
         };
-      } else if (error.message.includes('Invalid API key')) {
+      } else if (error.message.includes('Invalid API key') || error.message.includes('Invalid access token')) {
         return {
           success: false,
           message: error.message,
           data: { errorType: 'auth_failed' }
         };
       } else if (error.response?.status === 401 || error.response?.status === 403) {
+        const errorMessage = serverId === 'shopify' 
+          ? 'Invalid access token provided. Please check your Shopify access token.'
+          : 'Invalid API key provided. Please check your authentication credentials.';
         return {
           success: false,
-          message: 'Invalid API key provided. Please check your authentication credentials.',
+          message: errorMessage,
           data: { errorType: 'auth_failed' }
         };
       } else if (error.response?.status === 404) {
@@ -487,7 +560,7 @@ export class BotsifyApiService {
       'email': '', // SMTP doesn't have REST endpoints
       'zapier': 'https://zapier.com/api/v1/user',
       'stripe': 'https://api.stripe.com/v1/account',
-      'shopify': 'https://shopify.dev/api/admin-rest/2023-10/resources/shop',
+      'shopify': '', // Shopify uses custom domain, will be constructed dynamically
       'paypal': 'https://api.paypal.com/v1/identity/oauth2/userinfo',
       'square': 'https://connect.squareup.com/v2/locations',
       'plaid': 'https://api.plaid.com/accounts/get'
@@ -575,7 +648,8 @@ export class BotsifyApiService {
       'google-drive': `Bearer ${apiKey}`,
       'web-search': `Bearer ${apiKey}`,
       'weather': `Bearer ${apiKey}`, // Some weather APIs use Bearer, others use query params
-      'calendar': `Bearer ${apiKey}`
+      'calendar': `Bearer ${apiKey}`,
+      'shopify': `Bearer ${apiKey}`
     };
 
     return authMethods[serverId] || `Bearer ${apiKey}`;
@@ -598,18 +672,25 @@ export class BotsifyApiService {
   /**
    * Send MCP configuration JSON to API after successful connection
    */
-  async sendMCPConfigurationJSON(mcpData: any): Promise<BotsifyResponse> {
+  async sendMCPConfigurationJSON(mcpData: MCPServer): Promise<BotsifyResponse> {
     try {
       console.log('Sending MCP configuration JSON to API:', mcpData);
       
       // Create the new payload structure
+      let serverUrl = this.getDefaultServerUrl(mcpData.id);
+      
+      // For Shopify, use the custom domain if provided
+      if (mcpData.id === 'shopify' && mcpData?.domain) {
+        serverUrl = `https://${mcpData.domain}/api/mcp`;
+      }
+      
       const mcpPayload = {
         settings: {
-          apikey : "",
+          apikey : mcpData.connection.apiKey,
           type: "mcp",
-          server_label: mcpData.serverId || mcpData.serverName?.toLowerCase().replace(/\s+/g, '_'),
-          server_url: mcpData.connectionUrl || this.getDefaultServerUrl(mcpData.serverId),
-          headers: this.buildMCPHeaders(mcpData),
+          server_label: mcpData.id || mcpData.name?.toLowerCase().replace(/\s+/g, '_'),
+          server_url: serverUrl,
+          headers: this.buildMCPHeaders(mcpData.id, mcpData.connection?.apiKey || '', mcpData.authMethod || 'api_key'),
           allowed_tools: this.mapFeaturesToTools(mcpData.features || []),
           require_approval: "never",
         },
@@ -644,41 +725,46 @@ export class BotsifyApiService {
   /**
    * Build headers object for MCP configuration based on authentication method
    */
-  private buildMCPHeaders(mcpData: any): Record<string, string> {
+  private buildMCPHeaders(serverId: string, apiKey: string, authMethod: string): Record<string, string> {
     const headers: Record<string, string> = {};
     
-    if (mcpData.apiKey && mcpData.apiKey.trim()) {
-      const authMethod = mcpData.authMethod || 'api_key';
-      
+    if (apiKey && apiKey.trim()) {
       switch (authMethod) {
         case 'bearer_token':
-          headers['Authorization'] = `Bearer ${mcpData.apiKey.trim()}`;
+          if (serverId === 'shopify'){
+            headers['X-Shopify-Access-Token'] = apiKey.trim();
+          } else{
+            headers['Authorization'] = `Bearer ${apiKey.trim()}`;
+          }
           break;
         case 'api_key':
           // For API key, we might use different header names based on the service
-          if (mcpData.serverId === 'stripe') {
-            headers['Authorization'] = `Bearer ${mcpData.apiKey.trim()}`;
-          } else if (mcpData.serverId === 'github') {
-            headers['Authorization'] = `token ${mcpData.apiKey.trim()}`;
-          } else if (mcpData.serverId === 'notion') {
-            headers['Authorization'] = `Bearer ${mcpData.apiKey.trim()}`;
+          if (serverId === 'stripe') {
+            headers['Authorization'] = `Bearer ${apiKey.trim()}`;
+          } else if (serverId === 'github') {
+            headers['Authorization'] = `token ${apiKey.trim()}`;
+          } else if (serverId === 'notion') {
+            headers['Authorization'] = `Bearer ${apiKey.trim()}`;
             headers['Notion-Version'] = '2022-06-28';
-          } else if (mcpData.serverId === 'slack') {
-            headers['Authorization'] = `Bearer ${mcpData.apiKey.trim()}`;
+          } else if (serverId === 'slack') {
+            headers['Authorization'] = `Bearer ${apiKey.trim()}`;
+          } else if (serverId === 'shopify') {
+            headers['X-Shopify-Access-Token'] = apiKey.trim();
+            headers['Content-Type'] = 'application/json';
           } else {
-            headers['X-API-Key'] = mcpData.apiKey.trim();
+            headers['X-API-Key'] = apiKey.trim();
           }
           break;
         case 'basic_auth':
           // For basic auth, apiKey should contain "username:password"
-          const encoded = btoa(mcpData.apiKey.trim());
+          const encoded = btoa(apiKey.trim());
           headers['Authorization'] = `Basic ${encoded}`;
           break;
         case 'oauth':
-          headers['Authorization'] = `Bearer ${mcpData.apiKey.trim()}`;
+          headers['Authorization'] = `Bearer ${apiKey.trim()}`;
           break;
         default:
-          headers['X-API-Key'] = mcpData.apiKey.trim();
+          headers['X-API-Key'] = apiKey.trim();
       }
     }
     
@@ -800,87 +886,6 @@ export class BotsifyApiService {
     };
     
     return defaultUrls[serverId] || 'https://localhost:3000';
-  }
-
-  /**
-   * Test method to demonstrate the new MCP configuration payload structure
-   */
-  async testEnhancedMCPConfiguration(): Promise<BotsifyResponse> {
-    // Example MCP configuration data for Stripe (as it would come from mcpStore)
-    const testMCPData = {
-      serverId: 'stripe',
-      serverName: 'Stripe',
-      serverIcon: '💳',
-      category: 'Payments',
-      connectionUrl: 'https://mcp.stripe.com',
-      authMethod: 'bearer_token',
-      hasAuthentication: true,
-      apiKey: process.env.STRIPE_SECRET_KEY || 'sk_test_example', // Example Stripe secret key
-      features: [
-        'Payment processing',
-        'Customer management', 
-        'Subscription billing',
-        'Product management',
-        'Invoice management',
-        'Financial reporting',
-        'Refund processing',
-        'Dispute handling',
-        'Payment links',
-        'Coupon management'
-      ],
-      systemPrompt: 'You can access Stripe payments, manage customers, and handle billing.',
-      connectedAt: new Date(),
-      validationData: { serverStatus: 'reachable', responseTime: Date.now() }
-    };
-
-    console.log('Testing MCP configuration with new payload structure...');
-    console.log('Expected payload format:');
-    
-    // Show what the new payload will look like
-    const expectedPayload = {
-      type: "mcp",
-      server_label: "stripe",
-      server_url: "https://mcp.stripe.com",
-      headers: {
-        Authorization: `Bearer ${testMCPData.apiKey}`
-      },
-      allowed_tools: [
-        "create_payment_intent",
-        "capture_payment", 
-        "list_payment_intents",
-        "create_customer",
-        "list_customers",
-        "update_customer",
-        "get_customer",
-        "create_subscription",
-        "list_subscriptions",
-        "update_subscription",
-        "cancel_subscription",
-        "create_product",
-        "list_products",
-        "update_product",
-        "create_price",
-        "list_prices",
-        "create_invoice",
-        "list_invoices",
-        "create_invoice_item",
-        "finalize_invoice",
-        "retrieve_balance",
-        "list_transactions",
-        "create_refund",
-        "list_refunds",
-        "update_dispute",
-        "list_disputes",
-        "create_payment_link",
-        "create_coupon",
-        "list_coupons"
-      ],
-      require_approval: "never"
-    };
-    
-    console.log('Expected Stripe payload:', JSON.stringify(expectedPayload, null, 2));
-    
-    return await this.sendMCPConfigurationJSON(testMCPData);
   }
 
   /**
