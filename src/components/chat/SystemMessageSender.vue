@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useOpenAIStore } from '../../stores/openaiStore';
-import { useChatStore } from '../../stores/chatStore';
+import { useOpenAIStore } from '@/stores/openaiStore';
+import { useChatStore } from '@/stores/chatStore';
 
 const openAIStore = useOpenAIStore();
 const chatStore = useChatStore();

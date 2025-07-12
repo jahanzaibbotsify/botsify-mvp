@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useChatStore } from '../../stores/chatStore';
+import { useChatStore } from '@/stores/chatStore';
 
 const chatStore = useChatStore();
 const isLoading = ref(false);

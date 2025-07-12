@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
-import { useMCPStore } from '../../stores/mcpStore';
-import type { MCPServer, CustomMCPServerForm } from '../../types';
+import { useMCPStore } from '@/stores/mcpStore';
+import type { MCPServer, CustomMCPServerForm } from '@/types/mcp';
 
 const props = defineProps({
   isOpen: Boolean,

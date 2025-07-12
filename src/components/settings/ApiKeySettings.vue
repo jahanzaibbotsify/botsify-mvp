@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { useOpenAIStore } from '../../stores/openaiStore';
+import { useOpenAIStore } from '@/stores/openaiStore';
 import ApiKeyTester from './ApiKeyTester.vue';
 
 const openAIStore = useOpenAIStore();

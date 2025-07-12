@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { PricingTier } from '../../types';
+import type { PricingTier } from '@/types';
 
 const plans = ref<PricingTier[]>([
   {

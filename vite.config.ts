@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -29,5 +30,10 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     // Target modern browsers that support crypto.getRandomValues
     target: 'es2020'
-  }
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
 })

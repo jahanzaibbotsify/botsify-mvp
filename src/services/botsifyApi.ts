@@ -1,11 +1,6 @@
 import axios from 'axios';
 import type { MCPConfigurationFile, MCPServer } from '../types/mcp';
-
-// const url = window.location.pathname
-const BOTSIFY_BASE_URL = import.meta.env.VITE_BOTSIFY_BASE_URL || 'https://botsify.com/api';
-const BOTSIFY_AUTH_TOKEN = import.meta.env.VITE_BOTSIFY_AUTH_TOKEN || '';
-// const BOTSIFY_APIKEY = url.split('/agent/')[1]
-const BOTSIFY_APIKEY = "H9MzZn62ZISSYhzzABbNfPs6tfL1QPLv8wFK06o1"
+import { BOTSIFY_BASE_URL, BOTSIFY_AUTH_TOKEN, BOTSIFY_APIKEY } from '../utils/config';
 
 export interface BotsifyResponse {
   success: boolean;
@@ -39,40 +34,6 @@ export class BotsifyApiService {
       headers['Authorization'] = `Bearer ${BOTSIFY_AUTH_TOKEN}`;
     }
     return headers;
-  }
-
-  /**
-   * Test AI Agent with the latest generated story
-   */
-  async testAiAgent(storyContent: string): Promise<BotsifyResponse> {
-    try {
-      console.log('Testing AI Agent with story content:', storyContent.substring(0, 100) + '...');
-      
-      const response = await axios.post(`${BOTSIFY_BASE_URL}/test-ai-agent`, {
-        story: storyContent,
-        timestamp: new Date().toISOString(),
-        action: 'test'
-      }, {
-        headers: this.getBotsifyHeaders(),
-        timeout: 30000 // 30 seconds timeout
-      });
-
-      console.log('Test AI Agent response:', response.data);
-      
-      return {
-        success: true,
-        message: 'AI Agent tested successfully',
-        data: response.data
-      };
-    } catch (error: any) {
-      console.error('Error testing AI Agent:', error);
-      
-      return {
-        success: false,
-        message: error.response?.data?.message || error.message || 'Failed to test AI Agent',
-        data: error.response?.data
-      };
-    }
   }
 
   /**

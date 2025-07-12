@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { Attachment } from '../../types';
+import type { Attachment } from '@/types';
 
 const props = defineProps<{
   onUpload: (files: Attachment[]) => void;
@@ -40,12 +40,13 @@ const handleFiles = async (files: File[]) => {
       continue;
     }
 
-    // Validate file size (50MB limit for videos, 20MB for images)
-    const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 20 * 1024 * 1024;
-    const maxSizeMB = maxSize / (1024 * 1024);
+    // // Validate file size (50MB limit for videos, 20MB for images)
+    // const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 20 * 1024 * 1024;
+    // const maxSizeMB = maxSize / (1024 * 1024);
     
+    const maxSize = 20 * 1024 * 1024;
     if (file.size > maxSize) {
-      alert(`File ${file.name} is too large. Maximum size is ${maxSizeMB}MB for ${file.type.startsWith('video/') ? 'videos' : 'images'}.`);
+      alert(`File ${file.name} is too large. Maximum size is 20MB.`);
       continue;
     }
 

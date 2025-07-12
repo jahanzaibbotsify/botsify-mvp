@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useChatStore } from '../../stores/chatStore';
-import { useSidebarStore } from '../../stores/sidebarStore';
+import { useChatStore } from '@/stores/chatStore';
+import { useSidebarStore } from '@/stores/sidebarStore';
 import { useWindowSize } from '@vueuse/core';
-import ChatListItem from '../chat/ChatListItem.vue';
+import ChatListItem from '@/components/chat/ChatListItem.vue';
 import SidebarPricing from './SidebarPricing.vue';
+import BookMeeting from '@/components/modal/BookMeeting.vue';
+import { BOTSIFY_BASE_URL } from '@/utils/config';
 
 const chatStore = useChatStore();
 const sidebarStore = useSidebarStore();
@@ -14,6 +16,7 @@ const { width } = useWindowSize();
 
 const isMobile = computed(() => width.value < 768);
 const showNavDropdown = ref(false);
+const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
 
 const filteredChats = computed(() => {
   return chatStore.chats;
@@ -43,12 +46,12 @@ const closeNavDropdown = () => {
 const navLinks = [
   {
     name: 'Legacy Platform',
-    url: '/bot',
+    url: `${BOTSIFY_BASE_URL}/bot`,
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" ...></svg>`
   },
   {
     name: 'Video Guide',
-    url: '/bot/youtube-guide',
+    url: `${BOTSIFY_BASE_URL}/bot/youtube-guide`,
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" ...></svg>`
   },
   {
@@ -63,17 +66,26 @@ const navLinks = [
   },
   {
     name: 'Billing',
-    url: '/account-settings/billing',
+    url: `${BOTSIFY_BASE_URL}/account-settings/billing`,
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" ...></svg>`
   }
 ];
 
 const showZen = () => {
-    // zE(function() {
-    //     zE.activate();
-    // });  
+    window.showZen() 
     closeNavDropdown();
 }
+
+// Function to open the BookMeeting modal
+const openBookMeetingModal = () => {
+  if (bookMeetingRef.value) {
+    console.log('📦 bookMeetingRef exists')
+    bookMeetingRef.value.openModal()
+  } else {
+    console.warn('❌ bookMeetingRef is null')
+  }
+  closeNavDropdown();
+};
 
 // Open external link
 const openExternalLink = (url: string) => {
@@ -171,7 +183,7 @@ const isLinkActive = (url: string) => {
               <div 
                 class="nav-item" 
                 role="button"
-                data-toggle="modal" data-target="#meetingModal"
+                @click="openBookMeetingModal"
               >
                 <div class="nav-item-icon">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"></svg>
@@ -210,21 +222,27 @@ const isLinkActive = (url: string) => {
 
     <!-- Sidebar Pricing (keeping this at the bottom) -->
     <SidebarPricing style="display: none;"/>
+    <BookMeeting ref="bookMeetingRef"></BookMeeting>
   </aside>
 </template>
+
+
 
 <style scoped>
 .left-sidebar {
   width: 280px;
   min-width: 280px;
   height: 100%;
-  background: linear-gradient(135deg, #1a1f2e 0%, #171717 50%, #1a1c24 100%) !important;
-  border-right: 1px solid #303030;
+  background-color: var(--color-bg-secondary);
+  border-right: 1px solid rgba(0, 163, 255, 0.1);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   position: relative;
-  transition: width var(--transition-normal), min-width var(--transition-normal);
+  box-shadow: 4px 0 10px rgba(0, 163, 255, 0.05);
+  background-image: 
+    radial-gradient(circle at left top, rgba(0, 163, 255, 0.15), transparent 70%),
+    radial-gradient(circle at left bottom, rgba(0, 163, 255, 0.10), transparent 50%);
 }
 
 /* Desktop collapse functionality */
@@ -281,7 +299,6 @@ const isLinkActive = (url: string) => {
 
 .logo-link:hover {
   opacity: 0.9;
-  transform: scale(1.1);
 }
 
 .logo-icon {
@@ -403,8 +420,9 @@ const isLinkActive = (url: string) => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-3);
+  padding: var(--space-2);
   cursor: pointer;
+  font-size: 14px;
   color: var(--color-text-primary);
   transition: all var(--transition-normal);
   border-bottom: 1px solid var(--color-border);

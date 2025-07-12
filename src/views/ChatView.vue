@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { useChatStore } from '../stores/chatStore';
-import ChatMessage from '../components/chat/ChatMessage.vue';
-import MessageInput from '../components/chat/MessageInput.vue';
-import TypingIndicator from '../components/chat/TypingIndicator.vue';
-import DebugConsole from '../components/debug/DebugConsole.vue';
-import SystemMessageSender from '../components/chat/SystemMessageSender.vue';
-import ApiErrorNotification from '../components/chat/ApiErrorNotification.vue';
-import StorySidebar from '../components/chat/StorySidebar.vue';
-import ThemeToggle from '../components/ui/ThemeToggle.vue';
-import UserMenu from '../components/auth/UserMenu.vue';
+import { useChatStore } from '@/stores/chatStore';
+import ChatMessage from '@/components/chat/ChatMessage.vue';
+import MessageInput from '@/components/chat/MessageInput.vue';
+import TypingIndicator from '@/components/chat/TypingIndicator.vue';
+import DebugConsole from '@/components/debug/DebugConsole.vue';
+import SystemMessageSender from '@/components/chat/SystemMessageSender.vue';
+import ApiErrorNotification from '@/components/chat/ApiErrorNotification.vue';
+import StorySidebar from '@/components/chat/StorySidebar.vue';
+import ThemeToggle from '@/components/ui/ThemeToggle.vue';
+import UserMenu from '@/components/auth/UserMenu.vue';
 
 const route = useRoute();
 const chatStore = useChatStore();

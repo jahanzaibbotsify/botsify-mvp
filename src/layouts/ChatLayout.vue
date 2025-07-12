@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { useChatStore } from '../stores/chatStore';
-import { useSidebarStore } from '../stores/sidebarStore';
-import LeftSidebar from '../components/sidebar/LeftSidebar.vue';
+import { useChatStore } from '@/stores/chatStore';
+import { useSidebarStore } from '@/stores/sidebarStore';
+import LeftSidebar from '@/components/sidebar/LeftSidebar.vue';
 import { useWindowSize } from '@vueuse/core';
 
 const chatStore = useChatStore();

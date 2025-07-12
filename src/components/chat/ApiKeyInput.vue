@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useOpenAIStore } from '../../stores/openaiStore';
+import { useOpenAIStore } from '@/stores/openaiStore';
 
 const openAIStore = useOpenAIStore();
 const apiKey = ref(openAIStore.apiKey || '');

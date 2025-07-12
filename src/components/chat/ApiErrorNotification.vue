@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useOpenAIStore } from '../../stores/openaiStore';
+import { useOpenAIStore } from '@/stores/openaiStore';
 import { computed } from 'vue';
 
 const openAIStore = useOpenAIStore();
