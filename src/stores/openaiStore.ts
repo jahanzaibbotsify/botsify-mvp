@@ -61,8 +61,19 @@ export const useOpenAIStore = defineStore('openai', () => {
     server_url: "https://mcp.botsify.com/mcp",
     server_description: `Botsify MCP server for managing chatbot configurations. Use this Botsify chatbot api key every time: ${botApiKey}`,
     allowed_tools: [
-      "update-bot-settings",
-      "respond"
+      "updateBotSettings",
+      "updateBotGeneralSettings",
+      "getBotsifyChatBotApiKey",
+      "getTeamMembers",
+      "toggleBotAccessForTeamMember",
+      "resendInvitationToTeamMember",
+      "toggleBotNotificationForTeamMember",
+      "getTeamMember",
+      "createTeamMember",
+      "updateTeamMember",
+      "deleteTeamMember",
+      "getOfflineHours",
+      "setOfflineHours"
     ],
     require_approval: "never" as const
   }

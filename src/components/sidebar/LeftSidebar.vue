@@ -7,6 +7,7 @@ import { useWindowSize } from '@vueuse/core';
 import ChatListItem from '@/components/chat/ChatListItem.vue';
 import SidebarPricing from './SidebarPricing.vue';
 import BookMeeting from '@/components/modal/BookMeeting.vue';
+import User from '@/components/modal/User.vue';
 import { BOTSIFY_BASE_URL } from '@/utils/config';
 
 const chatStore = useChatStore();
@@ -17,6 +18,7 @@ const { width } = useWindowSize();
 const isMobile = computed(() => width.value < 768);
 const showNavDropdown = ref(false);
 const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
+const userRef = ref<InstanceType<typeof User> | null>(null)
 
 const filteredChats = computed(() => {
   return chatStore.chats;
@@ -87,6 +89,16 @@ const openBookMeetingModal = () => {
   closeNavDropdown();
 };
 
+const openUserModal = () => {
+  if (userRef.value) {
+    console.log('📦 userRef exists')
+    userRef.value.openModal()
+  } else {
+    console.warn('❌ userRef is null')
+  }
+  closeNavDropdown();
+};
+
 // Open external link
 const openExternalLink = (url: string) => {
   window.open(url, '_blank');
@@ -115,14 +127,6 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
 });
-
-// Get current hostname to check active state
-const getCurrentHostname = () => {
-  if (typeof window !== 'undefined') {
-    return window.location.hostname;
-  }
-  return '';
-};
 
 // Check if a link is active by comparing with current URL
 const isLinkActive = (url: string) => {
@@ -200,6 +204,17 @@ const isLinkActive = (url: string) => {
                 </div>
                 <span>Support</span>
               </div>
+
+              <div 
+                class="nav-item" 
+                role="button"
+                @click="openUserModal"
+              >
+                <div class="nav-item-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"></svg>
+                </div>
+                <span>User</span>
+              </div>
             </div>
           </div>
         </div>
@@ -223,6 +238,7 @@ const isLinkActive = (url: string) => {
     <!-- Sidebar Pricing (keeping this at the bottom) -->
     <SidebarPricing style="display: none;"/>
     <BookMeeting ref="bookMeetingRef"></BookMeeting>
+    <User ref="userRef"></User>
   </aside>
 </template>
 
