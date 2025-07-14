@@ -1,8 +1,7 @@
 import axios from 'axios';
-import type { MCPConfigurationFile } from '../types';
-
-const BOTSIFY_BASE_URL = import.meta.env.VITE_BOTSIFY_BASE_URL || 'https://botsify.com/api';
-const BOTSIFY_AUTH_TOKEN = import.meta.env.VITE_BOTSIFY_AUTH_TOKEN || '';
+import type { MCPConfigurationFile, MCPServer } from '../types/mcp';
+import { BOTSIFY_BASE_URL, BOTSIFY_AUTH_TOKEN } from '../utils/config';
+import { useApiKeyStore } from '@/stores/apiKeyStore';
 
 export interface BotsifyResponse {
   success: boolean;
@@ -32,46 +31,10 @@ export class BotsifyApiService {
     };
 
     // Add Botsify authorization header if token is available
-    console.log('Botsify headers:', BOTSIFY_AUTH_TOKEN && BOTSIFY_AUTH_TOKEN.trim());
-
     if (BOTSIFY_AUTH_TOKEN && BOTSIFY_AUTH_TOKEN.trim()) {
       headers['Authorization'] = `Bearer ${BOTSIFY_AUTH_TOKEN}`;
     }
     return headers;
-  }
-
-  /**
-   * Test AI Agent with the latest generated story
-   */
-  async testAiAgent(storyContent: string): Promise<BotsifyResponse> {
-    try {
-      console.log('Testing AI Agent with story content:', storyContent.substring(0, 100) + '...');
-      
-      const response = await axios.post(`${BOTSIFY_BASE_URL}/test-ai-agent`, {
-        story: storyContent,
-        timestamp: new Date().toISOString(),
-        action: 'test'
-      }, {
-        headers: this.getBotsifyHeaders(),
-        timeout: 30000 // 30 seconds timeout
-      });
-
-      console.log('Test AI Agent response:', response.data);
-      
-      return {
-        success: true,
-        message: 'AI Agent tested successfully',
-        data: response.data
-      };
-    } catch (error: any) {
-      console.error('Error testing AI Agent:', error);
-      
-      return {
-        success: false,
-        message: error.response?.data?.message || error.message || 'Failed to test AI Agent',
-        data: error.response?.data
-      };
-    }
   }
 
   /**
@@ -201,29 +164,102 @@ export class BotsifyApiService {
       };
     }
   }
+  
+  /**
+   * Get all connected MCP servers
+  */
+  
+    async getAllConnectedMCPs() {
+      try {
+        const response = await axios.get(
+          `${BOTSIFY_BASE_URL}/ai-tools/mcp`,
+          {
+            headers: this.getBotsifyHeaders(),
+             params: { apikey: useApiKeyStore().apiKey }
+          }
+        );
+        return {
+          success: true,
+          message: 'Connected MCPs retrieved successfully',
+          data: response.data
+        };
+      } catch (error: any) {
+        return {
+          success: false,
+          message: error.response?.data?.message || error.message || 'Failed to get connected MCPs',
+          data: error.response?.data
+        };
+      }
+    }
 
-  async getAllConnectedMCPs(apikey:string) {
+  /**
+   * Update an MCP server configuration
+   */
+  async updateMCPConfiguration(id: string, mcpData: MCPServer): Promise<BotsifyResponse> {
     try {
-      const response = await axios.get(
-        `${BOTSIFY_BASE_URL}/ai-tools/mcp?apikey=${apikey}`,
-        {
-          headers: this.getBotsifyHeaders()
-        }
-      );
+      // Create the new payload structure
+      const mcpPayload = {
+        settings: {
+          apikey : mcpData.connection.apiKey,
+          type: "mcp",
+          server_label: mcpData.id || mcpData.name?.toLowerCase().replace(/\s+/g, '_'),
+          server_url: this.getDefaultServerUrl(mcpData.id),
+          headers: this.buildMCPHeaders(mcpData.id, mcpData.connection?.apiKey || '', mcpData.authMethod || 'api_key'),
+          allowed_tools: this.mapFeaturesToTools(mcpData.features || []),
+          require_approval: "never",
+        },
+        apikey: useApiKeyStore().apiKey
+      };
+      
+      const response = await axios.put(`${BOTSIFY_BASE_URL}/mcp/${id}`, mcpPayload, {
+        headers: this.getBotsifyHeaders(),
+        timeout: 30000
+      });
+
       return {
         success: true,
-        message: 'Connected MCPs retrieved successfully',
+        message: 'MCP server updated successfully',
         data: response.data
       };
     } catch (error: any) {
+      console.error('Error updating MCP server:', error);
+      
       return {
         success: false,
-        message: error.response?.data?.message || error.message || 'Failed to get connected MCPs',
+        message: error.response?.data?.message || error.message || 'Failed to update MCP server',
         data: error.response?.data
       };
     }
   }
 
+  /**
+   * Delete an MCP server
+   */
+  async disconnectMCP(id: string): Promise<BotsifyResponse> {
+    try {
+      const response = await axios.delete(
+        `${BOTSIFY_BASE_URL}/mcp/${id}`,
+        {
+          headers: this.getBotsifyHeaders(),
+          data: { apikey: useApiKeyStore().apiKey }
+        }
+      );
+
+      return {
+        success: true,
+        message: 'MCP server disconnected successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error disconnecting MCP server:', error);
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to delete MCP server',
+        data: error.response?.data
+      };
+    }
+  }
   /**
    * Validate MCP server connection by pinging the actual server endpoint
    */
@@ -232,7 +268,12 @@ export class BotsifyApiService {
       console.log('🔍 Validating MCP connection for server:', serverName);
       
       // For built-in servers, we have predefined validation endpoints
-      const validationEndpoint = this.getMCPValidationEndpoint(serverId, connectionUrl);
+      let validationEndpoint = this.getMCPValidationEndpoint(serverId, connectionUrl);
+      
+      // For Shopify, construct the validation endpoint from the connection URL
+      if (serverId === 'shopify' && connectionUrl) {
+        validationEndpoint = connectionUrl;
+      }
       
       if (!validationEndpoint) {
         // Handle special servers that don't have HTTP endpoints
@@ -268,49 +309,112 @@ export class BotsifyApiService {
       console.log('🌐 Final validation URL:', finalValidationUrl);
       console.log('🔑 Headers:', headers);
 
-      // Ping the actual MCP server endpoint
-      const response = await axios.get(finalValidationUrl, {
-        headers,
-        timeout: 10000, // 10 seconds timeout for real server ping
-        validateStatus: (status) => status < 500 // Accept all responses except server errors
-      });
-
-      console.log('✅ MCP server responded with status:', response.status);
-      console.log('📄 Response data:', response.data);
-
-      // Check if the response indicates a successful connection
-      if (response.status === 200) {
-        return {
-          success: true,
-          message: 'MCP server connection validated successfully',
-          data: {
-            serverStatus: 'reachable',
-            responseTime: Date.now(),
-            serverInfo: response.data
+      // For Shopify, use POST with JSON-RPC format
+      if (serverId === 'shopify') {
+        const jsonRpcPayload = {
+          jsonrpc: "2.0",
+          method: "tools/call",
+          id: 1,
+          params: {
+            name: "search_shop_catalog",
+            arguments: {
+              query: "",
+              context: "order products on the basis of behaviour of user"
+            }
           }
         };
-      } else if (response.status === 401) {
-        if (apiKey && apiKey.trim()) {
-          // 401 with API key provided = invalid credentials
-          throw new Error('Invalid API key provided. Please check your authentication credentials.');
-        } else {
-          // 401 without API key = server reachable but auth required
+
+        console.log('🛒 Shopify MCP validation payload:', JSON.stringify(jsonRpcPayload, null, 2));
+        console.log('🛒 Shopify MCP validation URL:', finalValidationUrl);
+        console.log('🛒 Shopify MCP validation headers:', headers);
+
+        const response = await axios.post(finalValidationUrl, jsonRpcPayload, {
+          headers: {
+            ...headers,
+            'Content-Type': 'application/json'
+          },
+          timeout: 30000, // Increased timeout for Shopify requests
+          validateStatus: (status) => status < 500
+        });
+
+        console.log('✅ Shopify MCP server responded with status:', response.status);
+        console.log('📄 Response data:', response.data);
+
+        // Check if the response indicates a successful connection
+        if (response.status === 200) {
           return {
             success: true,
-            message: 'MCP server connection validated successfully (authentication required)',
+            message: 'Shopify MCP server connection validated successfully',
             data: {
               serverStatus: 'reachable',
               responseTime: Date.now(),
-              authRequired: true
+              serverInfo: response.data
             }
           };
+        } else if (response.status === 401) {
+          if (apiKey?.trim()) {
+            throw new Error('Invalid access token provided. Please check your Shopify access token.');
+          } else {
+            return {
+              success: true,
+              message: 'Shopify MCP server connection validated successfully (authentication required)',
+              data: {
+                serverStatus: 'reachable',
+                responseTime: Date.now(),
+                authRequired: true
+              }
+            };
+          }
+        } else if (response.status === 403) {
+          throw new Error('Invalid access token provided. Please check your Shopify access token.');
+        } else {
+          throw new Error(`Shopify server returned unexpected status: ${response.status}`);
         }
-      } else if (response.status === 403) {
-        throw new Error('Invalid API key provided. Please check your authentication credentials.');
-      } else if (response.status === 404) {
-        throw new Error('MCP server endpoint not found. Please verify the connection URL.');
       } else {
-        throw new Error(`Server returned unexpected status: ${response.status}`);
+        // For other servers, use GET method
+        const response = await axios.get(finalValidationUrl, {
+          headers,
+          timeout: 10000, // 10 seconds timeout for real server ping
+          validateStatus: (status) => status < 500 // Accept all responses except server errors
+        });
+
+        console.log('✅ MCP server responded with status:', response.status);
+        console.log('📄 Response data:', response.data);
+
+        // Check if the response indicates a successful connection
+        if (response.status === 200) {
+          return {
+            success: true,
+            message: 'MCP server connection validated successfully',
+            data: {
+              serverStatus: 'reachable',
+              responseTime: Date.now(),
+              serverInfo: response.data
+            }
+          };
+        } else if (response.status === 401) {
+          if (apiKey && apiKey.trim()) {
+            // 401 with API key provided = invalid credentials
+            throw new Error('Invalid API key provided. Please check your authentication credentials.');
+          } else {
+            // 401 without API key = server reachable but auth required
+            return {
+              success: true,
+              message: 'MCP server connection validated successfully (authentication required)',
+              data: {
+                serverStatus: 'reachable',
+                responseTime: Date.now(),
+                authRequired: true
+              }
+            };
+          }
+        } else if (response.status === 403) {
+          throw new Error('Invalid API key provided. Please check your authentication credentials.');
+        } else if (response.status === 404) {
+          throw new Error('MCP server endpoint not found. Please verify the connection URL.');
+        } else {
+          throw new Error(`Server returned unexpected status: ${response.status}`);
+        }
       }
 
     } catch (error: any) {
@@ -318,9 +422,12 @@ export class BotsifyApiService {
       
       // Handle specific error types
       if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+        const timeoutMessage = serverId === 'shopify' 
+          ? 'Shopify MCP server connection timed out. Please check your domain and access token, or try again in a few moments.'
+          : 'Connection timeout. Please check your network and server availability.';
         return {
           success: false,
-          message: 'Connection timeout. Please check your network and server availability.',
+          message: timeoutMessage,
           data: { errorType: 'timeout' }
         };
       } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
@@ -348,16 +455,19 @@ export class BotsifyApiService {
           message: 'Network error connecting to the server.',
           data: { errorType: 'network_error' }
         };
-      } else if (error.message.includes('Invalid API key')) {
+      } else if (error.message.includes('Invalid API key') || error.message.includes('Invalid access token')) {
         return {
           success: false,
           message: error.message,
           data: { errorType: 'auth_failed' }
         };
       } else if (error.response?.status === 401 || error.response?.status === 403) {
+        const errorMessage = serverId === 'shopify' 
+          ? 'Invalid access token provided. Please check your Shopify access token.'
+          : 'Invalid API key provided. Please check your authentication credentials.';
         return {
           success: false,
-          message: 'Invalid API key provided. Please check your authentication credentials.',
+          message: errorMessage,
           data: { errorType: 'auth_failed' }
         };
       } else if (error.response?.status === 404) {
@@ -412,7 +522,7 @@ export class BotsifyApiService {
       'email': '', // SMTP doesn't have REST endpoints
       'zapier': 'https://zapier.com/api/v1/user',
       'stripe': 'https://api.stripe.com/v1/account',
-      'shopify': 'https://shopify.dev/api/admin-rest/2023-10/resources/shop',
+      'shopify': '', // Shopify uses custom domain, will be constructed dynamically
       'paypal': 'https://api.paypal.com/v1/identity/oauth2/userinfo',
       'square': 'https://connect.squareup.com/v2/locations',
       'plaid': 'https://api.plaid.com/accounts/get'
@@ -500,7 +610,8 @@ export class BotsifyApiService {
       'google-drive': `Bearer ${apiKey}`,
       'web-search': `Bearer ${apiKey}`,
       'weather': `Bearer ${apiKey}`, // Some weather APIs use Bearer, others use query params
-      'calendar': `Bearer ${apiKey}`
+      'calendar': `Bearer ${apiKey}`,
+      'shopify': `Bearer ${apiKey}`
     };
 
     return authMethods[serverId] || `Bearer ${apiKey}`;
@@ -523,22 +634,29 @@ export class BotsifyApiService {
   /**
    * Send MCP configuration JSON to API after successful connection
    */
-  async sendMCPConfigurationJSON(mcpData: any): Promise<BotsifyResponse> {
+  async sendMCPConfigurationJSON(mcpData: MCPServer): Promise<BotsifyResponse> {
     try {
       console.log('Sending MCP configuration JSON to API:', mcpData);
       
       // Create the new payload structure
+      let serverUrl = this.getDefaultServerUrl(mcpData.id);
+      
+      // For Shopify, use the custom domain if provided
+      if (mcpData.id === 'shopify' && mcpData?.domain) {
+        serverUrl = `https://${mcpData.domain}/api/mcp`;
+      }
+      
       const mcpPayload = {
-        type: "mcp",
-        server_label: mcpData.serverId || mcpData.serverName?.toLowerCase().replace(/\s+/g, '_'),
-        server_url: mcpData.connectionUrl || this.getDefaultServerUrl(mcpData.serverId),
-        headers: this.buildMCPHeaders(mcpData),
-        allowed_tools: this.mapFeaturesToTools(mcpData.features || []),
-        require_approval: "never",
         settings: {
-          apikey : "",
+          apikey : mcpData.connection.apiKey,
+          type: "mcp",
+          server_label: mcpData.id || mcpData.name?.toLowerCase().replace(/\s+/g, '_'),
+          server_url: serverUrl,
+          headers: this.buildMCPHeaders(mcpData.id, mcpData.connection?.apiKey || '', mcpData.authMethod || 'api_key'),
+          allowed_tools: this.mapFeaturesToTools(mcpData.features || []),
+          require_approval: "never",
         },
-        bot_id: mcpData.botId
+        apikey: useApiKeyStore().apiKey
       };
       
       console.log('MCP payload structure:', mcpPayload);
@@ -569,41 +687,46 @@ export class BotsifyApiService {
   /**
    * Build headers object for MCP configuration based on authentication method
    */
-  private buildMCPHeaders(mcpData: any): Record<string, string> {
+  private buildMCPHeaders(serverId: string, apiKey: string, authMethod: string): Record<string, string> {
     const headers: Record<string, string> = {};
     
-    if (mcpData.apiKey && mcpData.apiKey.trim()) {
-      const authMethod = mcpData.authMethod || 'api_key';
-      
+    if (apiKey && apiKey.trim()) {
       switch (authMethod) {
         case 'bearer_token':
-          headers['Authorization'] = `Bearer ${mcpData.apiKey.trim()}`;
+          if (serverId === 'shopify'){
+            headers['X-Shopify-Access-Token'] = apiKey.trim();
+          } else{
+            headers['Authorization'] = `Bearer ${apiKey.trim()}`;
+          }
           break;
         case 'api_key':
           // For API key, we might use different header names based on the service
-          if (mcpData.serverId === 'stripe') {
-            headers['Authorization'] = `Bearer ${mcpData.apiKey.trim()}`;
-          } else if (mcpData.serverId === 'github') {
-            headers['Authorization'] = `token ${mcpData.apiKey.trim()}`;
-          } else if (mcpData.serverId === 'notion') {
-            headers['Authorization'] = `Bearer ${mcpData.apiKey.trim()}`;
+          if (serverId === 'stripe') {
+            headers['Authorization'] = `Bearer ${apiKey.trim()}`;
+          } else if (serverId === 'github') {
+            headers['Authorization'] = `token ${apiKey.trim()}`;
+          } else if (serverId === 'notion') {
+            headers['Authorization'] = `Bearer ${apiKey.trim()}`;
             headers['Notion-Version'] = '2022-06-28';
-          } else if (mcpData.serverId === 'slack') {
-            headers['Authorization'] = `Bearer ${mcpData.apiKey.trim()}`;
+          } else if (serverId === 'slack') {
+            headers['Authorization'] = `Bearer ${apiKey.trim()}`;
+          } else if (serverId === 'shopify') {
+            headers['X-Shopify-Access-Token'] = apiKey.trim();
+            headers['Content-Type'] = 'application/json';
           } else {
-            headers['X-API-Key'] = mcpData.apiKey.trim();
+            headers['X-API-Key'] = apiKey.trim();
           }
           break;
         case 'basic_auth':
           // For basic auth, apiKey should contain "username:password"
-          const encoded = btoa(mcpData.apiKey.trim());
+          const encoded = btoa(apiKey.trim());
           headers['Authorization'] = `Basic ${encoded}`;
           break;
         case 'oauth':
-          headers['Authorization'] = `Bearer ${mcpData.apiKey.trim()}`;
+          headers['Authorization'] = `Bearer ${apiKey.trim()}`;
           break;
         default:
-          headers['X-API-Key'] = mcpData.apiKey.trim();
+          headers['X-API-Key'] = apiKey.trim();
       }
     }
     
@@ -728,96 +851,18 @@ export class BotsifyApiService {
   }
 
   /**
-   * Test method to demonstrate the new MCP configuration payload structure
-   */
-  async testEnhancedMCPConfiguration(): Promise<BotsifyResponse> {
-    // Example MCP configuration data for Stripe (as it would come from mcpStore)
-    const testMCPData = {
-      serverId: 'stripe',
-      serverName: 'Stripe',
-      serverIcon: '💳',
-      category: 'Payments',
-      connectionUrl: 'https://mcp.stripe.com',
-      authMethod: 'bearer_token',
-      hasAuthentication: true,
-      apiKey: process.env.STRIPE_SECRET_KEY || 'sk_test_example', // Example Stripe secret key
-      features: [
-        'Payment processing',
-        'Customer management', 
-        'Subscription billing',
-        'Product management',
-        'Invoice management',
-        'Financial reporting',
-        'Refund processing',
-        'Dispute handling',
-        'Payment links',
-        'Coupon management'
-      ],
-      systemPrompt: 'You can access Stripe payments, manage customers, and handle billing.',
-      connectedAt: new Date(),
-      validationData: { serverStatus: 'reachable', responseTime: Date.now() }
-    };
-
-    console.log('Testing MCP configuration with new payload structure...');
-    console.log('Expected payload format:');
-    
-    // Show what the new payload will look like
-    const expectedPayload = {
-      type: "mcp",
-      server_label: "stripe",
-      server_url: "https://mcp.stripe.com",
-      headers: {
-        Authorization: `Bearer ${testMCPData.apiKey}`
-      },
-      allowed_tools: [
-        "create_payment_intent",
-        "capture_payment", 
-        "list_payment_intents",
-        "create_customer",
-        "list_customers",
-        "update_customer",
-        "get_customer",
-        "create_subscription",
-        "list_subscriptions",
-        "update_subscription",
-        "cancel_subscription",
-        "create_product",
-        "list_products",
-        "update_product",
-        "create_price",
-        "list_prices",
-        "create_invoice",
-        "list_invoices",
-        "create_invoice_item",
-        "finalize_invoice",
-        "retrieve_balance",
-        "list_transactions",
-        "create_refund",
-        "list_refunds",
-        "update_dispute",
-        "list_disputes",
-        "create_payment_link",
-        "create_coupon",
-        "list_coupons"
-      ],
-      require_approval: "never"
-    };
-    
-    console.log('Expected Stripe payload:', JSON.stringify(expectedPayload, null, 2));
-    
-    return await this.sendMCPConfigurationJSON(testMCPData);
-  }
-
-  /**
    * Get File Search data for a specific bot assistant
    */
-  async getFileSearch(apikey: string): Promise<BotsifyResponse> {
+  async getFileSearch(): Promise<BotsifyResponse> {
     try {
-      console.log('Getting file search files for bot assistant:', apikey);
+      console.log('Getting file search files for bot assistant:', useApiKeyStore().apiKey);
       
       const response = await axios.get(
-        `${BOTSIFY_BASE_URL}/file-search?apikey=${apikey}`,
-        { headers: this.getBotsifyHeaders() }
+        `${BOTSIFY_BASE_URL}/file-search`,
+        {
+            headers: this.getBotsifyHeaders(),
+             params: { apikey: useApiKeyStore().apiKey }
+          }
       );
 
       console.log('File search files retrieved successfully:', response.data);
@@ -838,42 +883,15 @@ export class BotsifyApiService {
   /**
    * Create/Connect File Search for a specific bot assistant
    */
-  async createFileSearch(apikey: string, file: File): Promise<BotsifyResponse> {
+  async createFileSearch(file: File): Promise<BotsifyResponse> {
     try {
-      // console.log('Uploading file for search:', { botAssistantId, fileName: file.fileName, fileSize: file.size });
-      // console.log(file);
-      
-      // // Validate file type (documents only for file search)
-      // const supportedTypes = [
-      //   'application/pdf', 'text/plain', 'text/csv',
-      //   'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      //   'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      //   'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-      // ];
-      
-      // if (!supportedTypes.includes(file.fileType)) {
-      //   return {
-      //     success: false,
-      //     message: 'Unsupported file type. Please upload PDF, Word, Excel, PowerPoint, TXT, or CSV files.'
-      //   };
-      // }
-      
-      // // Validate file size (10MB limit for documents)
-      // const maxSize = 10 * 1024 * 1024; // 10MB
-      // if (file.size > maxSize) {
-      //   return {
-      //     success: false,
-      //     message: 'File size too large. Maximum size is 10MB for documents.'
-      //   };
-      // }
-      
       const formData = new FormData();
       // formData.append('file', file);
       // formData.append('bot_assistant_id', botAssistantId);
       formData.append('file', file)
       
       const response = await axios.post(
-        `${BOTSIFY_BASE_URL}/file-search?apikey=${apikey}`,
+        `${BOTSIFY_BASE_URL}/file-search?apikey=${useApiKeyStore().apiKey}`,
         formData,
         { 
           headers: {
@@ -901,12 +919,12 @@ export class BotsifyApiService {
   /**
    * Delete File Search by ID
    */
-  async deleteFileSearch(apikey: string, id: string): Promise<BotsifyResponse> {
+  async deleteFileSearch(id: string): Promise<BotsifyResponse> {
     try {
       console.log('Deleting file from search:', id);
       
       const response = await axios.delete(
-        `${BOTSIFY_BASE_URL}/file-search/${id}?apikey=${apikey}`,
+        `${BOTSIFY_BASE_URL}/file-search/${id}?apikey=${useApiKeyStore().apiKey}`,
         { headers: this.getBotsifyHeaders() }
       );
       
@@ -928,7 +946,7 @@ export class BotsifyApiService {
   /**
    * Delete File Search by ID
    */
-  async deleteAllFileSearch(apikey: string, ids: string[]): Promise<BotsifyResponse> {
+  async deleteAllFileSearch(ids: string[]): Promise<BotsifyResponse> {
     try {
       console.log('Deleting file from search:', ids);
       
@@ -937,7 +955,7 @@ export class BotsifyApiService {
         { 
           headers: this.getBotsifyHeaders(),
           data: {
-            "apikey": apikey,
+            "apikey": useApiKeyStore().apiKey,
             "ids": ids
           }
         }
@@ -961,9 +979,9 @@ export class BotsifyApiService {
   /**
    * Get Web Search data for a specific bot assistant
    */
-  async getWebSearch(apikey: string): Promise<BotsifyResponse> {
+  async getWebSearch(): Promise<BotsifyResponse> {
     try {
-      console.log('Getting web search URLs for bot assistant:', apikey);
+      console.log('Getting web search URLs for bot assistant:', useApiKeyStore().apiKey);
       
       // const response = await axios.get(
       //   `${BOTSIFY_BASE_URL}/web-search/${botAssistantId}`,
@@ -971,7 +989,7 @@ export class BotsifyApiService {
       // );
 
       const response = await axios.get(
-        `${BOTSIFY_BASE_URL}/web-search?apikey=${apikey}`,
+        `${BOTSIFY_BASE_URL}/web-search?apikey=${useApiKeyStore().apiKey}`,
         { headers: this.getBotsifyHeaders() }
       );
       
@@ -993,15 +1011,13 @@ export class BotsifyApiService {
   /**
    * Add a new web URL for search
    */
-  async createWebSearch(apikey: string, url: string, title?: string): Promise<BotsifyResponse> {
+  async createWebSearch(url: string, title?: string): Promise<BotsifyResponse> {
     try {
-      console.log('Adding web URL for bot assistant:', { apikey, url, title });
-      
       const response = await axios.post(
         `${BOTSIFY_BASE_URL}/web-search`,
         {
           // bot_assistant_id: botAssistantId,
-          apikey: apikey,
+          apikey: useApiKeyStore().apiKey,
           url: url,
           title: title
         },
@@ -1026,36 +1042,6 @@ export class BotsifyApiService {
   /**
    * Delete a web search URL
    */
-  async deleteWebSearch(apikey: string, id: string, url: string): Promise<BotsifyResponse> {
-    try {
-      console.log('Deleting web URL:', { id, url });
-      
-      const response = await axios.delete(
-        `${BOTSIFY_BASE_URL}/web-search/${id}?apikey=${apikey}`,
-        { 
-          headers: this.getBotsifyHeaders(),
-          data: { url: url }
-        }
-      );
-      
-      console.log('Web URL deleted successfully:', response.data);
-      return {
-        success: true,
-        message: 'Web URL deleted successfully',
-        data: response.data
-      };
-    } catch (error: any) {
-      console.error('Error deleting web URL:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Failed to delete web URL'
-      };
-    }
-  }
-
-  /**
-   * Delete a web search URL
-   */
   async deleteAllWebSearch(ids: string[]): Promise<BotsifyResponse> {
     try {
      console.log("passed ids:", ids);
@@ -1065,7 +1051,7 @@ export class BotsifyApiService {
         { 
           headers: this.getBotsifyHeaders(),
           data: {
-            apikey: 'H9MzZn62ZISSYhzzABbNfPs6tfL1QPLv8wFK06o1',
+            apikey: useApiKeyStore().apiKey,
             ids: ids,
           },
       });
@@ -1213,119 +1199,6 @@ export class BotsifyApiService {
         data: error
       };
     }
-  }
-
-  /**
-   * Connect to File Search API to fetch and access files
-   * @deprecated Use createFileSearch instead
-   */
-  async connectFileSearch(): Promise<BotsifyResponse> {
-    console.warn('connectFileSearch is deprecated. Use createFileSearch instead.');
-    return {
-      success: false,
-      message: 'This method is deprecated. Please use createFileSearch with bot assistant ID.',
-      data: null
-    };
-  }
-
-  /**
-   * Connect to File Search API with file upload
-   * @deprecated Use createFileSearch instead
-   */
-  async connectFileSearchWithUpload(): Promise<BotsifyResponse> {
-    console.warn('connectFileSearchWithUpload is deprecated. Use createFileSearch instead.');
-    return {
-      success: false,
-      message: 'This method is deprecated. Please use createFileSearch with bot assistant ID.',
-      data: null
-    };
-  }
-
-  /**
-   * Connect to Web Search API with a specific website URL
-   * @deprecated Use createWebSearch instead
-   */
-  async connectWebSearch(): Promise<BotsifyResponse> {
-    console.warn('connectWebSearch is deprecated. Use createWebSearch instead.');
-    return {
-      success: false,
-      message: 'This method is deprecated. Please use createWebSearch with bot assistant ID.',
-      data: null
-    };
-  }
-
-  /**
-   * Upload a file to get a URL for use in AI prompts
-   * @deprecated Use uploadFileNew instead
-   */
-  async uploadFile(file: File): Promise<BotsifyResponse> {
-    console.warn('uploadFile is deprecated. Use uploadFileNew instead.');
-    return this.uploadFileNew(file);
-  }
-
-  /**
-   * Upload multiple files and return their URLs
-   * @deprecated Use uploadMultipleFilesNew instead
-   */
-  async uploadMultipleFiles(files: File[]): Promise<BotsifyResponse> {
-    console.warn('uploadMultipleFiles is deprecated. Use uploadMultipleFilesNew instead.');
-    return this.uploadMultipleFilesNew(files);
-  }
-
-  /**
-   * @deprecated Use getFileSearch() instead
-   */
-  async getFileSearchOld(botAssistantId: string): Promise<BotsifyResponse> {
-    console.warn('getFileSearchOld is deprecated. Use getFileSearch() instead.');
-    return this.getFileSearch(botAssistantId);
-  }
-
-  /**
-   * @deprecated Use createFileSearch() instead
-   */
-  async createFileSearchOld(): Promise<BotsifyResponse> {
-    console.warn('createFileSearchOld is deprecated. Use createFileSearch() with actual File object instead.');
-    return {
-      success: false,
-      message: 'This method is deprecated. Please use createFileSearch() with a File object or uploadFileNew() for file uploads.'
-    };
-  }
-
-  /**
-   * @deprecated Use deleteFileSearch() instead
-   */
-  async deleteFileSearchOld(id: string): Promise<BotsifyResponse> {
-    console.warn('deleteFileSearchOld is deprecated. Use deleteFileSearch() instead.');
-    return this.deleteFileSearch('', id);
-  }
-
-  /**
-   * @deprecated Use getWebSearch() instead
-   */
-  async getWebSearchOld(botAssistantId: string): Promise<BotsifyResponse> {
-    console.warn('getWebSearchOld is deprecated. Use getWebSearch() instead.');
-    return this.getWebSearch(botAssistantId);
-  }
-
-  /**
-   * @deprecated Use createWebSearch() instead
-   */
-  async createWebSearchOld(botAssistantId: string, websiteUrl: string, config?: any): Promise<BotsifyResponse> {
-    console.warn('createWebSearchOld is deprecated. Use createWebSearch() instead.');
-    // Try to extract title from config if available
-    const title = config?.title || config?.name || undefined;
-    return this.createWebSearch(botAssistantId, websiteUrl, title);
-  }
-
-  /**
-   * @deprecated Use deleteWebSearch() instead
-   */
-  async deleteWebSearchOld(): Promise<BotsifyResponse> {
-    console.warn('deleteWebSearchOld is deprecated. Use deleteWebSearch() instead.');
-    return {
-      success: false,
-      message: 'This method is deprecated. Please use deleteWebSearch(id, url) with the URL parameter.'
-    };
   }
 }
 

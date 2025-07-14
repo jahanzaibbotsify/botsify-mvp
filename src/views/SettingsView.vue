@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import ApiKeySettings from '../components/settings/ApiKeySettings.vue';
-import SystemMessageSender from '../components/chat/SystemMessageSender.vue';
-import ConfigurationTester from '../components/chat/ConfigurationTester.vue';
+import ApiKeySettings from '@/components/settings/ApiKeySettings.vue';
+import SystemMessageSender from '@/components/chat/SystemMessageSender.vue';
+import ConfigurationTester from '@/components/chat/ConfigurationTester.vue';
 </script>
 
 <template>

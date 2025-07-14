@@ -10,32 +10,32 @@ const routes: RouteRecordRaw[] = [
         path: '',
         redirect: () => {
           // Check if there are existing chats in localStorage
-          try {
-            const storedChats = localStorage.getItem('botsify_chats')
-            const storedActiveChat = localStorage.getItem('botsify_active_chat')
+          // try {
+          //   const storedChats = localStorage.getItem('botsify_chats')
+          //   const storedActiveChat = localStorage.getItem('botsify_active_chat')
             
-            if (storedChats) {
-              const chats = JSON.parse(storedChats)
+          //   if (storedChats) {
+          //     const chats = JSON.parse(storedChats)
               
-              // If there's an active chat, redirect to it
-              if (storedActiveChat && chats.some((chat: any) => chat.id === storedActiveChat)) {
-                return `/chat/${storedActiveChat}`
-              }
+          //     // If there's an active chat, redirect to it
+          //     if (storedActiveChat && chats.some((chat: any) => chat.id === storedActiveChat)) {
+          //       return `/chat/${storedActiveChat}`
+          //     }
               
-              // Otherwise, redirect to the most recent chat
-              if (chats.length > 0) {
-                const mostRecentChat = chats.sort((a: any, b: any) => 
-                  new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-                )[0]
-                return `/chat/${mostRecentChat.id}`
-              }
-            }
-          } catch (error) {
-            console.error('Error reading chats from localStorage:', error)
-          }
+          //     // Otherwise, redirect to the most recent chat
+          //     if (chats.length > 0) {
+          //       const mostRecentChat = chats.sort((a: any, b: any) => 
+          //         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          //       )[0]
+          //       return `/chat/${mostRecentChat.id}`
+          //     }
+          //   }
+          // } catch (error) {
+          //   console.error('Error reading chats from localStorage:', error)
+          // }
           
           // If no existing chats, create a new one
-          const chatId = Date.now().toString()
+          const chatId = "H9MzZn62ZISSYhzzABbNfPs6tfL1QPLv8wFK06o1"
           return `/chat/${chatId}`
         }
       },

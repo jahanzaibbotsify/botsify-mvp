@@ -1,17 +1,16 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
-import { useChatStore } from '../../stores/chatStore';
-import { useMCPStore } from '../../stores/mcpStore';
-import type { Attachment } from '../../types';
+import { useChatStore } from '@/stores/chatStore';
+import { useMCPStore } from '@/stores/mcpStore';
+import type { Attachment } from '@/types';
 import FileUpload from './FileUpload.vue';
 import MCPConnectionModal from './MCPConnectionModal.vue';
-import { botsifyApi } from '../../services/botsifyApi';
+import { botsifyApi } from '@/services/botsifyApi';
 
 const props = defineProps<{
   chatId: string;
 }>();
 
-const apikey = 'H9MzZn62ZISSYhzzABbNfPs6tfL1QPLv8wFK06o1';
 const chatStore = useChatStore();
 const mcpStore = useMCPStore();
 const messageText = ref('');
@@ -73,87 +72,84 @@ const sendMessage = async () => {
   let processedAttachments = [...attachments.value];
   
   // If there are attachments (images/videos), upload them first
-  if (attachments.value.length > 0) {
-    const mediaAttachments = attachments.value.filter(att => 
-      att.type.startsWith('image/') || att.type.startsWith('video/')
-    );
+  try {
+    console.log('Uploading media files for AI prompt...');
     
-    if (mediaAttachments.length > 0) {
+    // Show uploading status
+    const originalText = finalMessageText;
+    finalMessageText = finalMessageText + (finalMessageText ? '\n\n' : '') + '📤 Uploading files...';
+    
+    // Add temporary message to show upload progress
+    chatStore.addMessage(props.chatId, finalMessageText, 'user', processedAttachments);
+    
+    // Convert blob URLs to File objects for upload
+    const filesToUpload: File[] = [];
+    for (const attachment of attachments.value) {
       try {
-        console.log('Uploading media files for AI prompt...');
-        
-        // Show uploading status
-        const originalText = finalMessageText;
-        finalMessageText = finalMessageText + (finalMessageText ? '\n\n' : '') + '📤 Uploading files...';
-        
-        // Add temporary message to show upload progress
-        chatStore.addMessage(props.chatId, finalMessageText, 'user', processedAttachments);
-        
-        // Convert blob URLs to File objects for upload
-        const filesToUpload: File[] = [];
-        for (const attachment of mediaAttachments) {
-          try {
-            const response = await fetch(attachment.url);
-            const blob = await response.blob();
-            const file = new File([blob], attachment.name, { type: attachment.type });
-            filesToUpload.push(file);
-          } catch (error) {
-            console.error('Error converting attachment to file:', error);
-          }
-        }
-        
-        if (filesToUpload.length > 0) {
-          // Upload files to get URLs using new endpoint
-          const uploadResult = await botsifyApi.uploadMultipleFilesNew(filesToUpload);
-          
-          if (uploadResult.success && uploadResult.data.uploadedFiles.length > 0) {
-            // Update attachments with uploaded URLs
-            uploadResult.data.uploadedFiles.forEach((uploadedFile: any) => {
-              const attachmentIndex = processedAttachments.findIndex(att => 
-                att.name === uploadedFile.fileName && att.type === uploadedFile.fileType
-              );
-              
-              if (attachmentIndex !== -1) {
-                processedAttachments[attachmentIndex] = {
-                  ...processedAttachments[attachmentIndex],
-                  uploadedUrl: uploadedFile.url,
-                  fileId: uploadedFile.fileId,
-                  uploadedAt: uploadedFile.uploadedAt,
-                  isUploaded: true
-                };
-              }
-            });
-            
-            // Append file URLs to the AI prompt
-            const fileUrls = uploadResult.data.uploadedFiles.map((file: any) => {
-              const fileType = file.fileType.startsWith('image/') ? 'Image' : 
-                              file.fileType.startsWith('video/') ? 'Video' : 'Document';
-              return `${fileType}: ${file.url}`;
-            }).join('\n');
-            
-            finalMessageText = originalText + (originalText ? '\n\n' : '') + 
-              'Attached files:\n' + fileUrls;
-            
-            console.log('Files uploaded successfully, URLs added to prompt:', fileUrls);
-          } else {
-            console.error('File upload failed:', uploadResult.message);
-            finalMessageText = originalText + (originalText ? '\n\n' : '') + 
-              '❌ File upload failed: ' + uploadResult.message;
-          }
-        }
-        
-        // Remove the temporary uploading message
-        chatStore.removeLastMessage(props.chatId);
-        
-      } catch (error: any) {
-        console.error('Error uploading files:', error);
-        finalMessageText = messageText.value.trim() + (messageText.value.trim() ? '\n\n' : '') + 
-          '❌ File upload error: ' + error.message;
-        
-        // Remove the temporary uploading message
-        chatStore.removeLastMessage(props.chatId);
+        const response = await fetch(attachment.url);
+        const blob = await response.blob();
+        const file = new File([blob], attachment.name, { type: attachment.type });
+        filesToUpload.push(file);
+      } catch (error) {
+        console.error('Error converting attachment to file:', error);
       }
     }
+    
+    if (filesToUpload.length > 0) {
+      // Upload files to get URLs using new endpoint
+      const uploadResult = await botsifyApi.uploadMultipleFilesNew(filesToUpload);
+      
+      if (uploadResult.success && uploadResult.data.uploadedFiles.length > 0) {
+        // Update attachments with uploaded URLs
+        uploadResult.data.uploadedFiles.forEach((uploadedFile: any, index: number) => {
+          if (!uploadedFile.url) throw new Error(`File ${index + 1} upload failed.`);
+          if(attachments.value[index].type.startsWith('image/')){
+            attachments.value[index].preview = uploadedFile.url;
+          }
+          
+          const attachmentIndex = processedAttachments.findIndex(att => 
+            att.name === uploadedFile.fileName && att.type === uploadedFile.fileType
+          );
+          
+          if (attachmentIndex !== -1) {
+            processedAttachments[attachmentIndex] = {
+              ...processedAttachments[attachmentIndex],
+              uploadedUrl: uploadedFile.url,
+              fileId: uploadedFile.fileId,
+              uploadedAt: uploadedFile.uploadedAt,
+              isUploaded: true
+            };
+          }
+        });
+        
+        // Append file URLs to the AI prompt
+        const fileUrls = uploadResult.data.uploadedFiles.map((file: any) => {
+          const fileType = file.fileType.startsWith('image/') ? 'Image' : 
+                          file.fileType.startsWith('video/') ? 'Video' : 'Document';
+          return `${fileType}: ${file.url}`;
+        }).join('\n');
+        
+        finalMessageText = originalText + (originalText ? '\n\n' : '') + 
+          'Attached files:\n' + fileUrls;
+        
+        console.log('Files uploaded successfully, URLs added to prompt:', fileUrls);
+      } else {
+        console.error('File upload failed:', uploadResult.message);
+        finalMessageText = originalText + (originalText ? '\n\n' : '') + 
+          '❌ File upload failed: ' + uploadResult.message;
+      }
+    }
+    
+    // Remove the temporary uploading message
+    chatStore.removeLastMessage(props.chatId);
+    
+  } catch (error: any) {
+    console.error('Error uploading files:', error);
+    finalMessageText = messageText.value.trim() + (messageText.value.trim() ? '\n\n' : '') + 
+      '❌ File upload error: ' + error.message;
+    
+    // Remove the temporary uploading message
+    chatStore.removeLastMessage(props.chatId);
   }
   
   // Send the final message with uploaded file URLs
@@ -204,8 +200,30 @@ const closeMCPDropdown = () => {
   showMCPDropdown.value = false;
 };
 
+// Load existing Web Search data for this bot assistant
+const loadMCPsData = async () => {
+  try {
+    console.log('Loading already connected MCP servers:', props.chatId);
+    const response = await mcpStore.getConnectedMCPs();
+    
+    if (response.success) {
+      console.log('Fetched MCP data result:', response);
+      
+    } else {
+      console.log('No existing Web Search data found or failed to load:', response.message);
+    }
+  } catch (error: any) {
+    console.error('Error loading Web Search data:', error);
+  }
+};
+
 // New methods for dropdown actions
-const openMCPServers = () => {
+const openMCPServers = async() => {
+  if(mcpStore.connectedServers.length === 0) {
+    loadingData.value = true;
+    await loadMCPsData();
+    loadingData.value = false;
+  }
   showMCPModal.value = true;
   closeMCPDropdown();
 };
@@ -304,7 +322,7 @@ const connectFileSearch = async () => {
     
     // const response = await botsifyApi.createFileSearch(props.chatId, fileData);
     
-    const response = await botsifyApi.createFileSearch(apikey, selectedFile.value);
+    const response = await botsifyApi.createFileSearch(selectedFile.value);
 
     uploadProgress.value = 100;
     isUploading.value = false;
@@ -351,7 +369,7 @@ const connectWebSearch = async () => {
     console.log('Web Search URL:', webSearchUrl.value);
     console.log('Web Search configuration:', webSearchConfig.value);
     
-    const response = await botsifyApi.createWebSearch(apikey, webSearchUrl.value.trim(), JSON.stringify(webSearchConfig.value));
+    const response = await botsifyApi.createWebSearch(webSearchUrl.value.trim(), JSON.stringify(webSearchConfig.value));
     
     if (response.success) {
       console.log('Web Search created successfully:', response.data);
@@ -390,10 +408,10 @@ const handleMCPConnection = (serverId: string) => {
     console.log('MCP System Prompt Updated:', combinedPrompt);
     
     // Show a success message to the user
-    const connectedServer = mcpStore.connectedServers.find(config => config.server.id === serverId);
+    const connectedServer = mcpStore.connectedServers.find(config => config.id === serverId);
     if (connectedServer) {
       // You could add a toast notification here or update the UI
-      console.log(`Successfully connected to ${connectedServer.server.name}`);
+      console.log(`Successfully connected to ${connectedServer.name}`);
     }
   }
   closeMCPModal();
@@ -404,7 +422,7 @@ const loadFileSearchData = async () => {
   try {
     console.log('Loading existing File Search data for bot assistant:', props.chatId);
     // const response = await botsifyApi.getFileSearch(props.chatId);
-    const response = await botsifyApi.getFileSearch(apikey);
+    const response = await botsifyApi.getFileSearch();
     
     if (response.success) {
       // fileSearchResults.value = response.data?.files || [];
@@ -423,7 +441,7 @@ const loadFileSearchData = async () => {
 const loadWebSearchData = async () => {
   try {
     console.log('Loading existing Web Search data for bot assistant:', props.chatId);
-    const response = await botsifyApi.getWebSearch(apikey);
+    const response = await botsifyApi.getWebSearch();
     
     if (response.success) {
       // webSearchResults.value = response.data;
@@ -431,23 +449,6 @@ const loadWebSearchData = async () => {
       console.log('web search result:', response.data);
       
       webSearchResults.push(...response.data);
-    } else {
-      console.log('No existing Web Search data found or failed to load:', response.message);
-    }
-  } catch (error: any) {
-    console.error('Error loading Web Search data:', error);
-  }
-};
-
-// Load existing Web Search data for this bot assistant
-const loadMCPsData = async () => {
-  try {
-    console.log('Loading already connected MCP servers:', props.chatId);
-    const response = await mcpStore.getConnectedMCPs(apikey);
-    
-    if (response.success) {
-      console.log('Fetched MCP data result:', response);
-      
     } else {
       console.log('No existing Web Search data found or failed to load:', response.message);
     }
@@ -466,7 +467,7 @@ const deleteFileSearchEntry = async (fileSearchId: string, fileSearchName: strin
     fileSearchDeleteLoading.value = true;
     fileSearchSelectedId.value = fileSearchId;
     console.log('Deleting File Search entry:', fileSearchId);
-    const response = await botsifyApi.deleteAllFileSearch(apikey, [fileSearchId]);
+    const response = await botsifyApi.deleteAllFileSearch([fileSearchId]);
     
     if (response.success) {
       // Remove from local results
@@ -505,7 +506,7 @@ const deleteAllFileSearchEntry = async () => {
   try {
     fileSearchAllDeleteLoading.value = true;
     const ids = fileSearchResults.map(file=>file.id);
-    const response = await botsifyApi.deleteAllFileSearch(apikey, ids);
+    const response = await botsifyApi.deleteAllFileSearch(ids);
     
     if (response.success) {
       console.log('All File Search entry deleted successfully');
@@ -598,10 +599,6 @@ const deleteWebSearchAllEntry = async () => {
     webSearchDeleteAllLoading.value = false;
   }
 };
-
-onMounted(() => {
-  loadMCPsData();
-});
 </script>
 
 <template>

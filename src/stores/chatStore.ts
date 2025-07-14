@@ -4,6 +4,7 @@ import { useOpenAIStore } from './openaiStore';
 import { useMCPStore } from './mcpStore';
 import type { Chat, Message, Attachment, PromptVersion, GlobalPromptTemplate } from '../types';
 import { botsifyApi } from '../services/botsifyApi';
+import { useApiKeyStore } from './apiKeyStore';
 
 export const useChatStore = defineStore('chat', () => {
   const openAIStore = useOpenAIStore();
@@ -1093,15 +1094,14 @@ Use the above connected services information to understand what tools and data s
       // Get MCP servers information
       if (mcpStore.connectedServers.length > 0) {
         connectedServices.services.mcp_servers = mcpStore.connectedServers.map(serverConfig => ({
-          id: serverConfig.server.id,
-          name: serverConfig.server.name,
-          category: serverConfig.server.category,
-          description: serverConfig.server.description,
-          features: serverConfig.server.features,
-          connectionUrl: serverConfig.server.connectionUrl,
-          authMethod: serverConfig.server.authMethod,
+          id: serverConfig.id,
+          name: serverConfig.name,
+          category: serverConfig.category,
+          description: serverConfig.description,
+          features: serverConfig.features,
+          connectionUrl: serverConfig.connectionUrl,
+          authMethod: serverConfig.authMethod,
           hasAuthentication: !!serverConfig.connection?.apiKey,
-          connectedAt: serverConfig.connection?.connectedAt,
           status: 'connected'
         }));
         hasServices = true;
@@ -1109,7 +1109,7 @@ Use the above connected services information to understand what tools and data s
 
       // Check for File Search data
       try {
-        const fileSearchResponse = await botsifyApi.getFileSearch(chatId);
+        const fileSearchResponse = await botsifyApi.getFileSearch();
         if (fileSearchResponse.success && fileSearchResponse.data?.files?.length > 0) {
           connectedServices.services.file_search = {
             status: 'connected',
@@ -1131,7 +1131,7 @@ Use the above connected services information to understand what tools and data s
 
       // Check for Web Search data
       try {
-        const webSearchResponse = await botsifyApi.getWebSearch(chatId);
+        const webSearchResponse = await botsifyApi.getWebSearch();
         if (webSearchResponse.success && webSearchResponse.data) {
           connectedServices.services.web_search = {
             status: 'connected',
@@ -1175,7 +1175,7 @@ Use the above connected services information to understand what tools and data s
     const initialPrompt = defaultPromptTemplate.value?.content || '';
     
     const newChat: Chat = {
-      id: Date.now().toString(),
+      id: useApiKeyStore().apiKey,
       title: '',
       timestamp: new Date(),
       messages: [

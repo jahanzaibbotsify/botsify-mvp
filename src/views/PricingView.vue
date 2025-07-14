@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import PricingPlans from '../components/pricing/PricingPlans.vue';
+import PricingPlans from '@/components/pricing/PricingPlans.vue';
 </script>
 
 <template>

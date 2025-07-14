@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { Chat } from '../../types';
+import type { Chat } from '@/types';
 
 const props = defineProps<{
   chat: Chat;

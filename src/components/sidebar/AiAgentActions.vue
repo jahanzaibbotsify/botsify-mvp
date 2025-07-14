@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useChatStore } from '../../stores/chatStore';
-import { botsifyApi, type BotsifyResponse } from '../../services/botsifyApi';
+import { useChatStore } from '@/stores/chatStore';
+import { botsifyApi, type BotsifyResponse } from '@/services/botsifyApi';
+import { BOTSIFY_BASE_URL } from '@/utils/config';
+import { useApiKeyStore } from '@/stores/apiKeyStore';
 
+const BOTSIFY_APIKEY = useApiKeyStore().apiKey;
 const chatStore = useChatStore();
-const isTestingAgent = ref(false);
 const isDeployingAgent = ref(false);
-const lastTestResult = ref<BotsifyResponse | null>(null);
 const lastDeployResult = ref<BotsifyResponse | null>(null);
 
 // Get the latest prompt content from the current active chat
@@ -22,30 +23,13 @@ const hasPromptContent = computed(() => {
 
 const testAiAgent = async () => {
   if (!hasPromptContent.value) {
-    alert('No prompt content available to test. Please generate some content first.');
+    alert('No prompt content available to deploy. Please generate some content first.');
     return;
   }
 
-  isTestingAgent.value = true;
-  lastTestResult.value = null;
-
-  try {
-    console.log('Starting AI Agent test...');
-    const result = await botsifyApi.testAiAgent(latestPromptContent.value);
-    lastTestResult.value = result;
-    
-    if (result.success) {
-      alert(`✅ ${result.message}`);
-    } else {
-      alert(`❌ Test failed: ${result.message}`);
-    }
-  } catch (error) {
-    console.error('Unexpected error during testing:', error);
-    alert('❌ An unexpected error occurred during testing.');
-  } finally {
-    isTestingAgent.value = false;
-  }
-};
+  const url = `${BOTSIFY_BASE_URL}/web-bot/agent/${BOTSIFY_APIKEY}`;
+  window.open(url, '_blank');
+}
 
 const deployAiAgent = async () => {
   if (!hasPromptContent.value) {
@@ -91,15 +75,14 @@ const deployAiAgent = async () => {
       <button 
         class="action-button test-button"
         @click="testAiAgent"
-        :disabled="isTestingAgent || !hasPromptContent"
+        :disabled="!hasPromptContent"
         :title="!hasPromptContent ? 'No prompt content available' : 'Test your AI agent'"
       >
         <div class="button-content">
-          <svg v-if="!isTestingAgent" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
           </svg>
-          <div v-else class="loading-spinner"></div>
-          <span>{{ isTestingAgent ? 'Testing...' : 'Test AI Agent' }}</span>
+          <span>Test AI Agent</span>
         </div>
       </button>
 

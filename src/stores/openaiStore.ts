@@ -1,21 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import OpenAI from 'openai';
+import { ConfigurationTask, ConfigurationResponse, ConfigurationResponseData, ApiRequestData, ChatMessage, OpenAIStreamResponse, ApiError } from '../types/openai'
 
-// Configuration task interface
-interface ConfigurationTask {
-  key: string;
-  value: string;
-}
-
-// Configuration response interface
-interface ConfigurationResponse {
-  success: boolean;
-  message: string;
-  data?: any;
-}
-
-// OpenAI client instance - NOT reactive to avoid private member access issues
 let openaiClient: OpenAI | null = null;
 
 export const useOpenAIStore = defineStore('openai', () => {
@@ -97,9 +84,10 @@ export const useOpenAIStore = defineStore('openai', () => {
       console.log('OpenAI client initialized successfully');
       console.log('Client type:', typeof openaiClient);
       console.log('Client has responses:', !!openaiClient?.responses);
-    } catch (e: any) {
-      console.error('Failed to initialize OpenAI client:', e);
-      error.value = `Failed to initialize OpenAI client: ${e.message || 'Unknown error'}`;
+    } catch (e: unknown) {
+      const clientError = e as ApiError;
+      console.error('Failed to initialize OpenAI client:', clientError);
+      error.value = `Failed to initialize OpenAI client: ${clientError.message || 'Unknown error'}`;
       connected.value = false;
       openaiClient = null;
     }
@@ -111,7 +99,7 @@ export const useOpenAIStore = defineStore('openai', () => {
     
     try {
       let apiEndpoint = '';
-      let requestData: any = {};
+      let requestData: ApiRequestData;
       
       // Switch cases for different configuration types
       switch (task.key) {
@@ -187,7 +175,7 @@ export const useOpenAIStore = defineStore('openai', () => {
         body: JSON.stringify(requestData)
       });
       
-      const responseData = await response.json();
+      const responseData: ConfigurationResponseData = await response.json();
       
       if (response.ok) {
         return {
@@ -198,15 +186,16 @@ export const useOpenAIStore = defineStore('openai', () => {
       } else {
         return {
           success: false,
-          message: `Failed to update ${task.key}: ${responseData.message || 'Unknown error'}`
+          message: `Failed to update ${task.key}: ${(responseData as { message?: string }).message || 'Unknown error'}`
         };
       }
       
-    } catch (error: any) {
-      console.error('Configuration API error:', error);
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+      console.error('Configuration API error:', apiError);
       return {
         success: false,
-        message: `Error updating ${task.key}: ${error.message || 'Network error'}`
+        message: `Error updating ${task.key}: ${apiError.message || 'Network error'}`
       };
     }
   }
@@ -246,7 +235,7 @@ export const useOpenAIStore = defineStore('openai', () => {
     return responseMessage.trim();
   }
 
-  async function streamChat(messages: { role: string, content: string }[]): Promise<AsyncIterable<any>> {
+  async function streamChat(messages: ChatMessage[]): Promise<AsyncIterable<OpenAIStreamResponse>> {
     // Debug: Check client state
     console.log('🔍 DEBUG: OpenAI client state:', {
       clientExists: !!openaiClient,
@@ -421,8 +410,8 @@ On "arabic" or "urdu", update chatbot_language and reply "language changed".
       console.log('📤 Sending request to OpenAI Responses API with input text:', inputText.substring(0, 100) + '...');
       
       try {
-        // Use responses.create (NOT completions.create) with explicit typing
-        const stream: AsyncIterable<any> = await openaiClient.responses.create({
+        // Use responses.create (NOT completions.create) with proper typing
+        const stream = await openaiClient.responses.create({
           model: 'gpt-4o',
           input: inputText,
           instructions: instructions,
@@ -440,10 +429,11 @@ On "arabic" or "urdu", update chatbot_language and reply "language changed".
           throw new Error('Received null or undefined stream from OpenAI Responses API');
         }
         
-        return stream;
-      } catch (apiError: any) {
-        console.error('❌ API call error:', apiError);
-        console.error('API error details:', JSON.stringify(apiError, Object.getOwnPropertyNames(apiError)));
+        return stream as AsyncIterable<OpenAIStreamResponse>;
+      } catch (apiError: unknown) {
+        const streamError = apiError as ApiError;
+        console.error('❌ API call error:', streamError);
+        console.error('API error details:', JSON.stringify(streamError, Object.getOwnPropertyNames(streamError)));
         
         // Debug: Test non-streaming call
         console.log('🔧 DEBUG: Testing non-streaming call...');
@@ -461,24 +451,25 @@ On "arabic" or "urdu", update chatbot_language and reply "language changed".
           console.error('❌ Non-streaming call also failed:', nonStreamError);
         }
         
-        throw apiError;
+        throw streamError;
       }
-    } catch (e: any) {
-      console.error('❌ Error in streamChat:', e);
+    } catch (e: unknown) {
+      const streamChatError = e as ApiError;
+      console.error('❌ Error in streamChat:', streamChatError);
       
-      if (e.status === 429) {
+      if (streamChatError.status === 429) {
         rateLimited.value = true;
         throw new Error('Rate limit exceeded. Please try again later.');
       }
       
-      if (e.status === 401) {
+      if (streamChatError.status === 401) {
         error.value = 'Invalid API key. Please check your OpenAI API key.';
         connected.value = false;
         throw new Error('Invalid API key. Please check your OpenAI API key.');
       }
       
-      error.value = e.message || 'Unknown error occurred';
-      throw e;
+      error.value = streamChatError.message || 'Unknown error occurred';
+      throw streamChatError;
     }
   }
 

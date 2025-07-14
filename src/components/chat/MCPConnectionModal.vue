@@ -1,24 +1,22 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { useMCPStore } from '../../stores/mcpStore';
-import type { MCPServer, CustomMCPServerForm } from '../../types';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { useMCPStore } from '@/stores/mcpStore';
+import type { MCPServer, CustomMCPServerForm } from '@/types/mcp';
 
-const props = defineProps<{
-  isOpen: boolean;
-  showCustomServer?: boolean;
-}>();
+const props = defineProps({
+  isOpen: Boolean,
+  showCustomServer: {
+    type: Boolean,
+    default: false
+  }
+});
 
-const emit = defineEmits<{
-  close: [];
-  connected: [serverId: string];
-}>();
+const emit = defineEmits(['close']);
 
 const mcpStore = useMCPStore();
 
-// Modal state
 const selectedServer = ref<MCPServer | null>(null);
 const apiKey = ref('');
-const botId = 1226;
 const customSystemPrompt = ref('');
 const isConnecting = ref(false);
 const error = ref<string | null>(null);
@@ -28,7 +26,10 @@ const showAllServers = ref(false);
 const showCustomServerForm = ref(false);
 const editingCustomServer = ref<string | null>(null);
 
-// Custom server form
+// Shopify custom fields
+const shopifyDomain = ref('');
+const shopifyAuthMethod = ref('none');
+
 const customServerForm = ref<CustomMCPServerForm>({
   name: '',
   description: '',
@@ -42,7 +43,6 @@ const customServerForm = ref<CustomMCPServerForm>({
 
 const newFeature = ref('');
 
-// Auth method options
 const authMethods = [
   { value: 'none', label: 'No Authentication' },
   { value: 'api_key', label: 'API Key' },
@@ -51,25 +51,21 @@ const authMethods = [
   { value: 'oauth', label: 'OAuth Token' }
 ];
 
-// Categories for custom servers
 const categories = [
-  'Custom', 'Development', 'Productivity', 'Communication', 
+  'Custom', 'Development', 'Productivity', 'Communication',
   'Storage', 'Database', 'System', 'Research', 'Data', 'API'
 ];
 
-// Computed properties
-const displayedServers = computed(() => {
-  return showAllServers.value ? mcpStore.serverConfigs : mcpStore.popularServerConfigs;
-});
+const displayedServers = computed(() =>
+  showAllServers.value ? mcpStore.servers : mcpStore.servers.filter(p => p.isPopular)
+);
 
 const selectedServerConfig = computed(() => {
   if (!selectedServer.value) return null;
-  return mcpStore.serverConfigs.find(config => config.server.id === selectedServer.value!.id);
+  return mcpStore.servers.find(config => config.id === selectedServer.value?.id);
 });
 
-const isServerConnected = computed(() => {
-  return selectedServerConfig.value?.connection?.isConnected || false;
-});
+const isServerConnected = computed(() => selectedServerConfig.value?.connection?.isConnected || false);
 
 const defaultSystemPrompt = computed(() => {
   if (!selectedServer.value) return '';
@@ -77,30 +73,34 @@ const defaultSystemPrompt = computed(() => {
 });
 
 const isCustomServerFormValid = computed(() => {
-  return customServerForm.value.name.trim() && 
-         customServerForm.value.description.trim() && 
-         customServerForm.value.connectionUrl.trim() &&
-         (customServerForm.value.authMethod === 'none' || customServerForm.value.authLabel.trim());
+  const f = customServerForm.value;
+  return f.name.trim() && f.description.trim() && f.connectionUrl.trim() &&
+    (f.authMethod === 'none' || f.authLabel.trim());
 });
 
-// Methods
-const selectServer = (server: MCPServer) => {
+watch(() => props.isOpen, (val) => {
+  if (val && props.showCustomServer) {
+    showAddCustomServer();
+  }
+});
+
+function selectServer(server: MCPServer) {
   selectedServer.value = server;
   showApiKeyInput.value = true;
   error.value = null;
-  
-  // Load existing connection data if available
-  const existingConnection = mcpStore.connections.find(conn => conn.serverId === server.id);
-  if (existingConnection) {
-    apiKey.value = existingConnection.apiKey || '';
-    customSystemPrompt.value = existingConnection.systemPrompt || '';
-  } else {
-    apiKey.value = '';
-    customSystemPrompt.value = defaultSystemPrompt.value;
-  }
-};
 
-const goBack = () => {
+  const existing = mcpStore.servers.find(s => s.id === server.id)?.connection;
+  apiKey.value = existing?.apiKey || '';
+  customSystemPrompt.value = existing?.systemPrompt || defaultSystemPrompt.value;
+  
+  // Reset Shopify custom fields
+  if (server.id === 'shopify') {
+    shopifyDomain.value = '';
+    shopifyAuthMethod.value = 'none';
+  }
+}
+
+function goBack() {
   selectedServer.value = null;
   showApiKeyInput.value = false;
   showCustomServerForm.value = false;
@@ -108,19 +108,20 @@ const goBack = () => {
   error.value = null;
   apiKey.value = '';
   customSystemPrompt.value = '';
+  shopifyDomain.value = '';
+  shopifyAuthMethod.value = 'none';
   resetCustomServerForm();
-};
+}
 
-const showAddCustomServer = () => {
+function showAddCustomServer() {
   showCustomServerForm.value = true;
   editingCustomServer.value = null;
   resetCustomServerForm();
-};
+}
 
-const editCustomServer = (server: MCPServer) => {
+function editCustomServer(server: MCPServer) {
   showCustomServerForm.value = true;
   editingCustomServer.value = server.id;
-  
   customServerForm.value = {
     name: server.name,
     description: server.description,
@@ -131,9 +132,9 @@ const editCustomServer = (server: MCPServer) => {
     authLabel: server.authLabel || 'API Key',
     features: [...server.features]
   };
-};
+}
 
-const resetCustomServerForm = () => {
+function resetCustomServerForm() {
   customServerForm.value = {
     name: '',
     description: '',
@@ -145,91 +146,120 @@ const resetCustomServerForm = () => {
     features: []
   };
   newFeature.value = '';
-};
+}
 
-const addFeature = () => {
-  if (newFeature.value.trim() && !customServerForm.value.features.includes(newFeature.value.trim())) {
-    customServerForm.value.features.push(newFeature.value.trim());
+function addFeature() {
+  const val = newFeature.value.trim();
+  if (val && !customServerForm.value.features.includes(val)) {
+    customServerForm.value.features.push(val);
     newFeature.value = '';
   }
-};
+}
 
-const removeFeature = (index: number) => {
+function removeFeature(index: number) {
   customServerForm.value.features.splice(index, 1);
-};
+}
 
-const saveCustomServer = () => {
+function saveCustomServer() {
   if (!isCustomServerFormValid.value) return;
-  
+
   try {
     if (editingCustomServer.value) {
-      // Update existing server
       mcpStore.updateCustomServer(editingCustomServer.value, customServerForm.value);
     } else {
-      // Add new server
       mcpStore.addCustomServer(customServerForm.value);
     }
-    
     goBack();
   } catch (err: any) {
     error.value = err.message || 'Failed to save custom server';
   }
-};
+}
 
-const deleteCustomServer = (serverId: string) => {
-  if (confirm('Are you sure you want to delete this custom server? This will also disconnect it if connected.')) {
-    mcpStore.deleteCustomServer(serverId);
+async function deleteCustomServer(serverId: string) {
+  if(!confirm(`Are you sure you want to delete the custom server? This action cannot be undone.`)) return;
+  try {
+    await mcpStore.deleteCustomServer(serverId);
+    goBack();
+  } catch (err: any) {
+    error.value = 'Failed to delete server: ' + err.message;
   }
-};
+}
 
-const connectToServer = async () => {
-  if (!selectedServer.value) return;
-  
+async function connectToServer() {
+  const server = selectedServer.value;
+  if (!server) return;
+
+  const connection = mcpStore.servers.find(s => s.id === server.id)?.connection;
+
+  // Shopify-specific validation
+  if (server.id === 'shopify') {
+    if (!shopifyDomain.value.trim()) {
+      error.value = 'Shopify domain is required';
+      return;
+    }
+    if (shopifyAuthMethod.value !== 'none' && !apiKey.value.trim()) {
+      error.value = `${getShopifyAuthLabel()} is required for this authentication method`;
+      return;
+    }
+  } else {
+    // Standard validation for other servers
+    if (server.apiKeyRequired && !apiKey.value.trim()) {
+      error.value = 'API key is required for this server';
+      return;
+    }
+    if (server.isCustom && !server.connectionUrl?.trim()) {
+      error.value = 'Connection URL is required for custom servers';
+      return;
+    }
+  }
+
   isConnecting.value = true;
   error.value = null;
   connectionSuccess.value = false;
-  
+
   try {
-    console.log(`🔗 Starting connection to ${selectedServer.value.name}...`);
-    
-    await mcpStore.connectServer(
-      selectedServer.value.id,
-      Number(botId),
-      apiKey.value,
-      customSystemPrompt.value
-    );
-    
-    console.log(`✅ Successfully connected to ${selectedServer.value.name}`);
-    
-    // Show success state
-    isConnecting.value = false;
+    // For Shopify, pass the domain and auth method as additional parameters
+    if (server.id === 'shopify') {
+      await mcpStore.connectServer(server.id, apiKey.value, customSystemPrompt.value, {
+        domain: shopifyDomain.value.trim(),
+        authMethod: shopifyAuthMethod.value
+      });
+    } else {
+      await mcpStore.connectServer(server.id, apiKey.value, customSystemPrompt.value);
+    }
     connectionSuccess.value = true;
-    error.value = null;
-    
-    // Emit connection event
-    emit('connected', selectedServer.value.id);
-    
-    // Close modal after showing success message
-    setTimeout(() => {
-      closeModal();
-    }, 2000);
-    
+    goBack();
   } catch (err: any) {
-    console.error(`❌ Failed to connect to ${selectedServer.value?.name}:`, err.message);
     error.value = err.message || 'Failed to connect to the server';
+  } finally {
     isConnecting.value = false;
-    connectionSuccess.value = false;
   }
-};
+}
 
-const disconnectFromServer = () => {
+async function disconnectFromServer() {
   if (!selectedServer.value) return;
-  
-  mcpStore.disconnectServer(selectedServer.value.id);
-  goBack();
-};
 
-const closeModal = () => {
+  try {
+    await mcpStore.disconnectServer(selectedServer.value.id);
+    goBack();
+  } catch (err: any) {
+    error.value = 'Failed to disconnect: ' + err.message;
+  }
+}
+
+// Shopify helper methods
+function getShopifyAuthLabel(): string {
+  switch (shopifyAuthMethod.value) {
+    case 'bearer_token':
+      return 'Access Token';
+    case 'api_key':
+      return 'API Key';
+    default:
+      return 'Authentication';
+  }
+}
+
+function closeModal() {
   selectedServer.value = null;
   showApiKeyInput.value = false;
   showCustomServerForm.value = false;
@@ -241,21 +271,21 @@ const closeModal = () => {
   showAllServers.value = false;
   resetCustomServerForm();
   emit('close');
-};
+}
 
-const handleKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Escape') {
-    closeModal();
-  }
-};
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') closeModal();
+}
 
-// Watch for when the modal opens with showCustomServer flag
-watch(() => [props.isOpen, props.showCustomServer], ([isOpen, shouldShowCustom]) => {
-  if (isOpen && shouldShowCustom) {
-    showAddCustomServer();
-  }
-}, { immediate: true });
+onMounted(() => {
+  document.addEventListener('keydown', handleKeydown);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', handleKeydown);
+});
 </script>
+
 
 <template>
   <div v-if="isOpen" class="modal-overlay" @click.self="closeModal" @keydown="handleKeydown" tabindex="0">
@@ -427,21 +457,21 @@ watch(() => [props.isOpen, props.showCustomServer], ([isOpen, shouldShowCustom])
           <div class="server-grid">
             <div 
               v-for="config in mcpStore.connectedServers" 
-              :key="config.server.id"
+              :key="config.id"
               class="server-card connected"
-              @click="selectServer(config.server)"
+              @click="selectServer(config)"
             >
-              <div class="server-icon">{{ config.server.icon }}</div>
+              <div class="server-icon">{{ config.icon }}</div>
               <div class="server-info">
-                <h4>{{ config.server.name }}</h4>
-                <p>{{ config.server.description }}</p>
+                <h4>{{ config.name }}</h4>
+                <p>{{ config.description }}</p>
                 <div class="server-status">
                   <span class="status-dot connected"></span>
                   <span>Connected</span>
                 </div>
               </div>
-              <div v-if="config.server.isCustom" class="server-actions">
-                <button class="edit-button" @click.stop="editCustomServer(config.server)" title="Edit Server">
+              <div v-if="config.isCustom" class="server-actions">
+                <button class="edit-button" @click.stop="editCustomServer(config)" title="Edit Server">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                     <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
@@ -466,38 +496,38 @@ watch(() => [props.isOpen, props.showCustomServer], ([isOpen, shouldShowCustom])
           <div class="server-grid">
             <div 
               v-for="config in displayedServers" 
-              :key="config.server.id"
+              :key="config.id"
               class="server-card"
               :class="{ connected: config.connection?.isConnected }"
-              @click="selectServer(config.server)"
+              @click="selectServer(config)"
             >
-              <div class="server-icon">{{ config.server.icon }}</div>
+              <div class="server-icon">{{ config.icon }}</div>
               <div class="server-info">
-                <h4>{{ config.server.name }}</h4>
-                <p>{{ config.server.description }}</p>
+                <h4>{{ config.name }}</h4>
+                <p>{{ config.description }}</p>
                 <div class="server-meta">
-                  <span class="category">{{ config.server.category }}</span>
-                  <span v-if="config.server.apiKeyRequired" class="api-key-required">
-                    {{ config.server.authLabel || 'Auth Required' }}
+                  <span class="category">{{ config.category }}</span>
+                  <span v-if="config.apiKeyRequired" class="api-key-required">
+                    {{ config.authLabel || 'Auth Required' }}
                   </span>
                 </div>
                 <div class="server-features">
-                  <span v-for="feature in config.server.features.slice(0, 2)" :key="feature" class="feature-tag">
+                  <span v-for="feature in config.features.slice(0, 2)" :key="feature" class="feature-tag">
                     {{ feature }}
                   </span>
-                  <span v-if="config.server.features.length > 2" class="feature-more">
-                    +{{ config.server.features.length - 2 }} more
+                  <span v-if="config.features.length > 2" class="feature-more">
+                    +{{ config.features.length - 2 }} more
                   </span>
                 </div>
               </div>
-              <div v-if="config.server.isCustom" class="server-actions">
-                <button class="edit-button" @click.stop="editCustomServer(config.server)" title="Edit Server">
+              <div v-if="config.isCustom" class="server-actions">
+                <button class="edit-button" @click.stop="editCustomServer(config)" title="Edit Server">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                     <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                   </svg>
                 </button>
-                <button class="delete-button" @click.stop="deleteCustomServer(config.server.id)" title="Delete Server">
+                <button class="delete-button" @click.stop="deleteCustomServer(config.id)" title="Delete Server">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="3 6 5 6 21 6"></polyline>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -532,8 +562,56 @@ watch(() => [props.isOpen, props.showCustomServer], ([isOpen, shouldShowCustom])
         </div>
 
         <form @submit.prevent="connectToServer" class="connection-form">
-          <!-- API Key Input -->
-          <div v-if="selectedServer?.apiKeyRequired" class="input-group">
+          <!-- Shopify Custom Fields -->
+          <div v-if="selectedServer?.id === 'shopify'" class="shopify-custom-fields">
+            <!-- Domain Input -->
+            <div class="input-group">
+              <label for="shopifyDomain">Shopify Domain *</label>
+              <input
+                id="shopifyDomain"
+                v-model="shopifyDomain"
+                type="text"
+                placeholder="your-store.myshopify.com"
+                :disabled="isConnecting"
+                required
+              />
+              <small class="input-help">
+                Enter your Shopify store domain (e.g., mystore.myshopify.com)
+              </small>
+            </div>
+
+            <!-- Authentication Method -->
+            <div class="input-group">
+              <label for="shopifyAuthMethod">Authentication Method</label>
+              <select id="shopifyAuthMethod" v-model="shopifyAuthMethod" :disabled="isConnecting">
+                <option value="none">No Authentication</option>
+                <option value="bearer_token">Bearer Token</option>
+                <option value="api_key">API Key</option>
+              </select>
+              <small class="input-help">
+                Choose how to authenticate with your Shopify store
+              </small>
+            </div>
+
+            <!-- API Key/Token Input (conditional) -->
+            <div v-if="shopifyAuthMethod !== 'none'" class="input-group">
+              <label for="shopifyApiKey">{{ getShopifyAuthLabel() }}</label>
+              <input
+                id="shopifyApiKey"
+                v-model="apiKey"
+                type="password"
+                :placeholder="`Enter your ${getShopifyAuthLabel().toLowerCase()}...`"
+                :disabled="isConnecting"
+                required
+              />
+              <small class="input-help">
+                This {{ getShopifyAuthLabel().toLowerCase() }} will be used to authenticate with your Shopify store.
+              </small>
+            </div>
+          </div>
+
+          <!-- Standard API Key Input for other servers -->
+          <div v-else-if="selectedServer?.apiKeyRequired" class="input-group">
             <label for="apiKey">{{ selectedServer?.authLabel || 'API Key' }}</label>
             <input
               id="apiKey"
@@ -1229,6 +1307,18 @@ watch(() => [props.isOpen, props.showCustomServer], ([isOpen, shouldShowCustom])
 /* Hide system prompt section */
 .system-prompt-hidden {
   display: none !important;
+}
+
+/* Shopify custom fields */
+.shopify-custom-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.shopify-custom-fields .input-group {
+  margin-bottom: 0;
 }
 
 /* Mobile styles */

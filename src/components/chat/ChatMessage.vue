@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue';
-import type { Message } from '../../types';
+import type { Message } from '@/types';
 import { marked } from 'marked';
 
 const props = defineProps<{

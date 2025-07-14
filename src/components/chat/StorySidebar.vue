@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, nextTick } from 'vue';
-import { useChatStore } from '../../stores/chatStore';
+import { useChatStore } from '@/stores/chatStore';
 import { marked } from 'marked';
-import AiAgentActions from '../sidebar/AiAgentActions.vue';
-import BotsifyLoader from '../../components/ui/BotsifyLoader.vue';
+import AiAgentActions from '@/components/sidebar/AiAgentActions.vue';
+import BotsifyLoader from '@/components/ui/BotsifyLoader.vue';
 
 const props = defineProps<{
   chatId: string;
