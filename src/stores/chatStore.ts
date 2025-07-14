@@ -4,6 +4,7 @@ import { useOpenAIStore } from './openaiStore';
 import { useMCPStore } from './mcpStore';
 import type { Chat, Message, Attachment, PromptVersion, GlobalPromptTemplate } from '../types';
 import { botsifyApi } from '../services/botsifyApi';
+import { BOTSIFY_APIKEY } from '@/utils/config';
 
 export const useChatStore = defineStore('chat', () => {
   const openAIStore = useOpenAIStore();
@@ -1174,7 +1175,7 @@ Use the above connected services information to understand what tools and data s
     const initialPrompt = defaultPromptTemplate.value?.content || '';
     
     const newChat: Chat = {
-      id: Date.now().toString(),
+      id: BOTSIFY_APIKEY,
       title: '',
       timestamp: new Date(),
       messages: [

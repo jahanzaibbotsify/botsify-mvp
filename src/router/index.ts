@@ -1,5 +1,6 @@
 import { RouteRecordRaw } from 'vue-router'
 import ChatLayout from '../layouts/ChatLayout.vue'
+import { BOTSIFY_APIKEY } from '@/utils/config'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -35,7 +36,8 @@ const routes: RouteRecordRaw[] = [
           }
           
           // If no existing chats, create a new one
-          const chatId = Date.now().toString()
+          console.log(BOTSIFY_APIKEY, "BOTSIFY_APIKEY")
+          const chatId = BOTSIFY_APIKEY;
           return `/chat/${chatId}`
         }
       },
