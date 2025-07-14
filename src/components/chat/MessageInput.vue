@@ -200,8 +200,30 @@ const closeMCPDropdown = () => {
   showMCPDropdown.value = false;
 };
 
+// Load existing Web Search data for this bot assistant
+const loadMCPsData = async () => {
+  try {
+    console.log('Loading already connected MCP servers:', props.chatId);
+    const response = await mcpStore.getConnectedMCPs();
+    
+    if (response.success) {
+      console.log('Fetched MCP data result:', response);
+      
+    } else {
+      console.log('No existing Web Search data found or failed to load:', response.message);
+    }
+  } catch (error: any) {
+    console.error('Error loading Web Search data:', error);
+  }
+};
+
 // New methods for dropdown actions
-const openMCPServers = () => {
+const openMCPServers = async() => {
+  if(mcpStore.connectedServers.length === 0) {
+    loadingData.value = true;
+    await loadMCPsData();
+    loadingData.value = false;
+  }
   showMCPModal.value = true;
   closeMCPDropdown();
 };
@@ -435,23 +457,6 @@ const loadWebSearchData = async () => {
   }
 };
 
-// Load existing Web Search data for this bot assistant
-const loadMCPsData = async () => {
-  try {
-    console.log('Loading already connected MCP servers:', props.chatId);
-    const response = await mcpStore.getConnectedMCPs();
-    
-    if (response.success) {
-      console.log('Fetched MCP data result:', response);
-      
-    } else {
-      console.log('No existing Web Search data found or failed to load:', response.message);
-    }
-  } catch (error: any) {
-    console.error('Error loading Web Search data:', error);
-  }
-};
-
 // Delete File Search entry
 const deleteFileSearchEntry = async (fileSearchId: string, fileSearchName: string) => {
   if (!confirm('Are you sure you want to delete this File Search entry?')) {
@@ -594,10 +599,6 @@ const deleteWebSearchAllEntry = async () => {
     webSearchDeleteAllLoading.value = false;
   }
 };
-
-onMounted(() => {
-  loadMCPsData();
-});
 </script>
 
 <template>

@@ -5,13 +5,17 @@ import { useChatStore } from '@/stores/chatStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import LeftSidebar from '@/components/sidebar/LeftSidebar.vue';
 import { useWindowSize } from '@vueuse/core';
+import { useApiKeyStore } from '@/stores/apiKeyStore';
+
 
 const chatStore = useChatStore();
 const sidebarStore = useSidebarStore();
 const route = useRoute();
 const { width } = useWindowSize();
 const overlay = ref(false);
+const apiKeyStore = useApiKeyStore()
 
+const apiKey = route.params.id as string // the :id from /agent/:id
 const isMobile = computed(() => width.value < 768);
 
 // Watch for route changes to set the active chat
@@ -48,6 +52,10 @@ watch(() => sidebarStore.isOpen, (isOpen) => {
 
 // Initialize sidebar state based on screen size
 onMounted(() => {
+   if (apiKey) {
+    apiKeyStore.setApiKey(apiKey)
+    console.log('API Key set:', apiKey)
+  } 
   if (isMobile.value) {
     sidebarStore.closeSidebar();
   } else {

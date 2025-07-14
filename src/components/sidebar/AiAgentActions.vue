@@ -2,8 +2,10 @@
 import { ref, computed } from 'vue';
 import { useChatStore } from '@/stores/chatStore';
 import { botsifyApi, type BotsifyResponse } from '@/services/botsifyApi';
-import { BOTSIFY_APIKEY, BOTSIFY_BASE_URL } from '@/utils/config';
+import { BOTSIFY_BASE_URL } from '@/utils/config';
+import { useApiKeyStore } from '@/stores/apiKeyStore';
 
+const BOTSIFY_APIKEY = useApiKeyStore().apiKey;
 const chatStore = useChatStore();
 const isDeployingAgent = ref(false);
 const lastDeployResult = ref<BotsifyResponse | null>(null);
