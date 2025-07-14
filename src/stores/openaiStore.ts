@@ -2,12 +2,14 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import OpenAI from 'openai';
 import { ConfigurationTask, ConfigurationResponse, ConfigurationResponseData, ApiRequestData, ChatMessage, OpenAIStreamResponse, ApiError } from '../types/openai'
+import { useApiKeyStore } from './apiKeyStore';
 
 let openaiClient: OpenAI | null = null;
 
 export const useOpenAIStore = defineStore('openai', () => {
   // Try to get API key from environment variables first, then fallback to localStorage
   const envApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  const botApiKey = useApiKeyStore().apiKey;
   console.log('Environment API key available:', !!envApiKey);
   
   const apiKey = ref<string | null>(
@@ -52,6 +54,18 @@ export const useOpenAIStore = defineStore('openai', () => {
       additionalProperties: false
     }
   };
+
+  const mcpConfiguration = {
+    type: "mcp" as const,
+    server_label: "botsify_mcp_server",
+    server_url: "https://mcp.botsify.com/mcp",
+    server_description: `Botsify MCP server for managing chatbot configurations. Use this Botsify chatbot api key every time: ${botApiKey}`,
+    allowed_tools: [
+      "update-bot-settings",
+      "respond"
+    ],
+    require_approval: "never" as const
+  }
 
   function setApiKey(key: string) {
     console.log('Setting API key');
@@ -415,11 +429,12 @@ On "arabic" or "urdu", update chatbot_language and reply "language changed".
           model: 'gpt-4o',
           input: inputText,
           instructions: instructions,
-          tools: [configureChatbotTool],
+          tools: [configureChatbotTool, mcpConfiguration],
           tool_choice: "auto",
           stream: true,
-          temperature: 0.7,
-          max_output_tokens: 2000
+          temperature: 1,
+          max_output_tokens: 2000,
+          top_p: 1
         });
   
         console.log('✅ Stream received from OpenAI Responses API:', typeof stream, stream !== null);
