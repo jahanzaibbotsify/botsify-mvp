@@ -2,10 +2,9 @@
 import { ref, computed } from 'vue';
 import { useChatStore } from '@/stores/chatStore';
 import { botsifyApi, type BotsifyResponse } from '@/services/botsifyApi';
-import { BOTSIFY_BASE_URL } from '@/utils/config';
+import { BOTSIFY_WEB_URL } from '@/utils/config';
 import { useApiKeyStore } from '@/stores/apiKeyStore';
 
-const BOTSIFY_APIKEY = useApiKeyStore().apiKey;
 const chatStore = useChatStore();
 const isDeployingAgent = ref(false);
 const lastDeployResult = ref<BotsifyResponse | null>(null);
@@ -26,8 +25,8 @@ const testAiAgent = async () => {
     alert('No prompt content available to deploy. Please generate some content first.');
     return;
   }
-
-  const url = `${BOTSIFY_BASE_URL}/web-bot/agent/${BOTSIFY_APIKEY}`;
+  const BOTSIFY_APIKEY = useApiKeyStore().apiKey;
+  const url = `${BOTSIFY_WEB_URL}/web-bot/agent/${BOTSIFY_APIKEY}`;
   window.open(url, '_blank');
 }
 
