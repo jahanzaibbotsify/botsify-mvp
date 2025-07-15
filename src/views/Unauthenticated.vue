@@ -4,7 +4,7 @@
         <div class="icon">🔒</div>
         <h1>Authentication Required</h1>
         <p>You must be logged in to access this page.</p>
-        <a href="https://app.botsify.com/login" class="login-btn" @click="goToLogin">Login</a>
+        <a href="https://app.botsify.com/login" class="login-btn">Login</a>
       </div>
     </div>
   </template>
