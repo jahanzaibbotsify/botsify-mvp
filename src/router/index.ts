@@ -36,19 +36,19 @@ const routes: RouteRecordRaw[] = [
           
           // If no existing chats, create a new one
           const chatId = "H9MzZn62ZISSYhzzABbNfPs6tfL1QPLv8wFK06o1"
-          return `/agent/${chatId}`
+          return `/chat/${chatId}`
         }
-      },
-      {
-        path: '/agent/:id',
-        name: 'agent',
-        component: () => import('../views/AgentView.vue'),
-        props: true
       },
       {
         path: '/chat/:id',
         name: 'chat',
         component: () => import('../views/ChatView.vue'),
+        props: true
+      },
+      {
+        path: '/conversation/:id',
+        name: 'conversation',
+        component: () => import('../views/ConversationView.vue'),
         props: true
       },
       {

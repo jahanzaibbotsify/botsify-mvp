@@ -64,10 +64,10 @@ function clearOldChats() {
 }
 
 onMounted(() => {
-  // Redirect to home page on load if needed
-  if (router.currentRoute.value.path === '/') {
-    router.push('/');
-  }
+  // // Redirect to home page on load if needed
+  // if (router.currentRoute.value.path === '/') {
+  //   router.push('/');
+  // }
   
   // Check storage size
   checkStorageSize();

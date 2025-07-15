@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useWindowSize } from '@vueuse/core';
-import ChatListItem from '@/components/agent/ChatListItem.vue';
+import ChatListItem from '@/components/chat/ChatListItem.vue';
 import SidebarPricing from './SidebarPricing.vue';
 import BookMeeting from '@/components/modal/BookMeeting.vue';
 import User from '@/components/modal/User.vue';
@@ -26,11 +26,11 @@ const filteredChats = computed(() => {
 
 // const createNewChat = () => {
 //   const newChat = chatStore.createNewChat();
-//   router.push(`/agent/${newChat.id}`);
+//   router.push(`/chat/${newChat.id}`);
 // };
 
 const navigateToChat = (chatId: string) => {
-  router.push(`/agent/${chatId}`);
+  router.push(`/chat/${chatId}`);
   if (isMobile.value) {
     sidebarStore.isOpen = false;
   }
@@ -151,7 +151,6 @@ const isLinkActive = (url: string) => {
   <aside 
     class="left-sidebar scrollbar" 
     :class="{ 'open': sidebarStore.isOpen }"
-    :style="{ background: 'linear-gradient(135deg, #1a1f2e 0%, #171717 50%, #1a1c24 100%)' }"
   >
     <div class="sidebar-header">
       <div class="header-content">
