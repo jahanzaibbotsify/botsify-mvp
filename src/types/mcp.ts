@@ -12,6 +12,10 @@ export interface MCPConnection {
   systemPrompt?: string;
   connectionUrl?: string;
   authMethod?: 'api_key' | 'bearer_token' | 'basic_auth' | 'oauth' | 'none';
+  shopifyParams?: {
+    domain: string;
+    authMethod: 'none' | 'bearer_token' | 'api_key';
+  };
 }
 
 export interface MCPServer {

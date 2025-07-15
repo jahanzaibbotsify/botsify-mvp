@@ -93,10 +93,10 @@ function selectServer(server: MCPServer) {
   apiKey.value = existing?.apiKey || '';
   customSystemPrompt.value = existing?.systemPrompt || defaultSystemPrompt.value;
   
-  // Reset Shopify custom fields
+  // Set Shopify custom fields from server data
   if (server.id === 'shopify') {
-    shopifyDomain.value = '';
-    shopifyAuthMethod.value = 'none';
+    shopifyDomain.value = server.domain || '';
+    shopifyAuthMethod.value = server.authMethod || 'none';
   }
 }
 
@@ -268,6 +268,8 @@ function closeModal() {
   connectionSuccess.value = false;
   apiKey.value = '';
   customSystemPrompt.value = '';
+  shopifyDomain.value = '';
+  shopifyAuthMethod.value = 'none';
   showAllServers.value = false;
   resetCustomServerForm();
   emit('close');
