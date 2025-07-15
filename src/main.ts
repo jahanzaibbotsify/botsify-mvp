@@ -6,9 +6,11 @@ import './style.css'
 import '@fontsource/ubuntu/400.css'
 import '@fontsource/ubuntu/500.css'
 import '@fontsource/ubuntu/700.css'
+import axios from 'axios'
 
 // Import routes
 import routes from '@/router'
+
 
 // Import OpenAI debug utility in development
 if (import.meta.env.DEV) {
@@ -57,11 +59,70 @@ function checkLocalStorage() {
   }
 }
 
+
+// Reusable function to make an authenticated GET request with axios
+function getBotDetails(apikey: string) {
+  return axios.get(
+    import.meta.env.VITE_BOTSIFY_BASE_URL + `/v1/bot/get-data?apikey=${apikey}`,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
+      }
+    }
+  )
+  .then(response => {
+    console.log('ressssss ', response.data);
+    localStorage.setItem('apikey', response.data.data.apikey);
+    // localStorage.setItem('bot', response.data.data);
+       localStorage.setItem('botsify_chats', response.data.data.chat_flow);
+          localStorage.setItem('botsify_prompt_templates', response.data.data.bot_flow );
+
+    return true;
+  })
+  .catch(error => {
+    console.error('API request error:', error);
+    return false;
+  });
+}
+
 // Create router instance
 const router = createRouter({
   history: createWebHistory(),
   routes
 })
+
+
+router.beforeEach(async (to, from, next) => {
+  if (to.name === 'agent') {
+    localStorage.removeItem('apikey');
+    const apikey = to.params.id;
+    if (typeof apikey === 'string' && apikey) {
+      const bot = await getBotDetails(apikey);
+      if (bot) {
+        console.log('Authenticated');
+        chatStore.loadFromStorage();
+      }
+    }
+
+    if (!localStorage.getItem('apikey')) {
+      window.location.href = 'https://app.botsify.com/login';
+    }
+    // Ensure only a string is stored
+    let apikeyStr = '';
+    if (typeof apikey === 'string') {
+      apikeyStr = apikey;
+    } else if (Array.isArray(apikey) && apikey.length > 0) {
+      apikeyStr = apikey[0];
+    }
+    localStorage.setItem('apikey', apikeyStr);
+    
+  } if (typeof to.name === 'undefined') {    
+    next({ name: 'NotFound' });
+  } else {
+    next();
+  }
+});
 
 // Create pinia store
 const pinia = createPinia()
@@ -93,3 +154,9 @@ if (!localStorageAvailable) {
 
 // Mount app
 app.mount('#app')
+
+
+
+
+import { useChatStore } from './stores/chatStore';
+const chatStore= useChatStore();
