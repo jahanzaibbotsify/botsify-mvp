@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, watch, defineExpose } from 'vue'
 import ModalLayout from '@/components/ui/ModalLayout.vue'
-import UserFilters from '@/components/ui/user/Filters.vue'
-import UserTable from '@/components/ui/user/Table.vue'
-import ImportPanel from '@/components/ui/user/ImportPanel.vue'
-import UserDetails from '@/components/ui/user/Details.vue'
+import UserFilters from '@/components/user/Filters.vue'
+import UserTable from '@/components/user/Table.vue'
+import ImportPanel from '@/components/user/ImportPanel.vue'
+import UserDetails from '@/components/user/Details.vue'
 import { ActionType, FilterType, User } from '@/types/user'
 
 const modalRef = ref<InstanceType<typeof ModalLayout> | null>(null)

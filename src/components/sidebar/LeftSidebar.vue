@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useWindowSize } from '@vueuse/core';
-import ChatListItem from '@/components/chat/ChatListItem.vue';
+import ChatListItem from '@/components/agent/ChatListItem.vue';
 import SidebarPricing from './SidebarPricing.vue';
 import BookMeeting from '@/components/modal/BookMeeting.vue';
 import User from '@/components/modal/User.vue';
@@ -26,11 +26,11 @@ const filteredChats = computed(() => {
 
 // const createNewChat = () => {
 //   const newChat = chatStore.createNewChat();
-//   router.push(`/chat/${newChat.id}`);
+//   router.push(`/agent/${newChat.id}`);
 // };
 
 const navigateToChat = (chatId: string) => {
-  router.push(`/chat/${chatId}`);
+  router.push(`/agent/${chatId}`);
   if (isMobile.value) {
     sidebarStore.isOpen = false;
   }
