@@ -136,12 +136,12 @@ onUnmounted(() => {
 });
 
 // Get current hostname to check active state
-const getCurrentHostname = () => {
-  if (typeof window !== 'undefined') {
-    return window.location.hostname;
-  }
-  return '';
-};
+// const getCurrentHostname = () => {
+//   if (typeof window !== 'undefined') {
+//     return window.location.hostname;
+//   }
+//   return '';
+// };
 
 // Check if a link is active by comparing with current URL
 const isLinkActive = (url: string) => {

@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
+// import { useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
-import ChatLayout from './layouts/ChatLayout.vue';
 
-const router = useRouter();
+// const router = useRouter();
 const chatStore = useChatStore();
 
 const showStorageWarning = ref(false);

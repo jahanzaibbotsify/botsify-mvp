@@ -124,7 +124,7 @@ export const useChatStore = defineStore('chat', () => {
           console.log('Message stored: ', response.data.bot);
         }
       }).catch((error) => {
-        console.log('error');
+        console.log('error:', error);
       });
 
       // localStorage typically has a 5-10MB limit depending on browser
