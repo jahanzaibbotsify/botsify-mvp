@@ -1,54 +1,80 @@
 <script setup lang="ts">
 import { defineEmits, defineProps } from 'vue'
-import { ActionType, FilterType } from '@/types/user'
+import { ActionType, FilterType, SegmentType, SegmentId } from '@/types/user'
 import VueSelect from "vue3-select-component"
 import DateRange from '@/components/ui/DateRange.vue'
+import { createUserFilterManager, type UserFilterState } from '@/utils/filterUtils'
 
 const props = defineProps<{
-  searchQuery: string
-  selectedFilter: FilterType
   selectedAction: ActionType
   selectedUsersCount: number
+  filterState: UserFilterState
 }>()
-console.log('props', props)
 
 const emit = defineEmits<{
-  'update:searchQuery': [value: string]
-  'update:selectedFilter': [value: FilterType]
+  'update:filterState': [state: Partial<UserFilterState>]
   'update:selectedAction': [value: ActionType]
-  'dateRangeUpdate': [dateRange: { startDate: Date, endDate: Date }]
   'import': []
 }>()
 
-const updateSearchQuery = (event: Event): void => {
+// Filter options configuration
+const filterOptions = [
+  { label: 'All Users', value: 'all' as FilterType },
+  { label: 'Active Users', value: 'active' as FilterType },
+  { label: 'Inactive Users', value: 'inactive' as FilterType },
+]
+
+const segmentOptions = [
+  { label: 'All Users', value: 'all' as SegmentType },
+  { label: 'SMS Users', value: 'sms' as SegmentType },
+  { label: 'WhatsApp Users', value: 'whatsapp' as SegmentType },
+  { label: 'Facebook Users', value: 'facebook' as SegmentType },
+]
+
+const actionOptions = [
+  { label: 'Activate User', value: 'activate' as ActionType },
+  { label: 'Deactivate User', value: 'deactivate' as ActionType },
+  { label: 'Delete User', value: 'delete' as ActionType },
+  { label: 'Make Test User', value: 'test' as ActionType },
+  { label: 'Export User', value: 'export' as ActionType },
+  { label: 'Delete User Conversation', value: 'delete_conversation' as ActionType },
+]
+
+
+// Generic handler for filter updates
+const updateFilter = (key: keyof UserFilterState, value: any): void => {
+  emit('update:filterState', { [key]: value })
+}
+
+// Handle VueSelect values (can be single value or array)
+const handleSelectChange = (key: keyof UserFilterState, value: string | string[]): void => {
+  const singleValue = Array.isArray(value) ? value[0] : value
+  updateFilter(key, singleValue)
+}
+
+// Handle search input with debouncing
+const handleSearchChange = (event: Event): void => {
   const target = event.target as HTMLInputElement
-  emit('update:searchQuery', target.value)
+  const searchValue = target.value
+  
+  // Update the search input immediately for UI responsiveness
+  emit('update:filterState', { search: searchValue })
 }
 
-const updateSelectedFilter = (value: FilterType | FilterType[]): void => {
-  // Handle both single value and array (VueSelect can return either)
-  const filterValue = Array.isArray(value) ? value[0] : value
-  emit('update:selectedFilter', filterValue)
-}
-
-const updateSelectedAction = (value: ActionType | ActionType[]): void => {
-  // Handle both single value and array (VueSelect can return either)
+// Handle action selection
+const handleActionChange = (value: ActionType | ActionType[]): void => {
   const actionValue = Array.isArray(value) ? value[0] : value
   emit('update:selectedAction', actionValue)
 }
 
-const handleDateRangeUpdate = (dateRange: { startDate: Date, endDate: Date }): void => {
-  emit('dateRangeUpdate', dateRange)
-}
-
-const handleDateRangeUpdateWrapper = (dateRange: { startDate: Date, endDate: Date } | null): void => {
+// Handle date range updates
+const handleDateRangeChange = (dateRange: { startDate: Date, endDate: Date } | null): void => {
   if (dateRange) {
-    handleDateRangeUpdate(dateRange)
+    updateFilter('dateRange', {
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate
+    })
   }
-}
-
-const handleImport = (): void => {
-  emit('import')
 }
 </script>
 
@@ -59,34 +85,40 @@ const handleImport = (): void => {
         <input 
           type="text" 
           placeholder="Search..." 
-          :value="searchQuery"
-          @input="updateSearchQuery"
+          :value="filterState.search"
+          @input="handleSearchChange"
         >
         <button class="search-btn">🔍</button>
       </div>
       
       <div class="filter-dropdown">
         <VueSelect
-          :model-value="selectedFilter"
-          @update:model-value="updateSelectedFilter"
-          :options="[
-            { label: 'All Users', value: 'all' },
-            { label: 'Active Users', value: 'active' },
-            { label: 'Inactive Users', value: 'inactive' },
-          ]"
-          placeholder="Select an user type"
+          :model-value="filterState.filter"
+          @update:model-value="(value: string) => handleSelectChange('filter', value)"
+          :options="filterOptions"
+          placeholder="Select user type"
           :multiple="false"
         />
       </div>
       
+      <div class="segment-dropdown">
+        <VueSelect
+          :model-value="filterState.segment"
+          @update:model-value="(value: string) => handleSelectChange('segment', value)"
+          :options="segmentOptions"
+          placeholder="Select segment"
+          :multiple="false"
+        />
+      </div>
+
       <div class="date-range">
         <DateRange 
           :fromDate="new Date()"
           :toDate="new Date()"
-          :get-from-date="handleDateRangeUpdateWrapper"
+          :get-from-date="handleDateRangeChange"
           autoPlay
           opens="left"
-          @update="handleDateRangeUpdateWrapper"
+          @update="handleDateRangeChange"
         />
       </div>
     </div>
@@ -95,17 +127,14 @@ const handleImport = (): void => {
       <div class="action-dropdown">
         <VueSelect
           :model-value="selectedAction"
-          @update:model-value="updateSelectedAction"
-          :options="[
-            { label: 'Activate', value: 'activate' },
-            { label: 'Delete', value: 'delete' },
-          ]"
-          placeholder="Select an action"
+          @update:model-value="handleActionChange"
+          :options="actionOptions"
+          placeholder="Select action"
           :disabled="selectedUsersCount === 0"
           :multiple="false"
         />
       </div>
-      <button class="import-btn" @click="handleImport">
+      <button class="import-btn" @click="() => emit('import')">
         Import
       </button>
     </div>
@@ -158,7 +187,8 @@ const handleImport = (): void => {
 }
 
 .filter-dropdown select,
-.action-dropdown select {
+.action-dropdown select,
+.segment-dropdown select {
   padding: 8px 12px;
   border: 1px solid #ced4da;
   border-radius: 4px;

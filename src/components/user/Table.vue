@@ -1,27 +1,29 @@
 <script setup lang="ts">
-import { ref, defineEmits, defineProps } from 'vue'
+import { ref, computed, defineEmits, defineProps } from 'vue'
 import UserAttributes from './Attributes.vue'
-import { User, UserAttribute } from '@/types/user'
+import { User, UserAttribute, PaginationData, SortingData, SortBy, PerPage } from '@/types/user'
 
 const props = defineProps<{
   users: User[]
   selectAll: boolean
+  pagination: PaginationData
+  sorting: SortingData
 }>()
 
 const showAttributes = ref<boolean>(false)
-// Sample attributes data
-const userAttributes = ref<UserAttribute[]>([
-  { id: 1, key: 'referrer_domain', value: 'csv' },
-  { id: 2, key: 'utm_source', value: 'facebook' },
-  { id: 3, key: 'campaign_id', value: '12345' }
-])
+const selectedUserAttributes = ref<UserAttribute[]>([])
 
 const emit = defineEmits<{
   'update:selectAll': [value: boolean]
   'update:userSelected': [userId: number]
+  'showUserAttributes': [userId: number]
   'goToConversation': [userId: number]
   'userClick': [user: User]
+  'sort': [sortBy: SortBy]
+  'changePage': [page: number]
+  'changePerPage': [perPage: PerPage]
 }>()
+
 
 const getUserInitials = (name: string): string => {
   return name
@@ -41,8 +43,11 @@ const handleUserSelect = (userId: number): void => {
 }
 
 const handleShowAttributes = (userId: number): void => {
-  console.log('showAttributes', userId)
-  showAttributes.value = true
+  const user = props.users.find(u => u.id === userId)
+  if (user) {
+    selectedUserAttributes.value = user.attributes
+    showAttributes.value = true
+  }
 }
 
 const handleCloseAttributes = (): void => {
@@ -51,7 +56,7 @@ const handleCloseAttributes = (): void => {
 
 
 const handleUpdateAttributes = (attributes: UserAttribute[]): void => {
-  userAttributes.value = attributes
+  selectedUserAttributes.value = attributes
 }
 
 const goToConversation = (userId: number): void => {
@@ -61,10 +66,81 @@ const goToConversation = (userId: number): void => {
 const handleRowClick = (user: User): void => {
   emit('userClick', user)
 }
+
+
+const handleSort = (sortBy: SortBy): void => {
+  emit('sort', sortBy)
+}
+
+const handlePageChange = (page: number): void => {
+  emit('changePage', page)
+}
+
+const handlePerPageChange = (event: Event): void => {
+  const target = event.target as HTMLSelectElement
+  const perPage = parseInt(target.value) as PerPage
+  emit('changePerPage', perPage)
+}
+
+const getSortIcon = (column: SortBy): string => {
+  if (props.sorting.sortBy !== column) return '↕️'
+  return props.sorting.sortOrder === 'asc' ? '↑' : '↓'
+}
+
+const getPageNumbers = computed(() => {
+  const pages = []
+  const { currentPage, totalPages } = props.pagination
+  
+  // Always show first page
+  if (totalPages > 0) pages.push(1)
+  
+  // Show pages around current page
+  const start = Math.max(2, currentPage - 1)
+  const end = Math.min(totalPages - 1, currentPage + 1)
+  
+  // Add ellipsis if there's a gap
+  if (start > 2) pages.push('...')
+  
+  // Add pages around current
+  for (let i = start; i <= end; i++) {
+    if (i !== 1 && i !== totalPages) pages.push(i)
+  }
+  
+  // Add ellipsis if there's a gap
+  if (end < totalPages - 1) pages.push('...')
+  
+  // Always show last page
+  if (totalPages > 1) pages.push(totalPages)
+  
+  return pages
+})
 </script>
 
 <template>
   <div class="table-container">
+    <!-- Table Controls -->
+    <div class="table-controls">
+      <div class="per-page-selector">
+        <label for="per-page">Show:</label>
+        <select 
+          id="per-page" 
+          :value="pagination.perPage" 
+          @change="handlePerPageChange"
+          class="per-page-select"
+        >
+          <option :value="20">20</option>
+          <option :value="50">50</option>
+          <option :value="100">100</option>
+        </select>
+        <span>entries</span>
+      </div>
+      
+      <div class="table-info">
+        Showing {{ ((pagination.currentPage - 1) * pagination.perPage) + 1 }} 
+        to {{ Math.min(pagination.currentPage * pagination.perPage, pagination.totalItems) }} 
+        of {{ pagination.totalItems }} entries
+      </div>
+    </div>
     <table class="users-table">
       <thead>
         <tr>
@@ -75,9 +151,15 @@ const handleRowClick = (user: User): void => {
               @change="toggleSelectAll"
             >
           </th>
-          <th>NAME</th>
-          <th>LOCALE</th>
-          <th>SOURCE</th>
+          <th class="sortable" @click="handleSort('name')">
+            NAME {{ getSortIcon('name') }}
+          </th>
+          <th class="sortable" @click="handleSort('type')">
+            TYPE {{ getSortIcon('type') }}
+          </th>
+          <th class="sortable" @click="handleSort('active_for_bot')">
+            ACTIVE FOR BOT {{ getSortIcon('active_for_bot') }}
+          </th>
           <th>CREATED AT</th>
           <th>COUNTRY</th>
           <th>OS</th>
@@ -97,6 +179,7 @@ const handleRowClick = (user: User): void => {
           </td>
         </tr>
         <tr 
+          v-else 
           v-for="user in users" 
           :key="user.id"
           class="clickable-row"
@@ -115,6 +198,7 @@ const handleRowClick = (user: User): void => {
               <div class="user-avatar">{{ getUserInitials(user.name) }}</div>
               <div class="user-details">
                 <div class="user-name">{{ user.name }}</div>
+                <div class="user-email">{{ user.email }}</div>
                 <div 
                   class="user-attributes" 
                   @click.stop
@@ -125,12 +209,12 @@ const handleRowClick = (user: User): void => {
               </div>
             </div>
           </td>
-          <td>{{ user.locale || '-' }}</td>
-          <td>{{ user.source }}</td>
-          <td>{{ user.createdAt }}</td>
+          <td>{{ user.type || 'N/A' }}</td>
+          <td>{{ user.active_for_bot === 1 ? 'Yes' : 'No' }}</td>
+          <td>{{ user.created_at }}</td>
           <td>{{ user.country }}</td>
           <td>{{ user.os }}</td>
-          <td>{{ user.phone }}</td>
+          <td>{{ user.phone_number || 'N/A' }}</td>
           <td>
             <button 
               v-if="user.hasConversation" 
@@ -150,10 +234,43 @@ const handleRowClick = (user: User): void => {
       </tbody>
     </table>
 
+     <!-- Pagination -->
+     <div class="pagination-container">
+      <div class="pagination">
+        <button 
+          class="pagination-btn"
+          :disabled="pagination.currentPage === 1"
+          @click="handlePageChange(pagination.currentPage - 1)"
+        >
+          Previous
+        </button>
+        
+        <template v-for="page in getPageNumbers" :key="page">
+          <button 
+            v-if="typeof page === 'number'"
+            class="pagination-btn page-number"
+            :class="{ active: page === pagination.currentPage }"
+            @click="handlePageChange(page)"
+          >
+            {{ page }}
+          </button>
+          <span v-else class="pagination-ellipsis">{{ page }}</span>
+        </template>
+        
+        <button 
+          class="pagination-btn"
+          :disabled="pagination.currentPage === pagination.totalPages"
+          @click="handlePageChange(pagination.currentPage + 1)"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+
     <!-- User Attributes Modal -->
     <UserAttributes
       v-if="showAttributes"
-      :attributes="userAttributes"
+      :attributes="selectedUserAttributes"
       @close="handleCloseAttributes"
       @update="handleUpdateAttributes"
     />
@@ -170,6 +287,38 @@ const handleRowClick = (user: User): void => {
   max-height: 60vh;
   overflow-y: auto;
 }
+
+
+.table-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background-color: white;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+}
+
+.per-page-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-primary);
+}
+
+.per-page-select {
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;
+}
+
+.table-info {
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
 
 .users-table {
   width: 100%;
@@ -191,15 +340,26 @@ const handleRowClick = (user: User): void => {
   top: 0;
 }
 
+
+.users-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s;
+}
+
+.users-table th.sortable:hover {
+  background-color: var(--color-primary);
+}
+
 .users-table td {
   padding: 12px;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--color-border);
   font-size: 14px;
   background-color: white;
 }
 
 .users-table tr:hover td {
-  background-color: #f8f9fa;
+  background-color: var(--color-bg-tertiary);
 }
 
 .clickable-row {
@@ -208,7 +368,7 @@ const handleRowClick = (user: User): void => {
 }
 
 .clickable-row:hover {
-  background-color: #f8f9fa !important;
+  background-color: var(--color-bg-tertiary) !important;
 }
 
 .no-data-row {
@@ -244,13 +404,13 @@ const handleRowClick = (user: User): void => {
 .no-data-text {
   font-size: 18px;
   font-weight: 500;
-  color: #6c757d;
+  color: var(--color-text-secondary);
   margin-bottom: 4px;
 }
 
 .no-data-subtext {
   font-size: 14px;
-  color: #9ca3af;
+  color: var(--color-text-primary);
 }
 
 .user-info {
@@ -280,12 +440,12 @@ const handleRowClick = (user: User): void => {
 
 .user-name {
   font-weight: 500;
-  color: #212529;
+  color: var(--color-text-primary);
 }
 
 .user-attributes {
   font-size: 12px;
-  color: #6c757d;
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: color 0.2s;
 }
@@ -330,7 +490,66 @@ const handleRowClick = (user: User): void => {
   color: white;
 }
 
+
+.pagination-container {
+  padding: 16px 20px;
+  background-color: white;
+  border-top: 1px solid #e9ecef;
+  display: flex;
+  justify-content: center;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pagination-btn {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  background-color: white;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: var(--color-bg-tertiary);
+  border-color: var(--color-text-primary);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-btn.page-number.active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.pagination-ellipsis {
+  padding: 8px 4px;
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
 @media (max-width: 768px) {
+  .table-controls {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .per-page-selector,
+  .table-info {
+    justify-content: center;
+  }
+  
   .users-table {
     font-size: 12px;
   }
@@ -338,6 +557,16 @@ const handleRowClick = (user: User): void => {
   .users-table th,
   .users-table td {
     padding: 8px;
+  }
+  
+  .pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .pagination-btn {
+    padding: 6px 10px;
+    font-size: 12px;
   }
 }
 </style>

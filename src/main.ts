@@ -76,8 +76,8 @@ function getBotDetails(apikey: string) {
     console.log('ressssss ', response.data);
     localStorage.setItem('apikey', response.data.data.apikey);
     // localStorage.setItem('bot', response.data.data);
-       localStorage.setItem('botsify_chats', response.data.data.chat_flow);
-          localStorage.setItem('botsify_prompt_templates', response.data.data.bot_flow );
+    localStorage.setItem('botsify_chats', response.data.data.chat_flow);
+    localStorage.setItem('botsify_prompt_templates', response.data.data.bot_flow );
 
     return true;
   })
