@@ -77,7 +77,7 @@ const sendMessage = async () => {
     
     // Show uploading status
     const originalText = finalMessageText;
-    finalMessageText = finalMessageText + (finalMessageText ? '\n\n' : '') + '📤 Uploading files...';
+    finalMessageText = finalMessageText + (finalMessageText ? '\n\n' : '');
     
     // Add temporary message to show upload progress
     chatStore.addMessage(props.chatId, finalMessageText, 'user', processedAttachments);
