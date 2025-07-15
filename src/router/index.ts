@@ -9,7 +9,7 @@ const routes: RouteRecordRaw[] = [
     component: ChatLayout,
     children: [
       {
-        path: '/agent/:id?',
+        path: '/agent/:id',
         name: 'agent',
         component: () => import('../views/ChatView.vue'),
         props: true

@@ -1,0 +1,7 @@
+export { default as ConversationSidebar } from './ConversationSidebar.vue'
+export { default as ChatHeader } from './ChatHeader.vue'
+export { default as ChatMessages } from './ChatMessages.vue'
+export { default as MessageInput } from './MessageInput.vue'
+export { default as UserSidebar } from './UserSidebar.vue'
+export { default as UserProfile } from './UserProfile.vue'
+export { default as UserAttributes } from './UserAttributes.vue' 
