@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 
-const router = useRouter();
 const chatStore = useChatStore();
 
 const showStorageWarning = ref(false);
@@ -64,7 +62,7 @@ function clearOldChats() {
 }
 
 onMounted(() => {
-  // // Redirect to home page on load if needed
+  // Redirect to home page on load if needed
   // if (router.currentRoute.value.path === '/') {
   //   router.push('/');
   // }
@@ -95,6 +93,7 @@ onMounted(() => {
     </div>
     
     <router-view />
+    <!-- <ChatLayout /> -->
   </div>
 </template>
 
