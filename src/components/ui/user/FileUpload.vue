@@ -4,6 +4,7 @@ import { ref, defineEmits, defineProps } from 'vue'
 const props = defineProps<{
   selectedFile: File | null
 }>()
+console.log('props', props)
 
 const emit = defineEmits<{
   fileSelect: [file: File | null]

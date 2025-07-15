@@ -10,6 +10,7 @@ const props = defineProps<{
   selectedAction: ActionType
   selectedUsersCount: number
 }>()
+console.log('props', props)
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string]
