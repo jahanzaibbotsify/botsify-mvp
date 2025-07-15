@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, defineProps, defineEmits } from 'vue'
+import { ref, defineProps, defineEmits } from 'vue'
 import { User } from '@/types/user'
 
 const props = defineProps<{

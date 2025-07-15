@@ -25,6 +25,7 @@ const cancelEdit = (): void => {
 }
 
 const saveEdit = (id: number): void => {
+  console.log('saveEdit', id)
   editingId.value = null
   emit('update', localAttributes.value)
 }

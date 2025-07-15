@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, defineEmits, defineProps } from 'vue'
+import { ref, defineEmits, defineProps } from 'vue'
 import UserAttributes from './Attributes.vue'
 import { User, UserAttribute } from '@/types/user'
 
@@ -41,6 +41,7 @@ const handleUserSelect = (userId: number): void => {
 }
 
 const handleShowAttributes = (userId: number): void => {
+  console.log('showAttributes', userId)
   showAttributes.value = true
 }
 
