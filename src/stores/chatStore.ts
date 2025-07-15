@@ -31,8 +31,6 @@ export const useChatStore = defineStore('chat', () => {
       });
 
       if (storedChats) {
-        chats.value.pop();
-        
         try {
 
           const parsedChats = JSON.parse(storedChats);
