@@ -307,7 +307,7 @@ const handleRowClick = (user: User): void => {
 }
 
 .conversation-btn:hover:not(:disabled) {
-  background-color: #3367d6;
+  background-color: var(--color-primary-hover);
 }
 
 .status-badge {
