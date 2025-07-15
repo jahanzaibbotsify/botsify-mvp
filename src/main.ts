@@ -95,6 +95,7 @@ const router = createRouter({
 
 
 router.beforeEach(async (to, from, next) => {
+  console.log(from.name);
   if (to.name === 'agent') {
     localStorage.removeItem('apikey');
     const apikey = to.params.id;

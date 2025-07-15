@@ -31,8 +31,6 @@ export const useChatStore = defineStore('chat', () => {
       });
 
       if (storedChats) {
-        chats.value.pop();
-        
         try {
 
           const parsedChats = JSON.parse(storedChats);
@@ -109,30 +107,13 @@ export const useChatStore = defineStore('chat', () => {
       const estimatedSizeInMB = totalSize / (1024 * 1024);
       console.log(`📊 Estimated storage size: ${estimatedSizeInMB.toFixed(2)}MB`);
 
-
-      // save chat
-      axios.post(import.meta.env.VITE_BOTSIFY_BASE_URL + '/v1/bot-update', {
-        'column': 'chat_flow',
-        'value': chatsJson ,
-        'apikey': localStorage.getItem('apikey'),
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
-        }
-      }).then(response => {
-        if (response.data.status == 'success') {
-          console.log('Message stored: ', response.data.bot);
-        }
-      }).catch((error) => {
-        console.log('error');
-      });
-
       //save bot templates
       axios.post(import.meta.env.VITE_BOTSIFY_BASE_URL + '/v1/bot-update', {
-        'column': 'bot_flow',
-        'value': templatesJson,
         'apikey': localStorage.getItem('apikey'),
+        'data' : {
+          chat_flow: chatsJson,
+          bot_flow: templatesJson
+        }
       }, {
         headers: {
           'Content-Type': 'application/json',
@@ -143,7 +124,7 @@ export const useChatStore = defineStore('chat', () => {
           console.log('Message stored: ', response.data.bot);
         }
       }).catch((error) => {
-        console.log('error');
+        console.log('error:', error);
       });
 
       // localStorage typically has a 5-10MB limit depending on browser
