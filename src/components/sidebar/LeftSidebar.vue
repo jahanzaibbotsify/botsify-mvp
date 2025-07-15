@@ -7,6 +7,7 @@ import { useWindowSize } from '@vueuse/core';
 import ChatListItem from '@/components/chat/ChatListItem.vue';
 import SidebarPricing from './SidebarPricing.vue';
 import BookMeeting from '@/components/modal/BookMeeting.vue';
+import User from '@/components/modal/User.vue';
 import { BOTSIFY_BASE_URL } from '@/utils/config';
 
 const chatStore = useChatStore();
@@ -17,6 +18,7 @@ const { width } = useWindowSize();
 const isMobile = computed(() => width.value < 768);
 const showNavDropdown = ref(false);
 const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
+const userRef = ref<InstanceType<typeof User> | null>(null)
 
 const navigationButtons = [
   {
@@ -102,6 +104,16 @@ const openBookMeetingModal = () => {
     bookMeetingRef.value.openModal()
   } else {
     console.warn('❌ bookMeetingRef is null')
+  }
+  closeNavDropdown();
+};
+
+const openUserModal = () => {
+  if (userRef.value) {
+    console.log('📦 userRef exists')
+    userRef.value.openModal()
+  } else {
+    console.warn('❌ userRef is null')
   }
   closeNavDropdown();
 };
@@ -204,6 +216,17 @@ const isLinkActive = (url: string) => {
                 </div>
                 <span>Support</span>
               </div>
+
+              <div 
+                class="nav-item" 
+                role="button"
+                @click="openUserModal"
+              >
+                <div class="nav-item-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"></svg>
+                </div>
+                <span>User</span>
+              </div>
             </div>
           </div>
         </div>
@@ -252,6 +275,7 @@ const isLinkActive = (url: string) => {
     <!-- Sidebar Pricing (keeping this at the bottom) -->
     <SidebarPricing />
     <BookMeeting ref="bookMeetingRef"></BookMeeting>
+    <User ref="userRef"></User>
   </aside>
 </template>
 
