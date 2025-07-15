@@ -196,7 +196,7 @@ const toggleUserStatus = (): void => {
 
 .details-header {
   padding: 16px 24px;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--color-border);
   background-color: white;
 }
 
@@ -206,7 +206,7 @@ const toggleUserStatus = (): void => {
   gap: 8px;
   background: none;
   border: none;
-  color: #6c757d;
+  color: var(--color-text-tertiary);
   font-size: 14px;
   cursor: pointer;
   padding: 8px 0;
@@ -214,7 +214,7 @@ const toggleUserStatus = (): void => {
 }
 
 .back-btn:hover {
-  color: #495057;
+  color: var(--color-text-secondary);
 }
 
 .details-content {
@@ -225,8 +225,8 @@ const toggleUserStatus = (): void => {
 
 .details-sidebar {
   width: 280px;
-  background-color: #f8f9fa;
-  border-right: 1px solid #e9ecef;
+  background-color: var(--color-bg-secondary);
+  border-right: 1px solid var(--color-border);
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -240,7 +240,7 @@ const toggleUserStatus = (): void => {
 .user-avatar-large {
   width: 80px;
   height: 80px;
-  background-color: #4285f4;
+  background-color: var(--color-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -254,7 +254,7 @@ const toggleUserStatus = (): void => {
 .user-name {
   font-size: 20px;
   font-weight: 600;
-  color: #212529;
+  color: var(--color-text-primary);
   margin: 0 0 12px;
 }
 
@@ -269,12 +269,12 @@ const toggleUserStatus = (): void => {
 }
 
 .status-btn.active {
-  background-color: #28a745;
+  background-color: var(--color-success);
   color: white;
 }
 
 .status-btn.inactive {
-  background-color: #dc3545;
+  background-color: var(--color-error);
   color: white;
 }
 
@@ -293,19 +293,19 @@ const toggleUserStatus = (): void => {
   border: none;
   border-radius: 6px;
   font-size: 14px;
-  color: #6c757d;
+  color: var(--color-text-tertiary);
   cursor: pointer;
   transition: all 0.2s;
   text-align: left;
 }
 
 .nav-item:hover {
-  background-color: #e9ecef;
-  color: #495057;
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-secondary);
 }
 
 .nav-item.active {
-  background-color: #28a745;
+  background-color: var(--color-success);
   color: white;
 }
 
@@ -329,7 +329,7 @@ const toggleUserStatus = (): void => {
 .field-label {
   font-size: 14px;
   font-weight: 500;
-  color: #6c757d;
+  color: var(--color-text-tertiary);
   margin-right: auto;
 }
 
@@ -339,7 +339,7 @@ const toggleUserStatus = (): void => {
 }
 
 .save-btn {
-  background-color: #4285f4;
+  background-color: var(--color-primary);
   color: white;
   border: none;
   padding: 8px 16px;
@@ -350,11 +350,11 @@ const toggleUserStatus = (): void => {
 }
 
 .save-btn:hover {
-  background-color: #3367d6;
+  background-color: var(--color-primary-hover);
 }
 
 .cancel-btn {
-  background-color: #6c757d;
+  background-color: var(--color-error);
   color: white;
   border: none;
   padding: 8px 16px;
@@ -364,14 +364,10 @@ const toggleUserStatus = (): void => {
   transition: background-color 0.2s;
 }
 
-.cancel-btn:hover {
-  background-color: #5a6268;
-}
-
 .name-input {
   width: 100%;
   padding: 12px;
-  border: 1px solid #ced4da;
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   font-size: 16px;
   background-color: #f8f9fa;
@@ -383,7 +379,7 @@ const toggleUserStatus = (): void => {
 
 .name-input:focus {
   outline: none;
-  border-color: #4285f4;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
 }
 
@@ -395,7 +391,7 @@ const toggleUserStatus = (): void => {
 }
 
 .section-header {
-  background-color: #4285f4;
+  background-color: var(--color-primary);
   color: white;
   padding: 16px 20px;
 }
@@ -418,7 +414,7 @@ const toggleUserStatus = (): void => {
   flex-direction: column;
   gap: 4px;
   padding: 12px 0;
-  border-bottom: 1px solid #f1f3f4;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .about-item:nth-child(odd) {
@@ -427,7 +423,7 @@ const toggleUserStatus = (): void => {
 
 .about-item:nth-child(even) {
   padding-left: 20px;
-  border-left: 1px solid #f1f3f4;
+  border-left: 1px solid var(--color-border);
 }
 
 .about-label {
@@ -446,14 +442,14 @@ const toggleUserStatus = (): void => {
 
 .attributes-section {
   padding: 20px;
-  border-top: 1px solid #f1f3f4;
+  border-top: 1px solid var(--color-border);
 }
 
 .attributes-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: #4285f4;
+  background-color: var(--color-primary);
   color: white;
   border: none;
   padding: 10px 16px;
@@ -464,7 +460,7 @@ const toggleUserStatus = (): void => {
 }
 
 .attributes-btn:hover {
-  background-color: #3367d6;
+  background-color: var(--color-primary-hover);
 }
 
 @media (max-width: 768px) {

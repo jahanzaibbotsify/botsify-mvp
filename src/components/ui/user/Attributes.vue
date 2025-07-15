@@ -13,8 +13,6 @@ const emit = defineEmits<{
 
 const localAttributes = ref<UserAttribute[]>([...props.attributes])
 const editingId = ref<number | null>(null)
-const newAttribute = ref<{ key: string; value: string }>({ key: '', value: '' })
-const isAddingNew = ref<boolean>(false)
 
 const startEdit = (id: number): void => {
   editingId.value = id
@@ -34,30 +32,6 @@ const saveEdit = (id: number): void => {
 const deleteAttribute = (id: number): void => {
   localAttributes.value = localAttributes.value.filter(attr => attr.id !== id)
   emit('update', localAttributes.value)
-}
-
-const startAddNew = (): void => {
-  isAddingNew.value = true
-  newAttribute.value = { key: '', value: '' }
-}
-
-const cancelAddNew = (): void => {
-  isAddingNew.value = false
-  newAttribute.value = { key: '', value: '' }
-}
-
-const saveNewAttribute = (): void => {
-  if (newAttribute.value.key.trim() && newAttribute.value.value.trim()) {
-    const newId = Math.max(...localAttributes.value.map(attr => attr.id), 0) + 1
-    localAttributes.value.push({
-      id: newId,
-      key: newAttribute.value.key.trim(),
-      value: newAttribute.value.value.trim()
-    })
-    emit('update', localAttributes.value)
-    isAddingNew.value = false
-    newAttribute.value = { key: '', value: '' }
-  }
 }
 
 const handleClose = (): void => {
@@ -82,40 +56,6 @@ const handleClose = (): void => {
             <div class="header-cell">KEY</div>
             <div class="header-cell">VALUE</div>
             <div class="header-cell">ACTION</div>
-          </div>
-
-          <!-- Add New Attribute Row -->
-          <div v-if="isAddingNew" class="table-row editing">
-            <div class="table-cell">
-              <input
-                v-model="newAttribute.key"
-                type="text"
-                placeholder="Enter key"
-                class="attribute-input"
-                @keyup.enter="saveNewAttribute"
-                @keyup.escape="cancelAddNew"
-              />
-            </div>
-            <div class="table-cell">
-              <input
-                v-model="newAttribute.value"
-                type="text"
-                placeholder="Enter value"
-                class="attribute-input"
-                @keyup.enter="saveNewAttribute"
-                @keyup.escape="cancelAddNew"
-              />
-            </div>
-            <div class="table-cell">
-              <div class="action-buttons">
-                <button class="save-btn" @click="saveNewAttribute">
-                  Save
-                </button>
-                <button class="cancel-btn" @click="cancelAddNew">
-                  Cancel
-                </button>
-              </div>
-            </div>
           </div>
 
           <!-- Existing Attributes -->
@@ -167,14 +107,6 @@ const handleClose = (): void => {
             </div>
           </div>
         </div>
-
-        <!-- Add New Button -->
-        <div v-if="!isAddingNew" class="add-section">
-          <button class="add-btn" @click="startAddNew">
-            <i class="pi pi-plus" />
-            Add New Attribute
-          </button>
-        </div>
       </div>
     </div>
   </div>
@@ -211,21 +143,21 @@ const handleClose = (): void => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid #e9ecef;
-  background-color: #f8f9fa;
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-bg-secondary);
 }
 
 .attributes-header h3 {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #212529;
+  color: var(--color-text-primary);
 }
 
 .close-btn {
   background: none;
   border: none;
-  color: #6c757d;
+  color: var(--color-text-secondary);
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
@@ -233,7 +165,7 @@ const handleClose = (): void => {
 }
 
 .close-btn:hover {
-  background-color: #e9ecef;
+  background-color: var(--color-bg-hover);
 }
 
 .attributes-content {
@@ -243,7 +175,7 @@ const handleClose = (): void => {
 }
 
 .attributes-table {
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -251,7 +183,7 @@ const handleClose = (): void => {
 .table-header {
   display: grid;
   grid-template-columns: 1fr 1fr 120px;
-  background-color: #4285f4;
+  background-color: var(--color-primary);
   color: white;
 }
 
@@ -265,7 +197,7 @@ const handleClose = (): void => {
 .table-row {
   display: grid;
   grid-template-columns: 1fr 1fr 120px;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--color-border);
   background-color: white;
 }
 
@@ -274,7 +206,7 @@ const handleClose = (): void => {
 }
 
 .table-row.editing {
-  background-color: #f8f9ff;
+  background-color: var(--color-bg-secondary);
 }
 
 .table-cell {
@@ -282,20 +214,20 @@ const handleClose = (): void => {
   display: flex;
   align-items: center;
   font-size: 14px;
-  color: #212529;
+  color: var(--color-text-primary);
 }
 
 .attribute-input {
   width: 100%;
   padding: 6px 8px;
-  border: 1px solid #ced4da;
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   font-size: 14px;
 }
 
 .attribute-input:focus {
   outline: none;
-  border-color: #4285f4;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
 }
 
@@ -316,23 +248,24 @@ const handleClose = (): void => {
 }
 
 .edit-btn {
-  color: #4285f4;
+  color: var(--color-primary);
 }
 
 .edit-btn:hover {
-  background-color: #e3f2fd;
+  background-color: var(--color-bg-hover);
 }
 
 .delete-btn {
-  color: #dc3545;
+  color: var(--color-error);
 }
 
 .delete-btn:hover {
-  background-color: #ffebee;
+  background-color: var(--color-bg-hover);
 }
 
 .save-btn {
-  background-color: #4285f4;
+  background-color: var(--color-primary);
+  opacity: 0.9;
   color: white;
   border: none;
   padding: 6px 12px;
@@ -343,11 +276,12 @@ const handleClose = (): void => {
 }
 
 .save-btn:hover {
-  background-color: #3367d6;
+  opacity: 1;
 }
 
 .cancel-btn {
-  background-color: #dc3545;
+  background-color: var(--color-error);
+  opacity: 0.9;
   color: white;
   border: none;
   padding: 6px 12px;
@@ -358,31 +292,9 @@ const handleClose = (): void => {
 }
 
 .cancel-btn:hover {
-  background-color: #c82333;
+  opacity: 1;
 }
 
-.add-section {
-  margin-top: 16px;
-  text-align: center;
-}
-
-.add-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 4px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.add-btn:hover {
-  background-color: #218838;
-}
 
 @media (max-width: 768px) {
   .attributes-modal {
