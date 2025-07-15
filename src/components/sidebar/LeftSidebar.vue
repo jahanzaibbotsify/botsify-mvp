@@ -40,7 +40,7 @@ const navigationButtons = [
 ];
 
 const filteredChats = computed(() => {
-  return chatStore.chats;
+  return [chatStore.chats[0]];
 });
 
 // const createNewChat = () => {
