@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { defineEmits, defineProps } from 'vue'
-import { ActionType, FilterType, SegmentType, SegmentId } from '@/types/user'
+import { ActionType, FilterType, SegmentType } from '@/types/user'
 import VueSelect from "vue3-select-component"
 import DateRange from '@/components/ui/DateRange.vue'
-import { createUserFilterManager, type UserFilterState } from '@/utils/filterUtils'
+import { type UserFilterState } from '@/utils/filterUtils'
 
-const props = defineProps<{
+defineProps<{
   selectedAction: ActionType
   selectedUsersCount: number
   filterState: UserFilterState
@@ -96,7 +96,7 @@ const handleDateRangeChange = (dateRange: { startDate: Date, endDate: Date } | n
       <div class="filter-dropdown">
         <VueSelect
           :model-value="filterState.filter"
-          @update:model-value="(value: string) => handleSelectChange('filter', value)"
+          @update:model-value="(value: string | string[]) => handleSelectChange('filter', value)"
           :options="filterOptions"
           placeholder="Select user type"
           :multiple="false"
@@ -106,7 +106,7 @@ const handleDateRangeChange = (dateRange: { startDate: Date, endDate: Date } | n
       <div class="segment-dropdown">
         <VueSelect
           :model-value="filterState.segment"
-          @update:model-value="(value: string) => handleSelectChange('segment', value)"
+          @update:model-value="(value: string | string[]) => handleSelectChange('segment', value)"
           :options="segmentOptions"
           placeholder="Select segment"
           :multiple="false"

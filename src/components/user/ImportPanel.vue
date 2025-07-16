@@ -25,21 +25,7 @@ const handleImport = async () => {
     await new Promise(resolve => setTimeout(resolve, 2000))
     
     // Parse CSV and create new users (simplified example)
-    const newUsers: User[] = [
-      {
-        id: Date.now(),
-        name: 'Imported User',
-        locale: 'en',
-        source: 'import',
-        createdAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
-        country: 'Imported Country',
-        os: 'Windows',
-        phone: '0000000000',
-        status: 'Active',
-        hasConversation: false,
-        selected: false
-      }
-    ]
+    const newUsers: User[] = []
     
     emit('import', newUsers)
     

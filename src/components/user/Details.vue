@@ -154,7 +154,7 @@ const toggleUserStatus = (): void => {
             </div>
             <div class="about-item">
               <label class="about-label">Phone</label>
-              <span class="about-value">{{ user.phone }}</span>
+              <span class="about-value">{{ user.phone_number }}</span>
             </div>
             <div class="about-item">
               <label class="about-label">Timezone</label>
@@ -166,7 +166,7 @@ const toggleUserStatus = (): void => {
             </div>
             <div class="about-item">
               <label class="about-label">Source</label>
-              <span class="about-value">{{ user.source }}</span>
+              <span class="about-value">{{ user.type }}</span>
             </div>
             <div class="about-item">
               <label class="about-label">OS</label>
@@ -174,7 +174,7 @@ const toggleUserStatus = (): void => {
             </div>
             <div class="about-item">
               <label class="about-label">Last Converse</label>
-              <span class="about-value">{{ user.createdAt }}</span>
+              <span class="about-value">{{ user.created_at }}</span>
             </div>
             <div class="about-item">
               <label class="about-label">Last Page</label>

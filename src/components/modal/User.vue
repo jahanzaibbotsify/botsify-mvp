@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, watch, defineExpose, onMounted } from 'vue'
+import { ref, computed, watch, defineExpose } from 'vue'
 import ModalLayout from '@/components/ui/ModalLayout.vue'
 import UserFilters from '@/components/user/Filters.vue'
 import UserTable from '@/components/user/Table.vue'
 import ImportPanel from '@/components/user/ImportPanel.vue'
 import UserDetails from '@/components/user/Details.vue'
-import { ActionType, User, SortBy, PerPage, PaginationData, SortingData, FilterType, SegmentType, ApiUser, SortOrder } from '@/types/user'
+import { ActionType, User, SortBy, SortOrder, ApiUser, PerPage, PaginationData, SortingData } from '@/types/user'
 import { userApi } from '@/services/userApi'
 import { createUserFilterManager, type UserFilterState } from '@/utils/filterUtils'
 
@@ -94,9 +94,9 @@ const fetchUsers = async (): Promise<void> => {
   }
 }
 
-const handleRefresh = (): void => {
-  fetchUsers()
-}
+// const handleRefresh = (): void => {
+//   fetchUsers()
+// }
 
 // Modal methods
 const openModal = (): void => {
