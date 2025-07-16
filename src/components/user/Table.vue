@@ -159,7 +159,7 @@ const getPageNumbers = computed(() => {
       <table class="users-table" :class="{ 'loading-blur': loading }">
         <thead>
           <tr>
-            <th>
+            <th class="sortable">
               <input 
                 type="checkbox" 
                 :checked="selectAll" 
@@ -172,11 +172,11 @@ const getPageNumbers = computed(() => {
             <th class="sortable" :class="getSortIcon('type')" @click="handleSort('type')">
               TYPE
             </th>
-            <th>CREATED AT</th>
-            <th>COUNTRY</th>
-            <th>PHONE</th>
-            <th>STATUS</th>
-            <th>ACTIONS</th>
+            <th class="sortable">CREATED AT</th>
+            <th class="sortable">COUNTRY</th>
+            <th class="sortable">PHONE</th>
+            <th class="sortable">STATUS</th>
+            <th class="sortable">ACTIONS</th>
           </tr>
         </thead>
         <tbody>

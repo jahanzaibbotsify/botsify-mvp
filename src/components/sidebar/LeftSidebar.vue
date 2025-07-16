@@ -6,7 +6,7 @@ import { useSidebarStore } from '@/stores/sidebarStore';
 // import { useWindowSize } from '@vueuse/core';
 // import ChatListItem from '@/components/chat/ChatListItem.vue';
 import SidebarPricing from './SidebarPricing.vue';
-import BookMeeting from '@/components/modal/BookMeeting.vue';
+import BookMeeting from '@/components/ui/BookMeeting.vue';
 import { BOTSIFY_BASE_URL } from '@/utils/config';
 import { useRouter } from 'vue-router';
 

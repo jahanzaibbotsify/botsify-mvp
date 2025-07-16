@@ -269,18 +269,20 @@ watch(() => props.attributes, (newAttributes) => {
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
+  background-image: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.6) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: var(--z-modal);
 }
 
 .attributes-modal {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   width: 90%;
   max-width: 600px;
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-border);
   max-height: 80vh;
   overflow: hidden;
   display: flex;
@@ -289,32 +291,33 @@ watch(() => props.attributes, (newAttributes) => {
 
 .attributes-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
+  justify-content: space-between;
+  padding: var(--space-4);
   border-bottom: 1px solid var(--color-border);
-  background-color: var(--color-bg-secondary);
+  background: linear-gradient(to right, rgba(0, 163, 255, 0.05), transparent);
 }
 
 .attributes-header h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 1.25rem;
   font-weight: 600;
   color: var(--color-text-primary);
 }
 
 .close-btn {
-  background: none;
+  background: transparent;
   border: none;
-  color: var(--color-text-secondary);
+  padding: var(--space-1);
+  color: var(--color-text-tertiary);
   cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-normal);
 }
 
 .close-btn:hover {
-  background-color: var(--color-bg-hover);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-tertiary);
 }
 
 .error-message {
@@ -328,13 +331,13 @@ watch(() => props.attributes, (newAttributes) => {
 .attributes-content {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: var(--space-4);
   position: relative;
 }
 
 .attributes-table {
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   position: relative;
 }
@@ -382,14 +385,14 @@ watch(() => props.attributes, (newAttributes) => {
 .table-header {
   display: grid;
   grid-template-columns: 1fr 1fr 120px;
-  background-color: var(--color-primary);
+  background: linear-gradient(to right, var(--color-primary), var(--color-primary-hover));
   color: white;
 }
 
 .header-cell {
-  padding: 12px 16px;
+  padding: var(--space-3) var(--space-4);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 0.875rem;
   text-align: center;
 }
 
@@ -397,7 +400,7 @@ watch(() => props.attributes, (newAttributes) => {
   display: grid;
   grid-template-columns: 1fr 1fr 120px;
   border-bottom: 1px solid var(--color-border);
-  background-color: white;
+  background-color: var(--color-bg-primary);
 }
 
 .table-row:last-child {
@@ -409,25 +412,28 @@ watch(() => props.attributes, (newAttributes) => {
 }
 
 .table-cell {
-  padding: 12px 16px;
+  padding: var(--space-3) var(--space-4);
   display: flex;
   align-items: center;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-primary);
 }
 
 .attribute-input {
   width: 100%;
-  padding: 6px 8px;
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-border);
-  border-radius: 4px;
-  font-size: 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  transition: border-color var(--transition-normal);
 }
 
 .attribute-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+  box-shadow: 0 0 0 2px rgba(0, 163, 255, 0.2);
 }
 
 .action-buttons {
@@ -438,12 +444,12 @@ watch(() => props.attributes, (newAttributes) => {
 }
 
 .edit-btn, .delete-btn {
-  background: none;
+  background: transparent;
   border: none;
-  padding: 6px;
-  border-radius: 4px;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all var(--transition-normal);
 }
 
 .edit-btn {
@@ -451,7 +457,7 @@ watch(() => props.attributes, (newAttributes) => {
 }
 
 .edit-btn:hover:not(:disabled) {
-  background-color: var(--color-bg-hover);
+  background-color: var(--color-bg-tertiary);
 }
 
 .edit-btn:disabled {
@@ -464,7 +470,7 @@ watch(() => props.attributes, (newAttributes) => {
 }
 
 .delete-btn:hover:not(:disabled) {
-  background-color: var(--color-bg-hover);
+  background-color: var(--color-bg-tertiary);
 }
 
 .delete-btn:disabled {
