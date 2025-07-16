@@ -123,7 +123,7 @@ class UserApiService {
         formData.append('file', file)
         
         // Create XMLHttpRequest for progress tracking
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           const xhr = new XMLHttpRequest()
           
           // Track upload progress

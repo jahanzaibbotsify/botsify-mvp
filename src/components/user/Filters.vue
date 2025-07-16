@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { ActionType, FilterType, SegmentType } from '@/types/user'
 import VueSelect from "vue3-select-component"
 import DateRange from '@/components/ui/DateRange.vue'
 import { type UserFilterState } from '@/utils/filterUtils'
 import { useSidebarStore } from '@/stores/sidebarStore'
 
-const props = defineProps<{
+defineProps<{
   selectedAction: ActionType
   selectedUsersCount: number
   filterState: UserFilterState
