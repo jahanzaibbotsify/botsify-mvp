@@ -374,15 +374,15 @@ defineExpose({ openModal })
     @close="closeModal"
   >
     <!-- User Details View -->
-    <UserDetails
+    <!-- <UserDetails
       v-if="showUserDetails && selectedUser"
       :user="selectedUser"
       @back="() => handleUserAction('backFromDetails')"
       @update-user="(user: User) => handleUserAction('updateUser', user)"
-    />
+    /> -->
 
-    <!-- Main User Management View -->
-    <div v-else>
+    <!-- Main User Management View (v-else) --> 
+    <div> 
       <!-- Filters and Controls -->
       <UserFilters
         :selected-action="selectedAction"
