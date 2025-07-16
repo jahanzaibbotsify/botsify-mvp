@@ -34,9 +34,9 @@ const sorting = ref<SortingData>({
 const users = ref<User[]>([])
 
 // Computed properties for filtered users (client-side filtering for display)
-const filteredUsers = computed<User[]>(() => {
-  return users.value
-})
+// const filteredUsers = computed<User[]>(() => {
+//   return users.value
+// })
 
 // API Functions
 const fetchUsers = async (): Promise<void> => {
