@@ -3,11 +3,9 @@ import { onMounted, ref, computed } from 'vue';
 import Swal from 'sweetalert2'; // Add this import
 // import { useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
-import { useApiKeyStore } from '@/stores/apiKeyStore';
 
 // const router = useRouter();
 const chatStore = useChatStore();
-const apiKeyStore = useApiKeyStore();
 
 const showStorageWarning = ref(false);
 const storageSizeMB = ref(0);
