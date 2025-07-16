@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import type { Attachment } from '@/types';
+import {useToast} from 'vue-toast-notification';
 
+
+const $toast = useToast({position: 'top-right'});
 const props = defineProps<{
   onUpload: (files: Attachment[]) => void;
 }>();
@@ -36,7 +39,7 @@ const handleFiles = async (files: File[]) => {
   for (const file of files) {
     // Validate file type
     if (!supportedTypes.includes(file.type)) {
-      alert(`File ${file.name} is not supported. Please upload images (JPEG, PNG, GIF, WebP, SVG) or videos (MP4, MPEG, MOV, AVI, WebM).`);
+      $toast.error(`File ${file.name} is not supported. Please upload images (JPEG, PNG, GIF, WebP, SVG) or videos (MP4, MPEG, MOV, AVI, WebM).`);
       continue;
     }
 
@@ -46,7 +49,7 @@ const handleFiles = async (files: File[]) => {
     
     const maxSize = 20 * 1024 * 1024;
     if (file.size > maxSize) {
-      alert(`File ${file.name} is too large. Maximum size is 20MB.`);
+      $toast.error(`File ${file.name} is too large. Maximum size is 20MB.`);
       continue;
     }
 

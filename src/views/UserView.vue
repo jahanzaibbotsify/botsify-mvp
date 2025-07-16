@@ -6,6 +6,10 @@ import ImportPanel from '@/components/user/ImportPanel.vue'
 import { ActionType, User, SortBy, SortOrder, ApiUser, PerPage, PaginationData, SortingData } from '@/types/user'
 import { userApi } from '@/services/userApi'
 import { createUserFilterManager, type UserFilterState } from '@/utils/filterUtils'
+import {useToast} from 'vue-toast-notification';
+
+
+const $toast = useToast({position: 'top-right'});
 
 // Filter manager
 const filterManager = createUserFilterManager()
@@ -200,6 +204,7 @@ const executeUserAction = async (action: ActionType, userIds: number[]): Promise
     const status = statusMap[action]
     if (status === undefined) {
       console.error('Unknown action:', action)
+      $toast.error('Unknown action selected.');
       return
     }
     
@@ -207,7 +212,7 @@ const executeUserAction = async (action: ActionType, userIds: number[]): Promise
     
     if (response.success) {
       console.log(`Successfully executed ${action} on ${userIds.length} users`)
-      
+      $toast.success(`Successfully executed ${action} on ${userIds.length} users.`);
       // Refresh the user list to get updated data
       await fetchUsers()
       
@@ -216,11 +221,11 @@ const executeUserAction = async (action: ActionType, userIds: number[]): Promise
       selectAll.value = false
     } else {
       console.error('Failed to execute action:', response.message)
-      alert(`Failed to ${action} users: ${response.message}`)
+      $toast.error(`Failed to ${action} users: ${response.message}`);
     }
   } catch (error) {
     console.error('Error executing action:', error)
-    alert(`Error executing ${action}: ${error}`)
+    $toast.error(`Error executing ${action}: ${error}`);
   } finally {
     loading.value = false
   }

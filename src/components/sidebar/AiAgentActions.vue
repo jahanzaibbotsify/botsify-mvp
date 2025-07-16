@@ -4,6 +4,10 @@ import { useChatStore } from '@/stores/chatStore';
 import { botsifyApi, type BotsifyResponse } from '@/services/botsifyApi';
 import { BOTSIFY_WEB_URL } from '@/utils/config';
 import { useApiKeyStore } from '@/stores/apiKeyStore';
+import Swal from 'sweetalert2'; 
+import { useToast } from 'vue-toast-notification';
+
+const $toast = useToast({ position: 'top-right' });
 
 const chatStore = useChatStore();
 const isDeployingAgent = ref(false);
@@ -22,7 +26,7 @@ const hasPromptContent = computed(() => {
 
 const testAiAgent = async () => {
   if (!hasPromptContent.value) {
-    alert('No prompt content available to deploy. Please generate some content first.');
+    $toast.error('No prompt content available to deploy. Please generate some content first.');
     return;
   }
   const BOTSIFY_APIKEY = useApiKeyStore().apiKey;
@@ -32,13 +36,20 @@ const testAiAgent = async () => {
 
 const deployAiAgent = async () => {
   if (!hasPromptContent.value) {
-    alert('No prompt content available to deploy. Please generate some content first.');
+    $toast.error('No prompt content available to deploy. Please generate some content first.');
     return;
   }
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: 'Are you sure you want to deploy the AI Agent? This will make it live.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes',
+    cancelButtonText: 'Cancel',
+  });
 
   // Confirm deployment
-  const confirmed = confirm('Are you sure you want to deploy the AI Agent? This will make it live.');
-  if (!confirmed) return;
+  if (!result.isConfirmed) return;
 
   isDeployingAgent.value = true;
   lastDeployResult.value = null;
@@ -49,13 +60,13 @@ const deployAiAgent = async () => {
     lastDeployResult.value = result;
     
     if (result.success) {
-      alert(`🚀 ${result.message}`);
+      $toast.success(`🚀 ${result.message}`);
     } else {
-      alert(`❌ Deployment failed: ${result.message}`);
+      $toast.error(`❌ Deployment failed: ${result.message}`);
     }
   } catch (error) {
     console.error('Unexpected error during deployment:', error);
-    alert('❌ An unexpected error occurred during deployment.');
+    $toast.error('❌ An unexpected error occurred during deployment.');
   } finally {
     isDeployingAgent.value = false;
   }

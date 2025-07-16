@@ -11,6 +11,8 @@ import ApiErrorNotification from '@/components/chat/ApiErrorNotification.vue';
 import StorySidebar from '@/components/chat/StorySidebar.vue';
 import ThemeToggle from '@/components/ui/ThemeToggle.vue';
 import UserMenu from '@/components/auth/UserMenu.vue';
+import Swal from 'sweetalert2'; 
+
 
 const route = useRoute();
 const chatStore = useChatStore();
@@ -91,16 +93,29 @@ function toggleMobileSidebar() {
   }
 }
 
-function clearVersionHistory() {
-  if (confirm('Are you sure you want to clear version history for this chat? This cannot be undone.')) {
+async function clearVersionHistory() {
+  const result = await showWarning('Are you sure you want to clear version history for this chat? This cannot be undone.');
+  if (result.isConfirmed) {
     chatStore.clearVersionHistory(chatId.value);
   }
 }
 
-function clearAllChats() {
-  if (confirm('Are you sure you want to clear all conversations and version history? This cannot be undone.')) {
+async function clearAllChats() {
+  const result = await showWarning('Are you sure you want to clear all conversations and version history? This cannot be undone.');
+  if (result.isConfirmed) {
     chatStore.clearAllChatsExceptActive();
   }
+}
+
+const showWarning = (message: string) => {
+  return Swal.fire({
+    title: 'Are you sure?',
+    text: message,
+    icon: 'warning',
+    showCancelButton: true, 
+    confirmButtonText: 'Yes',
+    cancelButtonText: 'Cancel'
+  });
 }
 
 // function clearMessageHistory() {

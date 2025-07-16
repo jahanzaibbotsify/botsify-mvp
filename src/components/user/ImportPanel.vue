@@ -2,7 +2,10 @@
 import { ref, defineEmits } from 'vue'
 import FileUpload from './FileUpload.vue'
 import { User } from '@/types/user'
+import { useToast } from 'vue-toast-notification'
 import { userApi } from '@/services/userApi'
+
+const $toast = useToast({ position: 'top-right' })
 
 const emit = defineEmits<{
   close: []
@@ -46,9 +49,9 @@ const handleImport = async () => {
         const message = `Import completed successfully!\n\nImported: ${importData.imported_count || 0} users`
         
         if (importData.errors && importData.errors.length > 0) {
-          alert(`${message}\n\nErrors encountered:\n${importData.errors.join('\n')}`)
+          $toast.error(`${message}\n\nErrors encountered:\n${importData.errors.join('\n')}`);
         } else {
-          alert(message)
+          $toast.error(message);
         }
         
         // Reset state
@@ -67,7 +70,7 @@ const handleImport = async () => {
   } catch (error) {
     console.error('Import error:', error)
     importStatus.value = 'Import failed'
-    alert(`Failed to import users: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    $toast.error(`Failed to import users: ${error instanceof Error ? error.message : 'Unknown error'}`);
   } finally {
     isImporting.value = false
   }
