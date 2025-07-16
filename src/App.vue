@@ -2,12 +2,19 @@
 import { onMounted, ref, computed } from 'vue';
 // import { useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
+import { useApiKeyStore } from '@/stores/apiKeyStore';
+import BotsifyLoader from './components/ui/BotsifyLoader.vue';
 
 // const router = useRouter();
 const chatStore = useChatStore();
+const apiKeyStore = useApiKeyStore();
 
 const showStorageWarning = ref(false);
 const storageSizeMB = ref(0);
+const authenticated = computed(() => {
+  const apikey = apiKeyStore.apiKey;
+  return apikey !== null && apikey.trim() !== '';
+});
 
 // Check storage size
 function checkStorageSize() {
@@ -79,30 +86,44 @@ onMounted(() => {
 
 <template>
   <div class="app-container">
-    <div v-if="showStorageWarning" class="storage-warning">
-      <div class="warning-content">
-        <span class="warning-icon">⚠️</span>
-        <span class="warning-text">
-          Storage usage: {{ formattedSize }}MB (may affect persistence)
-        </span>
-        <button class="clear-button" @click="clearOldChats">
-          Clear Old Chats
-        </button>
-        <button class="close-button" @click="showStorageWarning = false">
-          ✕
-        </button>
+    <div v-if="authenticated" class="app-container">
+      <div v-if="showStorageWarning" class="storage-warning">
+        <div class="warning-content">
+          <span class="warning-icon">⚠️</span>
+          <span class="warning-text">
+            Storage usage: {{ formattedSize }}MB (may affect persistence)
+          </span>
+          <button class="clear-button" @click="clearOldChats">
+            Clear Old Chats
+          </button>
+          <button class="close-button" @click="showStorageWarning = false">
+            ✕
+          </button>
+        </div>
       </div>
+
+      <router-view />
+      <!-- <ChatLayout /> -->
     </div>
-    
-    <router-view />
-    <!-- <ChatLayout /> -->
+    <div v-else class="main-loading">
+      <botsify-loader />
+    </div>
   </div>
+
 </template>
 
 <style>
 .app-container {
   position: relative;
   height: 100%;
+}
+
+.main-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100%;
 }
 
 .storage-warning {

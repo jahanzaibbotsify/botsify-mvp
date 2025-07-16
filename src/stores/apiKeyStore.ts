@@ -1,4 +1,9 @@
-import { defineStore } from 'pinia'
+import { defineStore } from 'pinia';
+
+
+import { useChatStore } from './chatStore';
+
+
 
 export const useApiKeyStore = defineStore('apiKey', {
   state: () => ({
@@ -6,7 +11,9 @@ export const useApiKeyStore = defineStore('apiKey', {
   }),
   actions: {
     setApiKey(key: string) {
-      this.apiKey = key
+      this.apiKey = key;
+      const chatStore= useChatStore();
+      chatStore.loadFromStorage();
     }
   }
 })
