@@ -13,6 +13,7 @@ const props = defineProps<{
 
 const showAttributes = ref<boolean>(false)
 const selectedUserAttributes = ref<UserAttribute[]>([])
+const selectedUser = ref<User>()
 
 const emit = defineEmits<{
   'update:selectAll': [value: boolean]
@@ -41,16 +42,16 @@ const handleUserSelect = (userId: number): void => {
   emit('update:userSelected', userId)
 }
 
-const handleShowAttributes = (userId: number): void => {
-  const user = props.users.find(u => u.id === userId)
-  if (user) {
-    selectedUserAttributes.value = user.attributes
-    showAttributes.value = true
-  }
+const handleShowAttributes = (user: User): void => {
+  selectedUserAttributes.value = user.attributes
+  selectedUser.value = user
+  showAttributes.value = true
 }
 
 const handleCloseAttributes = (): void => {
   showAttributes.value = false
+  selectedUser.value = undefined
+  selectedUserAttributes.value = []
 }
 
 
@@ -237,7 +238,7 @@ const getPageNumbers = computed(() => {
                 <button 
                   class="action-btn attributes-btn"
                   @click.stop
-                  @click="handleShowAttributes(user.id)"
+                  @click="handleShowAttributes(user)"
                   title="Show Attributes"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -300,6 +301,7 @@ const getPageNumbers = computed(() => {
     <UserAttributes
       v-if="showAttributes"
       :attributes="selectedUserAttributes"
+      :user="selectedUser"
       @close="handleCloseAttributes"
       @update="handleUpdateAttributes"
     />

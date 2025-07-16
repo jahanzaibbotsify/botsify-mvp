@@ -69,7 +69,7 @@ const fetchUsers = async (): Promise<void> => {
       users.value = response.data.users.data.map((apiUser: ApiUser) => ({
         ...apiUser,
         selected: false,
-        status: apiUser.status === 1 ? 'Active' : 'Inactive',
+        status: apiUser.active_for_bot === 1 ? 'Active' : 'Inactive',
         hasConversation: Boolean(apiUser.last_converse)
       }))
       

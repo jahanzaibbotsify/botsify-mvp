@@ -2,6 +2,7 @@
 import { ref, defineEmits } from 'vue'
 import FileUpload from './FileUpload.vue'
 import { User } from '@/types/user'
+import { userApi } from '@/services/userApi'
 
 const emit = defineEmits<{
   close: []
@@ -10,32 +11,63 @@ const emit = defineEmits<{
 
 const isImporting = ref<boolean>(false)
 const importFile = ref<File | null>(null)
+const uploadProgress = ref<number>(0)
+const importStatus = ref<string>('')
 
 const handleFileSelect = (file: File | null) => {
   importFile.value = file
+  uploadProgress.value = 0
+  importStatus.value = ''
 }
 
 const handleImport = async () => {
   if (!importFile.value) return
   
   isImporting.value = true
+  uploadProgress.value = 0
+  importStatus.value = 'Preparing upload...'
   
   try {
-    // Simulate import process
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    const response = await userApi.importUsers(
+      importFile.value,
+      (progress: number) => {
+        uploadProgress.value = progress
+        importStatus.value = `Uploading... ${progress}%`
+      }
+    )
     
-    // Parse CSV and create new users (simplified example)
-    const newUsers: User[] = []
-    
-    emit('import', newUsers)
-    
-    // Reset state
-    importFile.value = null
-    
-    alert('Users imported successfully!')
+    if (response.success && response.data) {
+      const importData = response.data
+      
+      if (importData.success) {
+        importStatus.value = `Successfully imported ${importData.imported_count || 0} users!`
+        
+        // Show success message with details
+        const message = `Import completed successfully!\n\nImported: ${importData.imported_count || 0} users`
+        
+        if (importData.errors && importData.errors.length > 0) {
+          alert(`${message}\n\nErrors encountered:\n${importData.errors.join('\n')}`)
+        } else {
+          alert(message)
+        }
+        
+        // Reset state
+        importFile.value = null
+        uploadProgress.value = 0
+        importStatus.value = ''
+        
+        // Emit import event to refresh user list
+        emit('import', [])
+      } else {
+        throw new Error(importData.message || 'Import failed')
+      }
+    } else {
+      throw new Error(response.message || 'Import failed')
+    }
   } catch (error) {
     console.error('Import error:', error)
-    alert('Failed to import users. Please try again.')
+    importStatus.value = 'Import failed'
+    alert(`Failed to import users: ${error instanceof Error ? error.message : 'Unknown error'}`)
   } finally {
     isImporting.value = false
   }
@@ -57,29 +89,60 @@ Mike Johnson,en,twitter,United Kingdom,Android,1122334455,Active`
   document.body.removeChild(a)
   window.URL.revokeObjectURL(url)
 }
+
+const downloadSampleTXT = () => {
+  const txtContent = `John Doe,en,facebook,United States,Windows,1234567890,Active
+Jane Smith,en,instagram,Canada,iOS,0987654321,Inactive
+Mike Johnson,en,twitter,United Kingdom,Android,1122334455,Active`
+  
+  const blob = new Blob([txtContent], { type: 'text/plain' })
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'sample_users.txt'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  window.URL.revokeObjectURL(url)
+}
 </script>
 
 <template>
   <div class="import-panel">
     <div class="import-header">
-      <h3>Import User</h3>
+      <h3>Import Users</h3>
       <button class="close-btn" @click="emit('close')">✕</button>
     </div>
     
     <div class="import-content">
       <div class="upload-section">
-        <label class="upload-label">Upload File (CSV)</label>
+        <label class="upload-label">Upload File (CSV or TXT)</label>
         <FileUpload 
           :selected-file="importFile"
           @file-select="handleFileSelect"
         />
       </div>
 
+      <!-- Progress Bar -->
+      <div v-if="isImporting" class="progress-section">
+        <div class="progress-bar">
+          <div 
+            class="progress-fill" 
+            :style="{ width: `${uploadProgress}%` }"
+          ></div>
+        </div>
+        <p class="progress-text">{{ importStatus }}</p>
+      </div>
+
       <div class="import-info">
         <p class="info-text">
-          <strong>Note:</strong> Supported formats: .csv<br>
+          <strong>Note:</strong> Supported formats: .csv, .txt<br>
           <strong>Sample Files:</strong> 
-          <button class="sample-link" @click="downloadSampleCSV">CSV</button>
+          <button class="sample-link" @click="downloadSampleCSV">CSV</button> | 
+          <button class="sample-link" @click="downloadSampleTXT">TXT</button>
+        </p>
+        <p class="info-text">
+          <strong>Format:</strong> name,locale,source,country,os,phone,status
         </p>
       </div>
 
@@ -90,7 +153,7 @@ Mike Johnson,en,twitter,United Kingdom,Android,1122334455,Active`
           @click="handleImport"
         >
           <span v-if="isImporting" class="loading-spinner"></span>
-          {{ isImporting ? 'Importing...' : 'Import' }}
+          {{ isImporting ? 'Importing...' : 'Import Users' }}
         </button>
       </div>
     </div>
@@ -165,6 +228,33 @@ Mike Johnson,en,twitter,United Kingdom,Android,1122334455,Active`
   font-size: 14px;
 }
 
+.progress-section {
+  margin-bottom: 16px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: var(--color-bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: var(--color-primary);
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+.progress-text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
 .import-info {
   background-color: hwb(46 80% 0%);
   border: 1px solid var(--color-warning);
@@ -174,10 +264,14 @@ Mike Johnson,en,twitter,United Kingdom,Android,1122334455,Active`
 }
 
 .info-text {
-  margin: 0;
+  margin: 0 0 8px 0;
   font-size: 13px;
   color: #856404;
   line-height: 1.4;
+}
+
+.info-text:last-child {
+  margin-bottom: 0;
 }
 
 .sample-link {
@@ -191,7 +285,7 @@ Mike Johnson,en,twitter,United Kingdom,Android,1122334455,Active`
 }
 
 .sample-link:hover {
-  color: var(--color-primary);
+  color: var(--color-primary-hover);
 }
 
 .import-actions {

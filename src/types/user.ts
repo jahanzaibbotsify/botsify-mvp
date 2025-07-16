@@ -27,6 +27,9 @@ export interface UserAttribute {
   id: number
   key: string
   value: string
+  entity_id?: number
+  new_key?: string
+  new_value?: string
 }
 
 export interface ApiUser {
@@ -132,4 +135,34 @@ export interface UsersResponse {
     total_items: number;
     per_page: number;
   };
+}
+
+
+// Add interface for import response
+export interface ImportResponse {
+  success: boolean;
+  message: string;
+  imported_count?: number;
+  errors?: string[];
+}
+
+// Add interfaces for attribute operations
+export interface AttributeUpdatePayload {
+  apikey: string;
+  user_ids: number[];
+  user_attributes: UserAttribute[];
+}
+
+export interface AttributeDeletePayload {
+  apikey: string;
+  messenger_user_id: string;
+  id: number;
+}
+
+export interface AttributeResponse {
+  success?: boolean;
+  status?: string;
+  message: string;
+  updated_count?: number;
+  deleted_count?: number;
 }
