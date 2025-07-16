@@ -74,8 +74,6 @@ function getBotDetails(apikey: string) {
   )
   .then(response => {
     console.log('ressssss ', response.data);
-    localStorage.setItem('apikey', response.data.data.apikey);
-    // localStorage.setItem('bot', response.data.data);
     localStorage.setItem('botsify_chats', response.data.data.chat_flow);
     localStorage.setItem('botsify_prompt_templates', response.data.data.bot_flow );
 
@@ -97,33 +95,24 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   console.log(from.name);
   if (to.name === 'agent') {
-    localStorage.removeItem('apikey');
     const apikey = to.params.id;
     if (typeof apikey === 'string' && apikey) {
       const bot = await getBotDetails(apikey);
       if (bot) {
         console.log('Authenticated');
-        chatStore.loadFromStorage();
+        apiKeyStore.setApiKey(apikey);
+        return next();
       }
+    }    
+    if (!apiKeyStore.apiKey) {
+      window.location.href = 'https://app.botsify.com/login';
     }
-
-    // if (!localStorage.getItem('apikey')) {
-    //   window.location.href = 'https://app.botsify.com/login';
-    // }
-    // Ensure only a string is stored
-    let apikeyStr = '';
-    if (typeof apikey === 'string') {
-      apikeyStr = apikey;
-    } else if (Array.isArray(apikey) && apikey.length > 0) {
-      apikeyStr = apikey[0];
-    }
-    localStorage.setItem('apikey', apikeyStr);
-    
   } if (typeof to.name === 'undefined') {    
-    next({ name: 'NotFound' });
+    return next({ name: 'NotFound' });
   } else {
-    next();
+    return next();
   }
+
 });
 
 // Create pinia store
@@ -160,5 +149,6 @@ app.mount('#app')
 
 
 
-import { useChatStore } from './stores/chatStore';
-const chatStore= useChatStore();
+import { useApiKeyStore } from './stores/apiKeyStore';
+
+const apiKeyStore = useApiKeyStore();
