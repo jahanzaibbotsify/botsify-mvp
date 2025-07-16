@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref } from 'vue';
 import type { Attachment } from '@/types';
 import FileUpload from '@/components/ui/FileUpload.vue';
 
-const props = defineProps<{
+defineProps<{
   chatId: string;
 }>();
 
@@ -12,12 +12,6 @@ const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const showFileUpload = ref(false);
 const attachments = ref<Attachment[]>([]);
 
-
-const loadingData = ref(false);
-
-// New refs for file upload in File Search
-const selectedFile = ref<File | null>(null);
-const uploadProgress = ref(0);
 
 const resizeTextarea = () => {
   if (!textareaRef.value) return;
@@ -53,20 +47,6 @@ const removeAttachment = (id: string) => {
     }
   }
   attachments.value = attachments.value.filter(a => a.id !== id);
-};
-
-
-// File Search functionality with upload
-const handleFileSelect = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  if (target.files && target.files.length > 0) {
-    selectedFile.value = target.files[0];
-  }
-};
-
-const removeSelectedFile = () => {
-  selectedFile.value = null;
-  uploadProgress.value = 0;
 };
 
 </script>

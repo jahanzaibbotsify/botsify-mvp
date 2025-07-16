@@ -10,7 +10,6 @@ import {
   MessageInput,
   UserSidebar
 } from '@/components/conversation'
-import type { ExtendedChat } from '@/types'
 
 const route = useRoute()
 const apiKeyStore = useApiKeyStore()
