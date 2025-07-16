@@ -162,7 +162,7 @@ const toggleSidebar = () => {
   flex: 1;
   height: 100%;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
   background-color: var(--color-bg-primary);
 }
 
@@ -219,7 +219,7 @@ const toggleSidebar = () => {
 .desktop-sidebar-toggle {
   position: fixed;
   top: 50%;
-  left: 260px;
+  left: 210px;
   transform: translateY(-50%);
   background-color: var(--color-bg-tertiary);
   border-radius: var(--radius-full);

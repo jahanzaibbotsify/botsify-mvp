@@ -24,10 +24,11 @@ const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   
-  if (file && file.type === 'text/csv') {
+  if (file && (file.type === 'text/csv' || file.type === 'text/plain' || file.name.endsWith('.csv') || file.name.endsWith('.txt'))) {
     emit('fileSelect', file)
   } else {
-    $toast.error('Please select a valid CSV file')
+    $toast.error('Please select a valid CSV or TXT file')
+
     if (target) target.value = ''
     emit('fileSelect', null)
   }
@@ -39,10 +40,10 @@ const handleFileDrop = (event: DragEvent) => {
   
   const file = event.dataTransfer?.files[0]
   
-  if (file && file.type === 'text/csv') {
+  if (file && (file.type === 'text/csv' || file.type === 'text/plain' || file.name.endsWith('.csv') || file.name.endsWith('.txt'))) {
     emit('fileSelect', file)
   } else {
-    $toast.error('Please select a valid CSV file')
+    $toast.error('Please select a valid CSV or TXT file');
     emit('fileSelect', null)
   }
 }
@@ -82,7 +83,7 @@ const handleDragLeave = (event: DragEvent) => {
     <input
       ref="fileInputRef"
       type="file"
-      accept=".csv"
+      accept=".csv,.txt"
       @change="handleFileChange"
       style="display: none;"
     />
