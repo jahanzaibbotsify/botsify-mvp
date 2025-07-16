@@ -162,7 +162,7 @@ const getPageNumbers = computed(() => {
           </th>
           <th>CREATED AT</th>
           <th>COUNTRY</th>
-          <th>OS</th>
+          <!-- <th>OS</th> -->
           <th>PHONE</th>
           <th></th>
           <th>STATUS</th>
@@ -213,7 +213,7 @@ const getPageNumbers = computed(() => {
           <td>{{ user.active_for_bot === 1 ? 'Yes' : 'No' }}</td>
           <td>{{ user.created_at }}</td>
           <td>{{ user.country }}</td>
-          <td>{{ user.os }}</td>
+          <!-- <td>{{ user.os }}</td> -->
           <td>{{ user.phone_number || 'N/A' }}</td>
           <td>
             <button 

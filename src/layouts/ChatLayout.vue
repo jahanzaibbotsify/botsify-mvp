@@ -17,6 +17,7 @@ const apiKeyStore = useApiKeyStore()
 
 const apiKey = route.params.id as string // the :id from /agent/:id
 const isMobile = computed(() => width.value < 768);
+const selectedNavigationButton = ref('Agent'); 
 
 // Watch for route changes to set the active chat
 watch(() => route.params.id, (newId) => {
@@ -102,8 +103,11 @@ const toggleSidebar = () => {
     <!-- Content wrapper that contains both sidebar and main content -->
     <div class="content-wrapper">
       <!-- Left Sidebar -->
-      <LeftSidebar :class="{ 'open': sidebarStore.isOpen }" />
-
+      <LeftSidebar 
+        :select-button="selectedNavigationButton" 
+        :class="{ 'open': sidebarStore.isOpen }"
+        @select-button="selectedNavigationButton = $event" 
+        />
       <!-- Main Content -->
       <main class="main-content">
         <router-view />

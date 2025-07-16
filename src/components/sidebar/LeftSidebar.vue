@@ -1,21 +1,25 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, ref, onMounted, onUnmounted, defineEmits } from 'vue';
+// import { useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
-import { useWindowSize } from '@vueuse/core';
-import ChatListItem from '@/components/chat/ChatListItem.vue';
+// import { useWindowSize } from '@vueuse/core';
+// import ChatListItem from '@/components/chat/ChatListItem.vue';
 import SidebarPricing from './SidebarPricing.vue';
 import BookMeeting from '@/components/modal/BookMeeting.vue';
 import User from '@/components/modal/User.vue';
 import { BOTSIFY_BASE_URL } from '@/utils/config';
+import { useRouter } from 'vue-router';
+
 
 const chatStore = useChatStore();
 const sidebarStore = useSidebarStore();
 const router = useRouter();
-const { width } = useWindowSize();
+// const { width } = useWindowSize();
 
-const isMobile = computed(() => width.value < 768);
+const emit = defineEmits(['select-button']);
+const selectedNavigationButton = ref('Agent');
+// const isMobile = computed(() => width.value < 768);
 const showNavDropdown = ref(false);
 const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
 const userRef = ref<InstanceType<typeof User> | null>(null)
@@ -52,12 +56,12 @@ const filteredChats = computed(() => {
 //   router.push(`/chat/${newChat.id}`);
 // };
 
-const navigateToChat = (chatId: string) => {
-  router.push(`/chat/${chatId}`);
-  if (isMobile.value) {
-    sidebarStore.isOpen = false;
-  }
-};
+// const navigateToChat = (chatId: string) => {
+//   router.push(`/agent/${chatId}`);
+//   if (isMobile.value) {
+//     sidebarStore.isOpen r= false;
+//   }
+// };
 
 const navigateToPage = (pageId: string) => {
   if (pageId == 'users') {
@@ -184,11 +188,15 @@ const isLinkActive = (url: string) => {
     return false;
   }
 };
+
+const selectNavigationButton = (name: string) => {
+  selectedNavigationButton.value = name;
+  emit('select-button', name);
+};
 </script>
 
 <template>
-  <aside class="left-sidebar scrollbar" :class="{ 'open': sidebarStore.isOpen }"
-    :style="{ background: 'linear-gradient(135deg, #1a1f2e 0%, #171717 50%, #1a1c24 100%)' }">
+  <aside class="left-sidebar scrollbar" :class="{ 'open': sidebarStore.isOpen }">
     <div class="sidebar-header">
       <div class="header-content">
         <div class="app-title-container">
@@ -233,46 +241,55 @@ const isLinkActive = (url: string) => {
         </div>
       </div>
     </div>
-    <template v-for="btn of navigationButtons">
-      <div class="">
-        <!-- New Chat Button -->
-        <button class="navigation-button" @click="navigateToPage(btn.id)">
-          <span v-html="btn.icon"></span>
-          <!-- <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
-            <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg> -->
-          <span>{{ btn.name }}</span>
-        </button>
-        <!-- ...existing menu button code... -->
-      </div>
-    </template>
-    <div class="chat-list">
-
-      <ChatListItem v-for="chat in filteredChats" :key="chat.id" :chat="chat"
-        :isActive="chat.id === chatStore.activeChat" @click="navigateToChat(chat.id)" />
-
-
-      <div v-if="filteredChats.length === 0" class="no-results">
-        <p>No chats found</p>
-      </div>
-
+    
+    <div>
+    <!-- Navigation Buttons -->
+    <div v-for="btn in navigationButtons" :key="btn.id">
+      <button class="navigation-button" @click="navigateToPage(btn.id)">
+        <span v-html="btn.icon"></span>
+        <span>{{ btn.name }}</span>
+      </button>
     </div>
+
+    <!-- Chat Items -->
+    <!--
+    <ChatListItem
+      v-for="chat in filteredChats"
+      :key="chat.id"
+      :chat="chat"
+      :isActive="chat.id === chatStore.activeChat"
+      @click="navigateToChat(chat.id)"
+    />
+    -->
+
+    <!-- No chats found -->
+    <div v-if="filteredChats.length === 0" class="no-results">
+      <p>No chats found</p>
+    </div>
+
+    <!-- Help Button -->
     <div>
       <button class="navigation-button">
         <span>
           <svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24">
-            <path fill-rule="evenodd"
+            <path
+              fill-rule="evenodd"
               d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Z"
-              clip-rule="evenodd"></path>
-            <path fill-rule="evenodd"
+              clip-rule="evenodd"
+            />
+            <path
+              fill-rule="evenodd"
               d="M12 9a1 1 0 0 0-.879.522 1 1 0 0 1-1.754-.96A3 3 0 0 1 12 7c1.515 0 2.567 1.006 2.866 2.189.302 1.189-.156 2.574-1.524 3.258A.618.618 0 0 0 13 13a1 1 0 1 1-2 0c0-.992.56-1.898 1.447-2.342.455-.227.572-.618.48-.978C12.836 9.314 12.529 9 12 9Z"
-              clip-rule="evenodd"></path>
-            <path d="M13.1 16a1.1 1.1 0 1 1-2.2 0 1.1 1.1 0 0 1 2.2 0Z"></path>
+              clip-rule="evenodd"
+            />
+            <path d="M13.1 16a1.1 1.1 0 1 1-2.2 0 1.1 1.1 0 0 1 2.2 0Z" />
           </svg>
         </span>
         <span>Help</span>
       </button>
     </div>
+  </div>
+
     <!-- Sidebar Pricing (keeping this at the bottom) -->
     <SidebarPricing />
     <BookMeeting ref="bookMeetingRef"></BookMeeting>
@@ -387,6 +404,14 @@ const isLinkActive = (url: string) => {
   border-color: var(--color-border);
 }
 
+.navigation-container {
+  display: flex; 
+  flex-direction: column; 
+  justify-content: space-between; 
+  height: 100%;
+  padding: 10px;
+}
+
 .navigation-button {
   display: flex;
   align-items: center;
@@ -406,6 +431,12 @@ const isLinkActive = (url: string) => {
 
 .navigation-button:hover {
   background-color: var(--color-bg-hover);
+  border-color: var(--color-border);
+}
+
+.selectedNavigationButton {
+  background-color: var(--color-bg-active);
+  color: var(--color-text-primary);
   border-color: var(--color-border);
 }
 
@@ -552,12 +583,12 @@ const isLinkActive = (url: string) => {
   color: #ffffff;
 }
 
-.chat-list {
+/* .chat-list {
   flex: 1;
   overflow-y: auto;
   padding: 0 var(--space-2);
   position: relative;
-}
+} */
 
 .no-results {
   padding: var(--space-4);
