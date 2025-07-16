@@ -189,10 +189,10 @@ const isLinkActive = (url: string) => {
   }
 };
 
-const selectNavigationButton = (name: string) => {
-  selectedNavigationButton.value = name;
-  emit('select-button', name);
-};
+// const selectNavigationButton = (name: string) => {
+//   selectedNavigationButton.value = name;
+//   emit('select-button', name);
+// };
 </script>
 
 <template>
