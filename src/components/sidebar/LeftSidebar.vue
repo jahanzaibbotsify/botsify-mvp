@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, defineEmits } from 'vue';
-// import { useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
 // import { useWindowSize } from '@vueuse/core';
@@ -9,7 +9,6 @@ import SidebarPricing from './SidebarPricing.vue';
 import BookMeeting from '@/components/modal/BookMeeting.vue';
 import User from '@/components/modal/User.vue';
 import { BOTSIFY_BASE_URL } from '@/utils/config';
-import { useRouter } from 'vue-router';
 
 
 const chatStore = useChatStore();
@@ -18,7 +17,7 @@ const router = useRouter();
 // const { width } = useWindowSize();
 
 const emit = defineEmits(['select-button']);
-// const selectedNavigationButton = ref('Agent');
+const selectedNavigationButton = ref('Agent');
 // const isMobile = computed(() => width.value < 768);
 const showNavDropdown = ref(false);
 const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
@@ -64,6 +63,7 @@ const filteredChats = computed(() => {
 // };
 
 const navigateToPage = (pageId: string) => {
+  selectedNavigationButton.value = navigationButtons.find(btn => btn.id === pageId)?.name || 'Agent';
   if (pageId == 'users') {
     openUserModal();
   } else {
@@ -241,54 +241,50 @@ const isLinkActive = (url: string) => {
         </div>
       </div>
     </div>
-    
-    <div>
-    <!-- Navigation Buttons -->
-    <div v-for="btn in navigationButtons" :key="btn.id">
-      <button class="navigation-button" @click="navigateToPage(btn.id)">
-        <span v-html="btn.icon"></span>
-        <span>{{ btn.name }}</span>
-      </button>
-    </div>
 
-    <!-- Chat Items -->
-    <!--
-    <ChatListItem
-      v-for="chat in filteredChats"
-      :key="chat.id"
-      :chat="chat"
-      :isActive="chat.id === chatStore.activeChat"
-      @click="navigateToChat(chat.id)"
-    />
-    -->
+    <div class="navigation-container">
+      <div class=" chat-list">
+        <template v-for="btn of navigationButtons">
+          <div class="">
+            <!-- New Chat Button -->
+            <button @click="navigateToPage(btn.id)" class="navigation-button"
+              :class="{ 'selectedNavigationButton': selectedNavigationButton === btn.name }">
+              <span v-html="btn.icon"></span>
+              <!-- <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
+            <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg> -->
+              <span>{{ btn.name }}</span>
+            </button>
+            <!-- ...existing menu button code... -->
+          </div>
+        </template>
+        <!-- <ChatListItem v-for="chat in filteredChats" :key="chat.id" :chat="chat"
+        :isActive="chat.id === chatStore.activeChat" @click="navigateToChat(chat.id)" /> -->
 
-    <!-- No chats found -->
-    <div v-if="filteredChats.length === 0" class="no-results">
-      <p>No chats found</p>
-    </div>
 
-    <!-- Help Button -->
-    <div>
-      <button class="navigation-button">
-        <span>
-          <svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24">
-            <path
-              fill-rule="evenodd"
-              d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Z"
-              clip-rule="evenodd"
-            />
-            <path
-              fill-rule="evenodd"
-              d="M12 9a1 1 0 0 0-.879.522 1 1 0 0 1-1.754-.96A3 3 0 0 1 12 7c1.515 0 2.567 1.006 2.866 2.189.302 1.189-.156 2.574-1.524 3.258A.618.618 0 0 0 13 13a1 1 0 1 1-2 0c0-.992.56-1.898 1.447-2.342.455-.227.572-.618.48-.978C12.836 9.314 12.529 9 12 9Z"
-              clip-rule="evenodd"
-            />
-            <path d="M13.1 16a1.1 1.1 0 1 1-2.2 0 1.1 1.1 0 0 1 2.2 0Z" />
-          </svg>
-        </span>
-        <span>Help</span>
-      </button>
+        <div v-if="filteredChats.length === 0" class="no-results">
+          <p>No chats found</p>
+        </div>
+
+      </div>
+      <div>
+        <button class="navigation-button">
+          <span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor"
+              viewBox="0 0 24 24">
+              <path fill-rule="evenodd"
+                d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Z"
+                clip-rule="evenodd"></path>
+              <path fill-rule="evenodd"
+                d="M12 9a1 1 0 0 0-.879.522 1 1 0 0 1-1.754-.96A3 3 0 0 1 12 7c1.515 0 2.567 1.006 2.866 2.189.302 1.189-.156 2.574-1.524 3.258A.618.618 0 0 0 13 13a1 1 0 1 1-2 0c0-.992.56-1.898 1.447-2.342.455-.227.572-.618.48-.978C12.836 9.314 12.529 9 12 9Z"
+                clip-rule="evenodd"></path>
+              <path d="M13.1 16a1.1 1.1 0 1 1-2.2 0 1.1 1.1 0 0 1 2.2 0Z"></path>
+            </svg>
+          </span>
+          <span>Help</span>
+        </button>
+      </div>
     </div>
-  </div>
 
     <!-- Sidebar Pricing (keeping this at the bottom) -->
     <SidebarPricing />
@@ -405,9 +401,9 @@ const isLinkActive = (url: string) => {
 }
 
 .navigation-container {
-  display: flex; 
-  flex-direction: column; 
-  justify-content: space-between; 
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   height: 100%;
   padding: 10px;
 }
