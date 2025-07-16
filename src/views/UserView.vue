@@ -1,15 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, watch, defineExpose } from 'vue'
-import ModalLayout from '@/components/ui/ModalLayout.vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import UserFilters from '@/components/user/Filters.vue'
 import UserTable from '@/components/user/Table.vue'
 import ImportPanel from '@/components/user/ImportPanel.vue'
-// import UserDetails from '@/components/user/Details.vue'
 import { ActionType, User, SortBy, SortOrder, ApiUser, PerPage, PaginationData, SortingData } from '@/types/user'
 import { userApi } from '@/services/userApi'
 import { createUserFilterManager, type UserFilterState } from '@/utils/filterUtils'
-
-const userRef = ref<InstanceType<typeof ModalLayout> | null>(null)
 
 // Filter manager
 const filterManager = createUserFilterManager()
@@ -69,7 +65,7 @@ const fetchUsers = async (): Promise<void> => {
       users.value = response.data.users.data.map((apiUser: ApiUser) => ({
         ...apiUser,
         selected: false,
-        status: apiUser.status === 1 ? 'Active' : 'Inactive',
+        status: apiUser.active_for_bot === 1 ? 'Active' : 'Inactive',
         hasConversation: Boolean(apiUser.last_converse)
       }))
       
@@ -94,39 +90,7 @@ const fetchUsers = async (): Promise<void> => {
   }
 }
 
-// const handleRefresh = (): void => {
-//   fetchUsers()
-// }
-
-// Modal methods
-const openModal = (): void => {
-  userRef.value?.openModal()
-  // Load data when modal opens
-  fetchUsers()
-}
-
-const closeModal = (): void => {
-  userRef.value?.closeModal()
-  resetFormState()
-}
-
-const resetFormState = (): void => {
-  filterManager.reset()
-  selectedAction.value = ''
-  selectAll.value = false
-  showImportPanel.value = false
-  selectedUser.value = null
-  showUserDetails.value = false
-  users.value.forEach(user => user.selected = false)
-  
-  // Reset pagination and sorting
-  pagination.value.currentPage = 1
-  sorting.value.sortBy = 'id'
-  sorting.value.sortOrder = 'desc'
-}
-
 // Computed properties
-
 const selectedUsersCount = computed<number>(() => {
   return users.value.filter(user => user.selected).length
 })
@@ -161,7 +125,6 @@ const handleUserAction = (action: string, data?: any): void => {
       break
     case 'goToConversation':
       console.log(`Going to conversation for user ${data}`)
-      closeModal()
       break
     case 'userClick':
       selectedUser.value = data
@@ -265,7 +228,7 @@ filterManager.onChanges((params) => {
 // Override the updateFilters method to handle debounced search and sorting
 const originalUpdateFilters = filterManager.updateFilters.bind(filterManager)
 filterManager.updateFilters = (updates: Partial<UserFilterState>) => {
-  console.log('User.vue updateFilters called with:', updates)
+  console.log('UserView.vue updateFilters called with:', updates)
   
   // If search is being updated, use debounced search and don't trigger immediate change
   if (updates.search !== undefined) {
@@ -299,11 +262,6 @@ watch([() => pagination.value.currentPage, () => pagination.value.perPage], () =
   fetchUsers()
 })
 
-// Initial data load - moved to modal open
-// onMounted(() => {
-//   fetchUsers()
-// })
-
 // Pagination and sorting handlers
 const handleSort = (sortBy: SortBy): void => {
   console.log('handleSort called with:', sortBy)
@@ -326,7 +284,6 @@ const handleSort = (sortBy: SortBy): void => {
   pagination.value.currentPage = 1
 }
 
-
 const handlePageChange = (page: number): void => {
   if (page >= 1 && page <= pagination.value.totalPages) {
     pagination.value.currentPage = page
@@ -345,10 +302,40 @@ const handlePerPageChange = (perPage: PerPage): void => {
 
 // Watch for action changes
 watch(selectedAction, (newAction) => {
-  if (newAction && selectedUsersCount.value > 0) {
-    executeSelectedAction()
+  if (newAction) {
+    if (selectedUsersCount.value > 0) {
+      // Show confirmation dialog
+      const actionText = getActionText(newAction)
+      const userCount = selectedUsersCount.value
+      const userText = userCount === 1 ? 'user' : 'users'
+      
+      if (confirm(`Are you sure you want to ${actionText} ${userCount} ${userText}?`)) {
+        executeSelectedAction()
+      } else {
+        // Reset action if user cancels
+        selectedAction.value = ''
+      }
+    } else {
+      // Show notification for no users selected
+      alert('Please select at least 1 user to perform this action.')
+      selectedAction.value = ''
+    }
   }
 })
+
+// Helper function to get action text
+const getActionText = (action: ActionType): string => {
+  const actionMap: Record<ActionType, string> = {
+    'activate': 'activate',
+    'deactivate': 'deactivate', 
+    'delete': 'delete',
+    'test': 'make test',
+    'export': 'export',
+    'delete_conversation': 'delete conversation for',
+    '': ''
+  }
+  return actionMap[action] || action
+}
 
 // Update pagination when filtered users change
 watch(filteredUsers, (newFilteredUsers) => {
@@ -361,28 +348,21 @@ watch(filteredUsers, (newFilteredUsers) => {
   }
 })
 
-// Expose the open method to parent
-defineExpose({ openModal })
+// Load data when component mounts
+onMounted(() => {
+  fetchUsers()
+})
 </script>
 
 <template>
-  <ModalLayout 
-    ref="userRef"
-    title="USER MANAGEMENT"
-    max-width="1200px"
-    :scrollable="false"
-    @close="closeModal"
-  >
-    <!-- User Details View -->
-    <!-- <UserDetails
-      v-if="showUserDetails && selectedUser"
-      :user="selectedUser"
-      @back="() => handleUserAction('backFromDetails')"
-      @update-user="(user: User) => handleUserAction('updateUser', user)"
-    /> -->
+  <div class="user-view">
+    <div class="page-header">
+      <h1>User Management</h1>
+      <p>Manage your bot users, view attributes, and perform bulk actions.</p>
+    </div>
 
-    <!-- Main User Management View (v-else) --> 
-    <div> 
+    <!-- Main User Management View --> 
+    <div class="user-content"> 
       <!-- Filters and Controls -->
       <UserFilters
         :selected-action="selectedAction"
@@ -409,13 +389,71 @@ defineExpose({ openModal })
         :loading="loading"
         @update:select-all="(value: boolean) => handleSelectionChange('all', value)"
         @update:user-selected="(userId: number) => handleSelectionChange('single', userId)"
-        @show-user-attributes="(userId: number) => handleUserAction('showAttributes', userId)"
-        @go-to-conversation="(userId: number) => handleUserAction('goToConversation', userId)"
         @user-click="(user: User) => handleUserAction('userClick', user)"
         @sort="handleSort"
         @change-page="handlePageChange"
         @change-per-page="handlePerPageChange"
       />
     </div>
-  </ModalLayout>
+  </div>
 </template>
+
+<style scoped>
+.user-view {
+  min-height: 100vh;
+  background-color: var(--color-bg-primary);
+}
+
+.page-header {
+  background-color: var(--color-bg-secondary);
+  padding: var(--space-6) var(--space-6) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.page-header h1 {
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.page-header p {
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.user-content {
+  padding: var(--space-4) var(--space-6);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+@media (max-width: 1024px) {
+  .user-content {
+    padding: var(--space-3) var(--space-4);
+  }
+  
+  .page-header {
+    padding: var(--space-4) var(--space-4) var(--space-3);
+  }
+}
+
+@media (max-width: 768px) {
+  .user-content {
+    padding: var(--space-2) var(--space-3);
+  }
+  
+  .page-header {
+    padding: var(--space-3) var(--space-3) var(--space-2);
+  }
+  
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .page-header p {
+    font-size: 0.875rem;
+  }
+}
+</style> 

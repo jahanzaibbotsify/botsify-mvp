@@ -13,12 +13,11 @@ const props = defineProps<{
 
 const showAttributes = ref<boolean>(false)
 const selectedUserAttributes = ref<UserAttribute[]>([])
+const selectedUser = ref<User>()
 
 const emit = defineEmits<{
   'update:selectAll': [value: boolean]
   'update:userSelected': [userId: number]
-  'showUserAttributes': [userId: number]
-  'goToConversation': [userId: number]
   'userClick': [user: User]
   'sort': [sortBy: SortBy]
   'changePage': [page: number]
@@ -43,16 +42,16 @@ const handleUserSelect = (userId: number): void => {
   emit('update:userSelected', userId)
 }
 
-const handleShowAttributes = (userId: number): void => {
-  const user = props.users.find(u => u.id === userId)
-  if (user) {
-    selectedUserAttributes.value = user.attributes
-    showAttributes.value = true
-  }
+const handleShowAttributes = (user: User): void => {
+  selectedUserAttributes.value = user.attributes
+  selectedUser.value = user
+  showAttributes.value = true
 }
 
 const handleCloseAttributes = (): void => {
   showAttributes.value = false
+  selectedUser.value = undefined
+  selectedUserAttributes.value = []
 }
 
 
@@ -60,8 +59,22 @@ const handleUpdateAttributes = (attributes: UserAttribute[]): void => {
   selectedUserAttributes.value = attributes
 }
 
+// const handleDeleteUser = (userId: number): void => {
+//   const user = props.users.find(u => u.id === userId)
+//   if (user) {
+//     if (confirm(`Are you sure you want to delete user "${user.name}"? This action cannot be undone.`)) {
+//       console.log('Delete user:', userId)
+//       // Add delete logic here
+//     }
+//   }
+// }
+
 const goToConversation = (userId: number): void => {
-  emit('goToConversation', userId)
+  const user = props.users.find(u => u.id === userId)
+  if (user) {
+      console.log('goToConversation', userId)
+      // Add navigation logic here
+  }
 }
 
 const handleRowClick = (user: User): void => {
@@ -84,8 +97,8 @@ const handlePerPageChange = (event: Event): void => {
 }
 
 const getSortIcon = (column: SortBy): string => {
-  if (props.sorting.sortBy !== column) return '↕️'
-  return props.sorting.sortOrder === 'asc' ? '↑' : '↓'
+  if (props.sorting.sortBy !== column) return ''
+  return props.sorting.sortOrder === 'asc' ? 'asc' : 'desc'
 }
 
 const getPageNumbers = computed(() => {
@@ -146,28 +159,24 @@ const getPageNumbers = computed(() => {
       <table class="users-table" :class="{ 'loading-blur': loading }">
         <thead>
           <tr>
-            <th>
+            <th class="sortable">
               <input 
                 type="checkbox" 
                 :checked="selectAll" 
                 @change="toggleSelectAll"
               >
             </th>
-            <th class="sortable" @click="handleSort('name')">
-              NAME {{ getSortIcon('name') }}
+            <th class="sortable" :class="getSortIcon('name')" @click="handleSort('name')">
+              NAME
             </th>
-            <th class="sortable" @click="handleSort('type')">
-              TYPE {{ getSortIcon('type') }}
+            <th class="sortable" :class="getSortIcon('type')" @click="handleSort('type')">
+              TYPE
             </th>
-            <th class="sortable" @click="handleSort('active_for_bot')">
-              ACTIVE FOR BOT {{ getSortIcon('active_for_bot') }}
-            </th>
-            <th>CREATED AT</th>
-            <th>COUNTRY</th>
-            <th>OS</th>
-            <th>PHONE</th>
-            <th></th>
-            <th>STATUS</th>
+            <th class="sortable">CREATED AT</th>
+            <th class="sortable">COUNTRY</th>
+            <th class="sortable">PHONE</th>
+            <th class="sortable">STATUS</th>
+            <th class="sortable">ACTIONS</th>
           </tr>
         </thead>
         <tbody>
@@ -201,36 +210,54 @@ const getPageNumbers = computed(() => {
                 <div class="user-details">
                   <div class="user-name">{{ user.name }}</div>
                   <div class="user-email">{{ user.email }}</div>
-                  <div 
-                    class="user-attributes" 
-                    @click.stop
-                    @click="handleShowAttributes(user.id)"
-                  >
-                    Show Attributes
-                  </div>
                 </div>
               </div>
             </td>
             <td>{{ user.type || 'N/A' }}</td>
-            <td>{{ user.active_for_bot === 1 ? 'Yes' : 'No' }}</td>
             <td>{{ user.created_at }}</td>
             <td>{{ user.country }}</td>
-            <td>{{ user.os }}</td>
             <td>{{ user.phone_number || 'N/A' }}</td>
-            <td>
-              <button 
-                v-if="user.hasConversation" 
-                class="conversation-btn"
-                @click.stop
-                @click="goToConversation(user.id)"
-              >
-                Go to Conversation
-              </button>
-            </td>
             <td>
               <span class="status-badge" :class="user.status.toLowerCase()">
                 {{ user.status }}
               </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button 
+                  v-if="user.hasConversation" 
+                  class="action-btn conversation-btn"
+                  @click.stop
+                  @click="goToConversation(user.id)"
+                  title="Go to Conversation"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                </button>
+                <button 
+                  class="action-btn attributes-btn"
+                  @click.stop
+                  @click="handleShowAttributes(user)"
+                  title="Show Attributes"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
+                  </svg>
+                </button>
+                <!-- <button 
+                  class="action-btn delete-btn"
+                  @click.stop
+                  @click="handleDeleteUser(user.id)"
+                  title="Delete User"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3,6 5,6 21,6"></polyline>
+                    <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                  </svg>
+                </button> -->
+              </div>
             </td>
           </tr>
         </tbody>
@@ -274,6 +301,7 @@ const getPageNumbers = computed(() => {
     <UserAttributes
       v-if="showAttributes"
       :attributes="selectedUserAttributes"
+      :user="selectedUser"
       @close="handleCloseAttributes"
       @update="handleUpdateAttributes"
     />
@@ -282,13 +310,11 @@ const getPageNumbers = computed(() => {
 
 <style scoped>
 .table-container {
-  background-color: #f8f9fa;
+  background-color: white;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  min-height: 300px;
-  max-height: 60vh;
-  overflow-y: auto;
   position: relative;
 }
 
@@ -297,8 +323,8 @@ const getPageNumbers = computed(() => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background-color: white;
-  border-bottom: 1px solid var(--color-border);
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
   font-size: 14px;
 }
 
@@ -310,9 +336,9 @@ const getPageNumbers = computed(() => {
 }
 
 .per-page-select {
-  padding: 4px 8px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
   font-size: 14px;
   background-color: white;
 }
@@ -324,60 +350,99 @@ const getPageNumbers = computed(() => {
 
 .table-scroll-container {
   overflow-x: auto;
-  overflow-y: hidden;
-  border-radius: 0 0 8px 8px;
+  max-height: 50vh;
+  overflow-y: auto;
   background-color: white;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.table-scroll-container::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.table-scroll-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .users-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1200px; /* Ensure minimum width to maintain column sizes */
-  min-height: 300px;
+  min-width: 1200px;
   transition: filter 0.3s ease;
 }
 
 .users-table th {
-  background-color: var(--color-primary);
-  color: white;
-  padding: 12px;
+  background-color: #f8fafc;
+  color: #374151;
+  padding: 16px 12px;
   text-align: left;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   position: sticky;
   top: 0;
   white-space: nowrap;
+  border-bottom: 2px solid #e5e7eb;
 }
-
-/* Column width constraints */
-.users-table th:nth-child(1) { width: 50px; } /* Checkbox */
-.users-table th:nth-child(2) { width: 250px; } /* Name */
-.users-table th:nth-child(3) { width: 120px; } /* Type */
-.users-table th:nth-child(4) { width: 140px; } /* Active for Bot */
-.users-table th:nth-child(5) { width: 140px; } /* Created At */
-.users-table th:nth-child(6) { width: 100px; } /* Country */
-.users-table th:nth-child(7) { width: 100px; } /* OS */
-.users-table th:nth-child(8) { width: 120px; } /* Phone */
-.users-table th:nth-child(9) { width: 150px; } /* Actions */
-.users-table th:nth-child(10) { width: 100px; } /* Status */
-
 
 .users-table th.sortable {
   cursor: pointer;
   user-select: none;
   transition: background-color 0.2s;
+  position: relative;
 }
 
 .users-table th.sortable:hover {
-  background-color: var(--color-primary);
+  background-color: #f1f5f9;
 }
 
-.users-table td {
-  padding: 12px;
-  border-bottom: 1px solid var(--color-border);
+.users-table th.sortable::after {
+  content: '↕';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
   font-size: 14px;
+  opacity: 0.7;
+}
+
+.users-table th.sortable.asc::after {
+  content: '↑';
+  opacity: 1;
+}
+
+.users-table th.sortable.desc::after {
+  content: '↓';
+  opacity: 1;
+}
+
+/* Column width constraints */
+.users-table th:nth-child(1) { width: 50px; } /* Checkbox */
+.users-table th:nth-child(2) { width: 250px; } /* Name */
+.users-table th:nth-child(3) { width: 100px; } /* Type */
+.users-table th:nth-child(4) { width: 180px; } /* Created At */
+.users-table th:nth-child(5) { width: 150px; } /* Country */
+.users-table th:nth-child(6) { width: 160px; } /* Phone */
+.users-table th:nth-child(7) { width: 120px; } /* Status */
+.users-table th:nth-child(8) { width: 150px; } /* Actions */
+
+.users-table td {
+  padding: 16px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 16px;
   background-color: white;
   white-space: nowrap;
   overflow: hidden;
@@ -387,18 +452,15 @@ const getPageNumbers = computed(() => {
 /* Column width constraints for cells */
 .users-table td:nth-child(1) { width: 50px; } /* Checkbox */
 .users-table td:nth-child(2) { width: 250px; } /* Name */
-.users-table td:nth-child(3) { width: 120px; } /* Type */
-.users-table td:nth-child(4) { width: 140px; } /* Active for Bot */
-.users-table td:nth-child(5) { width: 140px; } /* Created At */
-.users-table td:nth-child(6) { width: 100px; } /* Country */
-.users-table td:nth-child(7) { width: 100px; } /* OS */
-.users-table td:nth-child(8) { width: 120px; } /* Phone */
-.users-table td:nth-child(9) { width: 150px; } /* Actions */
-.users-table td:nth-child(10) { width: 100px; } /* Status */
-
+.users-table td:nth-child(3) { width: 100px; } /* Type */
+.users-table td:nth-child(4) { width: 180px; } /* Created At */
+.users-table td:nth-child(5) { width: 150px; } /* Country */
+.users-table td:nth-child(6) { width: 160px; } /* Phone */
+.users-table td:nth-child(7) { width: 120px; } /* Status */
+.users-table td:nth-child(8) { width: 150px; } /* Actions */
 
 .users-table tr:hover td {
-  background-color: var(--color-bg-tertiary);
+  background-color: #f9fafb;
 }
 
 .clickable-row {
@@ -407,11 +469,11 @@ const getPageNumbers = computed(() => {
 }
 
 .clickable-row:hover {
-  background-color: var(--color-bg-tertiary) !important;
+  background-color: #f9fafb !important;
 }
 
 .no-data-row {
-  height: 200px;
+  height: 150px;
 }
 
 .no-data-row:hover td {
@@ -422,7 +484,7 @@ const getPageNumbers = computed(() => {
   text-align: center;
   vertical-align: middle;
   border-bottom: none !important;
-  height: 200px;
+  height: 150px;
 }
 
 .no-data-content {
@@ -459,8 +521,8 @@ const getPageNumbers = computed(() => {
 }
 
 .user-avatar {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   background-color: var(--color-primary);
   border-radius: 50%;
   display: flex;
@@ -468,7 +530,7 @@ const getPageNumbers = computed(() => {
   justify-content: center;
   color: white;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 18px;
   flex-shrink: 0;
 }
 
@@ -480,37 +542,15 @@ const getPageNumbers = computed(() => {
 .user-name {
   font-weight: 500;
   color: var(--color-text-primary);
+  font-size: 16px;
 }
 
-.user-attributes {
-  font-size: 12px;
+.user-email {
+  font-size: 14px;
   color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: color 0.2s;
 }
 
-.user-attributes:hover {
-  text-decoration: underline;
-  color: var(--color-primary);
-}
-
-.conversation-btn {
-  background-color: var(--color-primary);
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  white-space: nowrap;
-}
-
-.conversation-btn:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
-}
-
-.status-badge {
+.active-badge {
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 12px;
@@ -519,21 +559,76 @@ const getPageNumbers = computed(() => {
   white-space: nowrap;
 }
 
-.status-badge.active {
+.active-badge.active {
   background-color: var(--color-success);
   color: white;
 }
 
-.status-badge.inactive {
+.active-badge.inactive {
   background-color: var(--color-error);
   color: white;
 }
 
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn:hover {
+  background-color: #f3f4f6;
+  transform: scale(1.1);
+}
+
+.action-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.conversation-btn {
+  color: var(--color-primary);
+}
+
+.attributes-btn {
+  color: var(--color-accent);
+}
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.status-badge.active {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.inactive {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
 
 .pagination-container {
   padding: 16px 20px;
-  background-color: white;
-  border-top: 1px solid #e9ecef;
+  background-color: #f9fafb;
+  border-top: 1px solid #e5e7eb;
   display: flex;
   justify-content: center;
 }
@@ -546,18 +641,18 @@ const getPageNumbers = computed(() => {
 
 .pagination-btn {
   padding: 8px 12px;
-  border: 1px solid var(--color-border);
+  border: 1px solid #d1d5db;
   background-color: white;
   color: var(--color-text-secondary);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 14px;
   transition: all 0.2s;
 }
 
 .pagination-btn:hover:not(:disabled) {
-  background-color: var(--color-bg-tertiary);
-  border-color: var(--color-text-primary);
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
 }
 
 .pagination-btn:disabled {
@@ -590,12 +685,33 @@ const getPageNumbers = computed(() => {
   }
   
   .users-table {
-    font-size: 12px;
+    font-size: 14px;
   }
   
   .users-table th,
   .users-table td {
-    padding: 8px;
+    padding: 12px 8px;
+  }
+  
+  .users-table th {
+    font-size: 12px;
+  }
+  
+  .users-table td {
+    font-size: 14px;
+  }
+  
+  .user-name {
+    font-size: 14px;
+  }
+  
+  .user-email {
+    font-size: 12px;
+  }
+  
+  .action-btn svg {
+    width: 16px;
+    height: 16px;
   }
   
   .pagination {
