@@ -8,6 +8,7 @@ const props = defineProps<{
   selectAll: boolean
   pagination: PaginationData
   sorting: SortingData
+  loading: boolean
 }>()
 
 const showAttributes = ref<boolean>(false)
@@ -141,98 +142,100 @@ const getPageNumbers = computed(() => {
         of {{ pagination.totalItems }} entries
       </div>
     </div>
-    <table class="users-table">
-      <thead>
-        <tr>
-          <th>
-            <input 
-              type="checkbox" 
-              :checked="selectAll" 
-              @change="toggleSelectAll"
-            >
-          </th>
-          <th class="sortable" @click="handleSort('name')">
-            NAME {{ getSortIcon('name') }}
-          </th>
-          <th class="sortable" @click="handleSort('type')">
-            TYPE {{ getSortIcon('type') }}
-          </th>
-          <th class="sortable" @click="handleSort('active_for_bot')">
-            ACTIVE FOR BOT {{ getSortIcon('active_for_bot') }}
-          </th>
-          <th>CREATED AT</th>
-          <th>COUNTRY</th>
-          <!-- <th>OS</th> -->
-          <th>PHONE</th>
-          <th></th>
-          <th>STATUS</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-if="users.length === 0" class="no-data-row">
-          <td colspan="10" class="no-data-cell">
-            <div class="no-data-content">
-              <div class="no-data-icon">📄</div>
-              <div class="no-data-text">No data found</div>
-              <div class="no-data-subtext">Try adjusting your search or filter criteria</div>
-            </div>
-          </td>
-        </tr>
-        <tr 
-          v-else 
-          v-for="user in users" 
-          :key="user.id"
-          class="clickable-row"
-          @click="handleRowClick(user)"
-        >
-          <td>
-            <input
-              @click.stop
-              type="checkbox" 
-              :checked="user.selected"
-              @change="handleUserSelect(user.id)"
-            >
-          </td>
-          <td>
-            <div class="user-info">
-              <div class="user-avatar">{{ getUserInitials(user.name) }}</div>
-              <div class="user-details">
-                <div class="user-name">{{ user.name }}</div>
-                <div class="user-email">{{ user.email }}</div>
-                <div 
-                  class="user-attributes" 
-                  @click.stop
-                  @click="handleShowAttributes(user.id)"
-                >
-                  Show Attributes
+    <div class="table-scroll-container">
+      <table class="users-table" :class="{ 'loading-blur': loading }">
+        <thead>
+          <tr>
+            <th>
+              <input 
+                type="checkbox" 
+                :checked="selectAll" 
+                @change="toggleSelectAll"
+              >
+            </th>
+            <th class="sortable" @click="handleSort('name')">
+              NAME {{ getSortIcon('name') }}
+            </th>
+            <th class="sortable" @click="handleSort('type')">
+              TYPE {{ getSortIcon('type') }}
+            </th>
+            <th class="sortable" @click="handleSort('active_for_bot')">
+              ACTIVE FOR BOT {{ getSortIcon('active_for_bot') }}
+            </th>
+            <th>CREATED AT</th>
+            <th>COUNTRY</th>
+            <th>OS</th>
+            <th>PHONE</th>
+            <th></th>
+            <th>STATUS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-if="users.length === 0" class="no-data-row">
+            <td colspan="10" class="no-data-cell">
+              <div class="no-data-content">
+                <div class="no-data-icon">📄</div>
+                <div class="no-data-text">No data found</div>
+                <div class="no-data-subtext">Try adjusting your search or filter criteria</div>
+              </div>
+            </td>
+          </tr>
+          <tr 
+            v-else 
+            v-for="user in users" 
+            :key="user.id"
+            class="clickable-row"
+            @click="handleRowClick(user)"
+          >
+            <td>
+              <input
+                @click.stop
+                type="checkbox" 
+                :checked="user.selected"
+                @change="handleUserSelect(user.id)"
+              >
+            </td>
+            <td>
+              <div class="user-info">
+                <div class="user-avatar">{{ getUserInitials(user.name) }}</div>
+                <div class="user-details">
+                  <div class="user-name">{{ user.name }}</div>
+                  <div class="user-email">{{ user.email }}</div>
+                  <div 
+                    class="user-attributes" 
+                    @click.stop
+                    @click="handleShowAttributes(user.id)"
+                  >
+                    Show Attributes
+                  </div>
                 </div>
               </div>
-            </div>
-          </td>
-          <td>{{ user.type || 'N/A' }}</td>
-          <td>{{ user.active_for_bot === 1 ? 'Yes' : 'No' }}</td>
-          <td>{{ user.created_at }}</td>
-          <td>{{ user.country }}</td>
-          <!-- <td>{{ user.os }}</td> -->
-          <td>{{ user.phone_number || 'N/A' }}</td>
-          <td>
-            <button 
-              v-if="user.hasConversation" 
-              class="conversation-btn"
-              @click.stop
-              @click="goToConversation(user.id)"
-            >
-              Go to Conversation
-            </button>
-          </td>
-          <td>
-            <span class="status-badge" :class="user.status.toLowerCase()">
-              {{ user.status }}
-            </span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+            </td>
+            <td>{{ user.type || 'N/A' }}</td>
+            <td>{{ user.active_for_bot === 1 ? 'Yes' : 'No' }}</td>
+            <td>{{ user.created_at }}</td>
+            <td>{{ user.country }}</td>
+            <td>{{ user.os }}</td>
+            <td>{{ user.phone_number || 'N/A' }}</td>
+            <td>
+              <button 
+                v-if="user.hasConversation" 
+                class="conversation-btn"
+                @click.stop
+                @click="goToConversation(user.id)"
+              >
+                Go to Conversation
+              </button>
+            </td>
+            <td>
+              <span class="status-badge" :class="user.status.toLowerCase()">
+                {{ user.status }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
      <!-- Pagination -->
      <div class="pagination-container">
@@ -319,12 +322,19 @@ const getPageNumbers = computed(() => {
   font-size: 14px;
 }
 
+.table-scroll-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: 0 0 8px 8px;
+  background-color: white;
+}
 
 .users-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 800px;
+  min-width: 1200px; /* Ensure minimum width to maintain column sizes */
   min-height: 300px;
+  transition: filter 0.3s ease;
 }
 
 .users-table th {
@@ -338,7 +348,20 @@ const getPageNumbers = computed(() => {
   letter-spacing: 0.5px;
   position: sticky;
   top: 0;
+  white-space: nowrap;
 }
+
+/* Column width constraints */
+.users-table th:nth-child(1) { width: 50px; } /* Checkbox */
+.users-table th:nth-child(2) { width: 250px; } /* Name */
+.users-table th:nth-child(3) { width: 120px; } /* Type */
+.users-table th:nth-child(4) { width: 140px; } /* Active for Bot */
+.users-table th:nth-child(5) { width: 140px; } /* Created At */
+.users-table th:nth-child(6) { width: 100px; } /* Country */
+.users-table th:nth-child(7) { width: 100px; } /* OS */
+.users-table th:nth-child(8) { width: 120px; } /* Phone */
+.users-table th:nth-child(9) { width: 150px; } /* Actions */
+.users-table th:nth-child(10) { width: 100px; } /* Status */
 
 
 .users-table th.sortable {
@@ -356,7 +379,23 @@ const getPageNumbers = computed(() => {
   border-bottom: 1px solid var(--color-border);
   font-size: 14px;
   background-color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
+/* Column width constraints for cells */
+.users-table td:nth-child(1) { width: 50px; } /* Checkbox */
+.users-table td:nth-child(2) { width: 250px; } /* Name */
+.users-table td:nth-child(3) { width: 120px; } /* Type */
+.users-table td:nth-child(4) { width: 140px; } /* Active for Bot */
+.users-table td:nth-child(5) { width: 140px; } /* Created At */
+.users-table td:nth-child(6) { width: 100px; } /* Country */
+.users-table td:nth-child(7) { width: 100px; } /* OS */
+.users-table td:nth-child(8) { width: 120px; } /* Phone */
+.users-table td:nth-child(9) { width: 150px; } /* Actions */
+.users-table td:nth-child(10) { width: 100px; } /* Status */
+
 
 .users-table tr:hover td {
   background-color: var(--color-bg-tertiary);
