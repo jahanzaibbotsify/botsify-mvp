@@ -9,15 +9,16 @@ import SidebarPricing from './SidebarPricing.vue';
 import BookMeeting from '@/components/modal/BookMeeting.vue';
 import User from '@/components/modal/User.vue';
 import { BOTSIFY_BASE_URL } from '@/utils/config';
+import { useRouter } from 'vue-router';
 
 
 const chatStore = useChatStore();
 const sidebarStore = useSidebarStore();
-// const router = useRouter();
+const router = useRouter();
 // const { width } = useWindowSize();
 
 const emit = defineEmits(['select-button']);
-const selectedNavigationButton = ref('Agent');
+// const selectedNavigationButton = ref('Agent');
 // const isMobile = computed(() => width.value < 768);
 const showNavDropdown = ref(false);
 const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
@@ -25,18 +26,22 @@ const userRef = ref<InstanceType<typeof User> | null>(null)
 
 const navigationButtons = [
   {
+    id: `agent/${chatStore.activeChat}`,
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24"><path d="M11 7.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM14.5 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"></path><path fill-rule="evenodd" d="M12 1a1 1 0 0 1 1 1v.5h4a3 3 0 0 1 3 3V9a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V5.5a3 3 0 0 1 3-3h4V2a1 1 0 0 1 1-1ZM7 4.5h10a1 1 0 0 1 1 1V9a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V5.5a1 1 0 0 1 1-1Z" clip-rule="evenodd"></path><path d="M6 21c0-.974.551-1.95 1.632-2.722C8.71 17.508 10.252 17 12 17c1.749 0 3.29.508 4.369 1.278C17.449 19.05 18 20.026 18 21a1 1 0 1 0 2 0c0-1.788-1.016-3.311-2.469-4.35-1.455-1.038-3.414-1.65-5.53-1.65-2.118 0-4.077.611-5.532 1.65C5.016 17.69 4 19.214 4 21a1 1 0 1 0 2 0Z"></path></svg>',
     name: 'Agent'
   },
   {
+    id: 'analytics',
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 5a1 1 0 0 1 1 1v12a1 1 0 1 1-2 0V6a1 1 0 0 1 1-1Zm4 5a1 1 0 0 1 1 1v2a1 1 0 1 1-2 0v-2a1 1 0 0 1 1-1Zm5-1a1 1 0 1 0-2 0v6a1 1 0 1 0 2 0V9ZM8 8a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0V9a1 1 0 0 1 1-1Zm-3 3a1 1 0 1 0-2 0v2a1 1 0 1 0 2 0v-2Z" clip-rule="evenodd"></path></svg>',
     name: 'Analytics'
   },
   {
+    id: `conversation/${chatStore.activeChat}`,
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 4a8 8 0 0 0-5.687 13.627 1 1 0 0 1 .147 1.217L5.766 20H12a8 8 0 1 0 0-16ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10H4a1 1 0 0 1-.857-1.515l1.218-2.03A9.964 9.964 0 0 1 2 12Z" clip-rule="evenodd"></path><path d="M9.25 12a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Zm4 0a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Zm4 0a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Z"></path></svg>',
     name: 'Chat'
   },
   {
+    id: 'users',
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M10.5 8.5a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM12 5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM3 9.5a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm1-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm16 2a1 1 0 1 0 0 2 1 1 0 0 0 0-2Zm-3 1a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM8 18c0-.974.438-1.684 1.142-2.185C9.876 15.293 10.911 15 12 15c1.09 0 2.124.293 2.858.815.704.5 1.142 1.21 1.142 2.185a1 1 0 1 0 2 0c0-1.692-.812-2.982-1.983-3.815C14.876 13.373 13.411 13 12 13c-1.41 0-2.876.373-4.017 1.185C6.812 15.018 6 16.308 6 18a1 1 0 1 0 2 0Zm-3.016-3.675a1 1 0 0 1-.809 1.16C2.79 15.732 2 16.486 2 17.5a1 1 0 1 1-2 0c0-2.41 1.978-3.655 3.825-3.985a1 1 0 0 1 1.16.81Zm14.84 1.16a1 1 0 1 1 .351-1.97C22.022 13.845 24 15.09 24 17.5a1 1 0 1 1-2 0c0-1.014-.79-1.768-2.175-2.015Z" clip-rule="evenodd"></path></svg>',
     name: 'Users'
   }
@@ -54,9 +59,17 @@ const filteredChats = computed(() => {
 // const navigateToChat = (chatId: string) => {
 //   router.push(`/agent/${chatId}`);
 //   if (isMobile.value) {
-//     sidebarStore.isOpen = false;
+//     sidebarStore.isOpen r= false;
 //   }
 // };
+
+const navigateToPage = (pageId: string) => {
+  if (pageId == 'users') {
+    openUserModal();
+  } else {
+    router.push(`/${pageId}`);
+  }
+}
 
 const toggleNavDropdown = () => {
   showNavDropdown.value = !showNavDropdown.value;
@@ -176,10 +189,10 @@ const isLinkActive = (url: string) => {
   }
 };
 
-const selectNavigationButton = (name: string) => {
-  selectedNavigationButton.value = name;
-  emit('select-button', name);
-};
+// const selectNavigationButton = (name: string) => {
+//   selectedNavigationButton.value = name;
+//   emit('select-button', name);
+// };
 </script>
 
 <template>
@@ -223,61 +236,59 @@ const selectNavigationButton = (name: string) => {
                 </div>
                 <span>Support</span>
               </div>
-
-              <div class="nav-item" role="button" @click="openUserModal">
-                <div class="nav-item-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"></svg>
-                </div>
-                <span>User</span>
-              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-
-    <div class="navigation-container">
-      <div class=" chat-list">
-        <template v-for="btn of navigationButtons">
-          <div class="">
-            <!-- New Chat Button -->
-            <button @click="selectNavigationButton(btn.name)" class="navigation-button" :class="{ 'selectedNavigationButton': selectedNavigationButton === btn.name }">
-              <span v-html="btn.icon"></span>
-              <!-- <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
-            <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg> -->
-              <span>{{ btn.name }}</span>
-            </button>
-            <!-- ...existing menu button code... -->
-          </div>
-        </template>
-        <!-- <ChatListItem v-for="chat in filteredChats" :key="chat.id" :chat="chat"
-        :isActive="chat.id === chatStore.activeChat" @click="navigateToChat(chat.id)" /> -->
-
-
-        <div v-if="filteredChats.length === 0" class="no-results">
-          <p>No chats found</p>
-        </div>
-
-      </div>
-      <div >
-        <button class="navigation-button">
-          <span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor"
-              viewBox="0 0 24 24">
-              <path fill-rule="evenodd"
-                d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Z"
-                clip-rule="evenodd"></path>
-              <path fill-rule="evenodd"
-                d="M12 9a1 1 0 0 0-.879.522 1 1 0 0 1-1.754-.96A3 3 0 0 1 12 7c1.515 0 2.567 1.006 2.866 2.189.302 1.189-.156 2.574-1.524 3.258A.618.618 0 0 0 13 13a1 1 0 1 1-2 0c0-.992.56-1.898 1.447-2.342.455-.227.572-.618.48-.978C12.836 9.314 12.529 9 12 9Z"
-                clip-rule="evenodd"></path>
-              <path d="M13.1 16a1.1 1.1 0 1 1-2.2 0 1.1 1.1 0 0 1 2.2 0Z"></path>
-            </svg>
-          </span>
-          <span>Help</span>
-        </button>
-      </div>
+    
+    <div>
+    <!-- Navigation Buttons -->
+    <div v-for="btn in navigationButtons" :key="btn.id">
+      <button class="navigation-button" @click="navigateToPage(btn.id)">
+        <span v-html="btn.icon"></span>
+        <span>{{ btn.name }}</span>
+      </button>
     </div>
+
+    <!-- Chat Items -->
+    <!--
+    <ChatListItem
+      v-for="chat in filteredChats"
+      :key="chat.id"
+      :chat="chat"
+      :isActive="chat.id === chatStore.activeChat"
+      @click="navigateToChat(chat.id)"
+    />
+    -->
+
+    <!-- No chats found -->
+    <div v-if="filteredChats.length === 0" class="no-results">
+      <p>No chats found</p>
+    </div>
+
+    <!-- Help Button -->
+    <div>
+      <button class="navigation-button">
+        <span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              fill-rule="evenodd"
+              d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Z"
+              clip-rule="evenodd"
+            />
+            <path
+              fill-rule="evenodd"
+              d="M12 9a1 1 0 0 0-.879.522 1 1 0 0 1-1.754-.96A3 3 0 0 1 12 7c1.515 0 2.567 1.006 2.866 2.189.302 1.189-.156 2.574-1.524 3.258A.618.618 0 0 0 13 13a1 1 0 1 1-2 0c0-.992.56-1.898 1.447-2.342.455-.227.572-.618.48-.978C12.836 9.314 12.529 9 12 9Z"
+              clip-rule="evenodd"
+            />
+            <path d="M13.1 16a1.1 1.1 0 1 1-2.2 0 1.1 1.1 0 0 1 2.2 0Z" />
+          </svg>
+        </span>
+        <span>Help</span>
+      </button>
+    </div>
+  </div>
 
     <!-- Sidebar Pricing (keeping this at the bottom) -->
     <SidebarPricing />

@@ -56,7 +56,7 @@ function clearOldChats() {
     );
     
     // Force save
-    chatStore.forceSave();
+    chatStore.saveToTemplate();
     
     // Update storage size
     checkStorageSize();

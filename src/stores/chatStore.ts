@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed, nextTick, watch } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import { useOpenAIStore } from './openaiStore';
 import { useMCPStore } from './mcpStore';
 import type { Chat, Message, Attachment, PromptVersion, GlobalPromptTemplate } from '../types';
@@ -91,21 +91,11 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   // Save data to localStorage
-  function saveToStorage() {
+  function saveToTemplate() {
     try {
-      console.log('💾 Saving data to localStorage', {
-        chatsCount: chats.value.length,
-        templatesCount: globalPromptTemplates.value.length,
-        activeChat: activeChat.value
-      });
-
       const chatsJson = JSON.stringify(chats.value);
       const templatesJson = JSON.stringify(globalPromptTemplates.value);
-
-      // Check size before saving to prevent quota errors
-      const totalSize = chatsJson.length + templatesJson.length;
-      const estimatedSizeInMB = totalSize / (1024 * 1024);
-      console.log(`📊 Estimated storage size: ${estimatedSizeInMB.toFixed(2)}MB`);
+      botsifyApi.saveBotTemplates(chatsJson, templatesJson);
 
       //save bot templates
       axios.post(import.meta.env.VITE_BOTSIFY_BASE_URL + '/v1/bot-update', {
@@ -126,97 +116,24 @@ export const useChatStore = defineStore('chat', () => {
       }).catch((error) => {
         console.log('error:', error);
       });
-
-      // localStorage typically has a 5-10MB limit depending on browser
-      if (estimatedSizeInMB > 4.5) {
-        console.warn('⚠️ Data size approaching localStorage limit. Consider clearing old chats.');
-
-        // If size is critical, try to save only essential data
-        if (estimatedSizeInMB > 4.8) {
-          console.error('❌ Data too large for localStorage! Attempting to save only active chat.');
-
-          // Try to save only the active chat
-          if (activeChat.value) {
-            const activeChatsOnly = chats.value.filter(c => c.id === activeChat.value);
-            if (activeChatsOnly.length > 0) {
-              const reducedChatsJson = JSON.stringify(activeChatsOnly);
-              localStorage.setItem('botsify_chats', reducedChatsJson);
-              localStorage.setItem('botsify_prompt_templates', templatesJson);
-              localStorage.setItem('botsify_active_chat', activeChat.value);
-              console.log('✅ Saved only active chat to prevent data loss');
-              return true;
-            }
-          }
-          return false;
-        }
-      }
-
-      localStorage.setItem('botsify_chats', chatsJson);
-      localStorage.setItem('botsify_prompt_templates', templatesJson);
-      if (activeChat.value) {
-        localStorage.setItem('botsify_active_chat', activeChat.value);
-      }
-
-      // Verify storage was successful
-      const storedChats = localStorage.getItem('botsify_chats');
-      const storedTemplates = localStorage.getItem('botsify_prompt_templates');
-      const storedActiveChat = localStorage.getItem('botsify_active_chat');
-
-      console.log('✅ Storage verification:', {
-        chatsStored: !!storedChats && storedChats === chatsJson,
-        templatesStored: !!storedTemplates && storedTemplates === templatesJson,
-        activeChatStored: !activeChat.value || (!!storedActiveChat && storedActiveChat === activeChat.value)
-      });
-
-      return true;
     } catch (error) {
       console.error('❌ Error saving to storage:', error);
-      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-        console.error('💾 localStorage quota exceeded. Data too large to store.');
-
-        // Try to save only the active chat as a fallback
-        try {
-          if (activeChat.value) {
-            const activeChatsOnly = chats.value.filter(c => c.id === activeChat.value);
-            if (activeChatsOnly.length > 0) {
-              localStorage.setItem('botsify_chats', JSON.stringify(activeChatsOnly));
-              localStorage.setItem('botsify_active_chat', activeChat.value);
-              console.log('✅ Fallback: Saved only active chat');
-              return true;
-            }
-          }
-        } catch (fallbackError) {
-          console.error('❌ Fallback save failed:', fallbackError);
-        }
-      }
       return false;
     }
   }
-
-  // Force immediate save - can be called at critical points
-  function forceSave() {
-    console.log('🔄 Force saving data to storage');
-    return saveToStorage();
-  }
-
-  // Watch for changes and auto-save
-  watch([chats, globalPromptTemplates, activeChat], () => {
-    console.log('🔄 Data changed, triggering save');
-    saveToStorage();
-  }, { deep: true });
 
   // Add window event listeners to ensure data is saved before page unload
   if (typeof window !== 'undefined') {
     window.addEventListener('beforeunload', () => {
       console.log('📝 Page unloading, saving data');
-      forceSave();
+      saveToTemplate();
     });
 
     // Also save when tab visibility changes (user switches tabs)
     window.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') {
         console.log('📝 Tab hidden, saving data');
-        forceSave();
+        saveToTemplate();
       }
     });
   }
@@ -1238,7 +1155,7 @@ Use the above connected services information to understand what tools and data s
     if (currentActiveChat) {
       chats.value = [currentActiveChat];
       console.log('Cleared all chats except active one');
-      forceSave();
+      saveToTemplate();
       return true;
     }
     return false;
@@ -1254,7 +1171,7 @@ Use the above connected services information to understand what tools and data s
     if (activeVersion) {
       chat.story.versions = [activeVersion];
       console.log(`Cleared version history for chat ${chatId}`);
-      forceSave();
+      saveToTemplate();
       return true;
     }
     return false;
@@ -1274,7 +1191,7 @@ Use the above connected services information to understand what tools and data s
     }];
     chat.lastMessage = 'Chat history has been cleared.';
     console.log(`Cleared message history for chat ${chatId}`);
-    forceSave();
+    saveToTemplate();
     return true;
   }
 
@@ -1327,8 +1244,7 @@ Keep flows organized, clear, and user-friendly.`,
     updateGlobalPromptTemplate,
     deleteGlobalPromptTemplate,
     loadFromStorage,
-    saveToStorage,
-    forceSave,
+    saveToTemplate,
     clearAllChatsExceptActive,
     clearVersionHistory,
     clearChatMessages,

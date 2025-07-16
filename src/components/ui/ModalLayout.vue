@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, defineExpose, watchEffect, onUnmounted } from 'vue'
+import { ref, watchEffect, onUnmounted } from 'vue'
 
 interface Props {
   title: string

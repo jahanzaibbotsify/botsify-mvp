@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, defineExpose } from 'vue'
+import { ref } from 'vue'
 import ModalLayout from '@/components/ui/ModalLayout.vue'
 
 const modalRef = ref<InstanceType<typeof ModalLayout> | null>(null)

@@ -1015,6 +1015,7 @@ const deleteWebSearchAllEntry = async () => {
 
 .input-area {
   display: flex;
+  width: 100%;
   flex-direction: column;
   background-color: #ffffff;
   border-radius: 24px;
