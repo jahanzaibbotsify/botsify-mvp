@@ -10,7 +10,7 @@ export const useOpenAIStore = defineStore('openai', () => {
   // Try to get API key from environment variables first, then fallback to localStorage
   const envApiKey = import.meta.env.VITE_OPENAI_API_KEY;
   const botApiKey = useApiKeyStore().apiKey;
-  console.log('Environment API key available:', !!envApiKey);
+  console.log('Environment API key available:', !!envApiKey, botApiKey);
   
   const apiKey = ref<string | null>(
     envApiKey || localStorage.getItem('openai_api_key')

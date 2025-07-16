@@ -1,69 +1,112 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/botsify-icon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#00A3FF" />
-    <title>Botsify Agent</title>
-    <meta name="title" content="Botsify Agent" />
-    <meta name="description" content="Botsify Agent helps you automate conversations and support with AI-powered chatbots." />
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
-    
-    <!-- Zendesk Widget -->
-    <script id="ze-snippet" src="https://static.zdassets.com/ekr/snippet.js?key=91ab9e64-789b-4947-80f6-f2a9712a23b0"></script>
-    <script type="text/javascript">
-      // Global Zendesk functions
-      window.zE = window.zE || function() {
-        (window.zE.q = window.zE.q || []).push(arguments);
-      };
-      
-      // Initialize Zendesk widget
-      document.addEventListener('DOMContentLoaded', function() {
-        zE(function() {
-          zE.hide();
-        });
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/botsify-icon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#00A3FF" />
+  <title>Botsify Agent</title>
+  <meta name="title" content="Botsify Agent" />
+  <meta name="description" content="Botsify Agent helps you automate conversations and support with AI-powered chatbots." />
+  <style>
+    @-webkit-keyframes loader {
+      0% {
+        -webkit-transform: scale(0);
+        transform: scale(0);
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+
+    @keyframes loader {
+      0% {
+        -webkit-transform: scale(0);
+        transform: scale(0);
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+
+    .loader {
+      display: inline-block;
+      width: 3rem;
+      height: 3rem;
+      vertical-align: text-bottom;
+      background-color: #2e66f4f5;
+      border-radius: 50%;
+      opacity: 0;
+      -webkit-animation: spinner-grow .75s linear infinite;
+      animation: spinner-grow .75s linear infinite;
+      margin: auto;
+    }
+  </style>
+</head>
+
+<body>
+  
+  <div id="app">
+    <h1 class="loader"></h1>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+
+  <!-- Zendesk Widget -->
+  <script id="ze-snippet"
+    src="https://static.zdassets.com/ekr/snippet.js?key=91ab9e64-789b-4947-80f6-f2a9712a23b0"></script>
+  <script type="text/javascript">
+    // Global Zendesk functions
+    window.zE = window.zE || function () {
+      (window.zE.q = window.zE.q || []).push(arguments);
+    };
+
+    // Initialize Zendesk widget
+    document.addEventListener('DOMContentLoaded', function () {
+      zE(function () {
+        zE.hide();
       });
-      
-      // Global function to show Zendesk widget
-      window.showZen = function(userName = '', userEmail = '') {
-        zE.activate();
-        
-        // Configure widget settings
-        window.zESettings = {
-          webWidget: {
-            position: { horizontal: 'left' },
-            offset: { horizontal: '70px', vertical: '15px' }
-          }
-        };
-        
-        // Prefill user information if provided
-        if (userName || userEmail) {
-          zE('webWidget', 'prefill', {
-            name: {
-              value: userName,
-              readOnly: !!userName
-            },
-            email: {
-              value: userEmail,
-              readOnly: !!userEmail
-            }
-          });
+    });
+
+    // Global function to show Zendesk widget
+    window.showZen = function (userName = '', userEmail = '') {
+      zE.activate();
+
+      // Configure widget settings
+      window.zESettings = {
+        webWidget: {
+          position: { horizontal: 'left' },
+          offset: { horizontal: '70px', vertical: '15px' }
         }
       };
-      
-      // Global function to hide Zendesk widget
-      window.hideZen = function() {
-        zE.hide();
-      };
-      
-      // Global function to open Zendesk widget
-      window.openZen = function() {
-        zE.activate();
-      };
-    </script>
-  </body>
+
+      // Prefill user information if provided
+      if (userName || userEmail) {
+        zE('webWidget', 'prefill', {
+          name: {
+            value: userName,
+            readOnly: !!userName
+          },
+          email: {
+            value: userEmail,
+            readOnly: !!userEmail
+          }
+        });
+      }
+    };
+
+    // Global function to hide Zendesk widget
+    window.hideZen = function () {
+      zE.hide();
+    };
+
+    // Global function to open Zendesk widget
+    window.openZen = function () {
+      zE.activate();
+    };
+  </script>
+</body>
+
 </html>

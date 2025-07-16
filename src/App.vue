@@ -4,7 +4,6 @@ import Swal from 'sweetalert2'; // Add this import
 // import { useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 import { useApiKeyStore } from '@/stores/apiKeyStore';
-import BotsifyLoader from './components/ui/BotsifyLoader.vue';
 
 // const router = useRouter();
 const chatStore = useChatStore();
@@ -12,10 +11,6 @@ const apiKeyStore = useApiKeyStore();
 
 const showStorageWarning = ref(false);
 const storageSizeMB = ref(0);
-const authenticated = computed(() => {
-  const apikey = apiKeyStore.apiKey;
-  return apikey !== null && apikey.trim() !== '';
-});
 
 // Check storage size
 function checkStorageSize() {
@@ -87,7 +82,6 @@ onMounted(() => {
 
 <template>
   <div class="app-container">
-    <div v-if="authenticated" class="app-container">
       <div v-if="showStorageWarning" class="storage-warning">
         <div class="warning-content">
           <span class="warning-icon">⚠️</span>
@@ -106,10 +100,6 @@ onMounted(() => {
       <router-view />
       <!-- <ChatLayout /> -->
     </div>
-    <div v-else class="main-loading">
-      <botsify-loader />
-    </div>
-  </div>
 
 </template>
 

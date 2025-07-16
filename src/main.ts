@@ -9,6 +9,7 @@ import '@fontsource/ubuntu/500.css'
 import '@fontsource/ubuntu/700.css'
 import axios from 'axios';
 import ToastPlugin from 'vue-toast-notification';
+import { useApiKeyStore } from './stores/apiKeyStore';
 
 
 // Import routes
@@ -98,18 +99,7 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   console.log(from.name);
   if (to.name === 'agent') {
-    const apikey = to.params.id;
-    if (typeof apikey === 'string' && apikey) {      
-      const bot = await getBotDetails(apikey);
-      if (bot) {
-        console.log('Authenticated');
-        apiKeyStore.setApiKey(apikey);
-        return next();
-      }
-    }    
-    if (!apiKeyStore.apiKey) {
-      window.location.href = 'https://app.botsify.com/login';
-    }
+      return next();
   } if (typeof to.name === 'undefined') {    
     return next({ name: 'NotFound' });
   } else {
@@ -147,12 +137,29 @@ if (!localStorageAvailable) {
   document.body.appendChild(warningDiv);
 }
 
-// Mount app
-app.mount('#app')
 
 
 
+async function confirmApiKey() { 
+  const params = window.location.pathname.split('/');
+  if (['agent', 'conversation'].includes(params[1])) {
+    let apikey = params[2];
+    if (apikey) {
+      const bot = await getBotDetails(apikey);    
+      if (bot) {
+        const apiKeyStore = useApiKeyStore();
+        apiKeyStore.setApiKey(apikey);
+        return true;
+      }
+    }
+    window.location.href = 'https://app.botsify.com/login';  
+    throw new Error('unauthenticated');
+  }
+  return true;
+}
 
-import { useApiKeyStore } from './stores/apiKeyStore';
 
-const apiKeyStore = useApiKeyStore();
+// mount app
+confirmApiKey().then(() => {
+  app.mount('#app');
+})
