@@ -71,12 +71,21 @@ const fetchUsers = async (): Promise<void> => {
       
       // Update pagination from API response
       if (response.data.users) {
+        console.log('Updating pagination with:', {
+          currentPage: response.data.users.current_page,
+          totalPages: response.data.users.last_page,
+          totalItems: response.data.users.total,
+          perPage: response.data.users.per_page
+        })
+        
         pagination.value = {
           currentPage: response.data.users.current_page,
           totalPages: response.data.users.last_page,
           totalItems: response.data.users.total,
           perPage: response.data.users.per_page as PerPage
         }
+        
+        console.log('Updated pagination state:', pagination.value)
       }
     } else {
       console.error('Failed to fetch users:', response.message)
@@ -292,12 +301,10 @@ const handlePageChange = (page: number): void => {
 
 const handlePerPageChange = (perPage: PerPage): void => {
   pagination.value.perPage = perPage
-  pagination.value.totalPages = Math.ceil(filteredUsers.value.length / perPage)
+  pagination.value.currentPage = 1 // Reset to first page when changing per page
   
-  // Adjust current page if necessary
-  if (pagination.value.currentPage > pagination.value.totalPages) {
-    pagination.value.currentPage = Math.max(1, pagination.value.totalPages)
-  }
+  // The total pages will be updated by the API response
+  // No need to calculate it here since we're using server-side pagination
 }
 
 // Watch for action changes
@@ -337,16 +344,16 @@ const getActionText = (action: ActionType): string => {
   return actionMap[action] || action
 }
 
-// Update pagination when filtered users change
-watch(filteredUsers, (newFilteredUsers) => {
-  pagination.value.totalItems = newFilteredUsers.length
-  pagination.value.totalPages = Math.ceil(newFilteredUsers.length / pagination.value.perPage)
-  
-  // Reset to first page if current page is out of bounds
-  if (pagination.value.currentPage > pagination.value.totalPages) {
-    pagination.value.currentPage = Math.max(1, pagination.value.totalPages)
-  }
-})
+// Remove the watch that was overriding pagination with client-side data
+// watch(filteredUsers, (newFilteredUsers) => {
+//   pagination.value.totalItems = newFilteredUsers.length
+//   pagination.value.totalPages = Math.ceil(newFilteredUsers.length / pagination.value.perPage)
+//   
+//   // Reset to first page if current page is out of bounds
+//   if (pagination.value.currentPage > pagination.value.totalPages) {
+//     pagination.value.currentPage = Math.max(1, pagination.value.totalPages)
+//   }
+// })
 
 // Load data when component mounts
 onMounted(() => {

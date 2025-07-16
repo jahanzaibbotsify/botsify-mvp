@@ -105,6 +105,9 @@ const getPageNumbers = computed(() => {
   const pages = []
   const { currentPage, totalPages } = props.pagination
   
+  console.log('getPageNumbers - pagination props:', props.pagination)
+  console.log('getPageNumbers - currentPage:', currentPage, 'totalPages:', totalPages)
+  
   // Always show first page
   if (totalPages > 0) pages.push(1)
   
@@ -126,6 +129,7 @@ const getPageNumbers = computed(() => {
   // Always show last page
   if (totalPages > 1) pages.push(totalPages)
   
+  console.log('getPageNumbers - generated pages:', pages)
   return pages
 })
 </script>
