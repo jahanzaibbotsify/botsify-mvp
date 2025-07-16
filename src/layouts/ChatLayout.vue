@@ -6,7 +6,6 @@ import { useSidebarStore } from '@/stores/sidebarStore';
 import LeftSidebar from '@/components/sidebar/LeftSidebar.vue';
 import { useWindowSize } from '@vueuse/core';
 import { useApiKeyStore } from '@/stores/apiKeyStore';
-import ChatView from '@/views/ChatView.vue';
 
 
 const chatStore = useChatStore();
@@ -111,8 +110,7 @@ const toggleSidebar = () => {
         />
       <!-- Main Content -->
       <main class="main-content">
-        <!-- <router-view /> -->
-        <ChatView v-if="selectedNavigationButton === 'Agent'" />
+        <router-view />
       </main>
     </div>
     

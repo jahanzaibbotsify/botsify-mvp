@@ -108,7 +108,7 @@ function saveEdit() {
     editContent.value = '';
     
     // Force save to ensure persistence
-    chatStore.forceSave();
+    chatStore.saveToTemplate();
   }
 }
 
@@ -117,7 +117,7 @@ function revertToVersion(versionId: string) {
   showVersionHistory.value = false;
   
   // Force save to ensure persistence
-  chatStore.forceSave();
+  chatStore.saveToTemplate();
 }
 
 function deleteVersion(versionId: string) {
@@ -150,7 +150,7 @@ function loadTemplate(templateId: string) {
     showTemplateManager.value = false;
     
     // Force save to ensure persistence
-    chatStore.forceSave();
+    chatStore.saveToTemplate();
   }
 }
 

@@ -69,3 +69,18 @@ export interface PricingTier {
   features: string[];
   isPopular?: boolean;
 }
+
+// Extended Chat interface for the chat interface
+export interface ExtendedChat extends Chat {
+  email?: string
+  status?: string
+  source?: string
+  lastConverse?: string
+  phone?: string
+  country?: string
+  os?: string
+  lastPage?: string
+  fbid?: string
+  assignedTo?: string
+  satisfaction?: number
+}

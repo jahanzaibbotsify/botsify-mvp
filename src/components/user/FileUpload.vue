@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, defineEmits, defineProps } from 'vue'
+import { ref } from 'vue'
 
 const props = defineProps<{
   selectedFile: File | null

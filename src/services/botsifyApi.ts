@@ -1200,6 +1200,28 @@ export class BotsifyApiService {
       };
     }
   }
+
+
+  async saveBotTemplates(chatsJson: string, templatesJson: string): Promise<void> {
+    axios.post(import.meta.env.VITE_BOTSIFY_BASE_URL + '/v1/bot-update', {
+      'apikey': localStorage.getItem('apikey'),
+      'data' : {
+        chat_flow: chatsJson,
+        bot_flow: templatesJson
+      }
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
+      }
+    }).then(response => {
+      if (response.data.status == 'success') {
+        console.log('Message stored: ', response.data.bot);
+      }
+    }).catch((error) => {
+      console.log('error:', error);
+    });
+  }
 }
 
 export const botsifyApi = BotsifyApiService.getInstance(); 
