@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { defineEmits, defineProps } from 'vue'
 import { ActionType, FilterType, SegmentType } from '@/types/user'
 import VueSelect from "vue3-select-component"
 import DateRange from '@/components/ui/DateRange.vue'
@@ -19,7 +18,7 @@ const emit = defineEmits<{
 
 // Filter options configuration
 const filterOptions = [
-  { label: 'All Users', value: 'all' as FilterType },
+  { label: 'All Statuses', value: 'all' as FilterType },
   { label: 'Active Users', value: 'active' as FilterType },
   { label: 'Inactive Users', value: 'inactive' as FilterType },
 ]

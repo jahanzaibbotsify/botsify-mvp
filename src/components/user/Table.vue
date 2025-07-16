@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, defineEmits, defineProps } from 'vue'
+import { ref, computed } from 'vue'
 import UserAttributes from './Attributes.vue'
 import { User, UserAttribute, PaginationData, SortingData, SortBy, PerPage } from '@/types/user'
 
