@@ -7,7 +7,6 @@ import { useSidebarStore } from '@/stores/sidebarStore';
 // import ChatListItem from '@/components/chat/ChatListItem.vue';
 import SidebarPricing from './SidebarPricing.vue';
 import BookMeeting from '@/components/modal/BookMeeting.vue';
-import User from '@/components/modal/User.vue';
 import { BOTSIFY_BASE_URL } from '@/utils/config';
 import { useRouter } from 'vue-router';
 
@@ -22,7 +21,6 @@ const emit = defineEmits(['select-button']);
 // const isMobile = computed(() => width.value < 768);
 const showNavDropdown = ref(false);
 const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
-const userRef = ref<InstanceType<typeof User> | null>(null)
 
 const navigationButtons = [
   {
@@ -64,11 +62,7 @@ const filteredChats = computed(() => {
 // };
 
 const navigateToPage = (pageId: string) => {
-  if (pageId == 'users') {
-    openUserModal();
-  } else {
-    router.push(`/${pageId}`);
-  }
+  router.push(`/${pageId}`);
 }
 
 const toggleNavDropdown = () => {
@@ -124,15 +118,7 @@ const openBookMeetingModal = () => {
   closeNavDropdown();
 };
 
-const openUserModal = () => {
-  if (userRef.value) {
-    console.log('📦 userRef exists')
-    userRef.value.openModal()
-  } else {
-    console.warn('❌ userRef is null')
-  }
-  closeNavDropdown();
-};
+
 
 // Open external link
 const openExternalLink = (url: string) => {
@@ -301,8 +287,8 @@ const isLinkActive = (url: string) => {
 
 <style scoped>
 .left-sidebar {
-  width: 280px;
-  min-width: 280px;
+  width: 230px;
+  min-width: 230px;
   height: 100%;
   background-color: var(--color-bg-secondary);
   border-right: 1px solid rgba(0, 163, 255, 0.1);

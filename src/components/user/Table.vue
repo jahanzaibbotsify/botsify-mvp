@@ -310,13 +310,11 @@ const getPageNumbers = computed(() => {
 
 <style scoped>
 .table-container {
-  background-color: #f8f9fa;
+  background-color: white;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  min-height: 200px;
-  max-height: 50vh;
-  overflow-y: auto;
   position: relative;
 }
 
@@ -325,8 +323,8 @@ const getPageNumbers = computed(() => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background-color: white;
-  border-bottom: 1px solid var(--color-border);
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
   font-size: 14px;
 }
 
@@ -338,9 +336,9 @@ const getPageNumbers = computed(() => {
 }
 
 .per-page-select {
-  padding: 4px 8px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
   font-size: 14px;
   background-color: white;
 }
@@ -352,31 +350,52 @@ const getPageNumbers = computed(() => {
 
 .table-scroll-container {
   overflow-x: auto;
-  overflow-y: hidden;
-  border-radius: 0 0 8px 8px;
+  max-height: 50vh;
+  overflow-y: auto;
   background-color: white;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.table-scroll-container::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.table-scroll-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .users-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1000px; /* Ensure minimum width to maintain column sizes */
-  min-height: 200px;
+  min-width: 1200px;
   transition: filter 0.3s ease;
 }
 
 .users-table th {
-  background-color: var(--color-primary);
-  color: white;
-  padding: 14px 12px;
+  background-color: #f8fafc;
+  color: #374151;
+  padding: 16px 12px;
   text-align: left;
   font-weight: 600;
-  font-size: 11px;
+  font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   position: sticky;
   top: 0;
   white-space: nowrap;
+  border-bottom: 2px solid #e5e7eb;
 }
 
 .users-table th.sortable {
@@ -387,7 +406,7 @@ const getPageNumbers = computed(() => {
 }
 
 .users-table th.sortable:hover {
-  background-color: var(--color-primary-hover);
+  background-color: #f1f5f9;
 }
 
 .users-table th.sortable::after {
@@ -396,7 +415,7 @@ const getPageNumbers = computed(() => {
   right: 8px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 12px;
+  font-size: 14px;
   opacity: 0.7;
 }
 
@@ -411,20 +430,19 @@ const getPageNumbers = computed(() => {
 }
 
 /* Column width constraints */
-.users-table th:nth-child(1) { width: 20px; } /* Checkbox */
-.users-table th:nth-child(2) { width: 200px; } /* Name */
-.users-table th:nth-child(3) { width: 60px; } /* Type */
-.users-table th:nth-child(4) { width: 160px; } /* Created At */
-.users-table th:nth-child(5) { width: 120px; } /* Country */
-.users-table th:nth-child(6) { width: 140px; } /* Phone */
-.users-table th:nth-child(7) { width: 60px; } /* Status */
-.users-table th:nth-child(8) { width: 140px; } /* Actions */
-
+.users-table th:nth-child(1) { width: 50px; } /* Checkbox */
+.users-table th:nth-child(2) { width: 250px; } /* Name */
+.users-table th:nth-child(3) { width: 100px; } /* Type */
+.users-table th:nth-child(4) { width: 180px; } /* Created At */
+.users-table th:nth-child(5) { width: 150px; } /* Country */
+.users-table th:nth-child(6) { width: 160px; } /* Phone */
+.users-table th:nth-child(7) { width: 120px; } /* Status */
+.users-table th:nth-child(8) { width: 150px; } /* Actions */
 
 .users-table td {
-  padding: 12px;
-  border-bottom: 1px solid var(--color-border);
-  font-size: 14px;
+  padding: 16px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 16px;
   background-color: white;
   white-space: nowrap;
   overflow: hidden;
@@ -433,17 +451,16 @@ const getPageNumbers = computed(() => {
 
 /* Column width constraints for cells */
 .users-table td:nth-child(1) { width: 50px; } /* Checkbox */
-.users-table td:nth-child(2) { width: 280px; } /* Name */
-.users-table td:nth-child(3) { width: 140px; } /* Type */
-.users-table td:nth-child(4) { width: 160px; } /* Created At */
-.users-table td:nth-child(5) { width: 120px; } /* Country */
-.users-table td:nth-child(6) { width: 140px; } /* Phone */
+.users-table td:nth-child(2) { width: 250px; } /* Name */
+.users-table td:nth-child(3) { width: 100px; } /* Type */
+.users-table td:nth-child(4) { width: 180px; } /* Created At */
+.users-table td:nth-child(5) { width: 150px; } /* Country */
+.users-table td:nth-child(6) { width: 160px; } /* Phone */
 .users-table td:nth-child(7) { width: 120px; } /* Status */
-.users-table td:nth-child(8) { width: 100px; } /* Actions */
-
+.users-table td:nth-child(8) { width: 150px; } /* Actions */
 
 .users-table tr:hover td {
-  background-color: var(--color-bg-tertiary);
+  background-color: #f9fafb;
 }
 
 .clickable-row {
@@ -452,11 +469,11 @@ const getPageNumbers = computed(() => {
 }
 
 .clickable-row:hover {
-  background-color: var(--color-bg-tertiary) !important;
+  background-color: #f9fafb !important;
 }
 
 .no-data-row {
-  height: 200px;
+  height: 150px;
 }
 
 .no-data-row:hover td {
@@ -467,7 +484,7 @@ const getPageNumbers = computed(() => {
   text-align: center;
   vertical-align: middle;
   border-bottom: none !important;
-  height: 200px;
+  height: 150px;
 }
 
 .no-data-content {
@@ -504,8 +521,8 @@ const getPageNumbers = computed(() => {
 }
 
 .user-avatar {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   background-color: var(--color-primary);
   border-radius: 50%;
   display: flex;
@@ -513,7 +530,7 @@ const getPageNumbers = computed(() => {
   justify-content: center;
   color: white;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 18px;
   flex-shrink: 0;
 }
 
@@ -525,10 +542,11 @@ const getPageNumbers = computed(() => {
 .user-name {
   font-weight: 500;
   color: var(--color-text-primary);
+  font-size: 16px;
 }
 
 .user-email {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--color-text-secondary);
 }
 
@@ -553,7 +571,7 @@ const getPageNumbers = computed(() => {
 
 .action-buttons {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   justify-content: center;
   align-items: center;
 }
@@ -561,8 +579,8 @@ const getPageNumbers = computed(() => {
 .action-btn {
   background: none;
   border: none;
-  padding: 6px;
-  border-radius: 4px;
+  padding: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -571,8 +589,13 @@ const getPageNumbers = computed(() => {
 }
 
 .action-btn:hover {
-  background-color: var(--color-bg-hover);
+  background-color: #f3f4f6;
   transform: scale(1.1);
+}
+
+.action-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 .conversation-btn {
@@ -583,38 +606,29 @@ const getPageNumbers = computed(() => {
   color: var(--color-accent);
 }
 
-/* .delete-btn {
-  color: var(--color-error);
-}
-
-.delete-btn:hover {
-  background-color: rgba(220, 53, 69, 0.1);
-} */
-
 .status-badge {
-  padding: 4px 8px;
+  padding: 6px 12px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 .status-badge.active {
-  background-color: var(--color-success);
-  color: white;
+  background-color: #dcfce7;
+  color: #166534;
 }
 
 .status-badge.inactive {
-  background-color: var(--color-error);
-  color: white;
+  background-color: #fef2f2;
+  color: #dc2626;
 }
-
 
 .pagination-container {
   padding: 16px 20px;
-  background-color: white;
-  border-top: 1px solid #e9ecef;
+  background-color: #f9fafb;
+  border-top: 1px solid #e5e7eb;
   display: flex;
   justify-content: center;
 }
@@ -627,18 +641,18 @@ const getPageNumbers = computed(() => {
 
 .pagination-btn {
   padding: 8px 12px;
-  border: 1px solid var(--color-border);
+  border: 1px solid #d1d5db;
   background-color: white;
   color: var(--color-text-secondary);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 14px;
   transition: all 0.2s;
 }
 
 .pagination-btn:hover:not(:disabled) {
-  background-color: var(--color-bg-tertiary);
-  border-color: var(--color-text-primary);
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
 }
 
 .pagination-btn:disabled {
@@ -671,12 +685,33 @@ const getPageNumbers = computed(() => {
   }
   
   .users-table {
-    font-size: 12px;
+    font-size: 14px;
   }
   
   .users-table th,
   .users-table td {
-    padding: 8px;
+    padding: 12px 8px;
+  }
+  
+  .users-table th {
+    font-size: 12px;
+  }
+  
+  .users-table td {
+    font-size: 14px;
+  }
+  
+  .user-name {
+    font-size: 14px;
+  }
+  
+  .user-email {
+    font-size: 12px;
+  }
+  
+  .action-btn svg {
+    width: 16px;
+    height: 16px;
   }
   
   .pagination {

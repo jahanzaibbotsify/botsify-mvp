@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import { ActionType, FilterType, SegmentType } from '@/types/user'
 import VueSelect from "vue3-select-component"
 import DateRange from '@/components/ui/DateRange.vue'
 import { type UserFilterState } from '@/utils/filterUtils'
+import { useSidebarStore } from '@/stores/sidebarStore'
 
-defineProps<{
+const props = defineProps<{
   selectedAction: ActionType
   selectedUsersCount: number
   filterState: UserFilterState
@@ -15,6 +17,13 @@ const emit = defineEmits<{
   'update:selectedAction': [value: ActionType]
   'import': []
 }>()
+
+const sidebarStore = useSidebarStore()
+
+// Computed to determine if we should show mobile layout
+const shouldShowMobileLayout = computed(() => {
+  return window.innerWidth <= 768 || sidebarStore.isOpen
+})
 
 // Filter options configuration
 const filterOptions = [
@@ -84,72 +93,84 @@ const handleDateRangeChange = (dateRange: { startDate: Date, endDate: Date } | n
 
 <template>
   <div class="controls-section">
-    <div class="search-controls">
-      <div class="search-box">
-        <input 
-          type="text" 
-          placeholder="Search users..." 
-          :value="filterState.search"
-          @input="handleSearchChange"
-        >
-        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"></circle>
-          <path d="m21 21-4.35-4.35"></path>
-        </svg>
-      </div>
-      
-      <div class="filter-dropdown">
-        <VueSelect
-          :model-value="filterState.filter"
-          @update:model-value="(value: string | string[]) => handleSelectChange('filter', value)"
-          :options="filterOptions"
-          placeholder="Filter by status"
-          :multiple="false"
-        />
-      </div>
-      
-      <div class="segment-dropdown">
-        <VueSelect
-          :model-value="filterState.segment"
-          @update:model-value="(value: string | string[]) => handleSelectChange('segment', value)"
-          :options="segmentOptions"
-          placeholder="Filter by platform"
-          :multiple="false"
-        />
-      </div>
+    <!-- Desktop Layout -->
+    <div class="desktop-controls">
+      <div class="search-controls">
+        <div class="search-box">
+          <input 
+            type="text" 
+            placeholder="Search users..." 
+            :value="filterState.search"
+            @input="handleSearchChange"
+          >
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+        </div>
+        
+        <div class="filter-dropdown" v-show="!shouldShowMobileLayout">
+          <VueSelect
+            :model-value="filterState.filter"
+            @update:model-value="(value: string | string[]) => handleSelectChange('filter', value)"
+            :options="filterOptions"
+            placeholder="Filter by status"
+            :multiple="false"
+          />
+        </div>
+        
+        <div class="segment-dropdown">
+          <VueSelect
+            :model-value="filterState.segment"
+            @update:model-value="(value: string | string[]) => handleSelectChange('segment', value)"
+            :options="segmentOptions"
+            placeholder="Filter by platform"
+            :multiple="false"
+          />
+        </div>
 
-      <div class="date-range">
-        <DateRange 
-          :fromDate="new Date()"
-          :toDate="new Date()"
-          :get-from-date="handleDateRangeChange"
-          autoPlay
-          opens="left"
-          @update="handleDateRangeChange"
-        />
+        <div class="date-range">
+          <DateRange 
+            :fromDate="new Date()"
+            :toDate="new Date()"
+            :get-from-date="handleDateRangeChange"
+            autoPlay
+            opens="left"
+            @update="handleDateRangeChange"
+          />
+        </div>
       </div>
-    </div>
-    
-    <div class="action-controls">
-      <div class="action-dropdown">
-        <VueSelect
-          :model-value="selectedAction"
-          @update:model-value="handleActionChange"
-          :options="actionOptions"
-          placeholder="Select action"
-          :disabled="selectedUsersCount === 0"
-          :multiple="false"
-        />
+      
+      <div class="action-controls">
+        <div class="action-dropdown">
+          <VueSelect
+            :model-value="selectedAction"
+            @update:model-value="handleActionChange"
+            :options="actionOptions"
+            placeholder="Select action"
+            :disabled="selectedUsersCount === 0"
+            :multiple="false"
+          />
+        </div>
+        <button class="import-btn" @click="() => emit('import')">
+          Import Users
+        </button>
       </div>
-      <button class="import-btn" @click="() => emit('import')">
-        Import Users
-      </button>
     </div>
   </div>
 </template>
 
 <style scoped>
 .controls-section {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+/* Desktop Layout */
+.desktop-controls {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -157,9 +178,6 @@ const handleDateRangeChange = (dateRange: { startDate: Date, endDate: Date } | n
   flex-wrap: nowrap;
   padding: 12px;
   border-bottom: 1px solid var(--color-border);
-  margin-bottom: 20px;
-  background-color: var(--color-bg-secondary);
-  border-radius: 8px;
 }
 
 .search-controls {
@@ -266,21 +284,38 @@ const handleDateRangeChange = (dateRange: { startDate: Date, endDate: Date } | n
   background-color: var(--color-primary-hover);
 }
 
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .desktop-controls {
+    gap: 12px;
+    padding: 10px;
+  }
+  
+  .search-controls {
+    gap: 8px;
+  }
+  
+  .filter-dropdown,
+  .segment-dropdown {
+    min-width: 120px;
+  }
+  
+  .action-dropdown {
+    min-width: 160px;
+  }
+  
+  .date-range {
+    min-width: 140px;
+  }
+}
+
 @media (max-width: 768px) {
-  .controls-section {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
+  .desktop-controls {
+    display: none;
   }
   
-  .search-controls,
-  .action-controls {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  
-  .search-box {
-    min-width: 100%;
+  .mobile-controls {
+    display: block;
   }
 }
 </style>

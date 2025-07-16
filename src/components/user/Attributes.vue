@@ -165,9 +165,9 @@ watch(() => props.attributes, (newAttributes) => {
       </div>
 
       <!-- Error Message -->
-      <div v-if="errorMessage" class="error-message">
+      <!-- <div v-if="errorMessage" class="error-message">
         {{ errorMessage }}
-      </div>
+      </div> -->
 
       <div class="attributes-content">
         <div class="attributes-table">
