@@ -17,8 +17,6 @@ const selectedUserAttributes = ref<UserAttribute[]>([])
 const emit = defineEmits<{
   'update:selectAll': [value: boolean]
   'update:userSelected': [userId: number]
-  'showUserAttributes': [userId: number]
-  'goToConversation': [userId: number]
   'userClick': [user: User]
   'sort': [sortBy: SortBy]
   'changePage': [page: number]
@@ -60,8 +58,22 @@ const handleUpdateAttributes = (attributes: UserAttribute[]): void => {
   selectedUserAttributes.value = attributes
 }
 
+// const handleDeleteUser = (userId: number): void => {
+//   const user = props.users.find(u => u.id === userId)
+//   if (user) {
+//     if (confirm(`Are you sure you want to delete user "${user.name}"? This action cannot be undone.`)) {
+//       console.log('Delete user:', userId)
+//       // Add delete logic here
+//     }
+//   }
+// }
+
 const goToConversation = (userId: number): void => {
-  emit('goToConversation', userId)
+  const user = props.users.find(u => u.id === userId)
+  if (user) {
+      console.log('goToConversation', userId)
+      // Add navigation logic here
+  }
 }
 
 const handleRowClick = (user: User): void => {
@@ -84,8 +96,8 @@ const handlePerPageChange = (event: Event): void => {
 }
 
 const getSortIcon = (column: SortBy): string => {
-  if (props.sorting.sortBy !== column) return '↕️'
-  return props.sorting.sortOrder === 'asc' ? '↑' : '↓'
+  if (props.sorting.sortBy !== column) return ''
+  return props.sorting.sortOrder === 'asc' ? 'asc' : 'desc'
 }
 
 const getPageNumbers = computed(() => {
@@ -153,21 +165,17 @@ const getPageNumbers = computed(() => {
                 @change="toggleSelectAll"
               >
             </th>
-            <th class="sortable" @click="handleSort('name')">
-              NAME {{ getSortIcon('name') }}
+            <th class="sortable" :class="getSortIcon('name')" @click="handleSort('name')">
+              NAME
             </th>
-            <th class="sortable" @click="handleSort('type')">
-              TYPE {{ getSortIcon('type') }}
-            </th>
-            <th class="sortable" @click="handleSort('active_for_bot')">
-              ACTIVE FOR BOT {{ getSortIcon('active_for_bot') }}
+            <th class="sortable" :class="getSortIcon('type')" @click="handleSort('type')">
+              TYPE
             </th>
             <th>CREATED AT</th>
             <th>COUNTRY</th>
-            <th>OS</th>
             <th>PHONE</th>
-            <th></th>
             <th>STATUS</th>
+            <th>ACTIONS</th>
           </tr>
         </thead>
         <tbody>
@@ -201,36 +209,54 @@ const getPageNumbers = computed(() => {
                 <div class="user-details">
                   <div class="user-name">{{ user.name }}</div>
                   <div class="user-email">{{ user.email }}</div>
-                  <div 
-                    class="user-attributes" 
-                    @click.stop
-                    @click="handleShowAttributes(user.id)"
-                  >
-                    Show Attributes
-                  </div>
                 </div>
               </div>
             </td>
             <td>{{ user.type || 'N/A' }}</td>
-            <td>{{ user.active_for_bot === 1 ? 'Yes' : 'No' }}</td>
             <td>{{ user.created_at }}</td>
             <td>{{ user.country }}</td>
-            <td>{{ user.os }}</td>
             <td>{{ user.phone_number || 'N/A' }}</td>
-            <td>
-              <button 
-                v-if="user.hasConversation" 
-                class="conversation-btn"
-                @click.stop
-                @click="goToConversation(user.id)"
-              >
-                Go to Conversation
-              </button>
-            </td>
             <td>
               <span class="status-badge" :class="user.status.toLowerCase()">
                 {{ user.status }}
               </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button 
+                  v-if="user.hasConversation" 
+                  class="action-btn conversation-btn"
+                  @click.stop
+                  @click="goToConversation(user.id)"
+                  title="Go to Conversation"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                </button>
+                <button 
+                  class="action-btn attributes-btn"
+                  @click.stop
+                  @click="handleShowAttributes(user.id)"
+                  title="Show Attributes"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
+                  </svg>
+                </button>
+                <!-- <button 
+                  class="action-btn delete-btn"
+                  @click.stop
+                  @click="handleDeleteUser(user.id)"
+                  title="Delete User"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3,6 5,6 21,6"></polyline>
+                    <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                  </svg>
+                </button> -->
+              </div>
             </td>
           </tr>
         </tbody>
@@ -286,8 +312,8 @@ const getPageNumbers = computed(() => {
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  min-height: 300px;
-  max-height: 60vh;
+  min-height: 200px;
+  max-height: 50vh;
   overflow-y: auto;
   position: relative;
 }
@@ -332,18 +358,18 @@ const getPageNumbers = computed(() => {
 .users-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1200px; /* Ensure minimum width to maintain column sizes */
-  min-height: 300px;
+  min-width: 1000px; /* Ensure minimum width to maintain column sizes */
+  min-height: 200px;
   transition: filter 0.3s ease;
 }
 
 .users-table th {
   background-color: var(--color-primary);
   color: white;
-  padding: 12px;
+  padding: 14px 12px;
   text-align: left;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   position: sticky;
@@ -351,28 +377,47 @@ const getPageNumbers = computed(() => {
   white-space: nowrap;
 }
 
-/* Column width constraints */
-.users-table th:nth-child(1) { width: 50px; } /* Checkbox */
-.users-table th:nth-child(2) { width: 250px; } /* Name */
-.users-table th:nth-child(3) { width: 120px; } /* Type */
-.users-table th:nth-child(4) { width: 140px; } /* Active for Bot */
-.users-table th:nth-child(5) { width: 140px; } /* Created At */
-.users-table th:nth-child(6) { width: 100px; } /* Country */
-.users-table th:nth-child(7) { width: 100px; } /* OS */
-.users-table th:nth-child(8) { width: 120px; } /* Phone */
-.users-table th:nth-child(9) { width: 150px; } /* Actions */
-.users-table th:nth-child(10) { width: 100px; } /* Status */
-
-
 .users-table th.sortable {
   cursor: pointer;
   user-select: none;
   transition: background-color 0.2s;
+  position: relative;
 }
 
 .users-table th.sortable:hover {
-  background-color: var(--color-primary);
+  background-color: var(--color-primary-hover);
 }
+
+.users-table th.sortable::after {
+  content: '↕';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.users-table th.sortable.asc::after {
+  content: '↑';
+  opacity: 1;
+}
+
+.users-table th.sortable.desc::after {
+  content: '↓';
+  opacity: 1;
+}
+
+/* Column width constraints */
+.users-table th:nth-child(1) { width: 20px; } /* Checkbox */
+.users-table th:nth-child(2) { width: 200px; } /* Name */
+.users-table th:nth-child(3) { width: 60px; } /* Type */
+.users-table th:nth-child(4) { width: 160px; } /* Created At */
+.users-table th:nth-child(5) { width: 120px; } /* Country */
+.users-table th:nth-child(6) { width: 140px; } /* Phone */
+.users-table th:nth-child(7) { width: 60px; } /* Status */
+.users-table th:nth-child(8) { width: 140px; } /* Actions */
+
 
 .users-table td {
   padding: 12px;
@@ -386,15 +431,13 @@ const getPageNumbers = computed(() => {
 
 /* Column width constraints for cells */
 .users-table td:nth-child(1) { width: 50px; } /* Checkbox */
-.users-table td:nth-child(2) { width: 250px; } /* Name */
-.users-table td:nth-child(3) { width: 120px; } /* Type */
-.users-table td:nth-child(4) { width: 140px; } /* Active for Bot */
-.users-table td:nth-child(5) { width: 140px; } /* Created At */
-.users-table td:nth-child(6) { width: 100px; } /* Country */
-.users-table td:nth-child(7) { width: 100px; } /* OS */
-.users-table td:nth-child(8) { width: 120px; } /* Phone */
-.users-table td:nth-child(9) { width: 150px; } /* Actions */
-.users-table td:nth-child(10) { width: 100px; } /* Status */
+.users-table td:nth-child(2) { width: 280px; } /* Name */
+.users-table td:nth-child(3) { width: 140px; } /* Type */
+.users-table td:nth-child(4) { width: 160px; } /* Created At */
+.users-table td:nth-child(5) { width: 120px; } /* Country */
+.users-table td:nth-child(6) { width: 140px; } /* Phone */
+.users-table td:nth-child(7) { width: 120px; } /* Status */
+.users-table td:nth-child(8) { width: 100px; } /* Actions */
 
 
 .users-table tr:hover td {
@@ -482,33 +525,69 @@ const getPageNumbers = computed(() => {
   color: var(--color-text-primary);
 }
 
-.user-attributes {
+.user-email {
   font-size: 12px;
   color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: color 0.2s;
 }
 
-.user-attributes:hover {
-  text-decoration: underline;
-  color: var(--color-primary);
-}
-
-.conversation-btn {
-  background-color: var(--color-primary);
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
+.active-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
   font-size: 12px;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  font-weight: 500;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
-.conversation-btn:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
+.active-badge.active {
+  background-color: var(--color-success);
+  color: white;
 }
+
+.active-badge.inactive {
+  background-color: var(--color-error);
+  color: white;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  padding: 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn:hover {
+  background-color: var(--color-bg-hover);
+  transform: scale(1.1);
+}
+
+.conversation-btn {
+  color: var(--color-primary);
+}
+
+.attributes-btn {
+  color: var(--color-accent);
+}
+
+/* .delete-btn {
+  color: var(--color-error);
+}
+
+.delete-btn:hover {
+  background-color: rgba(220, 53, 69, 0.1);
+} */
 
 .status-badge {
   padding: 4px 8px;

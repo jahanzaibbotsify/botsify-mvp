@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, defineExpose } from 'vue'
+import { ref, computed, watch } from 'vue'
 import ModalLayout from '@/components/ui/ModalLayout.vue'
 import UserFilters from '@/components/user/Filters.vue'
 import UserTable from '@/components/user/Table.vue'
@@ -345,10 +345,40 @@ const handlePerPageChange = (perPage: PerPage): void => {
 
 // Watch for action changes
 watch(selectedAction, (newAction) => {
-  if (newAction && selectedUsersCount.value > 0) {
-    executeSelectedAction()
+  if (newAction) {
+    if (selectedUsersCount.value > 0) {
+      // Show confirmation dialog
+      const actionText = getActionText(newAction)
+      const userCount = selectedUsersCount.value
+      const userText = userCount === 1 ? 'user' : 'users'
+      
+      if (confirm(`Are you sure you want to ${actionText} ${userCount} ${userText}?`)) {
+        executeSelectedAction()
+      } else {
+        // Reset action if user cancels
+        selectedAction.value = ''
+      }
+    } else {
+      // Show notification for no users selected
+      alert('Please select at least 1 user to perform this action.')
+      selectedAction.value = ''
+    }
   }
 })
+
+// Helper function to get action text
+const getActionText = (action: ActionType): string => {
+  const actionMap: Record<ActionType, string> = {
+    'activate': 'activate',
+    'deactivate': 'deactivate', 
+    'delete': 'delete',
+    'test': 'make test',
+    'export': 'export',
+    'delete_conversation': 'delete conversation for',
+    '': ''
+  }
+  return actionMap[action] || action
+}
 
 // Update pagination when filtered users change
 watch(filteredUsers, (newFilteredUsers) => {
@@ -369,7 +399,7 @@ defineExpose({ openModal })
   <ModalLayout 
     ref="userRef"
     title="USER MANAGEMENT"
-    max-width="1200px"
+    max-width="1400px"
     :scrollable="false"
     @close="closeModal"
   >
@@ -409,8 +439,6 @@ defineExpose({ openModal })
         :loading="loading"
         @update:select-all="(value: boolean) => handleSelectionChange('all', value)"
         @update:user-selected="(userId: number) => handleSelectionChange('single', userId)"
-        @show-user-attributes="(userId: number) => handleUserAction('showAttributes', userId)"
-        @go-to-conversation="(userId: number) => handleUserAction('goToConversation', userId)"
         @user-click="(user: User) => handleUserAction('userClick', user)"
         @sort="handleSort"
         @change-page="handlePageChange"

@@ -24,10 +24,14 @@ const filterOptions = [
 ]
 
 const segmentOptions = [
-  { label: 'All Users', value: 'all' as SegmentType },
+  { label: 'All Platforms', value: 'all' as SegmentType },
   { label: 'SMS Users', value: 'sms' as SegmentType },
   { label: 'WhatsApp Users', value: 'whatsapp' as SegmentType },
   { label: 'Facebook Users', value: 'facebook' as SegmentType },
+  { label: 'Telegram Users', value: 'telegram' as SegmentType },
+  { label: 'Instagram Users', value: 'instagram' as SegmentType },
+  { label: 'Twitter Users', value: 'twitter' as SegmentType },
+  { label: 'LinkedIn Users', value: 'linkedin' as SegmentType },
 ]
 
 const actionOptions = [
@@ -38,7 +42,6 @@ const actionOptions = [
   { label: 'Export User', value: 'export' as ActionType },
   { label: 'Delete User Conversation', value: 'delete_conversation' as ActionType },
 ]
-
 
 // Generic handler for filter updates
 const updateFilter = (key: keyof UserFilterState, value: any): void => {
@@ -85,11 +88,14 @@ const handleDateRangeChange = (dateRange: { startDate: Date, endDate: Date } | n
       <div class="search-box">
         <input 
           type="text" 
-          placeholder="Search..." 
+          placeholder="Search users..." 
           :value="filterState.search"
           @input="handleSearchChange"
         >
-        <button class="search-btn">🔍</button>
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
       </div>
       
       <div class="filter-dropdown">
@@ -97,7 +103,7 @@ const handleDateRangeChange = (dateRange: { startDate: Date, endDate: Date } | n
           :model-value="filterState.filter"
           @update:model-value="(value: string | string[]) => handleSelectChange('filter', value)"
           :options="filterOptions"
-          placeholder="Select user type"
+          placeholder="Filter by status"
           :multiple="false"
         />
       </div>
@@ -107,7 +113,7 @@ const handleDateRangeChange = (dateRange: { startDate: Date, endDate: Date } | n
           :model-value="filterState.segment"
           @update:model-value="(value: string | string[]) => handleSelectChange('segment', value)"
           :options="segmentOptions"
-          placeholder="Select segment"
+          placeholder="Filter by platform"
           :multiple="false"
         />
       </div>
@@ -136,7 +142,7 @@ const handleDateRangeChange = (dateRange: { startDate: Date, endDate: Date } | n
         />
       </div>
       <button class="import-btn" @click="() => emit('import')">
-        Import
+        Import Users
       </button>
     </div>
   </div>
@@ -147,92 +153,124 @@ const handleDateRangeChange = (dateRange: { startDate: Date, endDate: Date } | n
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #e9ecef;
-  margin-bottom: 16px;
+  gap: 16px;
+  flex-wrap: nowrap;
+  padding: 12px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 20px;
+  background-color: var(--color-bg-secondary);
+  border-radius: 8px;
 }
 
 .search-controls {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .search-box {
   position: relative;
   display: flex;
+  min-width: 160px;
+  flex-shrink: 0;
 }
 
 .search-box input {
-  padding: 8px 40px 8px 12px;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 14px;
-  width: 200px;
+  padding: 12px;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  font-size: 13px;
+  width: 100%;
+  background-color: white;
+  transition: border-color 0.2s;
+  height: 38px;
+  box-sizing: border-box;
 }
 
-.search-btn {
+.search-box input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0, 163, 255, 0.1);
+}
+
+.search-icon {
   position: absolute;
-  right: 8px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  background: var(--color-primary);
-  border: none;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  cursor: pointer;
+  color: var(--color-text-tertiary);
+  pointer-events: none;
 }
 
-.filter-dropdown select,
-.action-dropdown select,
-.segment-dropdown select {
-  padding: 8px 12px;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 14px;
-  background-color: white;
+.filter-dropdown,
+.segment-dropdown,
+.action-dropdown {
+  min-width: 130px;
+  flex-shrink: 0;
 }
 
-.date-range input {
-  padding: 8px 12px;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 14px;
-  background-color: white;
-  cursor: pointer;
+.action-dropdown{
+  min-width: 180px;
+  flex-shrink: 0;
+}
+
+.filter-dropdown :deep(.vue3-select-component),
+.segment-dropdown :deep(.vue3-select-component),
+.action-dropdown :deep(.vue3-select-component) {
+  font-size: 13px;
+  height: 44px;
+}
+
+.date-range {
+  min-width: 160px;
+  flex-shrink: 0;
+}
+
+.date-range :deep(.vue3-date-time-picker) {
+  height: 44px;
+}
+
+.date-range :deep(.vue3-date-time-picker input) {
+  height: 44px;
+  padding: 12px 16px;
+  font-size: 13px;
 }
 
 .action-controls {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .import-btn {
   background-color: var(--color-primary);
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  font-size: 14px;
+  padding: 10px 15px;
+  border-radius: 6px;
+  font-size: 13px;
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.2s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .import-btn:hover:not(:disabled) {
-  background-color: #3367d6;
+  background-color: var(--color-primary-hover);
 }
 
 @media (max-width: 768px) {
   .controls-section {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 16px;
   }
   
   .search-controls,
@@ -241,8 +279,8 @@ const handleDateRangeChange = (dateRange: { startDate: Date, endDate: Date } | n
     justify-content: center;
   }
   
-  .search-box input {
-    width: 150px;
+  .search-box {
+    min-width: 100%;
   }
 }
 </style>
