@@ -163,7 +163,7 @@ const getPageNumbers = computed(() => {
       <table class="users-table" :class="{ 'loading-blur': loading }">
         <thead>
           <tr>
-            <th class="sortable">
+            <th>
               <input 
                 type="checkbox" 
                 :checked="selectAll" 
@@ -176,11 +176,11 @@ const getPageNumbers = computed(() => {
             <th class="sortable" :class="getSortIcon('type')" @click="handleSort('type')">
               TYPE
             </th>
-            <th class="sortable">CREATED AT</th>
-            <th class="sortable">COUNTRY</th>
-            <th class="sortable">PHONE</th>
-            <th class="sortable">STATUS</th>
-            <th class="sortable">ACTIONS</th>
+            <th>CREATED AT</th>
+            <th>COUNTRY</th>
+            <th>PHONE</th>
+            <th>STATUS</th>
+            <th>ACTIONS</th>
           </tr>
         </thead>
         <tbody>
@@ -402,7 +402,7 @@ const getPageNumbers = computed(() => {
   border-bottom: 2px solid #e5e7eb;
 }
 
-.users-table th.sortable {
+.users-table th {
   cursor: pointer;
   user-select: none;
   transition: background-color 0.2s;
@@ -446,7 +446,7 @@ const getPageNumbers = computed(() => {
 .users-table td {
   padding: 16px 12px;
   border-bottom: 1px solid #f3f4f6;
-  font-size: 16px;
+  font-size: 13px;
   background-color: white;
   white-space: nowrap;
   overflow: hidden;
@@ -525,8 +525,8 @@ const getPageNumbers = computed(() => {
 }
 
 .user-avatar {
-  width: 44px;
-  height: 44px;
+  width: 35px;
+  height: 35px;
   background-color: var(--color-primary);
   border-radius: 50%;
   display: flex;
@@ -546,11 +546,11 @@ const getPageNumbers = computed(() => {
 .user-name {
   font-weight: 500;
   color: var(--color-text-primary);
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .user-email {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-text-secondary);
 }
 
