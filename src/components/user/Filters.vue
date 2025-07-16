@@ -70,9 +70,11 @@ const handleActionChange = (value: ActionType | ActionType[]): void => {
 // Handle date range updates
 const handleDateRangeChange = (dateRange: { startDate: Date, endDate: Date } | null): void => {
   if (dateRange) {
-    updateFilter('dateRange', {
-      startDate: dateRange.startDate,
-      endDate: dateRange.endDate
+    emit('update:filterState', {
+      dateRange: {
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate
+      }
     })
   }
 }
