@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, defineEmits, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { UserAttribute } from '@/types/user';
 import { userApi } from '@/services/userApi'
 import { User } from '@/types/user';
