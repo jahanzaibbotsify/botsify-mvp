@@ -2,6 +2,9 @@
 import { ref, defineEmits } from 'vue'
 import FileUpload from './FileUpload.vue'
 import { User } from '@/types/user'
+import { useToast } from 'vue-toast-notification'
+
+const $toast = useToast({ position: 'top-right' })
 
 const emit = defineEmits<{
   close: []
@@ -32,10 +35,10 @@ const handleImport = async () => {
     // Reset state
     importFile.value = null
     
-    alert('Users imported successfully!')
+    $toast.success('Users imported successfully!')
   } catch (error) {
     console.error('Import error:', error)
-    alert('Failed to import users. Please try again.')
+    $toast.error('Failed to import users. Please try again.')
   } finally {
     isImporting.value = false
   }

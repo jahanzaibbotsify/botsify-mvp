@@ -7,10 +7,13 @@ import 'primeicons/primeicons.css'
 import '@fontsource/ubuntu/400.css'
 import '@fontsource/ubuntu/500.css'
 import '@fontsource/ubuntu/700.css'
-import axios from 'axios'
+import axios from 'axios';
+import ToastPlugin from 'vue-toast-notification';
+
 
 // Import routes
 import routes from '@/router'
+import 'vue-toast-notification/dist/theme-bootstrap.css';
 
 
 // Import OpenAI debug utility in development
@@ -96,7 +99,7 @@ router.beforeEach(async (to, from, next) => {
   console.log(from.name);
   if (to.name === 'agent') {
     const apikey = to.params.id;
-    if (typeof apikey === 'string' && apikey) {
+    if (typeof apikey === 'string' && apikey) {      
       const bot = await getBotDetails(apikey);
       if (bot) {
         console.log('Authenticated');
@@ -124,6 +127,7 @@ const app = createApp(App)
 // Use plugins
 app.use(router)
 app.use(pinia)
+app.use(ToastPlugin);
 
 // Check localStorage before mounting
 const localStorageAvailable = checkLocalStorage();
