@@ -107,9 +107,9 @@ router.beforeEach(async (to, from, next) => {
       }
     }
 
-    // if (!localStorage.getItem('apikey')) {
-    //   window.location.href = 'https://app.botsify.com/login';
-    // }
+    if (!localStorage.getItem('apikey')) {
+      window.location.href = 'https://app.botsify.com/login';
+    }
     // Ensure only a string is stored
     let apikeyStr = '';
     if (typeof apikey === 'string') {
