@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, defineEmits } from 'vue'
-import FileUpload from './FileUpload.vue'
+import FileUpload from '@/components/ui/FileUpload.vue'
 import { User } from '@/types/user'
 import { userApi } from '@/services/userApi'
 
@@ -11,56 +11,27 @@ const emit = defineEmits<{
 
 const isImporting = ref<boolean>(false)
 const importFile = ref<File | null>(null)
-const uploadProgress = ref<number>(0)
 const importStatus = ref<string>('')
 
-const handleFileSelect = (file: File | null) => {
-  importFile.value = file
-  uploadProgress.value = 0
-  importStatus.value = ''
-}
 
 const handleImport = async () => {
   if (!importFile.value) return
   
   isImporting.value = true
-  uploadProgress.value = 0
-  importStatus.value = 'Preparing upload...'
   
   try {
-    const response = await userApi.importUsers(
-      importFile.value,
-      (progress: number) => {
-        uploadProgress.value = progress
-        importStatus.value = `Uploading... ${progress}%`
-      }
-    )
-    
+    const response = await userApi.importUsers(importFile.value)
     if (response.success && response.data) {
-      const importData = response.data
-      
-      if (importData.success) {
-        importStatus.value = `Successfully imported ${importData.imported_count || 0} users!`
+        importStatus.value = `Successfully imported!`
         
         // Show success message with details
-        const message = `Import completed successfully!\n\nImported: ${importData.imported_count || 0} users`
-        
-        if (importData.errors && importData.errors.length > 0) {
-          alert(`${message}\n\nErrors encountered:\n${importData.errors.join('\n')}`)
-        } else {
-          alert(message)
-        }
+        alert(response.data.message)
         
         // Reset state
         importFile.value = null
-        uploadProgress.value = 0
-        importStatus.value = ''
         
         // Emit import event to refresh user list
         emit('import', [])
-      } else {
-        throw new Error(importData.message || 'Import failed')
-      }
     } else {
       throw new Error(response.message || 'Import failed')
     }
@@ -117,20 +88,20 @@ Mike Johnson,en,twitter,United Kingdom,Android,1122334455,Active`
     <div class="import-content">
       <div class="upload-section">
         <label class="upload-label">Upload File (CSV or TXT)</label>
-        <FileUpload 
-          :selected-file="importFile"
-          @file-select="handleFileSelect"
+        <FileUpload
+          v-model="importFile"
+          accept=".csv,.txt,text/csv,text/plain"
+          :multiple="false"
+          :emitRawFile="true"
+          text="Upload File (CSV or TXT)"
         />
+        <div v-if="importFile" class="selected-file">
+          <span class="file-name">📄 {{ importFile.name }}</span>
+        </div>
       </div>
 
       <!-- Progress Bar -->
       <div v-if="isImporting" class="progress-section">
-        <div class="progress-bar">
-          <div 
-            class="progress-fill" 
-            :style="{ width: `${uploadProgress}%` }"
-          ></div>
-        </div>
         <p class="progress-text">{{ importStatus }}</p>
       </div>
 
@@ -218,6 +189,16 @@ Mike Johnson,en,twitter,United Kingdom,Android,1122334455,Active`
 
 .upload-section {
   margin-bottom: 16px;
+}
+
+.selected-file {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #444;
+  background: #f6f6f6;
+  padding: 6px 12px;
+  border-radius: 6px;
+  display: inline-block;
 }
 
 .upload-label {

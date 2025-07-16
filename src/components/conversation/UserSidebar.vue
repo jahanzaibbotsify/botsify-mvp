@@ -14,10 +14,21 @@
         <div class="user-name">{{ user?.title || 'Select User' }}</div>
         <div class="user-email">{{ user?.email || 'user@example.com' }}</div>
       </div>
-      <button class="notification-button icon-button">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button 
+        class="notification-button icon-button" 
+        :class="{ enabled: notificationsEnabled, disabled: !notificationsEnabled }"
+        @click="toggleNotifications"
+      >
+        <svg v-if="notificationsEnabled" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
           <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
+        </svg>
+        <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          <path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path>
+          <path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14a17.89 17.89 0 0 0 1.63-5"></path>
+          <line x1="18" y1="8" x2="6" y2="8"></line>
+          <line x1="18" y1="8" x2="6" y2="8"></line>
         </svg>
       </button>
     </div>
@@ -76,15 +87,6 @@
       </button>
       <button class="user-action-button icon-button">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="18" cy="5" r="3"></circle>
-          <circle cx="6" cy="12" r="3"></circle>
-          <circle cx="18" cy="19" r="3"></circle>
-          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-        </svg>
-      </button>
-      <button class="user-action-button icon-button">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="3 6 5 6 21 6"></polyline>
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
         </svg>
@@ -94,6 +96,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import UserProfile from './UserProfile.vue'
 import UserAttributes from './UserAttributes.vue'
 import type { ExtendedChat } from '@/types'
@@ -109,6 +112,12 @@ defineProps<Props>()
 defineEmits<{
   'update:activeTab': [value: string]
 }>()
+
+const notificationsEnabled = ref(true)
+
+const toggleNotifications = () => {
+  notificationsEnabled.value = !notificationsEnabled.value
+}
 </script>
 
 <style scoped>
@@ -179,6 +188,15 @@ defineEmits<{
   color: var(--color-text-primary);
 }
 
+.notification-button.disabled {
+  color: var(--color-text-tertiary);
+  opacity: 0.5;
+}
+
+.notification-button.enabled {
+  color: var(--color-primary);
+}
+
 .user-tabs {
   display: flex;
   padding: var(--space-3) var(--space-4);
@@ -235,7 +253,7 @@ defineEmits<{
   height: 8px;
   background-color: var(--color-bg-tertiary);
   border-radius: var(--radius-full);
-  overflow: hidden;
+  margin: 12px 0;
 }
 
 .satisfaction-fill {
@@ -247,16 +265,25 @@ defineEmits<{
 
 .satisfaction-emoji {
   position: absolute;
-  top: -8px;
+  top: -6px;
   font-size: 16px;
+  z-index: 10;
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-full);
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .satisfaction-emoji.sad {
-  left: 0;
+  left: -2px;
 }
 
 .satisfaction-emoji.happy {
-  right: 0;
+  right: -2px;
 }
 
 .user-actions {

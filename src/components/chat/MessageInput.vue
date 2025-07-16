@@ -3,7 +3,7 @@ import { ref, reactive } from 'vue';
 import { useChatStore } from '@/stores/chatStore';
 import { useMCPStore } from '@/stores/mcpStore';
 import type { Attachment } from '@/types';
-import FileUpload from './FileUpload.vue';
+import FileUpload from '@/components/ui/FileUpload.vue';
 import MCPConnectionModal from './MCPConnectionModal.vue';
 import { botsifyApi } from '@/services/botsifyApi';
 
@@ -608,7 +608,15 @@ const deleteWebSearchAllEntry = async () => {
 
     <!-- File upload area -->
     <div v-if="showFileUpload" class="file-upload-container">
-      <FileUpload :onUpload="handleFileUpload" />
+      <FileUpload
+        :accept="'image/*,video/*,audio/*,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation'"
+        :multiple="true"
+        :maxSizeMB="20"
+        :enablePreview="true"
+        :emitRawFile="false"
+        @upload="handleFileUpload"
+        text="For AI prompt analysis • Max 20MB images, 50MB videos"
+      />
     </div>
 
     <!-- Attachments preview -->
