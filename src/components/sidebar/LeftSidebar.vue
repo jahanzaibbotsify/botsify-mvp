@@ -18,7 +18,7 @@ const router = useRouter();
 // const { width } = useWindowSize();
 
 const emit = defineEmits(['select-button']);
-const selectedNavigationButton = ref('Agent');
+// const selectedNavigationButton = ref('Agent');
 // const isMobile = computed(() => width.value < 768);
 const showNavDropdown = ref(false);
 const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
