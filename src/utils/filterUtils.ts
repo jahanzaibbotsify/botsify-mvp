@@ -33,12 +33,17 @@ export interface ConversationFilterParams extends FilterParams {
 export class BaseFilterManager<T extends BaseFilterState> {
   protected state: T
   protected debouncedSearch: Ref<string>
+  protected debouncedSortBy: Ref<string>
+  protected debouncedSortOrder: Ref<string>
   protected debounceTimeout: NodeJS.Timeout | null = null
+  protected sortDebounceTimeout: NodeJS.Timeout | null = null
   protected changeCallback?: (params: any) => void
 
   constructor(initialState: T) {
     this.state = { ...initialState }
     this.debouncedSearch = ref('')
+    this.debouncedSortBy = ref(this.state.sortBy)
+    this.debouncedSortOrder = ref(this.state.sortOrder)
   }
 
   // Get current filter state
@@ -89,9 +94,37 @@ export class BaseFilterManager<T extends BaseFilterState> {
     }, 500) // Increased to 500ms for better debouncing
   }
 
+  // Debounced sorting update
+  updateSorting(sortBy: string, sortOrder: string): void {
+    console.log('updateSorting called with:', sortBy, sortOrder)
+    this.state.sortBy = sortBy
+    this.state.sortOrder = sortOrder
+    
+    // Clear existing timeout
+    if (this.sortDebounceTimeout) {
+      clearTimeout(this.sortDebounceTimeout)
+    }
+    
+    // Set new timeout
+    this.sortDebounceTimeout = setTimeout(() => {
+      console.log('Debounced sorting triggered with:', sortBy, sortOrder)
+      this.debouncedSortBy.value = sortBy
+      this.debouncedSortOrder.value = sortOrder
+      this.triggerChange()
+    }, 300) // 300ms debounce for sorting
+  }
+
   // Get debounced search value
   getDebouncedSearch(): string {
     return this.debouncedSearch.value
+  }
+
+  // Get debounced sorting values
+  getDebouncedSorting(): { sortBy: string; sortOrder: string } {
+    return {
+      sortBy: this.debouncedSortBy.value,
+      sortOrder: this.debouncedSortOrder.value
+    }
   }
 
   // Reset all filters
@@ -102,6 +135,8 @@ export class BaseFilterManager<T extends BaseFilterState> {
     this.state.sortBy = 'id'
     this.state.sortOrder = 'desc'
     this.debouncedSearch.value = ''
+    this.debouncedSortBy.value = 'id'
+    this.debouncedSortOrder.value = 'desc'
     this.triggerChange()
   }
 
@@ -124,8 +159,8 @@ export class BaseFilterManager<T extends BaseFilterState> {
     return {
       page: this.state.page,
       per_page: this.state.perPage,
-      sortby: this.state.sortBy,
-      sortorder: this.state.sortOrder
+      sortby: this.debouncedSortBy.value,
+      sortorder: this.debouncedSortOrder.value
     }
   }
 }

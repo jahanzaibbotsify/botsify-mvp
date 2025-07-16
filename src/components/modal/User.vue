@@ -5,7 +5,7 @@ import UserFilters from '@/components/user/Filters.vue'
 import UserTable from '@/components/user/Table.vue'
 import ImportPanel from '@/components/user/ImportPanel.vue'
 import UserDetails from '@/components/user/Details.vue'
-import { ActionType, User, SortBy, PerPage, PaginationData, SortingData, FilterType, SegmentType, ApiUser } from '@/types/user'
+import { ActionType, User, SortBy, PerPage, PaginationData, SortingData, FilterType, SegmentType, ApiUser, SortOrder } from '@/types/user'
 import { userApi } from '@/services/userApi'
 import { createUserFilterManager, type UserFilterState } from '@/utils/filterUtils'
 
@@ -262,23 +262,40 @@ filterManager.onChanges((params) => {
   fetchUsers()
 })
 
-// Override the updateFilters method to handle debounced search
+// Override the updateFilters method to handle debounced search and sorting
 const originalUpdateFilters = filterManager.updateFilters.bind(filterManager)
 filterManager.updateFilters = (updates: Partial<UserFilterState>) => {
-  console.log('updateFilters called with:', updates)
+  console.log('User.vue updateFilters called with:', updates)
   
   // If search is being updated, use debounced search and don't trigger immediate change
   if (updates.search !== undefined) {
+    console.log('Handling search update with debouncing')
     filterManager.updateSearch(updates.search)
     return // Don't call original updateFilters for search
   }
   
-  // For non-search updates, use the original method
+  // If sorting is being updated, use debounced sorting and don't trigger immediate change
+  if (updates.sortBy !== undefined || updates.sortOrder !== undefined) {
+    console.log('Handling sorting update with debouncing')
+    const currentSorting = filterManager.getDebouncedSorting()
+    const newSortBy = updates.sortBy !== undefined ? updates.sortBy : currentSorting.sortBy
+    const newSortOrder = updates.sortOrder !== undefined ? updates.sortOrder : currentSorting.sortOrder
+    filterManager.updateSorting(newSortBy, newSortOrder)
+    return // Don't call original updateFilters for sorting
+  }
+  
+  // For date range updates, log the change
+  if (updates.dateRange !== undefined) {
+    console.log('Handling date range update:', updates.dateRange)
+  }
+  
+  // For non-search/sorting updates, use the original method
+  console.log('Calling original updateFilters with:', updates)
   originalUpdateFilters(updates)
 }
 
-// Watch for pagination and sorting changes
-watch([() => pagination.value.currentPage, () => pagination.value.perPage, sorting], () => {
+// Watch for pagination changes only (sorting is now handled by filter manager)
+watch([() => pagination.value.currentPage, () => pagination.value.perPage], () => {
   fetchUsers()
 })
 
@@ -289,52 +306,24 @@ watch([() => pagination.value.currentPage, () => pagination.value.perPage, sorti
 
 // Pagination and sorting handlers
 const handleSort = (sortBy: SortBy): void => {
+  console.log('handleSort called with:', sortBy)
+  
+  let newSortOrder: SortOrder = 'desc'
+  
   if (sorting.value.sortBy === sortBy) {
     // Toggle sort order if same column
-    sorting.value.sortOrder = sorting.value.sortOrder === 'asc' ? 'desc' : 'asc'
-  } else {
-    // Set new sort column with default desc order
-    sorting.value.sortBy = sortBy
-    sorting.value.sortOrder = 'desc'
+    newSortOrder = sorting.value.sortOrder === 'asc' ? 'desc' : 'asc'
   }
+  
+  // Update the local sorting state for UI
+  sorting.value.sortBy = sortBy
+  sorting.value.sortOrder = newSortOrder
+  
+  // Use the filter manager's debounced sorting
+  filterManager.updateSorting(sortBy, newSortOrder)
   
   // Reset to first page when sorting changes
   pagination.value.currentPage = 1
-  
-  // Sort the users array
-  users.value.sort((a, b) => {
-    let aValue: any
-    let bValue: any
-    
-    switch (sortBy) {
-      case 'id':
-        aValue = a.id
-        bValue = b.id
-        break
-      case 'name':
-        aValue = a.name.toLowerCase()
-        bValue = b.name.toLowerCase()
-        break
-      case 'type':
-        aValue = a.type.toLowerCase()
-        bValue = b.type.toLowerCase()
-        break
-      case 'active_for_bot':
-        aValue = a.status === 'Active' ? 1 : 0
-        bValue = b.status === 'Active' ? 1 : 0
-        break
-      default:
-        return 0
-    }
-    
-    if (aValue < bValue) {
-      return sorting.value.sortOrder === 'asc' ? -1 : 1
-    }
-    if (aValue > bValue) {
-      return sorting.value.sortOrder === 'asc' ? 1 : -1
-    }
-    return 0
-  })
 }
 
 
@@ -389,7 +378,7 @@ defineExpose({ openModal })
       v-if="showUserDetails && selectedUser"
       :user="selectedUser"
       @back="() => handleUserAction('backFromDetails')"
-      @update-user="(user) => handleUserAction('updateUser', user)"
+      @update-user="(user: User) => handleUserAction('updateUser', user)"
     />
 
     <!-- Main User Management View -->
@@ -408,7 +397,7 @@ defineExpose({ openModal })
       <ImportPanel 
         v-if="showImportPanel"
         @close="() => handleImportActions('close')"
-        @import="(users) => handleImportActions('import', users)"
+        @import="(users: User[]) => handleImportActions('import', users)"
       />
 
       <!-- Users Table -->
@@ -418,11 +407,11 @@ defineExpose({ openModal })
         :pagination="pagination"
         :sorting="sorting"
         :loading="loading"
-        @update:select-all="(value) => handleSelectionChange('all', value)"
-        @update:user-selected="(userId) => handleSelectionChange('single', userId)"
-        @show-user-attributes="(userId) => handleUserAction('showAttributes', userId)"
-        @go-to-conversation="(userId) => handleUserAction('goToConversation', userId)"
-        @user-click="(user) => handleUserAction('userClick', user)"
+        @update:select-all="(value: boolean) => handleSelectionChange('all', value)"
+        @update:user-selected="(userId: number) => handleSelectionChange('single', userId)"
+        @show-user-attributes="(userId: number) => handleUserAction('showAttributes', userId)"
+        @go-to-conversation="(userId: number) => handleUserAction('goToConversation', userId)"
+        @user-click="(user: User) => handleUserAction('userClick', user)"
         @sort="handleSort"
         @change-page="handlePageChange"
         @change-per-page="handlePerPageChange"
