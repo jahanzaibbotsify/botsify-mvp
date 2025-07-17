@@ -23,6 +23,7 @@ const showCustomServerOnOpen = ref(false);
 
 
 const loadingData = ref(false);
+const loadingFor =  ref('');
 
 
 // New refs for File Search
@@ -76,6 +77,7 @@ const sendMessage = async () => {
     // If there are attachments (images/videos), upload them first
     try {
       console.log('Uploading media files for AI prompt...');
+      showLoading('fileUploadingFromPin');
 
       // Show uploading status
       const originalText = finalMessageText;
@@ -101,8 +103,8 @@ const sendMessage = async () => {
       if (filesToUpload.length > 0) {
         // Upload files to get URLs using new endpoint
         const uploadResult = await botsifyApi.uploadMultipleFilesNew(filesToUpload);
-
-        if (uploadResult.success && uploadResult.data.uploadedFiles.length > 0) {
+        // && uploadResult.data.uploadedFiles.length > 0
+        if (uploadResult.success) {
           // Update attachments with uploaded URLs
           uploadResult.data.uploadedFiles.forEach((uploadedFile: any, index: number) => {
             if (!uploadedFile.url) throw new Error(`File ${index + 1} upload failed.`);
@@ -111,8 +113,8 @@ const sendMessage = async () => {
             }
 
             const attachmentIndex = processedAttachments.findIndex(att =>
-              att.name === uploadedFile.fileName && att.type === uploadedFile.fileType
-            );
+              att.name === uploadedFile.fileName
+            ); //att.type === uploadedFile.fileType
 
             if (attachmentIndex !== -1) {
               processedAttachments[attachmentIndex] = {
@@ -126,14 +128,14 @@ const sendMessage = async () => {
           });
 
           // Append file URLs to the AI prompt
-          const fileUrls = uploadResult.data.uploadedFiles.map((file: any) => {
-            const fileType = file.fileType.startsWith('image/') ? 'Image' :
-              file.fileType.startsWith('video/') ? 'Video' : 'Document';
-            return `${fileType}: ${file.url}`;
+          const fileUrls = uploadResult.data.uploadedFiles.map((file: any, index: any) => {
+            if (!file.url) throw new Error(`File ${index + 1} upload failed.`);
+            const label = getLabelFromUrl(file.url);
+            return `${label}: ${file.url}`;
           }).join('\n');
 
           finalMessageText = originalText + (originalText ? '\n\n' : '') +
-            'Attached files:\n' + fileUrls;
+            'Attached files:\n';
 
           console.log('Files uploaded successfully, URLs added to prompt:', fileUrls);
         } else {
@@ -144,7 +146,7 @@ const sendMessage = async () => {
       }
 
       // Remove the temporary uploading message
-      chatStore.removeLastMessage(props.chatId);
+      // chatStore.removeLastMessage(props.chatId);
 
     } catch (error: any) {
       console.error('Error uploading files:', error);
@@ -153,6 +155,8 @@ const sendMessage = async () => {
 
       // Remove the temporary uploading message
       chatStore.removeLastMessage(props.chatId);
+    }finally{
+      hideLoading()
     }
   }
   
@@ -168,6 +172,17 @@ const sendMessage = async () => {
     textareaRef.value.style.height = 'auto';
   }
 };
+
+const getLabelFromUrl = (url: string) => {
+  const ext = (url.split('.').pop() || '').toLowerCase();
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'Image';
+  if (['mp4', 'mov', 'avi', 'webm'].includes(ext)) return 'Video';
+  if (['mp3', 'wav', 'ogg'].includes(ext)) return 'Audio';
+  if (['pdf', 'doc', 'docx', 'txt', 'csv', 'ppt', 'pptx', 'xls', 'xlsx'].includes(ext)) return 'Document';
+  if (['zip', 'rar'].includes(ext)) return 'Archive';
+
+  return 'File';
+}
 
 const handleKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Enter' && !event.shiftKey) {
@@ -620,6 +635,14 @@ const showWarning = async (message: string) => {
   });
   }
 
+const showLoading = (forWhat: string) => {
+  loadingFor.value = forWhat;
+}
+
+const hideLoading = () => {
+  loadingFor.value = '';
+}
+
 </script>
 
 <template>
@@ -646,7 +669,7 @@ const showWarning = async (message: string) => {
           <span class="attachment-name">{{ file.name }}</span>
           <span class="attachment-size">{{ (file.size / 1024).toFixed(1) }}KB</span>
           <span v-if="file.isUploaded" class="attachment-status uploaded">✅ Ready for AI</span>
-          <span v-else-if="file.type.startsWith('image/') || file.type.startsWith('video/')" class="attachment-status pending">📤 Will upload</span>
+          <span v-else-if="file.type.startsWith('image/') || file.type.startsWith('video/')" class="attachment-status pending"></span>
           <span v-else class="attachment-status unsupported">⚠️ Not supported</span>
         </div>
         <button class="remove-attachment" @click.stop="removeAttachment(file.id)">
@@ -658,6 +681,12 @@ const showWarning = async (message: string) => {
       </div>
     </div>
 
+    <!-- file loading from pin button -->
+    <div v-if="loadingFor === 'fileUploadingFromPin'" class="text-muted px-3 loading-spinner-of-pin-file-container">
+      <small >Uploading FIles</small>
+      <span class="loading-spinner "></span>
+    </div>
+    <!-- input area -->
     <div class="input-area">
       <textarea
         ref="textareaRef"
@@ -1842,6 +1871,19 @@ const showWarning = async (message: string) => {
 .file-info .file-download{
   font-size: 0.75rem;
   color: var(--color-text-secondary);
+}
+
+.loading-spinner-of-pin-file-container {
+  margin-left: 12px;
+  color: gray;
+}
+
+.loading-spinner-of-pin-file-container .loading-spinner {
+  display: inline-block;
+  color: #00a3ff;
+  margin-left: 3px;
+  width: 12px;
+  height: 12px;
 }
 
 .remove-file {
