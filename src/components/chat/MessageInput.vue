@@ -6,6 +6,11 @@ import type { Attachment } from '@/types';
 import FileUpload from '@/components/ui/FileUpload.vue';
 import MCPConnectionModal from './MCPConnectionModal.vue';
 import { botsifyApi } from '@/services/botsifyApi';
+import Swal from 'sweetalert2'; // Add at the top with other imports
+import {useToast} from 'vue-toast-notification';
+
+
+const $toast = useToast({position: 'top-right'});
 
 const props = defineProps<{
   chatId: string;
@@ -287,9 +292,8 @@ const removeSelectedFile = () => {
 };
 
 const connectFileSearch = async () => {
-  // File is now mandatory, so we only need to handle file upload
   if (!selectedFile.value) {
-    alert('Please select a file to upload first');
+    $toast.error('Please select a file to upload first');
     return;
   }
 
@@ -345,21 +349,20 @@ const connectFileSearch = async () => {
       closeFileSearchModal();
     } else {
       console.error('Failed to create File Search:', response.message);
-      alert('Failed to create File Search: ' + response.message);
+      $toast.error('Failed to create File Search: ' + response.message);
     }
   } catch (error: any) {
     console.error('Error creating File Search:', error);
-    alert('Error creating File Search: ' + error.message);
+    $toast.error('Error creating File Search: ' + error.message);
   } finally {
     fileSearchLoading.value = false;
     isUploading.value = false;
   }
 };
 
-// Web Search functionality
 const connectWebSearch = async () => {
   if (!webSearchUrl.value.trim()) {
-    alert('Please enter a website URL');
+    $toast.error('Please enter a website URL');
     return;
   }
 
@@ -386,11 +389,11 @@ const connectWebSearch = async () => {
       closeWebSearchModal();
     } else {
       console.error('Failed to create Web Search:', response.message);
-      alert('Failed to create Web Search: ' + response.message);
+      $toast.error('Failed to create Web Search: ' + response.message);
     }
   } catch (error: any) {
     console.error('Error creating Web Search:', error);
-    alert('Error creating Web Search: ' + error.message);
+    $toast.error('Error creating Web Search: ' + error.message);
   } finally {
     webSearchLoading.value = false;
   }
@@ -459,7 +462,8 @@ const loadWebSearchData = async () => {
 
 // Delete File Search entry
 const deleteFileSearchEntry = async (fileSearchId: string, fileSearchName: string) => {
-  if (!confirm('Are you sure you want to delete this File Search entry?')) {
+  const result = await showWarning('Are you sure you want to delete this File Search entry?');
+  if (!result.isConfirmed) {
     return;
   }
 
@@ -487,11 +491,11 @@ const deleteFileSearchEntry = async (fileSearchId: string, fileSearchName: strin
       closeFileSearchModal();
     } else {
       console.error('Failed to delete File Search entry:', response.message);
-      alert('Failed to delete File Search entry: ' + response.message);
+      $toast.error('Failed to delete File Search entry: ' + response.message);
     }
   } catch (error: any) {
     console.error('Error deleting File Search entry:', error);
-    alert('Error deleting File Search entry: ' + error.message);
+    $toast.error('Error deleting File Search entry: ' + error.message);
   }finally{
     fileSearchDeleteLoading.value = false;
   }
@@ -499,7 +503,8 @@ const deleteFileSearchEntry = async (fileSearchId: string, fileSearchName: strin
 
 // Delete File Search entry
 const deleteAllFileSearchEntry = async () => {
-  if (!confirm('Are you sure you want to delete this File Search entry?')) {
+  const result = await showWarning('Are you sure you want to delete this File Search entry?');
+  if (!result.isConfirmed) {
     return;
   }
 
@@ -518,11 +523,11 @@ const deleteAllFileSearchEntry = async () => {
       closeFileSearchModal();
     } else {
       console.error('Failed to delete File Search entry:', response.message);
-      alert('Failed to delete File Search entry: ' + response.message);
+      $toast.error('Failed to delete File Search entry: ' + response.message);
     }
   } catch (error: any) {
     console.error('Error deleting File Search entry:', error);
-    alert('Error deleting File Search entry: ' + error.message);
+    $toast.error('Error deleting File Search entry: ' + error.message);
   }finally{
     fileSearchAllDeleteLoading.value = false;
   }
@@ -530,7 +535,9 @@ const deleteAllFileSearchEntry = async () => {
 
 // Delete Web Search entry
 const deleteWebSearchEntry = async (webSearchId: string, webSearchUrl: string) => {
-  if (!confirm('Are you sure you want to delete this Web Search entry?')) {
+  
+  const result = await showWarning('Are you sure you want to delete this Web Search entry?');
+  if (!result.isConfirmed) {
     return;
   }
 
@@ -558,11 +565,11 @@ const deleteWebSearchEntry = async (webSearchId: string, webSearchUrl: string) =
       closeWebSearchModal();
     } else {
       console.error('Failed to delete Web Search entry:', response.message);
-      alert('Failed to delete Web Search entry: ' + response.message);
+      $toast.error('Failed to delete Web Search entry: ' + response.message);
     }
   } catch (error: any) {
     console.error('Error deleting Web Search entry:', error);
-    alert('Error deleting Web Search entry: ' + error.message);
+    $toast.error('Error deleting Web Search entry: ' + error.message);
   }finally{
     webSearchDeleteLoading.value = false;
   }
@@ -570,10 +577,10 @@ const deleteWebSearchEntry = async (webSearchId: string, webSearchUrl: string) =
 
 // Delete Web Search entry
 const deleteWebSearchAllEntry = async () => {
-  if (!confirm('Are you sure you want to delete this Web Search entry?')) {
+  const result = await showWarning('Are you sure you want to delete this Web Search entry?');
+  if (!result.isConfirmed) {
     return;
   }
-
   const ids = webSearchResults.map(item=>item.id);
 
   try {
@@ -590,15 +597,30 @@ const deleteWebSearchAllEntry = async () => {
       closeWebSearchModal();
     } else {
       console.error('Failed to delete Web Search entry:', response.message);
-      alert('Failed to delete Web Search entry: ' + response.message);
+      $toast.error('Failed to delete Web Search entry: ' + response.message);
     }
   } catch (error: any) {
     console.error('Error deleting Web Search entry:', error);
-    alert('Error deleting Web Search entry: ' + error.message);
+    $toast.error('Error deleting Web Search entry: ' + error.message);
   }finally{
     webSearchDeleteAllLoading.value = false;
   }
+
+  
 };
+
+
+const showWarning = async (message: string) => {
+    return await Swal.fire({
+    title: 'Are you sure?',
+    text: message,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes',
+    cancelButtonText: 'Cancel'
+  });
+  }
+
 </script>
 
 <template>

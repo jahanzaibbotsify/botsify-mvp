@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useMCPStore } from '@/stores/mcpStore';
 import type { MCPServer, CustomMCPServerForm } from '@/types/mcp';
+import Swal from 'sweetalert2'; // Add at the top with other imports
 
 const props = defineProps({
   isOpen: Boolean,
@@ -176,7 +177,15 @@ function saveCustomServer() {
 }
 
 async function deleteCustomServer(serverId: string) {
-  if(!confirm(`Are you sure you want to delete the custom server? This action cannot be undone.`)) return;
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: 'Are you sure you want to delete the custom server? This action cannot be undone.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, delete it',
+    cancelButtonText: 'Cancel'
+  });
+  if (!result.isConfirmed) return;
   try {
     await mcpStore.deleteCustomServer(serverId);
     goBack();
@@ -1372,4 +1381,4 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   color: var(--color-success, #22c55e);
 }
-</style> 
+</style>

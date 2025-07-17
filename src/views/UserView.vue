@@ -6,6 +6,11 @@ import ImportPanel from '@/components/user/ImportPanel.vue'
 import { ActionType, User, SortBy, SortOrder, ApiUser, PerPage, PaginationData, SortingData } from '@/types/user'
 import { userApi } from '@/services/userApi'
 import { createUserFilterManager, type UserFilterState } from '@/utils/filterUtils'
+import {useToast} from 'vue-toast-notification';
+import Swal from 'sweetalert2'; // Add this import at the top with others
+
+
+const $toast = useToast({position: 'top-right'});
 
 // Filter manager
 const filterManager = createUserFilterManager()
@@ -200,6 +205,7 @@ const executeUserAction = async (action: ActionType, userIds: number[]): Promise
     const status = statusMap[action]
     if (status === undefined) {
       console.error('Unknown action:', action)
+      $toast.error('Unknown action selected.');
       return
     }
     
@@ -207,7 +213,7 @@ const executeUserAction = async (action: ActionType, userIds: number[]): Promise
     
     if (response.success) {
       console.log(`Successfully executed ${action} on ${userIds.length} users`)
-      
+      $toast.success(`Successfully executed ${action} on ${userIds.length} users.`);
       // Refresh the user list to get updated data
       await fetchUsers()
       
@@ -216,11 +222,11 @@ const executeUserAction = async (action: ActionType, userIds: number[]): Promise
       selectAll.value = false
     } else {
       console.error('Failed to execute action:', response.message)
-      alert(`Failed to ${action} users: ${response.message}`)
+      $toast.error(`Failed to ${action} users: ${response.message}`);
     }
   } catch (error) {
     console.error('Error executing action:', error)
-    alert(`Error executing ${action}: ${error}`)
+    $toast.error(`Error executing ${action}: ${error}`);
   } finally {
     loading.value = false
   }
@@ -308,15 +314,24 @@ const handlePerPageChange = (perPage: PerPage): void => {
 }
 
 // Watch for action changes
-watch(selectedAction, (newAction) => {
+watch(selectedAction, async (newAction) => {
   if (newAction) {
     if (selectedUsersCount.value > 0) {
-      // Show confirmation dialog
+      // Show confirmation dialog with SweetAlert2
       const actionText = getActionText(newAction)
       const userCount = selectedUsersCount.value
       const userText = userCount === 1 ? 'user' : 'users'
-      
-      if (confirm(`Are you sure you want to ${actionText} ${userCount} ${userText}?`)) {
+
+      const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: `Are you sure you want to ${actionText} ${userCount} ${userText}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes',
+        cancelButtonText: 'Cancel'
+      });
+
+      if (result.isConfirmed) {
         executeSelectedAction()
       } else {
         // Reset action if user cancels
@@ -324,7 +339,7 @@ watch(selectedAction, (newAction) => {
       }
     } else {
       // Show notification for no users selected
-      alert('Please select at least 1 user to perform this action.')
+      $toast.error('Please select at least 1 user to perform this action.')
       selectedAction.value = ''
     }
   }

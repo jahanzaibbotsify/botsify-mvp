@@ -1,20 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue';
+import Swal from 'sweetalert2'; // Add this import
 // import { useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
-import { useApiKeyStore } from '@/stores/apiKeyStore';
-import BotsifyLoader from './components/ui/BotsifyLoader.vue';
 
 // const router = useRouter();
 const chatStore = useChatStore();
-const apiKeyStore = useApiKeyStore();
 
 const showStorageWarning = ref(false);
 const storageSizeMB = ref(0);
-const authenticated = computed(() => {
-  const apikey = apiKeyStore.apiKey;
-  return apikey !== null && apikey.trim() !== '';
-});
 
 // Check storage size
 function checkStorageSize() {
@@ -42,32 +36,32 @@ const formattedSize = computed(() => {
 
 // Clear old chats (keep only the 5 most recent)
 function clearOldChats() {
-  if (confirm('This will delete all but your 5 most recent chats. Continue?')) {
-    const sortedChats = [...chatStore.chats].sort((a, b) => 
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
-    
-    const recentChats = sortedChats.slice(0, 5);
-    const recentChatIds = recentChats.map(chat => chat.id);
-    
-    // Keep only recent chats
-    chatStore.chats = chatStore.chats.filter(chat => 
-      recentChatIds.includes(chat.id)
-    );
-    
-    // Force save
-    chatStore.saveToTemplate();
-    
-    // Update storage size
-    checkStorageSize();
-    
-    // Hide warning if size is now ok
-    if (storageSizeMB.value < 3) {
-      showStorageWarning.value = false;
+  Swal.fire({
+    title: 'Are you sure?',
+    text: 'This will delete all but your 5 most recent chats. Continue?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, clear old chats',
+    cancelButtonText: 'Cancel'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const sortedChats = [...chatStore.chats].sort((a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+      const recentChats = sortedChats.slice(0, 5);
+      const recentChatIds = recentChats.map(chat => chat.id);
+
+      chatStore.chats = chatStore.chats.filter(chat =>
+        recentChatIds.includes(chat.id)
+      );
+      chatStore.saveToTemplate();
+      checkStorageSize();
+      if (storageSizeMB.value < 3) {
+        showStorageWarning.value = false;
+      }
+      Swal.fire('Success!', 'Old chats cleared successfully!', 'success');
     }
-    
-    alert('Old chats cleared successfully!');
-  }
+  });
 }
 
 onMounted(() => {
@@ -86,7 +80,6 @@ onMounted(() => {
 
 <template>
   <div class="app-container">
-    <div v-if="authenticated" class="app-container">
       <div v-if="showStorageWarning" class="storage-warning">
         <div class="warning-content">
           <span class="warning-icon">⚠️</span>
@@ -105,10 +98,6 @@ onMounted(() => {
       <router-view />
       <!-- <ChatLayout /> -->
     </div>
-    <div v-else class="main-loading">
-      <botsify-loader />
-    </div>
-  </div>
 
 </template>
 

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useChatStore } from '@/stores/chatStore';
+import { useToast } from 'vue-toast-notification';
 
+const $toast = useToast({ position: 'top-right' });
 const chatStore = useChatStore();
 const isLoading = ref(false);
 
@@ -30,24 +32,22 @@ const testConfigurations = [
 
 async function testConfiguration(config: { name: string; message: string }) {
   if (!chatStore.currentChat) {
-    alert('No active chat found. Please create a new chat first.');
+    $toast.error('No active chat found. Please create a new chat first.');
     return;
   }
 
   isLoading.value = true;
   
   try {
-    // Add user message
     await chatStore.addMessage(
       chatStore.currentChat.id,
       config.message,
       'user'
     );
-    
     console.log(`Testing configuration: ${config.name}`);
   } catch (error: any) {
     console.error('Error testing configuration:', error);
-    alert(`Error: ${error.message}`);
+    $toast.error(`Error: ${error.message}`);
   } finally {
     isLoading.value = false;
   }
@@ -135,4 +135,4 @@ async function testConfiguration(config: { name: string; message: string }) {
   font-size: 0.9rem;
   text-align: center;
 }
-</style> 
+</style>

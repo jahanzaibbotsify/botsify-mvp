@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { Attachment } from '@/types';
 import { ref, computed } from 'vue';
+import { useToast } from 'vue-toast-notification'
+
+const $toast = useToast({ position: 'top-right' })
 
 const props = defineProps<{
   modelValue?: File | File[] | null;
@@ -62,12 +65,12 @@ const handleFiles = async (files: File[]) => {
           : file.type === t || file.name.endsWith(t)
       })
     if (!isAccepted) {
-      alert(`File "${file.name}" is not supported.`);
+      $toast.error(`File "${file.name}" is not supported.`);
       continue;
     }
 
     if (file.size > maxSizeBytes.value) {
-      alert(`File "${file.name}" exceeds the maximum size of ${props.maxSizeMB || 20}MB.`);
+      $toast.error(`File "${file.name}" exceeds the maximum size of ${props.maxSizeMB || 20}MB.`);
       continue;
     }
 

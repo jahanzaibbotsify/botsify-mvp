@@ -4,7 +4,11 @@ import { useChatStore } from '@/stores/chatStore';
 import { marked } from 'marked';
 import AiAgentActions from '@/components/sidebar/AiAgentActions.vue';
 import BotsifyLoader from '@/components/ui/BotsifyLoader.vue';
+import Swal from 'sweetalert2'; 
+import {useToast} from 'vue-toast-notification';
 
+
+const $toast = useToast({position: 'top-right'});
 const props = defineProps<{
   chatId: string;
 }>();
@@ -36,7 +40,7 @@ const isAIPromptGenerating = computed(() => chatStore.isAIPromptGenerating);
 
 // Watch for story changes
 watch(story, (newStory, oldStory) => {
-  console.log('Story changed in sidebar:', { 
+  console.log('Story changed in sidebar:', {
     newContent: newStory?.content?.substring(0, 50) + '...',
     oldContent: oldStory?.content?.substring(0, 50) + '...',
     hasNewContent: !!newStory?.content,
@@ -59,7 +63,7 @@ const parsedStoryContent = computed(() => {
       </div>
     `;
   }
-  
+
   try {
     const parsed = marked(story.value.content);
     console.log('Successfully parsed story content');
@@ -82,7 +86,7 @@ const sortedVersions = computed(() => {
 
 const formattedLastUpdate = computed(() => {
   if (!story.value?.updatedAt) return '';
-  
+
   const date = new Date(story.value.updatedAt);
   return date.toLocaleString();
 });
@@ -106,7 +110,7 @@ function saveEdit() {
     chatStore.updateStory(props.chatId, editContent.value.trim(), true);
     isEditing.value = false;
     editContent.value = '';
-    
+
     // Force save to ensure persistence
     chatStore.saveToTemplate();
   }
@@ -115,20 +119,21 @@ function saveEdit() {
 function revertToVersion(versionId: string) {
   chatStore.revertToPromptVersion(props.chatId, versionId);
   showVersionHistory.value = false;
-  
+
   // Force save to ensure persistence
   chatStore.saveToTemplate();
 }
 
-function deleteVersion(versionId: string) {
-  if (confirm('Are you sure you want to delete this version?')) {
+async function deleteVersion(versionId: string) {
+  const result = await showWarning('Are you sure you want to delete this version?');
+  if (result.isConfirmed) {
     chatStore.deletePromptVersion(props.chatId, versionId);
   }
 }
 
 function saveAsTemplate() {
   if (!story.value?.content || !newTemplateName.value.trim()) {
-    alert('Please enter a template name and ensure there is prompt content to save.');
+    $toast.error('Please enter a template name and ensure there is prompt content to save.');
     return;
   }
 
@@ -137,10 +142,10 @@ function saveAsTemplate() {
     story.value.content,
     false
   );
-  
+
   newTemplateName.value = '';
   showTemplateManager.value = false;
-  alert('Template saved successfully!');
+  $toast.success('Template saved successfully!');
 }
 
 function loadTemplate(templateId: string) {
@@ -148,14 +153,15 @@ function loadTemplate(templateId: string) {
   if (template) {
     chatStore.updateStory(props.chatId, template.content, true);
     showTemplateManager.value = false;
-    
+
     // Force save to ensure persistence
     chatStore.saveToTemplate();
   }
 }
 
-function deleteTemplate(templateId: string) {
-  if (confirm('Are you sure you want to delete this template?')) {
+async function deleteTemplate(templateId: string) {
+  const result = await showWarning('Are you sure you want to delete this template?');
+  if (result.isConfirmed) {
     chatStore.deleteGlobalPromptTemplate(templateId);
   }
 }
@@ -168,8 +174,9 @@ function formatVersionDate(date: Date) {
   return new Date(date).toLocaleString();
 }
 
-function clearAllVersionHistory() {
-  if (confirm('Are you sure you want to clear all version history? Only the current active version will be kept.')) {
+async function clearAllVersionHistory() {
+  const result = await showWarning('Are you sure you want to clear all version history? Only the current active version will be kept.');
+  if (result.isConfirmed) {
     chatStore.clearVersionHistory(props.chatId);
   }
 }
@@ -181,6 +188,17 @@ const scrollToBottom = async () => {
   }
 };
 
+const showWarning = (message: string) => {
+  return Swal.fire({
+    title: 'Are you sure?',
+    text: message,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes',
+    cancelButtonText: 'Cancel'
+  });
+}
+
 // Expose the toggleSidebar function to parent components
 defineExpose({
   toggleSidebar
@@ -190,47 +208,41 @@ defineExpose({
 <template>
   <div class="story-sidebar" :class="{ 'collapsed': isCollapsed }">
     <div class="sidebar-toggle mobile-only" @click="toggleSidebar">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" :class="{ 'rotate': isCollapsed }">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        :class="{ 'rotate': isCollapsed }">
         <polyline points="15 18 9 12 15 6"></polyline>
       </svg>
     </div>
-    
+
     <div class="sidebar-content">
       <div class="sidebar-header">
         <div class="header-title">
           <h3>AI Generated Prompt</h3>
           <div class="header-actions">
-            <button 
-              v-if="story?.content && !isEditing" 
-              @click="startEditing" 
-              class="icon-btn edit-btn" 
-              title="Edit prompt"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <button v-if="story?.content && !isEditing" @click="startEditing" class="icon-btn edit-btn"
+              title="Edit prompt">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
               </svg>
             </button>
-            
-            <button 
-              v-if="story?.versions && story.versions.length > 1" 
-              @click="showVersionHistory = !showVersionHistory" 
-              class="icon-btn history-btn" 
-              title="Version history"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+            <button v-if="story?.versions && story.versions.length > 1"
+              @click="showVersionHistory = !showVersionHistory" class="icon-btn history-btn" title="Version history">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                 <path d="M3 3v5h5"></path>
                 <path d="M12 7v5l4 2"></path>
               </svg>
             </button>
-            
-            <button 
-              @click="showTemplateManager = !showTemplateManager" 
-              class="icon-btn template-btn" 
-              title="Manage templates"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+            <button @click="showTemplateManager = !showTemplateManager" class="icon-btn template-btn"
+              title="Manage templates">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                 <rect x="7" y="7" width="10" height="3"></rect>
                 <rect x="7" y="14" width="10" height="3"></rect>
@@ -245,7 +257,7 @@ defineExpose({
           </span>
         </span>
       </div>
-      
+
       <!-- Editing Mode -->
       <div v-if="isEditing" class="edit-mode">
         <div class="edit-header">
@@ -255,33 +267,27 @@ defineExpose({
             <button @click="saveEdit" class="btn-primary" :disabled="!editContent.trim()">Save</button>
           </div>
         </div>
-        <textarea 
-          v-model="editContent" 
-          class="edit-textarea scrollbar" 
-          placeholder="Enter your prompt content..."
-          rows="20"
-        ></textarea>
+        <textarea v-model="editContent" class="edit-textarea scrollbar" placeholder="Enter your prompt content..."
+          rows="20"></textarea>
       </div>
-      
+
       <!-- Version History -->
       <div v-else-if="showVersionHistory" class="version-history">
         <div class="section-header">
           <h4>Version History</h4>
           <div class="header-actions">
-            <button 
-              v-if="story?.versions && story.versions.length > 1"
-              @click="clearAllVersionHistory" 
-              class="icon-btn clear-btn" 
-              title="Clear version history"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <button v-if="story?.versions && story.versions.length > 1" @click="clearAllVersionHistory"
+              class="icon-btn clear-btn" title="Clear version history">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 6h18"></path>
                 <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
                 <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
               </svg>
             </button>
             <button @click="showVersionHistory = false" class="close-btn">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
@@ -289,84 +295,61 @@ defineExpose({
           </div>
         </div>
         <div class="versions-list scrollbar">
-          <div 
-            v-for="version in sortedVersions" 
-            :key="version.id" 
-            class="version-item" 
-            :class="{ active: version.isActive }"
-          >
+          <div v-for="version in sortedVersions" :key="version.id" class="version-item"
+            :class="{ active: version.isActive }">
             <div class="version-info">
               <div class="version-meta">
-                <span class="version-number">Version {{ sortedVersions.length - sortedVersions.indexOf(version) }}</span>
+                <span class="version-number">Version {{ sortedVersions.length - sortedVersions.indexOf(version)
+                  }}</span>
                 <span v-if="version.isActive" class="active-badge">Active</span>
               </div>
               <div class="version-date">{{ formatVersionDate(version.updatedAt) }}</div>
               <div class="version-preview">{{ version.content.substring(0, 100) }}...</div>
             </div>
             <div class="version-actions">
-              <button 
-                v-if="!version.isActive" 
-                @click="revertToVersion(version.id)" 
-                class="btn-revert"
-                title="Revert to this version"
-              >
+              <button v-if="!version.isActive" @click="revertToVersion(version.id)" class="btn-revert"
+                title="Revert to this version">
                 Revert
               </button>
-              <button 
-                v-if="!version.isActive && sortedVersions.length > 1" 
-                @click="deleteVersion(version.id)" 
-                class="btn-delete"
-                title="Delete this version"
-              >
+              <button v-if="!version.isActive && sortedVersions.length > 1" @click="deleteVersion(version.id)"
+                class="btn-delete" title="Delete this version">
                 Delete
               </button>
             </div>
           </div>
         </div>
       </div>
-      
+
       <!-- Template Manager -->
       <div v-else-if="showTemplateManager" class="template-manager">
         <div class="section-header">
           <h4>Prompt Templates</h4>
           <button @click="showTemplateManager = false" class="close-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           </button>
         </div>
-        
+
         <!-- Save Current as Template -->
         <div v-if="story?.content" class="save-template-section">
           <h5>Save Current Prompt as Template</h5>
           <div class="save-template-form">
-            <input 
-              v-model="newTemplateName" 
-              type="text" 
-              placeholder="Template name..." 
-              class="template-name-input"
-            />
-            <button 
-              @click="saveAsTemplate" 
-              class="btn-primary" 
-              :disabled="!newTemplateName.trim()"
-            >
+            <input v-model="newTemplateName" type="text" placeholder="Template name..." class="template-name-input" />
+            <button @click="saveAsTemplate" class="btn-primary" :disabled="!newTemplateName.trim()">
               Save Template
             </button>
           </div>
         </div>
-        
+
         <!-- Templates List -->
         <div class="templates-list scrollbar">
           <div v-if="chatStore.globalPromptTemplates.length === 0" class="empty-templates">
             <p>No templates saved yet.</p>
           </div>
-          <div 
-            v-for="template in chatStore.globalPromptTemplates" 
-            :key="template.id" 
-            class="template-item"
-          >
+          <div v-for="template in chatStore.globalPromptTemplates" :key="template.id" class="template-item">
             <div class="template-info">
               <div class="template-header">
                 <span class="template-name">{{ template.name }}</span>
@@ -377,32 +360,24 @@ defineExpose({
             </div>
             <div class="template-actions">
               <button @click="loadTemplate(template.id)" class="btn-load">Load</button>
-              <button 
-                v-if="!template.isDefault" 
-                @click="setAsDefaultTemplate(template.id)" 
-                class="btn-default"
-                title="Set as default template for new chats"
-              >
+              <button v-if="!template.isDefault" @click="setAsDefaultTemplate(template.id)" class="btn-default"
+                title="Set as default template for new chats">
                 Set Default
               </button>
-              <button 
-                @click="deleteTemplate(template.id)" 
-                class="btn-delete"
-                title="Delete template"
-              >
+              <button @click="deleteTemplate(template.id)" class="btn-delete" title="Delete template">
                 Delete
               </button>
             </div>
           </div>
         </div>
       </div>
-      
+
       <!-- Normal View -->
       <div ref="messagesContainer" v-else class="story-content scrollbar" v-html="parsedStoryContent"></div>
 
       <!-- loader -->
       <div v-if="isAIPromptGenerating" class="loader-container">
-        <BotsifyLoader/>
+        <BotsifyLoader />
       </div>
 
 
@@ -425,7 +400,7 @@ defineExpose({
   flex-direction: column;
   box-shadow: -4px 0 15px rgba(0, 163, 255, 0.08);
   transition: transform var(--transition-normal);
-  background-image: 
+  background-image:
     radial-gradient(circle at right top, rgba(0, 163, 255, 0.12), transparent 60%),
     radial-gradient(circle at right bottom, rgba(0, 163, 255, 0.08), transparent 60%);
 }
@@ -565,7 +540,8 @@ defineExpose({
   gap: var(--space-2);
 }
 
-.btn-secondary, .btn-primary {
+.btn-secondary,
+.btn-primary {
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-sm);
   font-size: 0.875rem;
@@ -628,7 +604,8 @@ defineExpose({
   font-weight: 600;
 }
 
-.close-btn, .icon-btn {
+.close-btn,
+.icon-btn {
   background: transparent;
   border: none;
   padding: var(--space-1);
@@ -640,7 +617,8 @@ defineExpose({
   justify-content: center;
 }
 
-.close-btn:hover, .icon-btn:hover {
+.close-btn:hover,
+.icon-btn:hover {
   background-color: var(--color-bg-hover);
   color: var(--color-text-primary);
 }
@@ -650,20 +628,23 @@ defineExpose({
 }
 
 /* Version History */
-.version-history, .template-manager {
+.version-history,
+.template-manager {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.versions-list, .templates-list {
+.versions-list,
+.templates-list {
   flex: 1;
   overflow-y: auto;
   padding: var(--space-2);
 }
 
-.version-item, .template-item {
+.version-item,
+.template-item {
   background-color: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -676,23 +657,27 @@ defineExpose({
   background-color: rgba(79, 70, 229, 0.05);
 }
 
-.version-info, .template-info {
+.version-info,
+.template-info {
   margin-bottom: var(--space-2);
 }
 
-.version-meta, .template-header {
+.version-meta,
+.template-header {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   margin-bottom: var(--space-1);
 }
 
-.version-number, .template-name {
+.version-number,
+.template-name {
   font-weight: 600;
   color: var(--color-text-primary);
 }
 
-.active-badge, .default-badge {
+.active-badge,
+.default-badge {
   background-color: var(--color-primary);
   color: white;
   padding: 0.125rem var(--space-1);
@@ -705,24 +690,30 @@ defineExpose({
   background-color: var(--color-success);
 }
 
-.version-date, .template-date {
+.version-date,
+.template-date {
   font-size: 0.75rem;
   color: var(--color-text-secondary);
   margin-bottom: var(--space-1);
 }
 
-.version-preview, .template-preview {
+.version-preview,
+.template-preview {
   font-size: 0.875rem;
   color: var(--color-text-secondary);
   line-height: 1.4;
 }
 
-.version-actions, .template-actions {
+.version-actions,
+.template-actions {
   display: flex;
   gap: var(--space-2);
 }
 
-.btn-revert, .btn-load, .btn-default, .btn-delete {
+.btn-revert,
+.btn-load,
+.btn-default,
+.btn-delete {
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
   font-size: 0.75rem;
@@ -732,12 +723,14 @@ defineExpose({
   transition: all var(--transition-fast);
 }
 
-.btn-revert, .btn-load {
+.btn-revert,
+.btn-load {
   background-color: var(--color-primary);
   color: white;
 }
 
-.btn-revert:hover, .btn-load:hover {
+.btn-revert:hover,
+.btn-load:hover {
   background-color: var(--color-primary-hover);
 }
 
@@ -847,12 +840,29 @@ defineExpose({
   color: var(--color-text-primary);
 }
 
-.story-content :deep(h1) { font-size: 1.5rem; }
-.story-content :deep(h2) { font-size: 1.375rem; }
-.story-content :deep(h3) { font-size: 1.25rem; }
-.story-content :deep(h4) { font-size: 1.125rem; }
-.story-content :deep(h5) { font-size: 1rem; }
-.story-content :deep(h6) { font-size: 0.875rem; }
+.story-content :deep(h1) {
+  font-size: 1.5rem;
+}
+
+.story-content :deep(h2) {
+  font-size: 1.375rem;
+}
+
+.story-content :deep(h3) {
+  font-size: 1.25rem;
+}
+
+.story-content :deep(h4) {
+  font-size: 1.125rem;
+}
+
+.story-content :deep(h5) {
+  font-size: 1rem;
+}
+
+.story-content :deep(h6) {
+  font-size: 0.875rem;
+}
 
 .story-content :deep(p) {
   margin: 0 0 var(--space-3) 0;
@@ -915,7 +925,7 @@ defineExpose({
   margin: var(--space-4) 0;
 }
 
-.loader-container{
+.loader-container {
   margin: auto;
   padding: 1rem;
 }
@@ -926,16 +936,17 @@ defineExpose({
     width: 100%;
     max-width: 400px;
   }
-  
+
   .sidebar-toggle.mobile-only {
     display: flex;
   }
-  
+
   .save-template-form {
     flex-direction: column;
   }
-  
-  .version-actions, .template-actions {
+
+  .version-actions,
+  .template-actions {
     flex-wrap: wrap;
   }
 }
@@ -985,4 +996,4 @@ defineExpose({
   background-color: rgba(0, 163, 255, 0.08);
   background-image: linear-gradient(to right, rgba(0, 163, 255, 0.12), transparent 80%);
 }
-</style> 
+</style>
