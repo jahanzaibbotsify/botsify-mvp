@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, defineEmits } from 'vue'
+import { ref } from 'vue'
 import FileUpload from '@/components/ui/FileUpload.vue'
 import { User } from '@/types/user'
 import { useToast } from 'vue-toast-notification'
