@@ -4,10 +4,7 @@
     <div class="user-profile-header">
       <div class="user-avatar">
         <div class="avatar-placeholder">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
+          <i class="pi pi-user"></i>
         </div>
       </div>
       <div class="user-info">
@@ -31,21 +28,14 @@
         :class="{ active: activeTab === 'profile' }"
         @click="$emit('update:activeTab', 'profile')"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
+        <i class="pi pi-user"></i>
       </button>
       <button 
         class="user-tab" 
         :class="{ active: activeTab === 'data' }"
         @click="$emit('update:activeTab', 'data')"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
-          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
-        </svg>
+        <i class="pi pi-database"></i>
       </button>
     </div>
 
@@ -69,28 +59,32 @@
 
     <!-- Action Buttons -->
     <div class="user-actions">
-      <button class="user-action-button icon-button">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="7 10 12 15 17 10"></polyline>
-          <line x1="12" y1="15" x2="12" y2="3"></line>
-        </svg>
-      </button>
-      <button class="user-action-button icon-button">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6"></polyline>
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-        </svg>
+      <div class="export-dropdown">
+        <button class="user-action-button icon-button" @click="toggleExportDropdown">
+          <i class="pi pi-file-export"></i>
+        </button>
+        <div v-if="showExportDropdown" class="export-dropdown-content">
+          <button @click="exportChat('csv')" class="export-option">
+            <i class="pi pi-file"></i> Export as CSV
+          </button>
+          <button @click="exportChat('txt')" class="export-option">
+            <i class="pi pi-file"></i> Export as TXT
+          </button>
+        </div>
+      </div>
+      <button class="user-action-button icon-button" @click="deleteConversation">
+        <i class="pi pi-trash"></i>
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import UserProfile from './UserProfile.vue'
 import UserAttributes from './UserAttributes.vue'
 import type { ExtendedChat } from '@/types'
+import { useConversationStore } from '@/stores/conversationStore'
 
 interface Props {
   user?: ExtendedChat | null
@@ -105,10 +99,41 @@ defineEmits<{
 }>()
 
 const notificationsEnabled = ref(true)
+const showExportDropdown = ref(false)
+const conversationStore = useConversationStore()
 
 const toggleNotifications = () => {
   notificationsEnabled.value = !notificationsEnabled.value
 }
+
+const toggleExportDropdown = () => {
+  showExportDropdown.value = !showExportDropdown.value
+}
+
+const exportChat = (extension: 'csv' | 'txt') => {
+  conversationStore.exportConversation(extension)
+  showExportDropdown.value = false
+}
+
+const deleteConversation = () => {
+  // TODO: Implement delete conversation functionality
+  console.log('Delete conversation clicked')
+}
+
+const handleClickOutside = (event: Event) => {
+  const target = event.target as HTMLElement
+  if (!target.closest('.export-dropdown')) {
+    showExportDropdown.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <style scoped>
@@ -286,17 +311,63 @@ const toggleNotifications = () => {
 }
 
 .user-action-button {
-  flex: 1;
   background-color: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-text-tertiary);
   color: var(--color-text-secondary);
   cursor: pointer;
+  width: 100px;
   transition: all var(--transition-normal);
 }
 
 .user-action-button:hover {
   background-color: var(--color-bg-hover);
   color: var(--color-text-primary);
+}
+
+/* Export Dropdown Styles */
+.export-dropdown {
+  position: relative;
+  /* display: inline-block; */
+}
+
+.export-dropdown-content {
+  position: absolute;
+  bottom: 120%;
+  left: 0;
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: var(--z-dropdown);
+  min-width: 180px;
+  margin-top: var(--space-1);
+}
+
+.export-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  background: none;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color var(--transition-normal);
+  text-align: left;
+}
+
+.export-option:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.export-option:first-child {
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.export-option:last-child {
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 
 /* Responsive Design */

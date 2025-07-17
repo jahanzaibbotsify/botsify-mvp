@@ -10,6 +10,7 @@ import '@fontsource/ubuntu/700.css'
 import axios from 'axios';
 import ToastPlugin from 'vue-toast-notification';
 import { useApiKeyStore } from './stores/apiKeyStore';
+import { useConversationStore } from './stores/conversationStore';
 
 
 // Import routes
@@ -149,10 +150,21 @@ async function confirmApiKey() {
       if (bot) {
         const apiKeyStore = useApiKeyStore();
         apiKeyStore.setApiKey(apikey);
+        
+        // Initialize Firebase after API key is set
+        console.log('🔥 Initializing Firebase in main.ts...');
+        try {
+          const conversationStore = useConversationStore();
+          conversationStore.initializeFirebase();
+          console.log('✅ Firebase initialized successfully in main.ts');
+        } catch (error) {
+          console.error('❌ Error initializing Firebase in main.ts:', error);
+        }
+        
         return true;
       }
     }
-    window.location.href = 'https://app.botsify.com/login';  
+    // window.location.href = 'https://app.botsify.com/login';  
     throw new Error('unauthenticated');
   }
   return true;

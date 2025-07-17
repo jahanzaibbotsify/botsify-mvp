@@ -3,11 +3,18 @@ import { ref } from 'vue';
 import type { Attachment } from '@/types';
 import FileUpload from '@/components/ui/FileUpload.vue';
 
-defineProps<{
+const props = defineProps<{
   chatId: string;
+  message?: string;
+  loading?: boolean;
 }>();
 
-const messageText = ref('');
+const emit = defineEmits<{
+  'update:message': [value: string];
+  'send': [];
+}>();
+
+const messageText = ref(props.message || '');
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const showFileUpload = ref(false);
 const attachments = ref<Attachment[]>([]);
@@ -20,6 +27,20 @@ const resizeTextarea = () => {
 };
 
 const sendMessage = async () => {
+  if (!messageText.value.trim() && attachments.value.length === 0) return;
+  
+  emit('update:message', messageText.value);
+  emit('send');
+  
+  // Clear the input after sending
+  messageText.value = '';
+  attachments.value = [];
+  showFileUpload.value = false;
+  
+  // Reset textarea height
+  if (textareaRef.value) {
+    textareaRef.value.style.height = 'auto';
+  }
 };
 
 const handleKeydown = (event: KeyboardEvent) => {
@@ -118,12 +139,13 @@ const removeAttachment = (id: string) => {
         <button 
           class="icon-button send-button" 
           @click="sendMessage"
-          :disabled="!messageText.trim() && attachments.length === 0"
+          :disabled="(!messageText.trim() && attachments.length === 0) || loading"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg v-if="!loading" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="22" y1="2" x2="11" y2="13"></line>
             <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
           </svg>
+          <div v-else class="loading-spinner"></div>
         </button>
       </div>
     </div>

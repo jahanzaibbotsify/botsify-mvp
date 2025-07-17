@@ -10,6 +10,8 @@ import {
   MessageInput,
   UserSidebar
 } from '@/components/conversation'
+import FirebaseDebug from '@/components/conversation/FirebaseDebug.vue'
+
 
 const route = useRoute()
 const apiKeyStore = useApiKeyStore()
@@ -25,30 +27,44 @@ const satisfactionPercentage = computed(() => {
 })
 
 // Methods
-const sendMessage = () => {
+const sendMessage = async () => {
   if (!newMessage.value.trim()) return
-  conversationStore.sendMessage(newMessage.value)
+  await conversationStore.sendMessage(newMessage.value)
   newMessage.value = ''
 }
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
   // Set API key from route
   const chatId = route.params.id as string
   if (chatId) {
     apiKeyStore.setApiKey(chatId)
     console.log('Chat API Key set:', chatId)
+    
+    // Initialize Firebase with the bot API key
+    conversationStore.initializeFirebase()
+    
+    // Check Firebase status after initialization
+    setTimeout(() => {
+      conversationStore.checkFirebaseStatus()
+    }, 1000)
   }
 
-  // Select first conversation by default
+  // Fetch conversations from API
+  await conversationStore.fetchConversations()
+
+  // Select first conversation by default if available
   if (conversationStore.conversations.length > 0) {
-    conversationStore.selectConversation(conversationStore.conversations[0])
+    await conversationStore.selectConversation(conversationStore.conversations[0])
   }
 })
 </script>
 
 <template>
   <div class="conversation-view">
+    <!-- Firebase Debug Component -->
+    <!-- <FirebaseDebug /> -->
+    
     <!-- Main Conversation Area -->
     <div class="conversation-content">
       <!-- Left Sidebar - Conversation List -->
@@ -57,13 +73,22 @@ onMounted(() => {
         :active-filter="conversationStore.activeFilter"
         :active-tab="conversationStore.activeTab"
         :read-filter="conversationStore.readFilter"
+        :chat-type-filter="conversationStore.chatTypeFilter"
+        :sort-order="conversationStore.sortOrder"
         :conversations="conversationStore.filteredConversations"
         :selected-conversation="conversationStore.selectedConversation"
+        :loading="conversationStore.loading"
+        :error="conversationStore.error"
+        :is-loading-more="conversationStore.isLoadingMore"
         @update:search-query="conversationStore.setSearchQuery"
         @update:active-filter="conversationStore.setActiveFilter"
         @update:active-tab="conversationStore.setActiveTab"
         @update:read-filter="conversationStore.setReadFilter"
+        @update:chat-type-filter="conversationStore.setChatTypeFilter"
+        @update:sort-order="conversationStore.setSortOrder"
         @select-conversation="conversationStore.selectConversation"
+        @load-more-conversations="conversationStore.loadMoreConversations"
+        @retry="conversationStore.fetchConversations"
       />
 
       <!-- Main Chat Area -->
@@ -75,12 +100,16 @@ onMounted(() => {
         <ChatMessages 
           :has-selected-conversation="!!conversationStore.selectedConversation"
           :messages="conversationStore.messages"
+          :loading="conversationStore.loading"
+          :error="conversationStore.error"
+          @retry="conversationStore.fetchUserConversation(conversationStore.selectedConversation?.fbid || '')"
         />
 
         <!-- Message Input -->
         <MessageInput 
           :chat-id="conversationStore.selectedConversation?.id || ''"
           :message="newMessage"
+          :loading="conversationStore.loading"
           @update:message="newMessage = $event"
           @send="sendMessage"
         />
@@ -104,6 +133,8 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
 }
+
+
 
 .conversation-content {
   display: flex;

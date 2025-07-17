@@ -1,153 +1,22 @@
-<template>
-  <div class="conversation-sidebar">
-    <!-- Header with Search -->
-    <div class="sidebar-header">
-      <h2 class="sidebar-title">Conversations</h2>
-      <div class="search-container">
-        <div class="search-input-wrapper">
-          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"></circle>
-            <path d="m21 21-4.35-4.35"></path>
-          </svg>
-          <input 
-            type="text" 
-            placeholder="Search conversations..." 
-            class="search-input"
-            :value="searchQuery"
-            @input="$emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- Filter Tabs -->
-    <div class="filter-tabs">
-      <button 
-        class="filter-tab" 
-        :class="{ active: activeFilter === 'all' }"
-        @click="$emit('update:activeFilter', 'all')"
-      >
-        All
-      </button>
-      <button 
-        class="filter-tab" 
-        :class="{ active: activeFilter === 'open' }"
-        @click="$emit('update:activeFilter', 'open')"
-      >
-        Open
-      </button>
-      <button 
-        class="filter-tab" 
-        :class="{ active: activeFilter === 'closed' }"
-        @click="$emit('update:activeFilter', 'closed')"
-      >
-        Closed
-      </button>
-    </div>
-
-    <!-- Platform Filter -->
-    <div class="platform-filter">
-      <button 
-        class="platform-btn" 
-        :class="{ active: activeTab === 'all' }"
-        @click="$emit('update:activeTab', 'all')"
-      >
-        All
-      </button>
-      <button 
-        class="platform-btn" 
-        :class="{ active: activeTab === 'facebook' }"
-        @click="$emit('update:activeTab', 'facebook')"
-      >
-        <i class="pi pi-facebook"></i>
-      </button>
-      <button 
-        class="platform-btn" 
-        :class="{ active: activeTab === 'whatsapp' }"
-        @click="$emit('update:activeTab', 'whatsapp')"
-      >
-        <i class="pi pi-whatsapp"></i>
-      </button>
-      <button 
-        class="platform-btn" 
-        :class="{ active: activeTab === 'web' }"
-        @click="$emit('update:activeTab', 'web')"
-      >
-        <i class="pi pi-globe"></i>
-      </button>
-    </div>
-
-    <!-- Conversation List -->
-    <div 
-      ref="conversationList"
-      class="conversation-list"
-      @scroll="handleScroll"
-    >
-      <div 
-        v-for="conversation in conversations"
-        :key="conversation.id"
-        class="conversation-item"
-        :class="{ 
-          active: selectedConversation?.id === conversation.id,
-          unread: conversation.unread 
-        }"
-        @click="$emit('select-conversation', conversation)"
-      >
-        <!-- Avatar -->
-        <div class="conversation-avatar">
-          <div class="avatar-placeholder">
-            {{ getInitials(conversation.title) }}
-          </div>
-          <div v-if="conversation.unread" class="unread-badge">
-            {{ getUnreadCount(conversation) }}
-          </div>
-        </div>
-
-        <!-- Content -->
-        <div class="conversation-content">
-          <div class="conversation-header">
-            <h3 class="conversation-title">{{ conversation.title }}</h3>
-            <span class="conversation-time">{{ formatTime(conversation.timestamp) }}</span>
-          </div>
-          <p class="conversation-preview">{{ conversation.lastMessage }}</p>
-          <div class="conversation-meta">
-            <span class="conversation-platform">{{ conversation.source || 'Unknown' }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Loading Indicator -->
-      <div v-if="isLoadingMore" class="loading-indicator">
-        <div class="loading-spinner"></div>
-        <span>Loading more conversations...</span>
-      </div>
-
-      <!-- Empty State -->
-      <div v-if="conversations.length === 0 && !isLoadingMore" class="empty-state">
-        <div class="empty-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          </svg>
-        </div>
-        <p class="empty-text">No conversations found</p>
-        <p class="empty-subtext">Try adjusting your filters</p>
-      </div>
-    </div>
-  </div>
-</template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { ExtendedChat } from '@/types'
+import ConversationSkeleton from './ConversationSkeleton.vue'
+import FilterSection from './Filter.vue'
 
 interface Props {
   searchQuery: string
   activeFilter: string
   activeTab: string
   readFilter: 'all' | 'read' | 'unread'
+  chatTypeFilter: 'all' | 'my' | 'other'
+  sortOrder: 'asc' | 'desc'
   conversations: ExtendedChat[]
   selectedConversation?: ExtendedChat | null
   isLoadingMore?: boolean
+  loading?: boolean
+  error?: string | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -155,15 +24,215 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const conversationList = ref<HTMLDivElement>()
+const filtersExpanded = ref(false)
+const currentQuickFilter = ref<string | null>(null)
+
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string]
   'update:activeFilter': [value: string]
   'update:activeTab': [value: string]
   'update:readFilter': [value: 'all' | 'read' | 'unread']
+  'update:chatTypeFilter': [value: 'all' | 'my' | 'other']
+  'update:sortOrder': [value: 'asc' | 'desc']
   'select-conversation': [conversation: ExtendedChat]
   'load-more-conversations': []
+  'retry': []
 }>()
+
+// Filter Options
+const statusOptions = [
+  { value: 'all', label: 'All', icon: 'pi pi-comments' },
+  { value: 'open', label: 'Open', icon: 'pi pi-check-circle' },
+  { value: 'closed', label: 'Closed', icon: 'pi pi-times-circle' }
+];
+
+const readStatusOptions = [
+  { value: 'all', label: 'All', icon: 'pi pi-eye' },
+  { value: 'read', label: 'Read', icon: 'pi pi-eye' },
+  { value: 'unread', label: 'Unread', icon: 'pi pi-eye-slash' }
+];
+
+const platformOptions = [
+  { value: 'all', label: 'All', icon: 'pi pi-globe' },
+  { value: 'facebook', label: 'Facebook', icon: 'pi pi-facebook' },
+  { value: 'whatsapp', label: 'WhatsApp', icon: 'pi pi-whatsapp' },
+  { value: 'web', label: 'Web', icon: 'pi pi-globe' }
+];
+
+const chatTypeOptions = [
+  { value: 'all', label: 'All', icon: 'pi pi-users' },
+  { value: 'my', label: 'My Chat', icon: 'pi pi-user' },
+];
+
+const sortOrderOptions = [
+  { value: 'asc', label: 'Asc', icon: 'pi pi-sort-amount-up' },
+  { value: 'desc', label: 'Desc', icon: 'pi pi-sort-amount-down' }
+];
+
+const quickFilterPresets = [
+  {
+    id: 'unread',
+    label: 'Unread',
+    icon: 'pi pi-eye-slash',
+    filters: { readFilter: 'unread' }
+  },
+  {
+    id: 'recent',
+    label: 'Recent',
+    icon: 'pi pi-clock',
+    filters: { sortOrder: 'desc' }
+  },
+  {
+    id: 'my-open',
+    label: 'My Open',
+    icon: 'pi pi-user',
+    filters: { chatTypeFilter: 'my', activeFilter: 'open' }
+  }
+];
+
+
+// Computed Properties
+const activeFiltersCount = computed(() => {
+  let count = 0
+  if (props.activeFilter !== 'all') count++
+  if (props.readFilter !== 'all') count++
+  if (props.activeTab !== 'all') count++
+  if (props.chatTypeFilter !== 'all') count++
+  if (props.sortOrder !== 'desc') count++
+  return count
+})
+
+const hasActiveFilters = computed(() => activeFiltersCount.value > 0)
+
+const activeFiltersList = computed(() => {
+  const filters = []
+  
+  if (props.activeFilter !== 'all') {
+    filters.push({
+      key: 'activeFilter',
+      label: 'Status',
+      value: statusOptions.find(opt => opt.value === props.activeFilter)?.label || props.activeFilter
+    })
+  }
+  
+  if (props.readFilter !== 'all') {
+    filters.push({
+      key: 'readFilter',
+      label: 'Read Status',
+      value: readStatusOptions.find(opt => opt.value === props.readFilter)?.label || props.readFilter
+    })
+  }
+  
+  if (props.activeTab !== 'all') {
+    filters.push({
+      key: 'activeTab',
+      label: 'Platform',
+      value: platformOptions.find(opt => opt.value === props.activeTab)?.label || props.activeTab
+    })
+  }
+  
+  if (props.chatTypeFilter !== 'all') {
+    filters.push({
+      key: 'chatTypeFilter',
+      label: 'Chat Type',
+      value: chatTypeOptions.find(opt => opt.value === props.chatTypeFilter)?.label || props.chatTypeFilter
+    })
+  }
+  
+  if (props.sortOrder !== 'desc') {
+    filters.push({
+      key: 'sortOrder',
+      label: 'Sort Order',
+      value: sortOrderOptions.find(opt => opt.value === props.sortOrder)?.label || props.sortOrder
+    })
+  }
+  
+  return filters
+})
+
+// Methods
+const toggleFilters = () => {
+  filtersExpanded.value = !filtersExpanded.value
+}
+
+const clearAllFilters = () => {
+  emit('update:activeFilter', 'all')
+  emit('update:readFilter', 'all')
+  emit('update:activeTab', 'all')
+  emit('update:chatTypeFilter', 'all')
+  emit('update:sortOrder', 'desc')
+  currentQuickFilter.value = null
+}
+
+const removeFilter = (filterKey: string) => {
+  switch (filterKey) {
+    case 'activeFilter':
+      emit('update:activeFilter', 'all')
+      break
+    case 'readFilter':
+      emit('update:readFilter', 'all')
+      break
+    case 'activeTab':
+      emit('update:activeTab', 'all')
+      break
+    case 'chatTypeFilter':
+      emit('update:chatTypeFilter', 'all')
+      break
+    case 'sortOrder':
+      emit('update:sortOrder', 'desc')
+      break
+  }
+}
+
+const applyQuickFilter = (preset: any) => {
+  currentQuickFilter.value = preset.id
+  
+  // Apply preset filters
+  Object.entries(preset.filters).forEach(([key, value]) => {
+    switch (key) {
+      case 'readFilter':
+        emit('update:readFilter', value as any)
+        break
+      case 'sortOrder':
+        emit('update:sortOrder', value as any)
+        break
+      case 'chatTypeFilter':
+        emit('update:chatTypeFilter', value as any)
+        break
+      case 'activeFilter':
+        emit('update:activeFilter', value as any)
+        break
+    }
+  })
+}
+
+// Event handlers for FilterSection components
+const handleActiveFilterUpdate = (value: string | string[]) => {
+  const finalValue = Array.isArray(value) ? value[0] || 'all' : value
+  emit('update:activeFilter', finalValue)
+}
+
+const handleReadFilterUpdate = (value: string | string[]) => {
+  const finalValue = Array.isArray(value) ? value[0] || 'all' : value
+  emit('update:readFilter', finalValue as 'all' | 'read' | 'unread')
+}
+
+const handleActiveTabUpdate = (value: string | string[]) => {
+  const finalValue = Array.isArray(value) ? value[0] || 'all' : value
+  emit('update:activeTab', finalValue)
+}
+
+const handleChatTypeFilterUpdate = (value: string | string[]) => {
+  const finalValue = Array.isArray(value) ? value[0] || 'all' : value
+  emit('update:chatTypeFilter', finalValue as 'all' | 'my' | 'other')
+}
+
+const handleSortOrderUpdate = (value: string | string[]) => {
+  const finalValue = Array.isArray(value) ? value[0] || 'desc' : value
+  emit('update:sortOrder', finalValue as 'asc' | 'desc')
+}
+
 
 const handleScroll = (event: Event) => {
   const target = event.target as HTMLDivElement
@@ -202,6 +271,239 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   return conversation.unread ? Math.floor(Math.random() * 10) + 1 : 0
 }
 </script>
+
+<template>
+  <div class="conversation-sidebar">
+    <!-- Header with Search -->
+    <div class="sidebar-header">
+      <h2 class="sidebar-title">Conversations</h2>
+      <div class="search-container">
+          <div class="search-input-wrapper">
+            <span class="search-icon"><i class="pi pi-search"></i></span>
+            <input 
+              type="text" 
+              placeholder="Search conversations..." 
+              class="search-input"
+              :value="searchQuery"
+              @input="$emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
+            />
+          </div>
+      </div>
+    </div>
+
+     <!-- Enhanced Filters Section -->
+     <div class="filters-section">
+      <!-- Filter Header -->
+      <div class="filters-header">
+        <div class="filters-title">
+          <i class="pi pi-filter"></i>
+          <span>Filters</span>
+          <div v-if="activeFiltersCount > 0" class="active-filters-badge">
+            {{ activeFiltersCount }}
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button 
+            v-if="hasActiveFilters" 
+            @click="clearAllFilters" 
+            class="clear-all-btn"
+            title="Clear all filters"
+          >
+            <i class="pi pi-times"></i>
+            Clear
+          </button>
+          <button 
+            @click="toggleFilters" 
+            class="toggle-filters-btn"
+            :class="{ 'expanded': filtersExpanded }"
+          >
+            <i class="pi pi-chevron-down"></i>
+          </button>
+        </div>
+      </div>
+      <!-- Collapsible Filters Container -->
+   <Transition name="filters-collapse">
+     <div v-show="filtersExpanded" class="filters-container">
+       <!-- Quick Filter Chips -->
+       <div class="quick-filters">
+         <div class="quick-filter-label">Quick Filters</div>
+         <div class="quick-filter-chips">
+           <button 
+             v-for="preset in quickFilterPresets" 
+             :key="preset.id"
+             @click="applyQuickFilter(preset)"
+             class="quick-filter-chip"
+             :class="{ 'active': currentQuickFilter === preset.id }"
+           >
+             <i :class="['filter-icon', preset.icon]" />
+             {{ preset.label }}
+           </button>
+         </div>
+       </div>
+
+       <!-- Individual Filter Sections -->
+       <div class="filter-sections">
+         <!-- Status Filter -->
+         <FilterSection 
+           title="Status"
+           icon="pi pi-comments"
+           :options="statusOptions"
+           :selected="activeFilter"
+           @update="handleActiveFilterUpdate"
+         />
+
+         <!-- Read Status Filter -->
+         <FilterSection 
+           title="Read Status"
+           icon="pi pi-eye"
+           :options="readStatusOptions"
+           :selected="readFilter"
+           @update="handleReadFilterUpdate"
+         />
+
+         <!-- Platform Filter -->
+         <FilterSection 
+           title="Platform"
+           icon="pi pi-mobile"
+           :options="platformOptions"
+           :selected="activeTab"
+           @update="handleActiveTabUpdate"
+           multiple
+         />
+
+         <!-- Chat Type Filter -->
+         <FilterSection 
+           title="Chat Type"
+           icon="pi pi-users"
+           :options="chatTypeOptions"
+           :selected="chatTypeFilter"
+           @update="handleChatTypeFilterUpdate"
+         />
+
+         <!-- Sort Order Filter -->
+         <FilterSection 
+           title="Sort Order"
+           icon="pi pi-sort"
+           :options="sortOrderOptions"
+           :selected="sortOrder"
+           @update="handleSortOrderUpdate"
+         />
+       </div>
+     </div>
+   </Transition>
+      </div>
+
+       <!-- Active Filters Display -->
+    <div v-if="hasActiveFilters" class="active-filters-display">
+      <div class="active-filters-label">Active Filters:</div>
+      <div class="active-filters-list">
+        <div 
+          v-for="filter in activeFiltersList" 
+          :key="filter.key"
+          class="active-filter-tag"
+        >
+          <span class="filter-label">{{ filter.label }}:</span>
+          <span class="filter-value">{{ filter.value }}</span>
+          <button 
+            @click="removeFilter(filter.key)"
+            class="remove-filter-btn"
+            :title="`Remove ${filter.label} filter`"
+          >
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Conversation List -->
+    <div 
+      ref="conversationList"
+      class="conversation-list"
+      @scroll="handleScroll"
+    >
+      <div 
+        v-for="conversation in conversations"
+        :key="conversation.id"
+        class="conversation-item"
+        :class="{ 
+          active: selectedConversation?.id === conversation.id,
+          unread: conversation.unread 
+        }"
+        @click="$emit('select-conversation', conversation)"
+      >
+        <!-- Avatar -->
+        <div class="conversation-avatar" >
+          <div v-if="conversation.profilePic" class="avatar-image">
+            <img :src="conversation.profilePic" :alt="conversation.title" />
+          </div>
+          <div v-else class="avatar-placeholder">
+            {{ getInitials(conversation.title) }}
+          </div>
+          <div v-if="conversation.unread" class="unread-badge">
+            {{ getUnreadCount(conversation) }}
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="conversation-content">
+          <div class="conversation-header">
+            <h3 class="conversation-title">{{ conversation.title }}</h3>
+            <span class="conversation-time">{{ formatTime(conversation.timestamp) }}</span>
+          </div>
+          <p class="conversation-preview">{{ conversation.lastMessage }}</p>
+          <div class="conversation-meta">
+            <span class="conversation-platform">{{ conversation.source || 'Unknown' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading More Skeleton -->
+      <div v-if="isLoadingMore" class="loading-more-skeletons">
+        <ConversationSkeleton v-for="i in 3" :key="`skeleton-${i}`" />
+      </div>
+
+      <!-- Error State -->
+      <div v-if="error" class="error-state">
+        <div class="error-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+        </div>
+        <p class="error-text">Failed to load conversations</p>
+        <p class="error-subtext">{{ error }}</p>
+        <button class="retry-btn" @click="$emit('retry')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+            <path d="M21 3v5h-5"></path>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+            <path d="M3 21v-5h5"></path>
+          </svg>
+          Retry
+        </button>
+      </div>
+
+      <!-- Initial Loading State -->
+      <div v-else-if="loading && conversations.length === 0" class="initial-loading-skeletons">
+        <ConversationSkeleton v-for="i in 8" :key="`initial-skeleton-${i}`" />
+      </div>
+
+      <!-- Empty State -->
+      <div v-else-if="conversations.length === 0 && !isLoadingMore" class="empty-state">
+        <div class="empty-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </div>
+        <p class="empty-text">No conversations found</p>
+        <p class="empty-subtext">Try adjusting your filters</p>
+      </div>
+    </div>
+  </div>
+</template>
+
 
 <style scoped>
 .conversation-sidebar {
@@ -248,6 +550,7 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   width: 100%;
   padding: var(--space-2) var(--space-3);
   padding-left: 40px;
+  padding-right: 48px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background-color: var(--color-bg-tertiary);
@@ -261,79 +564,216 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   border-color: var(--color-primary);
 }
 
-/* Filter Tabs */
-.filter-tabs {
-  display: flex;
-  padding: var(--space-3) var(--space-4);
-  gap: var(--space-2);
+
+/* Enhanced Filters Section */
+.filters-section {
   border-bottom: 1px solid var(--color-border);
   background-color: var(--color-bg-secondary);
 }
 
-.filter-tab {
-  flex: 1;
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background-color: var(--color-bg-tertiary);
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-  font-weight: 500;
+.filters-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4);
   cursor: pointer;
-  transition: all var(--transition-normal);
+  user-select: none;
+  transition: background-color var(--transition-normal);
 }
 
-.filter-tab:hover {
+.filters-header:hover {
   background-color: var(--color-bg-hover);
-  border-color: var(--color-primary);
 }
 
-.filter-tab.active {
-  background-color: var(--color-primary);
-  color: white;
-  border-color: var(--color-primary);
-}
-
-/* Platform Filter */
-.platform-filter {
-  display: flex;
-  padding: var(--space-3) var(--space-4);
-  gap: var(--space-2);
-  border-bottom: 1px solid var(--color-border);
-  background-color: var(--color-bg-secondary);
-}
-
-.platform-btn {
+.filters-title {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--color-border);
+  gap: var(--space-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.active-filters-badge {
+  background-color: var(--color-primary);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-md);
+  min-width: 18px;
+  text-align: center;
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.clear-all-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--color-error);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.clear-all-btn:hover {
+  background-color: var(--color-error);
+  opacity: 0.9;
+}
+
+.toggle-filters-btn {
+  padding: var(--space-1);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-normal);
+}
+
+.toggle-filters-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.toggle-filters-btn.expanded i {
+  transform: rotate(180deg);
+}
+
+/* Filter Collapse Animation */
+.filters-collapse-enter-active,
+.filters-collapse-leave-active {
+  transition: all var(--transition-normal);
+  max-height: 500px;
+  opacity: 1;
+}
+
+.filters-collapse-enter-from,
+.filters-collapse-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+
+.filters-container {
+  padding: var(--space-4);
   background-color: var(--color-bg-tertiary);
+  border-top: 1px solid var(--color-border);
+}
+
+/* Quick Filters */
+.quick-filters {
+  margin-bottom: var(--space-4);
+}
+
+.quick-filter-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quick-filter-chips {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.quick-filter-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
   color: var(--color-text-secondary);
   cursor: pointer;
   transition: all var(--transition-normal);
 }
 
-.platform-btn:first-child {
-  width: auto;
-  padding: 0 var(--space-3);
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.platform-btn:hover {
+.quick-filter-chip:hover {
   background-color: var(--color-bg-hover);
   border-color: var(--color-primary);
 }
 
-.platform-btn.active {
+.quick-filter-chip.active {
   background-color: var(--color-primary);
   color: white;
   border-color: var(--color-primary);
 }
+
+/* Filter Sections */
+.filter-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Active Filters Display */
+.active-filters-display {
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.active-filters-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: var(--space-2);
+}
+
+.active-filters-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.active-filter-tag {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  color: var(--color-text-primary);
+}
+
+.filter-label {
+  font-weight: 600;
+}
+
+.filter-value {
+  font-weight: 400;
+}
+
+.remove-filter-btn {
+  padding: var(--space-1);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  transition: color var(--transition-normal);
+}
+
+.remove-filter-btn:hover {
+  color: var(--color-error);
+}
+
 
 /* .platform-icon {
   width: 16px;
@@ -392,12 +832,28 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   height: 40px;
   border-radius: var(--radius-full);
   background: linear-gradient(135deg, var(--color-bg-secondary), var(--color-bg-tertiary));
+  color: var(--color-text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
+}
+
+.avatar-image {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  position: relative;
+}
+
+.avatar-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-full);
 }
 
 .unread-badge {
@@ -485,29 +941,70 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   color: rgba(255, 255, 255, 0.7);
 }
 
-/* Loading Indicator */
-.loading-indicator {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-4);
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
+/* Loading More Skeletons */
+.loading-more-skeletons {
+  padding: var(--space-2);
 }
 
-.loading-indicator .loading-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--color-border);
-  border-top: 2px solid var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+.initial-loading-skeletons {
+  padding: var(--space-2);
 }
 
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+
+
+/* Error State */
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--color-text-tertiary);
+}
+
+.error-icon {
+  margin-bottom: var(--space-3);
+  opacity: 0.5;
+  color: var(--color-error);
+}
+
+.error-text {
+  margin: 0 0 var(--space-1) 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.error-subtext {
+  margin: 0 0 var(--space-3) 0;
+  font-size: 0.875rem;
+  color: var(--color-text-tertiary);
+}
+
+.retry-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.retry-btn:hover {
+  background-color: var(--color-bg-hover);
+  border-color: var(--color-primary);
 }
 
 /* Empty State */

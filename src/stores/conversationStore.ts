@@ -1,5 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { conversationApi } from '@/services/conversationApi'
+import { firebaseService } from '@/services/firebase'
+import axios from 'axios'
+import { useApiKeyStore } from '@/stores/apiKeyStore'
+import type { FirebaseMessage } from '@/types/firebase'
+import type { 
+  ConversationMessage,
+  ConversationData 
+} from '@/types/conversation'
 import type { ExtendedChat, Message } from '@/types'
 
 export const useConversationStore = defineStore('conversation', () => {
@@ -11,153 +20,120 @@ export const useConversationStore = defineStore('conversation', () => {
   const activeFilter = ref('all')
   const activeTab = ref('all')
   const readFilter = ref<'all' | 'read' | 'unread'>('all')
+  const chatTypeFilter = ref<'all' | 'my' | 'other'>('all')
+  const sortOrder = ref<'asc' | 'desc'>('desc')
   const loading = ref(false)
+  const error = ref<string | null>(null)
+  const limitReached = ref(false)
+  const isLoadingMore = ref(false)
 
-  // Mock data for conversations
-  const mockConversations: ExtendedChat[] = [
-    {
-      id: '1',
-      title: 'Ijaida James',
-      timestamp: new Date('2024-01-15 14:30:00'),
-      lastMessage: 'Hello, I need help with my order',
-      unread: false,
-      messages: [],
-      email: 'ijaida_james@test.com',
-      status: 'open',
-      source: 'Facebook',
-      lastConverse: '2024-01-15 14:30:00',
-      phone: '1234567890',
-      country: 'United States',
-      os: 'iOS',
-      lastPage: '/home',
-      fbid: '8962630583802781',
-      assignedTo: 'Agent 1'
-    },
-    {
-      id: '2',
-      title: 'Jaiden Anderson',
-      timestamp: new Date('2024-01-15 13:45:00'),
-      lastMessage: 'Can you help me with the payment?',
-      unread: true,
-      messages: [],
-      email: 'jaiden.anderson@test.com',
-      status: 'open',
-      source: 'WhatsApp',
-      lastConverse: '2024-01-15 13:45:00',
-      phone: '0987654321',
-      country: 'Canada',
-      os: 'Android',
-      lastPage: '/products',
-      fbid: '8962630583802782',
-      assignedTo: 'Agent 2'
-    },
-    {
-      id: '3',
-      title: 'Ibrahim Ib',
-      timestamp: new Date('2024-01-14 16:20:00'),
-      lastMessage: 'Thank you for your help',
-      unread: false,
-      messages: [],
-      email: 'ibrahim.ib@test.com',
-      status: 'closed',
-      source: 'Web',
-      lastConverse: '2024-01-14 16:20:00',
-      phone: '5555555555',
-      country: 'Nigeria',
-      os: 'Windows',
-      lastPage: '/support',
-      fbid: '8962630583802783',
-      assignedTo: ''
-    },
-    {
-      id: '4',
-      title: 'King Kado Kroon',
-      timestamp: new Date('2024-01-15 12:15:00'),
-      lastMessage: 'I have a question about shipping',
-      unread: false,
-      messages: [],
-      email: 'king.kroon@test.com',
-      status: 'open',
-      source: 'Facebook',
-      lastConverse: '2024-01-15 12:15:00',
-      phone: '1111111111',
-      country: 'South Africa',
-      os: 'macOS',
-      lastPage: '/about',
-      fbid: '8962630583802784',
-      assignedTo: 'Agent 1'
-    },
-    {
-      id: '5',
-      title: 'Starboy Okon',
-      timestamp: new Date('2024-01-15 11:30:00'),
-      lastMessage: 'When will my order arrive?',
-      unread: true,
-      messages: [],
-      email: 'starboy.okon@test.com',
-      status: 'open',
-      source: 'WhatsApp',
-      lastConverse: '2024-01-15 11:30:00',
-      phone: '2222222222',
-      country: 'Nigeria',
-      os: 'Android',
-      lastPage: '/contact',
-      fbid: '8962630583802785',
-      assignedTo: 'Agent 3'
-    },
-    {
-      id: '6',
-      title: 'Sarah Johnson',
-      timestamp: new Date('2024-01-15 10:00:00'),
-      lastMessage: 'How do I reset my password?',
-      unread: true,
-      messages: [],
-      email: 'sarah.johnson@test.com',
-      status: 'open',
-      source: 'Web',
-      lastConverse: '2024-01-15 10:00:00',
-      phone: '3333333333',
-      country: 'United Kingdom',
-      os: 'macOS',
-      lastPage: '/login',
-      fbid: '8962630583802786',
-      assignedTo: 'Agent 1'
+  // Firebase real-time messaging state
+  const isFirebaseConnected = ref(false)
+  const firebaseError = ref<string | null>(null)
+
+  // Message cache to reduce API calls
+  const messageCache = ref<Map<string, {
+    messages: Message[]
+    timestamp: number
+    lastMessageId?: number
+  }>>(new Map())
+
+  // Cache expiration time (5 minutes)
+  const CACHE_EXPIRY_TIME = 5 * 60 * 1000
+
+  // Helper function to check if cache is valid
+  const isCacheValid = (timestamp: number) => {
+    return Date.now() - timestamp < CACHE_EXPIRY_TIME
+  }
+
+  // Helper function to get cached messages
+  const getCachedMessages = (conversationId: string) => {
+    const cached = messageCache.value.get(conversationId)
+    if (cached && isCacheValid(cached.timestamp)) {
+      return cached
     }
-  ]
+    return null
+  }
 
-  // Initialize with mock data
-  conversations.value = mockConversations
+  // Helper function to set cached messages
+  const setCachedMessages = (conversationId: string, messages: Message[], lastMessageId?: number) => {
+    messageCache.value.set(conversationId, {
+      messages,
+      timestamp: Date.now(),
+      lastMessageId
+    })
+  }
+
+  // Helper function to clear cache for a conversation
+  const clearConversationCache = (conversationId: string) => {
+    messageCache.value.delete(conversationId)
+  }
+
+  // Helper function to clear all cache
+  const clearAllCache = () => {
+    messageCache.value.clear()
+  }
+
+  // Helper function to convert API conversation data to ExtendedChat
+  const convertConversationDataToExtendedChat = (fbId: string, data: ConversationData): ExtendedChat => {
+    const user = data.user
+    return {
+      id: fbId,
+      title: user.name,
+      timestamp: new Date(user.updated_at),
+      lastMessage: data.last_msg || '',
+      unread: data.unread > 0,
+      messages: [],
+      email: user.email,
+      status: user.status === 1 ? 'open' : 'closed',
+      source: user.type === 'facebook' ? 'Facebook' : user.type === 'whatsapp' ? 'WhatsApp' : 'Web',
+      lastConverse: user.last_converse,
+      phone: user.phone_number || undefined,
+      country: user.country,
+      os: user.os || undefined,
+      lastPage: user.last_page || undefined,
+      fbid: user.fbId,
+      assignedTo: user.csr || '',
+      profilePic: user.profile_pic || undefined
+    }
+  }
+
+  // Helper function to convert API message to Message
+  const convertConversationMessageToMessage = (msg: ConversationMessage): Message => {
+    // Handle different message content types
+    let content = msg.message;
+    
+    // If message is an object, extract the text
+    if (typeof msg.message === 'object') {
+      console.log('Converting object message:', msg.message);
+      const messageObj = msg.message as any;
+      
+      if (messageObj.text) {
+        if (typeof messageObj.text === 'object') {
+          // Handle double-nested text object
+          content = messageObj.text.text || JSON.stringify(messageObj.text);
+        } else {
+          content = messageObj.text;
+        }
+      } else {
+        // Try to find any text property or stringify the object
+        content = JSON.stringify(msg.message);
+      }
+    }
+    
+    return {
+      id: msg.id.toString(),
+      content: content,
+      sender: msg.direction === 'to' ? 'assistant' : 'user',
+      timestamp: new Date(msg.created_at),
+      attachments: []
+    }
+  }
 
   // Computed properties
   const filteredConversations = computed(() => {
-    let filtered = conversations.value
-
-    // Filter by search query
-    if (searchQuery.value) {
-      filtered = filtered.filter(conv => 
-        conv.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        conv.email?.toLowerCase().includes(searchQuery.value.toLowerCase())
-      )
-    }
-
-    // Filter by status (All, Open, Closed)
-    if (activeFilter.value !== 'all') {
-      filtered = filtered.filter(conv => conv.status === activeFilter.value)
-    }
-
-    // Filter by source (All, Facebook, WhatsApp, Web)
-    if (activeTab.value !== 'all') {
-      filtered = filtered.filter(conv => conv.source?.toLowerCase() === activeTab.value.toLowerCase())
-    }
-
-    // Filter by read status
-    if (readFilter.value !== 'all') {
-      filtered = filtered.filter(conv => 
-        readFilter.value === 'unread' ? conv.unread : !conv.unread
-      )
-    }
-
-    return filtered
+    // Return conversations directly since filtering is now handled by API
+    return conversations.value
   })
 
   const unreadCount = computed(() => {
@@ -172,60 +148,435 @@ export const useConversationStore = defineStore('conversation', () => {
     return conversations.value.filter(conv => conv.status === 'closed').length
   })
 
+  // Firebase Methods
+  const initializeFirebase = () => {
+    try {
+      console.log('🔥 Initializing Firebase from conversation store...')
+      // Initialize live chat listener
+      const unsubscribe = firebaseService.initializeLiveChatListener(
+        (fbId: string, data: FirebaseMessage) => {
+          handleFirebaseMessage(fbId, data)
+        },
+        (error: Error) => {
+          console.error('Firebase live chat error:', error)
+          firebaseError.value = error.message
+          isFirebaseConnected.value = false
+        }
+      )
+      
+      if (unsubscribe) {
+        isFirebaseConnected.value = true
+        firebaseError.value = null
+        console.log('✅ Firebase initialized successfully in conversation store')
+      } else {
+        console.warn('⚠️ Firebase listener not set up - check configuration')
+        firebaseError.value = 'Firebase configuration incomplete'
+        isFirebaseConnected.value = false
+      }
+    } catch (error) {
+      console.error('❌ Error initializing Firebase:', error)
+      firebaseError.value = error instanceof Error ? error.message : 'Failed to initialize Firebase'
+      isFirebaseConnected.value = false
+    }
+  }
+
+  const handleFirebaseMessage = (fbId: string, data: FirebaseMessage) => {
+    console.log('📨 Processing Firebase message for:', fbId, data)
+    
+    // Check if this is a human help request or bot stop
+    if (data.message?.human_help !== undefined && data.message?.stop_bot) {
+      console.log('🤖 Bot deactivated for conversation:', fbId)
+      // Handle bot deactivation if needed
+    }
+
+    // Find existing conversation or create new one
+    let conversation = conversations.value.find(conv => conv.fbid === fbId)
+    
+    if (!conversation) {
+      // Create new conversation from Firebase data
+      if (data.user) {
+        const newConversation: ExtendedChat = {
+          id: fbId,
+          title: data.user.name,
+          timestamp: new Date(),
+          lastMessage: data.message?.text || '',
+          unread: true,
+          messages: [],
+          email: data.user.email,
+          status: 'open',
+          source: 'Web',
+          fbid: fbId,
+          profilePic: data.user.profile_pic
+        }
+        
+        conversations.value.unshift(newConversation)
+        conversation = newConversation
+        console.log('🆕 New conversation created from Firebase:', newConversation)
+      }
+    } else {
+      // Update existing conversation
+      conversation.lastMessage = data.message?.text || 'Media message'
+      conversation.timestamp = new Date()
+      
+      // Mark as unread if not currently selected
+      if (selectedConversation.value?.fbid !== fbId) {
+        conversation.unread = true
+      }
+      
+      // Move to top of list
+      const index = conversations.value.findIndex(conv => conv.fbid === fbId)
+      if (index > 0) {
+        conversations.value.splice(index, 1)
+        conversations.value.unshift(conversation)
+      }
+      
+      console.log('📝 Updated existing conversation from Firebase:', conversation.title)
+    }
+
+    // If this conversation is currently selected, add message to chat
+    if (selectedConversation.value?.fbid === fbId) {
+      // Handle different message content types from Firebase
+      let content = data.message?.text || '';
+      
+      if (typeof data.message?.text === 'object') {
+        console.log('Firebase message text is an object:', data.message.text);
+        const textObj = data.message.text as any;
+        
+        if (textObj.text) {
+          if (typeof textObj.text === 'object') {
+            // Handle double-nested text object
+            content = textObj.text.text || JSON.stringify(textObj.text);
+          } else {
+            content = textObj.text;
+          }
+        } else {
+          content = JSON.stringify(data.message.text);
+        }
+      }
+      
+      const newMessage: Message = {
+        id: Date.now().toString(),
+        content: content,
+        timestamp: new Date(),
+        sender: 'user',
+        status: 'sent'
+      }
+      
+      messages.value.push(newMessage)
+      console.log('💬 Added message to current conversation:', newMessage)
+    }
+  }
+
+  const listenToConversation = (fbId: string) => {
+    if (!isFirebaseConnected.value) {
+      console.warn('Firebase not connected. Cannot listen to conversation.')
+      return
+    }
+
+    firebaseService.listenToConversation(
+      fbId,
+      (message: Message) => {
+        // Add message to current conversation if it matches
+        if (selectedConversation.value?.fbid === fbId) {
+          messages.value.push(message)
+          console.log('💬 Real-time message added:', message)
+        }
+      },
+      (error: Error) => {
+        console.error('Conversation listener error:', error)
+        firebaseError.value = error.message
+      }
+    )
+  }
+
+  const stopListeningToConversation = (fbId: string) => {
+    firebaseService.stopListeningToConversation(fbId)
+  }
+
+  const disconnectFirebase = () => {
+    firebaseService.disconnect()
+    isFirebaseConnected.value = false
+    firebaseError.value = null
+    console.log('🔌 Firebase disconnected')
+  }
+
+  const checkFirebaseStatus = () => {
+    console.log('📊 Firebase Status Check:')
+    console.log('- Firebase Connected:', isFirebaseConnected.value)
+    console.log('- Firebase Error:', firebaseError.value)
+    console.log('- Environment Config:', {
+      apiKey: !!import.meta.env.VITE_FIREBASE_API_KEY,
+      databaseURL: !!import.meta.env.VITE_FIREBASE_DATABASE_URL,
+      projectId: !!import.meta.env.VITE_FIREBASE_PROJECT_ID
+    })
+    
+    // Get Firebase service status
+    const firebaseStatus = firebaseService.getConnectionStatus()
+    console.log('- Firebase Service Status:', firebaseStatus)
+  }
+
   // Actions
-  const setSearchQuery = (query: string) => {
+  const fetchConversations = async (isLoadMore = false) => {
+    if (isLoadMore) {
+      isLoadingMore.value = true
+    } else {
+      loading.value = true
+      limitReached.value = false
+    }
+    error.value = null
+    
+    try {
+      // Build query parameters based on current filters
+      const queryParams: Record<string, string> = {}
+      
+      // Search query
+      if (searchQuery.value.trim()) {
+        queryParams.query = searchQuery.value.trim()
+      }
+      
+      // Status filter (open/closed)
+      if (activeFilter.value !== 'all') {
+        queryParams.requested = activeFilter.value
+      }
+      
+      // Chat type filter (my chats)
+      if (chatTypeFilter.value === 'my') {
+        queryParams.open_chats = 'true'
+      }
+      
+      // Read status filter
+      if (readFilter.value !== 'all') {
+        queryParams.status = readFilter.value
+      }
+      
+      // Platform filter
+      if (activeTab.value !== 'all') {
+        queryParams.platforms = activeTab.value
+      }
+      
+      // Offset for pagination
+      if (isLoadMore) {
+        queryParams.offset = conversations.value.length.toString()
+      }
+      
+      const response = await conversationApi.getConversations(queryParams)
+      if (response.success && response.data) {
+        const conversationsList: ExtendedChat[] = []
+        
+        // Convert API response to ExtendedChat format
+        Object.entries(response.data.conversations).forEach(([fbId, data]) => {
+          conversationsList.push(convertConversationDataToExtendedChat(fbId, data))
+        })
+        
+        if (isLoadMore) {
+          // Append new conversations for load more
+          conversations.value.push(...conversationsList)
+        } else {
+          // Replace conversations for new search/filter
+          conversations.value = conversationsList
+        }
+        
+        // Check if limit reached
+        if (response.data.limit_reached === true) {
+          limitReached.value = true
+        }
+      } else {
+        error.value = response.message || 'Failed to fetch conversations'
+      }
+    } catch (err) {
+      error.value = 'An error occurred while fetching conversations'
+      console.error('Error fetching conversations:', err)
+    } finally {
+      if (isLoadMore) {
+        isLoadingMore.value = false
+      } else {
+        loading.value = false
+      }
+    }
+  }
+
+  const loadMoreConversations = async () => {
+    if (!limitReached.value && !isLoadingMore.value) {
+      await fetchConversations(true)
+    }
+  }
+
+  const fetchUserConversation = async (messengerUserId: string, forceRefresh = false) => {
+    // Check cache first if not forcing refresh
+    if (!forceRefresh) {
+      const cached = getCachedMessages(messengerUserId)
+      if (cached) {
+        messages.value = cached.messages
+        console.log('Using cached messages for conversation:', messengerUserId)
+        return
+      }
+    }
+
+    loading.value = true
+    error.value = null
+    
+    try {
+      const response = await conversationApi.getUserConversation(messengerUserId)
+      if (response.success && response.data) {
+        // Convert API messages to Message format
+        const convertedMessages = response.data.conversations.map(convertConversationMessageToMessage)
+        messages.value = convertedMessages
+        
+        // Cache the messages
+        setCachedMessages(messengerUserId, convertedMessages, response.data.last_msg_key)
+        
+        // Update selected conversation with user data
+        if (selectedConversation.value) {
+          selectedConversation.value.email = response.data.user.email
+          selectedConversation.value.assignedTo = response.data.agent_assigned
+          selectedConversation.value.status = response.data.conv_status
+        }
+      } else {
+        error.value = response.message || 'Failed to fetch user conversation'
+      }
+    } catch (err) {
+      error.value = 'An error occurred while fetching user conversation'
+      console.error('Error fetching user conversation:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const sendMessageToUser = async (content: string, to: string, type: 'text' | 'image' | 'whatsapp' = 'text') => {
+    if (!content.trim()) return
+    
+    try {
+      let response
+      if (type === 'text') {
+        response = await conversationApi.sendTextMessage(to, content)
+      } else if (type === 'whatsapp') {
+        response = await conversationApi.sendWhatsAppMessage(to, content)
+      } else {
+        // For image type, content should be the image URL
+        response = await conversationApi.sendImageMessage(to, content)
+      }
+      
+      if (response.success) {
+        // Add the sent message to the current conversation
+        const message: Message = {
+          id: Date.now().toString(),
+          content: content,
+          sender: 'assistant',
+          timestamp: new Date(),
+          status: 'sent',
+          attachments: []
+        }
+        messages.value.push(message)
+        
+        // Update the last message in the selected conversation
+        if (selectedConversation.value) {
+          selectedConversation.value.lastMessage = content
+          selectedConversation.value.timestamp = new Date()
+        }
+      } else {
+        error.value = response.message || 'Failed to send message'
+      }
+    } catch (err) {
+      error.value = 'An error occurred while sending message'
+      console.error('Error sending message:', err)
+    }
+  }
+
+  const setSearchQuery = async (query: string) => {
     searchQuery.value = query
+    // Debounce search to avoid too many API calls
+    clearTimeout((window as any).searchTimeout)
+    ;(window as any).searchTimeout = setTimeout(() => {
+      fetchConversations()
+    }, 300)
   }
 
-  const setActiveFilter = (filter: string) => {
+  const setActiveFilter = async (filter: string) => {
     activeFilter.value = filter
+    await fetchConversations()
   }
 
-  const setActiveTab = (tab: string) => {
+  const setActiveTab = async (tab: string) => {
     activeTab.value = tab
+    await fetchConversations()
   }
 
-  const setReadFilter = (filter: 'all' | 'read' | 'unread') => {
+  const setReadFilter = async (filter: 'all' | 'read' | 'unread') => {
     readFilter.value = filter
+    await fetchConversations()
   }
 
-  const selectConversation = (conversation: ExtendedChat) => {
+  const setChatTypeFilter = async (filter: 'all' | 'my' | 'other') => {
+    chatTypeFilter.value = filter
+    await fetchConversations()
+  }
+
+  const setSortOrder = async (order: 'asc' | 'desc') => {
+    sortOrder.value = order
+    await fetchConversations()
+  }
+
+  // Mark conversation as read on server
+  async function markConversationAsReadOnServer(userId: string) {
+    try {
+      const apiKeyStore = useApiKeyStore();
+      const apikey = apiKeyStore.apiKey;
+      if (!apikey) throw new Error('API key not set');
+      await axios.post(
+        `${import.meta.env.VITE_BOTSIFY_BASE_URL}/v1/user/change-status`,
+        {
+          apikey,
+          user_id: userId,
+          status: 1
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
+          }
+        }
+      );
+      console.log('✅ Marked conversation as read on server:', userId);
+    } catch (error) {
+      console.error('❌ Failed to mark conversation as read on server:', error);
+    }
+  }
+
+  const selectConversation = async (conversation: ExtendedChat) => {
+    // Stop listening to previous conversation
+    if (selectedConversation.value?.fbid) {
+      stopListeningToConversation(selectedConversation.value.fbid)
+    }
+    
     selectedConversation.value = conversation
-    // Mark as read when selected
+    // If unread, mark as read locally and on server
     if (conversation.unread) {
       conversation.unread = false
-    }
-    // Load messages for this conversation (mock)
-    messages.value = [
-      {
-        id: '1',
-        content: `Hello! I'm ${conversation.title || 'User'}. How can you help me today?`,
-        sender: 'assistant',
-        timestamp: new Date(Date.now() - 60000), // 1 minute ago
-        attachments: []
-      },
-      {
-        id: '2',
-        content: conversation.lastMessage || 'No message content',
-        sender: 'user',
-        timestamp: new Date(Date.now() - 30000), // 30 seconds ago
-        attachments: []
+      if (conversation.fbid) {
+        markConversationAsReadOnServer(conversation.fbid)
       }
-    ]
+    }
+    
+    // Load messages for this conversation using API
+    if (conversation.fbid) {
+      await fetchUserConversation(conversation.fbid)
+      // Start listening to real-time messages for this conversation
+      if (isFirebaseConnected.value) {
+        listenToConversation(conversation.fbid)
+      }
+    }
   }
 
-  const sendMessage = (content: string) => {
+  const sendMessage = async (content: string) => {
     if (!content.trim() || !selectedConversation.value) return
 
-    const message: Message = {
-      id: Date.now().toString(),
-      content: content,
-      sender: 'user',
-      timestamp: new Date(),
-      attachments: []
+    // Send message using API
+    if (selectedConversation.value.fbid) {
+      await sendMessageToUser(content, selectedConversation.value.fbid, 'text')
+      
+      // Clear cache for this conversation since we sent a new message
+      clearConversationCache(selectedConversation.value.fbid)
     }
-
-    messages.value.push(message)
   }
 
   const markAsRead = (conversationId: string) => {
@@ -256,6 +607,25 @@ export const useConversationStore = defineStore('conversation', () => {
     }
   }
 
+  const exportConversation = async (extension: 'csv' | 'txt') => {
+    if (!selectedConversation.value?.fbid) {
+      error.value = 'No conversation selected for export'
+      return
+    }
+
+    try {
+      const response = await conversationApi.exportChat(selectedConversation.value.fbid, extension)
+      if (response.success) {
+        console.log('✅ Chat exported successfully:', extension)
+      } else {
+        error.value = response.message || 'Failed to export chat'
+      }
+    } catch (err) {
+      error.value = 'An error occurred while exporting chat'
+      console.error('Error exporting chat:', err)
+    }
+  }
+
   return {
     // State
     conversations,
@@ -265,7 +635,12 @@ export const useConversationStore = defineStore('conversation', () => {
     activeFilter,
     activeTab,
     readFilter,
+    chatTypeFilter,
+    sortOrder,
     loading,
+    error,
+    limitReached,
+    isLoadingMore,
     
     // Computed
     filteredConversations,
@@ -274,15 +649,34 @@ export const useConversationStore = defineStore('conversation', () => {
     closedCount,
     
     // Actions
+    fetchConversations,
+    loadMoreConversations,
+    fetchUserConversation,
     setSearchQuery,
     setActiveFilter,
     setActiveTab,
     setReadFilter,
+    setChatTypeFilter,
+    setSortOrder,
     selectConversation,
     sendMessage,
     markAsRead,
     markAsUnread,
     closeConversation,
-    openConversation
+    openConversation,
+    
+    // Cache management
+    clearConversationCache,
+    clearAllCache,
+    
+    // Firebase methods
+    initializeFirebase,
+    disconnectFirebase,
+    checkFirebaseStatus,
+    isFirebaseConnected,
+    firebaseError,
+    
+    // Export method
+    exportConversation
   }
 }) 

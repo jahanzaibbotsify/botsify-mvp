@@ -3,9 +3,44 @@ import { computed, onMounted, watch } from 'vue';
 import type { Message } from '@/types';
 import { marked } from 'marked';
 
+// Interface for parsed message content
+interface ParsedMessage {
+  text?: string | { text: string };
+  attachment?: {
+    type: string;
+    payload: any;
+  };
+  metadata?: string;
+  event?: string;
+  from?: string;
+  from_user_id?: number;
+  avatar?: string;
+  deactive?: boolean;
+}
+
 const props = defineProps<{
   message: Message;
 }>();
+
+// Parse message content (JSON or plain text)
+const parseMessageContent = (content: string): ParsedMessage | null => {
+  try {
+    // Handle null or empty content
+    if (!content || content === 'null' || content.trim() === '') {
+      return { text: 'Empty message' };
+    }
+    
+    // Try to parse as JSON first
+    if (content.trim().startsWith('{') || content.trim().startsWith('[')) {
+      return JSON.parse(content);
+    }
+    // If not JSON, return as plain text
+    return { text: content };
+  } catch (error) {
+    console.error('Error parsing message content:', error);
+    return { text: content || 'Error parsing message' };
+  }
+};
 
 // Parse markdown content
 const parsedContent = computed(() => {
@@ -20,12 +55,97 @@ const parsedContent = computed(() => {
       return `<p class="error-text">${props.message.content}</p>`;
     }
     
-    return marked(props.message.content);
+    // Parse the message content
+    const parsed = parseMessageContent(props.message.content);
+    
+    if (!parsed) {
+      return `<p class="error-text">Error parsing message</p>`;
+    }
+    
+    // Handle different message types
+    if (parsed.text) {
+      return marked(typeof parsed.text === 'string' ? parsed.text : parsed.text.text);
+    }
+    
+    if (parsed.event) {
+      return `<p class="event-message"><em>${parsed.event}</em></p>`;
+    }
+    
+    if (parsed.attachment) {
+      return renderAttachment(parsed.attachment);
+    }
+    
+    return `<p class="error-text">Unknown message format</p>`;
   } catch (error) {
     console.error('Error parsing markdown:', error);
     return `<p class="error-text">Error rendering message: ${props.message.content}</p>`;
   }
 });
+
+// Render attachment content
+const renderAttachment = (attachment: any): string => {
+  const { type, payload } = attachment;
+  
+  switch (type) {
+    case 'template':
+      return renderTemplate(payload);
+    case 'image':
+      return `<div class="attachment-image"><img src="${payload.url}" alt="Image" /></div>`;
+    default:
+      return `<p class="attachment-unknown">Attachment type: ${type}</p>`;
+  }
+};
+
+// Render template content
+const renderTemplate = (payload: any): string => {
+  const { template_type, text, elements, buttons } = payload;
+  
+  switch (template_type) {
+    case 'generic':
+      return renderGenericTemplate(elements);
+    case 'button':
+      return renderButtonTemplate(text, buttons);
+    default:
+      return `<p class="template-unknown">Template type: ${template_type}</p>`;
+  }
+};
+
+// Render generic template
+const renderGenericTemplate = (elements: any[]): string => {
+  if (!elements || elements.length === 0) return '';
+  
+  let html = '<div class="generic-template">';
+  elements.forEach(element => {
+    html += `
+      <div class="template-element">
+        ${element.image_url ? `<img src="${element.image_url}" alt="${element.title}" class="template-image" />` : ''}
+        <div class="template-content">
+          <h4>${element.title || ''}</h4>
+          ${element.subtitle ? `<p>${element.subtitle}</p>` : ''}
+        </div>
+      </div>
+    `;
+  });
+  html += '</div>';
+  return html;
+};
+
+// Render button template
+const renderButtonTemplate = (text: string, buttons: any[]): string => {
+  let html = '<div class="button-template">';
+  if (text) {
+    html += `<p class="button-text">${text}</p>`;
+  }
+  if (buttons && buttons.length > 0) {
+    html += '<div class="button-list">';
+    buttons.forEach(button => {
+      html += `<button class="template-button" disabled>${button.title}</button>`;
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+};
 
 // Watch for content changes to debug reactivity issues
 watch(() => props.message.content, (newContent, oldContent) => {
@@ -94,7 +214,7 @@ onMounted(() => {
 <style scoped>
 .message-container {
   display: flex;
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-2);
   max-width: 85%;
 }
 
@@ -109,48 +229,61 @@ onMounted(() => {
 }
 
 .message {
-  border-radius: 24px;
-  padding: var(--space-3) var(--space-4);
+  border-radius: 12px;
+  padding: var(--space-2) var(--space-3);
   position: relative;
   word-break: break-word;
   overflow-wrap: break-word;
   transition: all var(--transition-normal);
   border: 1px solid transparent;
+  min-width: 60px;
 }
 
 .user-message .message {
   background-color: var(--color-primary);
   color: white;
-  box-shadow: 0 4px 12px rgba(0, 163, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 163, 255, 0.15);
   background-image: linear-gradient(to right, rgba(0, 163, 255, 0.9), var(--color-primary));
-  border-radius: 24px;
+  border-radius: 12px;
 }
 
 .ai-message .message {
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   color: var(--color-text-primary);
 }
 
 [data-theme="dark"] .ai-message .message {
-  background-color: var(--color-bg-secondary);
+  background-color: var(--color-bg-tertiary);
   border: 1px solid var(--color-border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
 .ai-message .message:hover {
-  border-color: #d1d5db;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 [data-theme="dark"] .ai-message .message:hover {
-  border-color: var(--color-border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .content {
   margin-bottom: 0;
+  line-height: 1.4;
+}
+
+/* Reduce spacing for consecutive messages from same sender */
+.message-container + .message-container {
+  margin-top: var(--space-1);
+}
+
+/* Add subtle spacing between different senders */
+.message-container:not(.user-message) + .message-container.user-message,
+.message-container.user-message + .message-container:not(.user-message) {
+  margin-top: var(--space-3);
 }
 
 .empty-content {
@@ -198,6 +331,121 @@ onMounted(() => {
 .content :deep(.error-text) {
   color: var(--color-error);
   font-weight: 500;
+}
+
+.content :deep(.event-message) {
+  color: var(--color-text-tertiary);
+  font-style: italic;
+  font-size: 0.875rem;
+  padding: var(--space-2);
+  background-color: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-primary);
+}
+
+/* Template Styles */
+.content :deep(.generic-template) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: var(--space-2) 0;
+}
+
+.content :deep(.template-element) {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background-color: var(--color-bg-secondary);
+}
+
+.content :deep(.template-image) {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.content :deep(.template-content) {
+  padding: var(--space-3);
+}
+
+.content :deep(.template-content h4) {
+  margin: 0 0 var(--space-1) 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.content :deep(.template-content p) {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+/* Button Template Styles */
+.content :deep(.button-template) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: var(--space-2) 0;
+}
+
+.content :deep(.button-text) {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+.content :deep(.button-list) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.content :deep(.template-button) {
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  text-align: left;
+}
+
+.content :deep(.template-button:hover:not(:disabled)) {
+  background-color: var(--color-bg-hover);
+  border-color: var(--color-primary);
+}
+
+.content :deep(.template-button:disabled) {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Attachment Styles */
+.content :deep(.attachment-image) {
+  margin: var(--space-2) 0;
+}
+
+.content :deep(.attachment-image img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.content :deep(.attachment-unknown),
+.content :deep(.template-unknown) {
+  color: var(--color-text-tertiary);
+  font-style: italic;
+  font-size: 0.875rem;
+  padding: var(--space-2);
+  background-color: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-border);
 }
 
 .attachments {
@@ -267,10 +515,12 @@ onMounted(() => {
 @media (max-width: 767px) {
   .message-container {
     max-width: 90%;
+    margin-bottom: var(--space-1);
   }
   
   .message {
     padding: var(--space-2) var(--space-3);
+    border-radius: 10px;
   }
   
   .attachments {

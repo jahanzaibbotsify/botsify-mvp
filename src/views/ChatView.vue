@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch, onUnmounted } from 'vue';
+import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 import ChatMessage from '@/components/chat/ChatMessage.vue';
 import MessageInput from '@/components/chat/MessageInput.vue';
 import TypingIndicator from '@/components/chat/TypingIndicator.vue';
-import DebugConsole from '@/components/debug/DebugConsole.vue';
 import SystemMessageSender from '@/components/chat/SystemMessageSender.vue';
 import ApiErrorNotification from '@/components/chat/ApiErrorNotification.vue';
 import StorySidebar from '@/components/chat/StorySidebar.vue';
@@ -19,7 +18,6 @@ const chatStore = useChatStore();
 const chatId = computed(() => route.params.id as string);
 const messagesContainer = ref<HTMLElement | null>(null);
 const storySidebar = ref<InstanceType<typeof StorySidebar> | null>(null);
-const showDebug = ref(false);
 const showSystemMessageModal = ref(false);
 
 const chat = computed(() => {
@@ -68,19 +66,6 @@ onMounted(() => {
   chatStore.setActiveChat(chatId.value);
   scrollToBottom();
   
-  // Toggle debug console with Ctrl+Shift+D
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-      e.preventDefault();
-      showDebug.value = !showDebug.value;
-    }
-  };
-  
-  window.addEventListener('keydown', handleKeyDown);
-  
-  onUnmounted(() => {
-    window.removeEventListener('keydown', handleKeyDown);
-  });
 });
 
 function toggleSystemMessageModal() {
@@ -198,8 +183,6 @@ const showWarning = (message: string) => {
         <SystemMessageSender />
       </div>
     </div>
-    
-    <DebugConsole v-if="showDebug" />
   </div>
   
   <div v-else class="chat-not-found">
