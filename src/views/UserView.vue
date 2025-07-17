@@ -7,6 +7,7 @@ import { ActionType, User, SortBy, SortOrder, ApiUser, PerPage, PaginationData, 
 import { userApi } from '@/services/userApi'
 import { createUserFilterManager, type UserFilterState } from '@/utils/filterUtils'
 import {useToast} from 'vue-toast-notification';
+import Swal from 'sweetalert2'; // Add this import at the top with others
 
 
 const $toast = useToast({position: 'top-right'});
@@ -313,15 +314,24 @@ const handlePerPageChange = (perPage: PerPage): void => {
 }
 
 // Watch for action changes
-watch(selectedAction, (newAction) => {
+watch(selectedAction, async (newAction) => {
   if (newAction) {
     if (selectedUsersCount.value > 0) {
-      // Show confirmation dialog
+      // Show confirmation dialog with SweetAlert2
       const actionText = getActionText(newAction)
       const userCount = selectedUsersCount.value
       const userText = userCount === 1 ? 'user' : 'users'
-      
-      if (confirm(`Are you sure you want to ${actionText} ${userCount} ${userText}?`)) {
+
+      const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: `Are you sure you want to ${actionText} ${userCount} ${userText}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes',
+        cancelButtonText: 'Cancel'
+      });
+
+      if (result.isConfirmed) {
         executeSelectedAction()
       } else {
         // Reset action if user cancels
@@ -329,7 +339,7 @@ watch(selectedAction, (newAction) => {
       }
     } else {
       // Show notification for no users selected
-      alert('Please select at least 1 user to perform this action.')
+      $toast.error('Please select at least 1 user to perform this action.')
       selectedAction.value = ''
     }
   }
