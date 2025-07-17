@@ -17,7 +17,7 @@ const router = useRouter();
 
 const emit = defineEmits(['select-button']);
 const selectedNavigationButton = computed(() => {
-  const currentPath = route.path.toLowerCase();
+  const currentPath = router.path.toLowerCase();
 
   const match = navigationButtons.find((btn) =>
     currentPath.includes(btn.id.toLowerCase())
