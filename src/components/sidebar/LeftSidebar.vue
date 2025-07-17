@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, defineEmits } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
 // import { useWindowSize } from '@vueuse/core';
@@ -13,11 +13,12 @@ import { BOTSIFY_BASE_URL } from '@/utils/config';
 const chatStore = useChatStore();
 const sidebarStore = useSidebarStore();
 const router = useRouter();
+const route = useRoute();
 // const { width } = useWindowSize();
 
 const emit = defineEmits(['select-button']);
 const selectedNavigationButton = computed(() => {
-  const currentPath = router.path.toLowerCase();
+  const currentPath = route.path.toLowerCase();
 
   const match = navigationButtons.find((btn) =>
     currentPath.includes(btn.id.toLowerCase())
