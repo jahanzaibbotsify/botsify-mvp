@@ -166,7 +166,6 @@ const handleDateRangeChange = (dateRange: { startDate: Date, endDate: Date } | n
   border: 1px solid var(--color-border);
   border-radius: 8px;
   margin-bottom: 20px;
-  overflow: hidden;
 }
 
 /* Desktop Layout */
