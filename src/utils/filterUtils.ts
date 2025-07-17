@@ -213,7 +213,8 @@ export class UserFilterManager extends BaseFilterManager<UserFilterState> {
       const segmentMap: Record<string, number> = {
         sms: -2,
         whatsapp: -3,
-        facebook: -4
+        facebook: -4,
+        website: -5
       }
       params.segment_id = segmentMap[this.state.segment]
     }
