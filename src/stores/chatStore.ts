@@ -1049,44 +1049,44 @@ Use the above connected services information to understand what tools and data s
       }
 
       // Check for File Search data
-      try {
-        const fileSearchResponse = await botsifyApi.getFileSearch();
-        if (fileSearchResponse.success && fileSearchResponse.data?.files?.length > 0) {
-          connectedServices.services.file_search = {
-            status: 'connected',
-            files: fileSearchResponse.data.files.map((file: any) => ({
-              id: file.id,
-              name: file.name || file.filename,
-              type: file.type || file.fileType,
-              size: file.size,
-              uploadedAt: file.uploadedAt || file.createdAt
-            })),
-            totalFiles: fileSearchResponse.data.files.length,
-            lastUpdated: new Date().toISOString()
-          };
-          hasServices = true;
-        }
-      } catch (error) {
-        console.log('No file search data or error loading:', error);
-      }
+      // try {
+      //   const fileSearchResponse = await botsifyApi.getFileSearch();
+      //   if (fileSearchResponse.success && fileSearchResponse.data?.files?.length > 0) {
+      //     connectedServices.services.file_search = {
+      //       status: 'connected',
+      //       files: fileSearchResponse.data.files.map((file: any) => ({
+      //         id: file.id,
+      //         name: file.name || file.filename,
+      //         type: file.type || file.fileType,
+      //         size: file.size,
+      //         uploadedAt: file.uploadedAt || file.createdAt
+      //       })),
+      //       totalFiles: fileSearchResponse.data.files.length,
+      //       lastUpdated: new Date().toISOString()
+      //     };
+      //     hasServices = true;
+      //   }
+      // } catch (error) {
+      //   console.log('No file search data or error loading:', error);
+      // }
 
       // Check for Web Search data
-      try {
-        const webSearchResponse = await botsifyApi.getWebSearch();
-        if (webSearchResponse.success && webSearchResponse.data) {
-          connectedServices.services.web_search = {
-            status: 'connected',
-            url: webSearchResponse.data.url,
-            title: webSearchResponse.data.title,
-            domain: webSearchResponse.data.domain,
-            connectedAt: webSearchResponse.data.connectedAt,
-            lastUpdated: new Date().toISOString()
-          };
-          hasServices = true;
-        }
-      } catch (error) {
-        console.log('No web search data or error loading:', error);
-      }
+      // try {
+      //   const webSearchResponse = await botsifyApi.getWebSearch();
+      //   if (webSearchResponse.success && webSearchResponse.data) {
+      //     connectedServices.services.web_search = {
+      //       status: 'connected',
+      //       url: webSearchResponse.data.url,
+      //       title: webSearchResponse.data.title,
+      //       domain: webSearchResponse.data.domain,
+      //       connectedAt: webSearchResponse.data.connectedAt,
+      //       lastUpdated: new Date().toISOString()
+      //     };
+      //     hasServices = true;
+      //   }
+      // } catch (error) {
+      //   console.log('No web search data or error loading:', error);
+      // }
 
       // Return JSON only if we have connected services
       if (hasServices) {
