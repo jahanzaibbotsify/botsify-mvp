@@ -2,8 +2,6 @@
 import { ref, computed } from 'vue'
 import UserAttributes from './Attributes.vue'
 import { User, UserAttribute, PaginationData, SortingData, SortBy, PerPage } from '@/types/user'
-import Swal from 'sweetalert2';
-import {useToast} from 'vue-toast-notification';
 import { userApi } from '@/services/userApi';
 
 const props = defineProps<{
@@ -13,7 +11,6 @@ const props = defineProps<{
   sorting: SortingData
   loading: boolean
 }>()
-const $toast = useToast({position: 'top-right'});
 const showAttributes = ref<boolean>(false)
 const selectedUserAttributes = ref<UserAttribute[]>([])
 const selectedUser = ref<User>()
@@ -63,7 +60,7 @@ const handleUpdateAttributes = (attributes: UserAttribute[]): void => {
 }
 
 const handleDeleteUser = async (userId: number): Promise<void> => {
-  const result = await Swal.fire({
+  const result = await window.Swal.fire({
         title: 'Are you sure?',
         text: `Are you sure you want to delete this user?`,
         icon: 'warning',
@@ -75,10 +72,10 @@ const handleDeleteUser = async (userId: number): Promise<void> => {
       if (result.isConfirmed) {
         const response = await userApi.changeUserStatus(2, [userId]);
         if (response.success) {
-          $toast.success(`Successfully deleted user.`);
+          window.$toast.success(`Successfully deleted user.`);
           emit('sort', 'name')
         } else {
-          $toast.error(`Failed to delete users: ${response.message}`);
+          window.$toast.error(`Failed to delete users: ${response.message}`);
         }
       }
 }
