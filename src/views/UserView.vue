@@ -207,6 +207,18 @@ const executeUserAction = async (action: ActionType, userIds: number[]): Promise
     const response = await userApi.changeUserStatus(status, userIds)
     
     if (response.success) {
+      if (response.data.file) {
+        console.log('response.file', response.data.file)
+        const blob = new Blob([response.data.file], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'exported_users.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
       console.log(`Successfully executed ${action} on ${userIds.length} users`)
       window.$toast.success(`Successfully executed ${action} on ${userIds.length} users.`);
       // Refresh the user list to get updated data

@@ -1204,7 +1204,7 @@ export class BotsifyApiService {
 
   async saveBotTemplates(chatsJson: string, templatesJson: string): Promise<void> {
     axios.post(import.meta.env.VITE_BOTSIFY_BASE_URL + '/v1/bot-update', {
-      'apikey': localStorage.getItem('apikey'),
+      'apikey': useApiKeyStore().apiKey,
       'data' : {
         chat_flow: chatsJson,
         bot_flow: templatesJson

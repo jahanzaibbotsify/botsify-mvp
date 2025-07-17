@@ -2,6 +2,9 @@
 import { ref, computed } from 'vue'
 import UserAttributes from './Attributes.vue'
 import { User, UserAttribute, PaginationData, SortingData, SortBy, PerPage } from '@/types/user'
+import Swal from 'sweetalert2';
+import {useToast} from 'vue-toast-notification';
+import { userApi } from '@/services/userApi';
 
 const props = defineProps<{
   users: User[]
@@ -10,7 +13,7 @@ const props = defineProps<{
   sorting: SortingData
   loading: boolean
 }>()
-
+const $toast = useToast({position: 'top-right'});
 const showAttributes = ref<boolean>(false)
 const selectedUserAttributes = ref<UserAttribute[]>([])
 const selectedUser = ref<User>()
@@ -59,15 +62,26 @@ const handleUpdateAttributes = (attributes: UserAttribute[]): void => {
   selectedUserAttributes.value = attributes
 }
 
-// const handleDeleteUser = (userId: number): void => {
-//   const user = props.users.find(u => u.id === userId)
-//   if (user) {
-//     if (confirm(`Are you sure you want to delete user "${user.name}"? This action cannot be undone.`)) {
-//       console.log('Delete user:', userId)
-//       // Add delete logic here
-//     }
-//   }
-// }
+const handleDeleteUser = async (userId: number): Promise<void> => {
+  const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: `Are you sure you want to delete this user?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes',
+        cancelButtonText: 'Cancel'
+      });
+
+      if (result.isConfirmed) {
+        const response = await userApi.changeUserStatus(2, [userId]);
+        if (response.success) {
+          $toast.success(`Successfully deleted user.`);
+          emit('sort', 'name')
+        } else {
+          $toast.error(`Failed to delete users: ${response.message}`);
+        }
+      }
+}
 
 const goToConversation = (userId: number): void => {
   const user = props.users.find(u => u.id === userId)
@@ -256,7 +270,7 @@ const getPageNumbers = computed(() => {
                     <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
                   </svg>
                 </button>
-                <!-- <button 
+                <button 
                   class="action-btn delete-btn"
                   @click.stop
                   @click="handleDeleteUser(user.id)"
@@ -266,7 +280,7 @@ const getPageNumbers = computed(() => {
                     <polyline points="3,6 5,6 21,6"></polyline>
                     <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
                   </svg>
-                </button> -->
+                </button>
               </div>
             </td>
           </tr>
@@ -616,6 +630,10 @@ const getPageNumbers = computed(() => {
   color: var(--color-accent);
 }
 
+.delete-btn {
+  color: var(--color-error);
+}
+
 .status-badge {
   padding: 6px 12px;
   border-radius: 12px;
@@ -682,6 +700,7 @@ const getPageNumbers = computed(() => {
   font-size: 14px;
 }
 
+  
 
 .loading-spinner {
   margin: 0 auto 10px;
@@ -698,7 +717,6 @@ const getPageNumbers = computed(() => {
     transform: rotate(360deg);
   }
 }
-
 
 @media (max-width: 768px) {
   .table-controls {
