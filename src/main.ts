@@ -162,4 +162,6 @@ async function confirmApiKey() {
 // mount app
 confirmApiKey().then(() => {
   app.mount('#app');
-})
+}).catch((error) => {
+  console.error('Error during app initialization:', error);
+}); 

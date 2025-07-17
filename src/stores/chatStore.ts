@@ -15,6 +15,7 @@ export const useChatStore = defineStore('chat', () => {
   const isTyping = ref(false);
   const isAIPromptGenerating = ref(false);
   const globalPromptTemplates = ref<GlobalPromptTemplate[]>([]);
+  const apiKeyStore = useApiKeyStore();
 
   // Load data from localStorage on initialization
   function loadFromStorage() {
@@ -99,7 +100,7 @@ export const useChatStore = defineStore('chat', () => {
 
       //save bot templates
       axios.post(import.meta.env.VITE_BOTSIFY_BASE_URL + '/v1/bot-update', {
-        'apikey': localStorage.getItem('apikey'),
+        'apikey': apiKeyStore.apiKey,
         'data' : {
           chat_flow: chatsJson,
           bot_flow: templatesJson
@@ -123,20 +124,20 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   // Add window event listeners to ensure data is saved before page unload
-  if (typeof window !== 'undefined') {
-    window.addEventListener('beforeunload', () => {
-      console.log('📝 Page unloading, saving data');
-      saveToTemplate();
-    });
+  // if (typeof window !== 'undefined') {
+  //   window.addEventListener('beforeunload', () => {
+  //     console.log('📝 Page unloading, saving data');
+  //     // saveToTemplate();
+  //   });
 
-    // Also save when tab visibility changes (user switches tabs)
-    window.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') {
-        console.log('📝 Tab hidden, saving data');
-        saveToTemplate();
-      }
-    });
-  }
+  //   // Also save when tab visibility changes (user switches tabs)
+  //   window.addEventListener('visibilitychange', () => {
+  //     if (document.visibilityState === 'hidden') {
+  //       console.log('📝 Tab hidden, saving data');
+  //       // saveToTemplate();
+  //     }
+  //   });
+  // }
 
   const currentChat = computed(() => {
     return chats.value.find(chat => chat.id === activeChat.value) || null;
@@ -822,6 +823,7 @@ Use the above connected services information to understand what tools and data s
       // Always set typing to false when done
       isAIPromptGenerating.value = false;
       console.log('Typing indicator turned off');
+      saveToTemplate();
     }
   }
 
