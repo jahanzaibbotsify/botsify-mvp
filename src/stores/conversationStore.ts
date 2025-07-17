@@ -254,16 +254,34 @@ export const useConversationStore = defineStore('conversation', () => {
         }
       }
       
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        content: content,
-        timestamp: new Date(),
-        sender: 'user',
-        status: 'sent'
+      // Determine sender
+      let sender: 'user' | 'assistant' = 'assistant';
+      // Try to detect sender by from_user_id and selectedConversation user id
+      const fromUserId = (data.message && (data.message as any).from_user_id) || null;
+      const selectedUserId = (selectedConversation.value && (selectedConversation.value as any).user_id) || null;
+      if (fromUserId && selectedUserId && fromUserId === selectedUserId) {
+        sender = 'user';
+      } else if (data.message && (data.message as any).direction === 'to') {
+        sender = 'assistant';
+      } else if (data.message && (data.message as any).direction === 'from') {
+        sender = 'user';
       }
       
-      messages.value.push(newMessage)
-      console.log('💬 Added message to current conversation:', newMessage)
+      // Duplicate check: Only add if not already present (by content and timestamp)
+      const isDuplicate = messages.value.some(m => m.content === content && Math.abs(m.timestamp.getTime() - Date.now()) < 2000);
+      if (!isDuplicate) {
+        const newMessage: Message = {
+          id: Date.now().toString(),
+          content: content,
+          timestamp: new Date(),
+          sender: sender,
+          status: 'sent'
+        }
+        messages.value.push(newMessage)
+        console.log('💬 Added message to current conversation:', newMessage)
+      } else {
+        console.log('⚠️ Duplicate message ignored:', content)
+      }
     }
   }
 
@@ -567,11 +585,19 @@ export const useConversationStore = defineStore('conversation', () => {
     }
   }
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string, fileUrls?: string[]) => {
     if (!content.trim() || !selectedConversation.value) return
 
     // Send message using API
     if (selectedConversation.value.fbid) {
+      // If there are file URLs, send them as image messages
+      if (fileUrls && fileUrls.length > 0) {
+        for (const fileUrl of fileUrls) {
+          await sendMessageToUser(fileUrl, selectedConversation.value.fbid, 'image')
+        }
+      }
+      
+      // Send the text message
       await sendMessageToUser(content, selectedConversation.value.fbid, 'text')
       
       // Clear cache for this conversation since we sent a new message

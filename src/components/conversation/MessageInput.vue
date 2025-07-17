@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import type { Attachment } from '@/types';
 import FileUpload from '@/components/ui/FileUpload.vue';
+import { botsifyApi } from '@/services/botsifyApi';
 
 const props = defineProps<{
   chatId: string;
@@ -11,14 +12,13 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:message': [value: string];
-  'send': [];
+  'send': [message: string, fileUrls?: string[]];
 }>();
 
 const messageText = ref(props.message || '');
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const showFileUpload = ref(false);
 const attachments = ref<Attachment[]>([]);
-
 
 const resizeTextarea = () => {
   if (!textareaRef.value) return;
@@ -29,8 +29,62 @@ const resizeTextarea = () => {
 const sendMessage = async () => {
   if (!messageText.value.trim() && attachments.value.length === 0) return;
   
-  emit('update:message', messageText.value);
-  emit('send');
+  let finalMessageText = messageText.value.trim();
+  let fileUrls: string[] = [];
+  
+  // If there are attachments (images/videos), upload them first
+  if (attachments.value.length > 0) {
+    try {
+      console.log('Uploading media files for conversation message...');
+      
+      // Convert blob URLs to File objects for upload
+      const filesToUpload: File[] = [];
+      for (const attachment of attachments.value) {
+        try {
+          const response = await fetch(attachment.url);
+          const blob = await response.blob();
+          const file = new File([blob], attachment.name, { type: attachment.type });
+          filesToUpload.push(file);
+        } catch (error) {
+          console.error('Error converting attachment to file:', error);
+        }
+      }
+      
+      if (filesToUpload.length > 0) {
+        // Upload files to get URLs using new endpoint
+        const uploadResult = await botsifyApi.uploadMultipleFilesNew(filesToUpload);
+        
+        if (uploadResult.success && uploadResult.data.uploadedFiles.length > 0) {
+          // Extract file URLs from upload response
+          fileUrls = uploadResult.data.uploadedFiles.map((file: any) => file.url);
+          
+          // Append file URLs to the message text
+          const fileUrlsText = uploadResult.data.uploadedFiles.map((file: any) => {
+            const fileType = file.fileType.startsWith('image/') ? 'Image' : 
+                            file.fileType.startsWith('video/') ? 'Video' : 'Document';
+            return `${fileType}: ${file.url}`;
+          }).join('\n');
+          
+          finalMessageText = finalMessageText + (finalMessageText ? '\n\n' : '') + 
+            'Attached files:\n' + fileUrlsText;
+          
+          console.log('Files uploaded successfully, URLs:', fileUrls);
+        } else {
+          console.error('File upload failed:', uploadResult.message);
+          finalMessageText = finalMessageText + (finalMessageText ? '\n\n' : '') + 
+            '❌ File upload failed: ' + uploadResult.message;
+        }
+      }
+    } catch (error: any) {
+      console.error('Error uploading files:', error);
+      finalMessageText = finalMessageText + (finalMessageText ? '\n\n' : '') + 
+        '❌ File upload error: ' + error.message;
+    }
+  }
+  
+  // Emit the message with file URLs
+  emit('update:message', finalMessageText);
+  emit('send', finalMessageText, fileUrls);
   
   // Clear the input after sending
   messageText.value = '';
@@ -331,6 +385,86 @@ const removeAttachment = (id: string) => {
 
 .remove-attachment:hover {
   color: var(--color-error);
+}
+
+/* Attachment Preview Styles */
+.attachments-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background-color: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+  max-width: 300px;
+  flex: 1;
+  min-width: 200px;
+  border: 1px solid rgba(0, 163, 255, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 163, 255, 0.02);
+  transition: all var(--transition-normal);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.03), transparent 70%);
+}
+
+.attachment-item:hover {
+  border-color: rgba(0, 163, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 163, 255, 0.05);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.06), transparent 70%);
+}
+
+.attachment-preview {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+}
+
+.attachment-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+}
+
+.attachment-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.attachment-name {
+  display: block;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attachment-size {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.attachment-status {
+  display: block;
+  font-size: 0.7rem;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.attachment-status.pending {
+  color: var(--color-primary);
+}
+
+.attachment-status.unsupported {
+  color: var(--color-warning);
 }
 
 /* Mobile styles */

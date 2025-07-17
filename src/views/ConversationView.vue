@@ -10,7 +10,7 @@ import {
   MessageInput,
   UserSidebar
 } from '@/components/conversation'
-import FirebaseDebug from '@/components/conversation/FirebaseDebug.vue'
+
 
 
 const route = useRoute()
@@ -27,9 +27,9 @@ const satisfactionPercentage = computed(() => {
 })
 
 // Methods
-const sendMessage = async () => {
-  if (!newMessage.value.trim()) return
-  await conversationStore.sendMessage(newMessage.value)
+const sendMessage = async (message: string, fileUrls?: string[]) => {
+  if (!message.trim()) return
+  await conversationStore.sendMessage(message, fileUrls)
   newMessage.value = ''
 }
 
@@ -62,9 +62,6 @@ onMounted(async () => {
 
 <template>
   <div class="conversation-view">
-    <!-- Firebase Debug Component -->
-    <!-- <FirebaseDebug /> -->
-    
     <!-- Main Conversation Area -->
     <div class="conversation-content">
       <!-- Left Sidebar - Conversation List -->
