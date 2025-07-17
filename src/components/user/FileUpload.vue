@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useToast } from 'vue-toast-notification'
-
-const $toast = useToast({ position: 'top-right' })
+import { ref } from 'vue';
 
 const props = defineProps<{
   selectedFile: File | null
@@ -27,7 +24,7 @@ const handleFileChange = (event: Event) => {
   if (file && (file.type === 'text/csv' || file.type === 'text/plain' || file.name.endsWith('.csv') || file.name.endsWith('.txt'))) {
     emit('fileSelect', file)
   } else {
-    $toast.error('Please select a valid CSV or TXT file')
+    window.$toast.error('Please select a valid CSV or TXT file')
 
     if (target) target.value = ''
     emit('fileSelect', null)
@@ -43,7 +40,7 @@ const handleFileDrop = (event: DragEvent) => {
   if (file && (file.type === 'text/csv' || file.type === 'text/plain' || file.name.endsWith('.csv') || file.name.endsWith('.txt'))) {
     emit('fileSelect', file)
   } else {
-    $toast.error('Please select a valid CSV or TXT file');
+    window.$toast.error('Please select a valid CSV or TXT file');
     emit('fileSelect', null)
   }
 }

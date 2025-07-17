@@ -4,10 +4,6 @@ import { useChatStore } from '@/stores/chatStore';
 import { botsifyApi, type BotsifyResponse } from '@/services/botsifyApi';
 import { BOTSIFY_WEB_URL } from '@/utils/config';
 import { useApiKeyStore } from '@/stores/apiKeyStore';
-import Swal from 'sweetalert2'; 
-import { useToast } from 'vue-toast-notification';
-
-const $toast = useToast({ position: 'top-right' });
 
 const chatStore = useChatStore();
 const isDeployingAgent = ref(false);
@@ -26,7 +22,7 @@ const hasPromptContent = computed(() => {
 
 const testAiAgent = async () => {
   if (!hasPromptContent.value) {
-    $toast.error('No prompt content available to deploy. Please generate some content first.');
+    window.$toast.error('No prompt content available to deploy. Please generate some content first.');
     return;
   }
   const BOTSIFY_APIKEY = useApiKeyStore().apiKey;
@@ -36,10 +32,10 @@ const testAiAgent = async () => {
 
 const deployAiAgent = async () => {
   if (!hasPromptContent.value) {
-    $toast.error('No prompt content available to deploy. Please generate some content first.');
+    window.$toast.error('No prompt content available to deploy. Please generate some content first.');
     return;
   }
-  const result = await Swal.fire({
+  const result = await window.Swal.fire({
     title: 'Are you sure?',
     text: 'Are you sure you want to deploy the AI Agent? This will make it live.',
     icon: 'warning',
@@ -60,13 +56,13 @@ const deployAiAgent = async () => {
     lastDeployResult.value = result;
     
     if (result.success) {
-      $toast.success(`🚀 ${result.message}`);
+      window.$toast.success(`🚀 ${result.message}`);
     } else {
-      $toast.error(`❌ Deployment failed: ${result.message}`);
+      window.$toast.error(`❌ Deployment failed: ${result.message}`);
     }
   } catch (error) {
     console.error('Unexpected error during deployment:', error);
-    $toast.error('❌ An unexpected error occurred during deployment.');
+    window.$toast.error('❌ An unexpected error occurred during deployment.');
   } finally {
     isDeployingAgent.value = false;
   }

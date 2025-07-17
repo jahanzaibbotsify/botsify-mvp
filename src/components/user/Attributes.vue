@@ -3,10 +3,6 @@ import { ref, defineEmits, watch } from 'vue'
 import { UserAttribute } from '@/types/user';
 import { userApi } from '@/services/userApi'
 import { User } from '@/types/user';
-import { useToast } from 'vue-toast-notification';
-import Swal from 'sweetalert2'; // Add this import at the top with others
-
-const $toast = useToast({ position: 'top-right' });
 
 const props = defineProps<{
   attributes: UserAttribute[]
@@ -47,7 +43,7 @@ const cancelEdit = (): void => {
 const saveEdit = async (id: number): Promise<void> => {
   if (!props.user?.id) {
     console.error('User ID is required for updating attributes')
-    $toast.error('Error: User ID is missing. Please try again.')
+    window.$toast.error('Error: User ID is missing. Please try again.')
     return
   }
 
@@ -90,7 +86,7 @@ const saveEdit = async (id: number): Promise<void> => {
         emit('update', localAttributes.value)
         
         // Show success message
-        $toast.success(`Attribute updated successfully! Updated: ${updateData.updated_count || 1} attribute(s)`)
+        window.$toast.success(`Attribute updated successfully! Updated: ${updateData.updated_count || 1} attribute(s)`)
       } else {
         throw new Error(updateData.message || 'Update failed')
       }
@@ -100,7 +96,7 @@ const saveEdit = async (id: number): Promise<void> => {
   } catch (error) {
     console.error('Error updating attribute:', error)
     errorMessage.value = error instanceof Error ? error.message : 'Failed to update attribute'
-    $toast.error(`Failed to update attribute: ${errorMessage.value}`)
+    window.$toast.error(`Failed to update attribute: ${errorMessage.value}`)
   } finally {
     loading.value = false
   }
@@ -109,11 +105,11 @@ const saveEdit = async (id: number): Promise<void> => {
 const deleteAttribute = async (id: number): Promise<void> => {
   if (!props.user?.id) {
     console.error('User ID is required for deleting attributes')
-    $toast.error('Error: User ID is missing. Please try again.')
+    window.$toast.error('Error: User ID is missing. Please try again.')
     return
   }
 
-  const result = await Swal.fire({
+  const result = await window.Swal.fire({
     title: 'Are you sure?',
     text: 'Are you sure you want to delete this attribute? This action cannot be undone.',
     icon: 'warning',
@@ -140,7 +136,7 @@ const deleteAttribute = async (id: number): Promise<void> => {
         emit('update', localAttributes.value)
         
         // Show success message
-        $toast.success(`Attribute deleted successfully! Deleted: ${deleteData.deleted_count || 1} attribute(s)`)
+        window.$toast.success(`Attribute deleted successfully! Deleted: ${deleteData.deleted_count || 1} attribute(s)`)
       } else {
         throw new Error(deleteData.message || 'Delete failed')
       }
@@ -150,7 +146,7 @@ const deleteAttribute = async (id: number): Promise<void> => {
   } catch (error) {
     console.error('Error deleting attribute:', error)
     errorMessage.value = error instanceof Error ? error.message : 'Failed to delete attribute'
-    $toast.error(`Failed to delete attribute: ${errorMessage.value}`)
+    window.$toast.error(`Failed to delete attribute: ${errorMessage.value}`)
   } finally {
     loading.value = false
   }
