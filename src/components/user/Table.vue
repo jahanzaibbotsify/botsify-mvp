@@ -160,7 +160,7 @@ const getPageNumbers = computed(() => {
       </div>
     </div>
     <div class="table-scroll-container">
-      <table class="users-table" :class="{ 'loading-blur': loading }">
+      <table class="users-table">
         <thead>
           <tr>
             <th>
@@ -184,7 +184,13 @@ const getPageNumbers = computed(() => {
           </tr>
         </thead>
         <tbody>
-          <tr v-if="users.length === 0" class="no-data-row">
+          <tr v-if="loading" class="no-data-row">
+            <td colspan="10" class="no-data-cell">
+              <div class="loading-spinner"></div>
+              <span>Loading data...</span>
+            </td>
+          </tr>
+          <tr v-else-if="users.length === 0" class="no-data-row">
             <td colspan="10" class="no-data-cell">
               <div class="no-data-content">
                 <div class="no-data-icon">📄</div>
@@ -675,6 +681,24 @@ const getPageNumbers = computed(() => {
   color: var(--color-text-primary);
   font-size: 14px;
 }
+
+
+.loading-spinner {
+  margin: 0 auto 10px;
+  border: 4px solid #eee;
+  border-top: 4px solid var(--color-text-primary);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 
 @media (max-width: 768px) {
   .table-controls {
