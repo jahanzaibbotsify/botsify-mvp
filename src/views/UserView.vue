@@ -328,7 +328,7 @@ watch(selectedAction, (newAction) => {
       const actionText = getActionText(newAction)
       const userCount = selectedUsersCount.value
       const userText = userCount === 1 ? 'user' : 'users'
-      await window.$confirm({
+      window.$confirm({
         text: `Are you sure you want to ${actionText} ${userCount} ${userText}?`,
       }, async() => {
         executeSelectedAction()

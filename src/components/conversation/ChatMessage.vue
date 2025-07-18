@@ -31,7 +31,6 @@ const emit = defineEmits<{
 }>();
 
 const messageRef = ref<HTMLDivElement>();
-const isExpanded = ref(false);
 
 // Configure marked for better rendering
 marked.setOptions({

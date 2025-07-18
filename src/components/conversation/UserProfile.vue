@@ -25,7 +25,7 @@
       <span class="detail-value">{{ user?.lastPage || '' }}</span>
     </div>
     <div class="detail-item">
-      <span class="detail-label">fbid:</span>
+      <span class="detail-label">UID:</span>
       <span class="detail-value">{{ user?.fbid || '8962630583802781' }}</span>
     </div>
     <div class="detail-item">

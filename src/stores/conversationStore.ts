@@ -2,8 +2,6 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { conversationApi } from '@/services/conversationApi'
 import { firebaseService } from '@/services/firebase'
-import axios from 'axios'
-import { useApiKeyStore } from '@/stores/apiKeyStore'
 import type { FirebaseMessage } from '@/types/firebase'
 import type { 
   ConversationMessage,
