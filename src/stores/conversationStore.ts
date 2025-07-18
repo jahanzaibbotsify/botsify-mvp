@@ -419,7 +419,7 @@ export const useConversationStore = defineStore('conversation', () => {
     }
   }
 
-  const fetchUserConversation = async (messengerUserId: string, forceRefresh = false) => {
+  const fetchUserConversation = async (messengerUserId: string, forceRefresh = false, markAsRead = false) => {
     // Check cache first if not forcing refresh
     if (!forceRefresh) {
       const cached = getCachedMessages(messengerUserId)
@@ -434,7 +434,7 @@ export const useConversationStore = defineStore('conversation', () => {
     error.value = null
     
     try {
-      const response = await conversationApi.getUserConversation(messengerUserId)
+      const response = await conversationApi.getUserConversation(messengerUserId, markAsRead)
       if (response.success && response.data) {
         // Convert API messages to Message format
         const convertedMessages = response.data.conversations.map(convertConversationMessageToMessage)
@@ -541,14 +541,18 @@ export const useConversationStore = defineStore('conversation', () => {
     }
     
     selectedConversation.value = conversation
-    // If unread, mark as read locally and on server
-    if (conversation.unread) {
+    // Check if conversation has unread messages
+    const hasUnreadMessages = conversation.unread
+    
+    // If unread, mark as read locally
+    if (hasUnreadMessages) {
       conversation.unread = false
     }
     
     // Load messages for this conversation using API
     if (conversation.fbid) {
-      await fetchUserConversation(conversation.fbid)
+      // Pass markAsRead=true if conversation had unread messages
+      await fetchUserConversation(conversation.fbid, false, hasUnreadMessages)
       // Start listening to real-time messages for this conversation
       if (isFirebaseConnected.value) {
         listenToConversation(conversation.fbid)

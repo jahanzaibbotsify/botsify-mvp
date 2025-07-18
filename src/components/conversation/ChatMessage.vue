@@ -431,9 +431,9 @@ onMounted(() => {
 }
 
 [data-theme="dark"] .assistant-message .message-bubble {
-  background: #1e293b;
-  border-color: #334155;
-  color: #f1f5f9;
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
 }
 
 [data-theme="dark"] .assistant-message .message-bubble:hover {
@@ -453,14 +453,14 @@ onMounted(() => {
 .sender-name {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .message-time {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--color-text-secondary);
 }
 
 .message-content {
@@ -486,7 +486,7 @@ onMounted(() => {
 }
 
 .assistant-message .timestamp {
-  color: #94a3b8;
+  color: var(--color-text-secondary);
 }
 
 .status-icon {
@@ -565,7 +565,7 @@ onMounted(() => {
   padding-left: 1rem;
   margin: 0.75rem 0;
   font-style: italic;
-  color: #64748b;
+  color: var(--color-text-secondary);
 }
 
 .user-message .content-text :deep(blockquote) {
@@ -575,7 +575,7 @@ onMounted(() => {
 
 /* Special Message Types */
 .content-text :deep(.empty-message) {
-  color: #94a3b8;
+  color: var(--color-text-secondary);
   font-style: italic;
   font-size: 0.875rem;
 }
@@ -600,7 +600,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #64748b;
+  color: var(--color-text-secondary);
   font-style: italic;
   font-size: 0.875rem;
   background: rgba(100, 116, 139, 0.1);
@@ -622,7 +622,7 @@ onMounted(() => {
 }
 
 .content-text :deep(.template-element) {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   overflow: hidden;
   background: #f8fafc;
@@ -653,13 +653,13 @@ onMounted(() => {
   margin: 0 0 0.5rem 0;
   font-size: 1rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-text-secondary);
 }
 
 .content-text :deep(.template-subtitle) {
   margin: 0;
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--color-text-secondary);
   line-height: 1.5;
 }
 
@@ -684,10 +684,10 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 1rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   background: white;
-  color: #1e293b;
+  color: var(--color-text-primary);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -696,7 +696,7 @@ onMounted(() => {
 }
 
 .content-text :deep(.template-button:hover:not(:disabled)) {
-  background: #f8fafc;
+  background: var(--color-bg-secondary);
   border-color: var(--color-primary);
   transform: translateY(-1px);
 }
@@ -707,7 +707,7 @@ onMounted(() => {
 }
 
 .content-text :deep(.button-arrow) {
-  color: #64748b;
+  color: var(--color-text-secondary);
   font-weight: 400;
 }
 
@@ -782,8 +782,8 @@ onMounted(() => {
 }
 
 .assistant-message .attachment-file {
-  background: #f8fafc;
-  border-color: #e2e8f0;
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-border);
 }
 
 .attachment-file:hover {
@@ -792,8 +792,8 @@ onMounted(() => {
 }
 
 .assistant-message .attachment-file:hover {
-  background: #f1f5f9;
-  border-color: #3b82f6;
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-primary);
 }
 
 .file-icon-container {
@@ -810,7 +810,7 @@ onMounted(() => {
 .file-icon {
   width: 20px;
   height: 20px;
-  color: #3b82f6;
+  color: var(--color-primary);
 }
 
 .file-details {
@@ -831,21 +831,21 @@ onMounted(() => {
 .file-size {
   display: block;
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-tertiary);
   margin-top: 0.125rem;
 }
 
 .assistant-message .file-size {
-  color: #94a3b8;
+  color: var(--color-text-tertiary);
 }
 
 .download-indicator {
   flex-shrink: 0;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-tertiary);
 }
 
 .assistant-message .download-indicator {
-  color: #64748b;
+  color: #d8e8fe;
 }
 
 /* Responsive Design */

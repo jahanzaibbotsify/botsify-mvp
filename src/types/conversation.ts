@@ -137,4 +137,5 @@ export interface GetUserConversationParams {
   apikey: string
   fbId: string
   load_more: boolean
+  unread?: number
 } 

@@ -33,13 +33,18 @@ class ConversationApiService {
     }
   }
 
-  async getUserConversation(messengerUserId: string): Promise<ApiResponse<UserConversationResponse>> {
+  async getUserConversation(messengerUserId: string, markAsRead: boolean = false): Promise<ApiResponse<UserConversationResponse>> {
     try {
       const API_KEY = useApiKeyStore().apiKey
       const payload: GetUserConversationParams = { 
         apikey: API_KEY, 
         fbId: messengerUserId,
         load_more: true
+      }
+      
+      // Add unread parameter to mark messages as read
+      if (markAsRead) {
+        payload.unread = 1
       }
       
       const response = await axiosInstance.get('v1/live-chat/get-user-conversations', { params: payload })
