@@ -175,22 +175,15 @@ function saveCustomServer() {
   }
 }
 
-async function deleteCustomServer(serverId: string) {
-  const result = await window.Swal.fire({
-    title: 'Are you sure?',
-    text: 'Are you sure you want to delete the custom server? This action cannot be undone.',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes, delete it',
-    cancelButtonText: 'Cancel'
-  });
-  if (!result.isConfirmed) return;
-  try {
-    await mcpStore.deleteCustomServer(serverId);
-    goBack();
-  } catch (err: any) {
-    error.value = 'Failed to delete server: ' + err.message;
-  }
+function deleteCustomServer(serverId: string) {
+  window.$confirm({}, async() => {
+    try {
+      await mcpStore.deleteCustomServer(serverId);
+      goBack();
+    } catch (err: any) {
+      error.value = 'Failed to delete server: ' + err.message;
+    }
+  })
 }
 
 async function connectToServer() {

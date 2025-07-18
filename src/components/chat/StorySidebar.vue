@@ -121,11 +121,10 @@ function revertToVersion(versionId: string) {
   chatStore.saveToTemplate();
 }
 
-async function deleteVersion(versionId: string) {
-  const result = await showWarning('Are you sure you want to delete this version?');
-  if (result.isConfirmed) {
+function deleteVersion(versionId: string) {
+  window.$confirm({}, () => {
     chatStore.deletePromptVersion(props.chatId, versionId);
-  }
+  });
 }
 
 function saveAsTemplate() {
@@ -156,11 +155,10 @@ function loadTemplate(templateId: string) {
   }
 }
 
-async function deleteTemplate(templateId: string) {
-  const result = await showWarning('Are you sure you want to delete this template?');
-  if (result.isConfirmed) {
+function deleteTemplate(templateId: string) {
+  window.$confirm({}, () => {
     chatStore.deleteGlobalPromptTemplate(templateId);
-  }
+  });
 }
 
 function setAsDefaultTemplate(templateId: string) {
@@ -171,11 +169,10 @@ function formatVersionDate(date: Date) {
   return new Date(date).toLocaleString();
 }
 
-async function clearAllVersionHistory() {
-  const result = await showWarning('Are you sure you want to clear all version history? Only the current active version will be kept.');
-  if (result.isConfirmed) {
+function clearAllVersionHistory() {
+  window.$confirm({}, () => {
     chatStore.clearVersionHistory(props.chatId);
-  }
+  });
 }
 
 const scrollToBottom = async () => {
@@ -184,17 +181,6 @@ const scrollToBottom = async () => {
     messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
   }
 };
-
-const showWarning = (message: string) => {
-  return window.Swal.fire({
-    title: 'Are you sure?',
-    text: message,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes',
-    cancelButtonText: 'Cancel'
-  });
-}
 
 // Expose the toggleSidebar function to parent components
 defineExpose({

@@ -146,6 +146,47 @@ class ConversationApiService {
       }
     }
   }
+
+  // Delete conversation
+  async deleteConversation(fbId: string): Promise<ApiResponse<{ message: string }>> {
+    try {
+      const API_KEY = useApiKeyStore().apiKey
+      const response = await axiosInstance.post('v1/live-chat/delete-conversation', {
+        apikey: API_KEY,
+        fbId: fbId
+      })
+      
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      console.error('Error deleting conversation:', error)
+      return {
+        success: false,
+        message: error?.response?.data?.message || 'Failed to delete conversation',
+        data: { message: '' }
+      }
+    }
+  }
+
+  // Change bot activation status
+  async changeBotActivation(userId: string, status: number): Promise<ApiResponse<{ message: string }>> {
+    try {
+      const API_KEY = useApiKeyStore().apiKey
+      const response = await axiosInstance.post('v1/user/change-status', {
+        apikey: API_KEY,
+        status: status,
+        user_id: userId
+      })
+      
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      console.error('Error changing bot activation:', error)
+      return {
+        success: false,
+        message: error?.response?.data?.message || 'Failed to change bot activation',
+        data: { message: '' }
+      }
+    }
+  }
 }
 
 export const conversationApi = new ConversationApiService() 

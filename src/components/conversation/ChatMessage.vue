@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue';
+import { computed, onMounted, watch, ref } from 'vue';
 import type { Message } from '@/types';
 import { marked } from 'marked';
 
@@ -20,7 +20,24 @@ interface ParsedMessage {
 
 const props = defineProps<{
   message: Message;
+  showAvatar?: boolean;
+  showTimestamp?: boolean;
+  compact?: boolean;
 }>();
+
+const emit = defineEmits<{
+  'image-click': [url: string];
+  'attachment-download': [attachment: any];
+}>();
+
+const messageRef = ref<HTMLDivElement>();
+const isExpanded = ref(false);
+
+// Configure marked for better rendering
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+});
 
 // Parse message content (JSON or plain text)
 const parseMessageContent = (content: string): ParsedMessage | null => {
@@ -42,43 +59,49 @@ const parseMessageContent = (content: string): ParsedMessage | null => {
   }
 };
 
-// Parse markdown content
+// Parse markdown content with enhanced formatting
 const parsedContent = computed(() => {
   try {
     if (!props.message.content) {
-      console.warn('Empty message content');
-      return '<p><em>No message content</em></p>';
+      return '<p class="empty-message"><em>No message content</em></p>';
     }
     
     // Check if it's an error message
     if (props.message.content.startsWith('Error:')) {
-      return `<p class="error-text">${props.message.content}</p>`;
+      return `<div class="message-error">
+        <div class="error-icon-inline">⚠️</div>
+        <span>${props.message.content}</span>
+      </div>`;
     }
     
     // Parse the message content
     const parsed = parseMessageContent(props.message.content);
     
     if (!parsed) {
-      return `<p class="error-text">Error parsing message</p>`;
+      return `<div class="message-error">Error parsing message</div>`;
     }
     
     // Handle different message types
     if (parsed.text) {
-      return marked(typeof parsed.text === 'string' ? parsed.text : parsed.text.text);
+      const textContent = typeof parsed.text === 'string' ? parsed.text : parsed.text.text;
+      return marked(textContent);
     }
     
     if (parsed.event) {
-      return `<p class="event-message"><em>${parsed.event}</em></p>`;
+      return `<div class="event-message">
+        <div class="event-icon">ℹ️</div>
+        <span>${parsed.event}</span>
+      </div>`;
     }
     
     if (parsed.attachment) {
       return renderAttachment(parsed.attachment);
     }
     
-    return `<p class="error-text">Unknown message format</p>`;
+    return `<div class="message-error">Unknown message format</div>`;
   } catch (error) {
     console.error('Error parsing markdown:', error);
-    return `<p class="error-text">Error rendering message: ${props.message.content}</p>`;
+    return `<div class="message-error">Error rendering message: ${props.message.content}</div>`;
   }
 });
 
@@ -90,9 +113,14 @@ const renderAttachment = (attachment: any): string => {
     case 'template':
       return renderTemplate(payload);
     case 'image':
-      return `<div class="attachment-image"><img src="${payload.url}" alt="Image" /></div>`;
+      return `<div class="attachment-image">
+        <img src="${payload.url}" alt="Image" onclick="$emit('image-click', '${payload.url}')" />
+      </div>`;
     default:
-      return `<p class="attachment-unknown">Attachment type: ${type}</p>`;
+      return `<div class="attachment-unknown">
+        <div class="attachment-icon">📎</div>
+        <span>Attachment type: ${type}</span>
+      </div>`;
   }
 };
 
@@ -106,7 +134,10 @@ const renderTemplate = (payload: any): string => {
     case 'button':
       return renderButtonTemplate(text, buttons);
     default:
-      return `<p class="template-unknown">Template type: ${template_type}</p>`;
+      return `<div class="template-unknown">
+        <div class="template-icon">🔧</div>
+        <span>Template type: ${template_type}</span>
+      </div>`;
   }
 };
 
@@ -118,10 +149,12 @@ const renderGenericTemplate = (elements: any[]): string => {
   elements.forEach(element => {
     html += `
       <div class="template-element">
-        ${element.image_url ? `<img src="${element.image_url}" alt="${element.title}" class="template-image" />` : ''}
+        ${element.image_url ? `<div class="template-image-container">
+          <img src="${element.image_url}" alt="${element.title}" class="template-image" />
+        </div>` : ''}
         <div class="template-content">
-          <h4>${element.title || ''}</h4>
-          ${element.subtitle ? `<p>${element.subtitle}</p>` : ''}
+          <h4 class="template-title">${element.title || ''}</h4>
+          ${element.subtitle ? `<p class="template-subtitle">${element.subtitle}</p>` : ''}
         </div>
       </div>
     `;
@@ -134,12 +167,15 @@ const renderGenericTemplate = (elements: any[]): string => {
 const renderButtonTemplate = (text: string, buttons: any[]): string => {
   let html = '<div class="button-template">';
   if (text) {
-    html += `<p class="button-text">${text}</p>`;
+    html += `<div class="button-text">${text}</div>`;
   }
   if (buttons && buttons.length > 0) {
     html += '<div class="button-list">';
     buttons.forEach(button => {
-      html += `<button class="template-button" disabled>${button.title}</button>`;
+      html += `<button class="template-button" disabled>
+        <span>${button.title}</span>
+        <div class="button-arrow">→</div>
+      </button>`;
     });
     html += '</div>';
   }
@@ -147,15 +183,50 @@ const renderButtonTemplate = (text: string, buttons: any[]): string => {
   return html;
 };
 
-// Watch for content changes to debug reactivity issues
-watch(() => props.message.content, (newContent, oldContent) => {
-  console.log('Message content changed:', {
-    id: props.message.id,
-    oldLength: oldContent?.length || 0,
-    newLength: newContent?.length || 0,
-    changed: newContent !== oldContent
-  });
+// Get message status icon
+const getStatusIcon = computed(() => {
+  if (props.message.sender === 'user') {
+    // Mock status for demo - in real app this would come from message data  
+    return 'pi pi-check-circle'; // Could be 'pi pi-clock' for pending, 'pi pi-check' for sent, 'pi pi-check-circle' for delivered
+  }
+  return null;
 });
+
+// Format timestamp
+const formatTimestamp = (timestamp: Date) => {
+  const now = new Date();
+  const diff = now.getTime() - timestamp.getTime();
+  const minutes = Math.floor(diff / (1000 * 60));
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  
+  return timestamp.toLocaleDateString();
+};
+
+// Get file type icon
+const getFileIcon = (fileName: string, mimeType?: string) => {
+  const extension = fileName.split('.').pop()?.toLowerCase();
+  
+  if (mimeType?.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
+    return 'pi pi-image';
+  }
+  if (mimeType?.startsWith('video/') || ['mp4', 'avi', 'mov', 'wmv'].includes(extension || '')) {
+    return 'pi pi-video';
+  }
+  if (mimeType?.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'm4a'].includes(extension || '')) {
+    return 'pi pi-volume-up';
+  }
+  if (['pdf', 'doc', 'docx', 'txt', 'rtf'].includes(extension || '')) {
+    return 'pi pi-file';
+  }
+  
+  return 'pi pi-paperclip';
+};
 
 const formatFileSize = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`;
@@ -163,11 +234,30 @@ const formatFileSize = (bytes: number) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
+const handleAttachmentClick = (attachment: any) => {
+  emit('attachment-download', attachment);
+};
+
+const handleImageClick = (url: string) => {
+  emit('image-click', url);
+};
+
+// Watch for content changes
+watch(() => props.message.content, (newContent, oldContent) => {
+  if (newContent !== oldContent) {
+    console.log('Message content updated:', {
+      id: props.message.id,
+      hasContent: !!newContent,
+      length: newContent?.length || 0
+    });
+  }
+});
+
 onMounted(() => {
   console.log('ChatMessage mounted:', {
     id: props.message.id,
     sender: props.message.sender,
-    contentLength: props.message.content?.length || 0,
+    hasContent: !!props.message.content,
     hasAttachments: !!props.message.attachments?.length
   });
 });
@@ -175,368 +265,629 @@ onMounted(() => {
 
 <template>
   <div 
-    class="message-container" 
-    :class="{ 'user-message': props.message.sender === 'user', '': props.message.sender === 'assistant' }"
+    ref="messageRef"
+    class="message-wrapper" 
+    :class="{ 
+      'user-message': message.sender === 'user', 
+      'assistant-message': message.sender === 'assistant',
+      'compact': compact,
+      'with-avatar': showAvatar
+    }"
   >
-    <div class="message">
-      <div v-if="props.message.content" class="content" v-html="parsedContent"></div>
-      <div v-else class="empty-content">
-        <!-- <em>Empty message</em> -->
+    <!-- Avatar for assistant messages -->
+    <div v-if="showAvatar && message.sender === 'assistant'" class="message-avatar">
+      <div class="avatar-container">
+        <i class="pi pi-desktop avatar-icon"></i>
       </div>
-      
-      <!-- Attachments -->
-      <div v-if="props.message.attachments?.length" class="attachments">
-        <div v-for="file in props.message.attachments" :key="file.id" class="attachment">
-          <a :href="file.url" target="_blank" class="attachment-link">
-            <img 
-              v-if="file.preview" 
-              :src="file.preview" 
-              :alt="file.name"
-              class="attachment-preview"
-            />
-            <div v-else class="attachment-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                <polyline points="13 2 13 9 20 9"></polyline>
-              </svg>
+    </div>
+
+    <!-- Message bubble -->
+    <div class="message-bubble">
+      <!-- Message header (for assistant messages with timestamp) -->
+      <div v-if="message.sender === 'assistant' && showTimestamp" class="message-header">
+        <span class="sender-name">Assistant</span>
+        <span class="message-time">{{ formatTimestamp(message.timestamp) }}</span>
+      </div>
+
+      <!-- Message content -->
+      <div class="message-content">
+        <div v-if="message.content" class="content-text" v-html="parsedContent"></div>
+        
+        <!-- Attachments -->
+        <div v-if="message.attachments?.length" class="attachments-grid">
+          <div 
+            v-for="file in message.attachments" 
+            :key="file.id" 
+            class="attachment-item"
+            @click="handleAttachmentClick(file)"
+          >
+            <!-- Image preview -->
+            <div v-if="file.preview" class="attachment-preview" @click.stop="handleImageClick(file.url)">
+              <img :src="file.preview" :alt="file.name" class="preview-image" />
+              <div class="image-overlay">
+                <i class="pi pi-image overlay-icon"></i>
+              </div>
             </div>
-            <div class="attachment-info">
-              <span class="attachment-name">{{ file.name }}</span>
-              <span class="attachment-size">{{ formatFileSize(file.size) }}</span>
+            
+            <!-- File icon -->
+            <div v-else class="attachment-file">
+              <div class="file-icon-container">
+                <i :class="getFileIcon(file.name, file.type)" class="file-icon"></i>
+              </div>
+              <div class="file-details">
+                <span class="file-name">{{ file.name }}</span>
+                <span class="file-size">{{ formatFileSize(file.size) }}</span>
+              </div>
+              <div class="download-indicator">
+                <i class="pi pi-download"></i>
+              </div>
             </div>
-          </a>
+          </div>
         </div>
+      </div>
+
+      <!-- Message footer -->
+      <div v-if="showTimestamp || getStatusIcon" class="message-footer">
+        <span v-if="showTimestamp" class="timestamp">
+          {{ formatTimestamp(message.timestamp) }}
+        </span>
+        <i 
+          v-if="getStatusIcon" 
+          :class="getStatusIcon" 
+          class="status-icon"
+        ></i>
+      </div>
+    </div>
+
+    <!-- Avatar for user messages -->
+    <div v-if="showAvatar && message.sender === 'user'" class="message-avatar">
+      <div class="avatar-container user-avatar">
+        <i class="pi pi-user avatar-icon"></i>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.message-container {
+.message-wrapper {
   display: flex;
-  margin-bottom: var(--space-2);
+  margin-bottom: 1rem;
   max-width: 85%;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.message-wrapper.compact {
+  margin-bottom: 0.5rem;
 }
 
 .user-message {
   justify-content: flex-end;
   margin-left: auto;
+  flex-direction: row-reverse;
 }
 
-.ai-message {
+.assistant-message {
   justify-content: flex-start;
   margin-right: auto;
 }
 
-.message {
-  border-radius: 12px;
-  padding: var(--space-2) var(--space-3);
-  position: relative;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  transition: all var(--transition-normal);
-  border: 1px solid transparent;
-  min-width: 60px;
+.message-avatar {
+  flex-shrink: 0;
+  margin-bottom: 0.25rem;
 }
 
-.user-message .message {
-  background-color: var(--color-primary);
-  color: white;
-  box-shadow: 0 2px 8px rgba(0, 163, 255, 0.15);
-  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.9), var(--color-primary));
-  border-radius: 12px;
-}
-
-.ai-message .message {
-  background-color: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-  color: var(--color-text-primary);
-}
-
-[data-theme="dark"] .ai-message .message {
-  background-color: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-}
-
-.ai-message .message:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="dark"] .ai-message .message:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.content {
-  margin-bottom: 0;
-  line-height: 1.4;
-}
-
-/* Reduce spacing for consecutive messages from same sender */
-.message-container + .message-container {
-  margin-top: var(--space-1);
-}
-
-/* Add subtle spacing between different senders */
-.message-container:not(.user-message) + .message-container.user-message,
-.message-container.user-message + .message-container:not(.user-message) {
-  margin-top: var(--space-3);
-}
-
-.empty-content {
-  color: var(--color-text-tertiary);
-  font-style: italic;
-}
-
-.content :deep(p) {
-  margin: 0 0 var(--space-2);
-}
-
-.content :deep(p:last-child) {
-  margin-bottom: 0;
-}
-
-.content :deep(a) {
-  color: inherit;
-  text-decoration: underline;
-}
-
-.content :deep(ul), .content :deep(ol) {
-  margin: 0 0 var(--space-3);
-  padding-left: var(--space-4);
-}
-
-.content :deep(li) {
-  margin-bottom: var(--space-1);
-}
-
-.content :deep(pre) {
-  max-width: 100%;
-  overflow-x: auto;
-}
-
-.content :deep(img) {
-  max-width: 100%;
-  height: auto;
-}
-
-.content :deep(code) {
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.content :deep(.error-text) {
-  color: var(--color-error);
-  font-weight: 500;
-}
-
-.content :deep(.event-message) {
-  color: var(--color-text-tertiary);
-  font-style: italic;
-  font-size: 0.875rem;
-  padding: var(--space-2);
-  background-color: var(--color-bg-tertiary);
-  border-radius: var(--radius-md);
-  border-left: 3px solid var(--color-primary);
-}
-
-/* Template Styles */
-.content :deep(.generic-template) {
+.avatar-container {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, vat(--color-bg-tertiary), var(--color-bg-active));
   display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  margin: var(--space-2) 0;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.content :deep(.template-element) {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  background-color: var(--color-bg-secondary);
+.user-avatar {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
 }
 
-.content :deep(.template-image) {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-}
-
-.content :deep(.template-content) {
-  padding: var(--space-3);
-}
-
-.content :deep(.template-content h4) {
-  margin: 0 0 var(--space-1) 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.content :deep(.template-content p) {
-  margin: 0;
-  font-size: 0.875rem;
+.avatar-icon {
+  width: 18px;
+  height: 18px;
   color: var(--color-text-secondary);
 }
 
-/* Button Template Styles */
-.content :deep(.button-template) {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  margin: var(--space-2) 0;
+.user-avatar .avatar-icon {
+  color: white;
 }
 
-.content :deep(.button-text) {
-  margin: 0;
-  font-size: 1rem;
-  color: var(--color-text-primary);
+.message-bubble {
+  position: relative;
+  border-radius: 16px;
+  padding: 0.75rem 1rem;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  transition: all 0.2s ease;
+  min-width: 60px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.user-message .message-bubble {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+.assistant-message .message-bubble {
+  background: white;
+  border: 1px solid #e2e8f0;
+  color: #1e293b;
+}
+
+.assistant-message .message-bubble:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .assistant-message .message-bubble {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .assistant-message .message-bubble:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.sender-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.message-time {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.message-content {
+  line-height: 1.5;
+}
+
+.content-text {
+  margin-bottom: 0;
+}
+
+.message-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.25rem;
+}
+
+.timestamp {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.assistant-message .timestamp {
+  color: #94a3b8;
+}
+
+.status-icon {
+  width: 14px;
+  height: 14px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Content Styling */
+.content-text :deep(p) {
+  margin: 0 0 0.75rem 0;
+  line-height: 1.6;
+}
+
+.content-text :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.content-text :deep(a) {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.content-text :deep(strong) {
+  font-weight: 600;
+}
+
+.content-text :deep(em) {
+  font-style: italic;
+}
+
+.content-text :deep(code) {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 0.125rem 0.25rem;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875em;
+}
+
+.user-message .content-text :deep(code) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.content-text :deep(pre) {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+  border-left: 3px solid var(--color-primary);
+}
+
+.user-message .content-text :deep(pre) {
+  background: rgba(255, 255, 255, 0.1);
+  border-left-color: rgba(255, 255, 255, 0.5);
+}
+
+.content-text :deep(pre code) {
+  background: none;
+  padding: 0;
+}
+
+.content-text :deep(ul), 
+.content-text :deep(ol) {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+
+.content-text :deep(li) {
+  margin-bottom: 0.25rem;
+}
+
+.content-text :deep(blockquote) {
+  border-left: 3px solid var(--color-primary);
+  padding-left: 1rem;
+  margin: 0.75rem 0;
+  font-style: italic;
+  color: #64748b;
+}
+
+.user-message .content-text :deep(blockquote) {
+  border-left-color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Special Message Types */
+.content-text :deep(.empty-message) {
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 0.875rem;
+}
+
+.content-text :deep(.message-error) {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-error);
   font-weight: 500;
+  background: rgba(239, 68, 68, 0.1);
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
-.content :deep(.button-list) {
+.content-text :deep(.error-icon-inline) {
+  font-size: 1rem;
+}
+
+.content-text :deep(.event-message) {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #64748b;
+  font-style: italic;
+  font-size: 0.875rem;
+  background: rgba(100, 116, 139, 0.1);
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+}
+
+.content-text :deep(.event-icon) {
+  font-size: 1rem;
+}
+
+/* Template Styles */
+.content-text :deep(.generic-template) {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 0.75rem;
+  margin: 0.75rem 0;
 }
 
-.content :deep(.template-button) {
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background-color: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
+.content-text :deep(.template-element) {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f8fafc;
+  transition: all 0.2s ease;
+}
+
+.content-text :deep(.template-element:hover) {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.content-text :deep(.template-image-container) {
+  position: relative;
+  overflow: hidden;
+}
+
+.content-text :deep(.template-image) {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+
+.content-text :deep(.template-content) {
+  padding: 1rem;
+}
+
+.content-text :deep(.template-title) {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.content-text :deep(.template-subtitle) {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.content-text :deep(.button-template) {
+  margin: 0.75rem 0;
+}
+
+.content-text :deep(.button-text) {
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+  color: inherit;
+}
+
+.content-text :deep(.button-list) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.content-text :deep(.template-button) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  color: #1e293b;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all var(--transition-normal);
+  transition: all 0.2s ease;
   text-align: left;
 }
 
-.content :deep(.template-button:hover:not(:disabled)) {
-  background-color: var(--color-bg-hover);
+.content-text :deep(.template-button:hover:not(:disabled)) {
+  background: #f8fafc;
   border-color: var(--color-primary);
+  transform: translateY(-1px);
 }
 
-.content :deep(.template-button:disabled) {
+.content-text :deep(.template-button:disabled) {
   opacity: 0.7;
   cursor: not-allowed;
 }
 
-/* Attachment Styles */
-.content :deep(.attachment-image) {
-  margin: var(--space-2) 0;
+.content-text :deep(.button-arrow) {
+  color: #64748b;
+  font-weight: 400;
 }
 
-.content :deep(.attachment-image img) {
-  max-width: 100%;
-  height: auto;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-}
-
-.content :deep(.attachment-unknown),
-.content :deep(.template-unknown) {
-  color: var(--color-text-tertiary);
-  font-style: italic;
-  font-size: 0.875rem;
-  padding: var(--space-2);
-  background-color: var(--color-bg-tertiary);
-  border-radius: var(--radius-md);
-  border: 1px dashed var(--color-border);
-}
-
-.attachments {
+/* Attachments */
+.attachments-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--space-2);
-  margin-top: var(--space-3);
+  gap: 0.75rem;
+  margin-top: 0.75rem;
 }
 
-.attachment {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid rgba(0, 163, 255, 0.1);
-  transition: all var(--transition-normal);
+.attachment-item {
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.attachment:hover {
-  border-color: rgba(0, 163, 255, 0.2);
-  box-shadow: 0 2px 8px rgba(0, 163, 255, 0.08);
-}
-
-.attachment-link {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  color: inherit;
-  text-decoration: none;
+.attachment-item:hover {
+  transform: translateY(-2px);
 }
 
 .attachment-preview {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-sm);
-  object-fit: cover;
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.05);
 }
 
-.attachment-icon {
+.preview-image {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.attachment-preview:hover .preview-image {
+  transform: scale(1.05);
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.attachment-preview:hover .image-overlay {
+  opacity: 1;
+}
+
+.overlay-icon {
+  width: 24px;
+  height: 24px;
+  color: white;
+}
+
+.attachment-file {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.assistant-message .attachment-file {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.attachment-file:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.assistant-message .attachment-file:hover {
+  background: #f1f5f9;
+  border-color: #3b82f6;
+}
+
+.file-icon-container {
+  flex-shrink: 0;
   width: 40px;
   height: 40px;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.attachment-info {
+.file-icon {
+  width: 20px;
+  height: 20px;
+  color: #3b82f6;
+}
+
+.file-details {
   flex: 1;
   min-width: 0;
 }
 
-.attachment-name {
+.file-name {
   display: block;
   font-size: 0.875rem;
+  font-weight: 500;
+  color: inherit;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.attachment-size {
+.file-size {
   display: block;
   font-size: 0.75rem;
-  color: var(--color-text-tertiary);
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 0.125rem;
 }
 
-/* Mobile styles */
-@media (max-width: 767px) {
-  .message-container {
-    max-width: 90%;
-    margin-bottom: var(--space-1);
-  }
-  
-  .message {
-    padding: var(--space-2) var(--space-3);
-    border-radius: 10px;
-  }
-  
-  .attachments {
-    grid-template-columns: 1fr;
-  }
-  
-  .content :deep(pre) {
-    font-size: 0.75rem;
-    padding: var(--space-2);
-  }
+.assistant-message .file-size {
+  color: #94a3b8;
 }
 
-/* Small mobile devices */
-@media (max-width: 480px) {
-  .message-container {
+.download-indicator {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.assistant-message .download-indicator {
+  color: #64748b;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .message-wrapper {
     max-width: 95%;
+    gap: 0.5rem;
+  }
+  
+  .message-bubble {
+    padding: 0.625rem 0.875rem;
+    border-radius: 12px;
+  }
+  
+  .avatar-container {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .avatar-icon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .attachments-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .content-text :deep(pre) {
+    padding: 0.75rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .message-wrapper {
+    max-width: 98%;
+  }
+  
+  .message-bubble {
+    padding: 0.5rem 0.75rem;
   }
 }
 </style>

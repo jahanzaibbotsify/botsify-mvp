@@ -28,6 +28,19 @@ if (import.meta.env.DEV) {
   });
 }
 
+
+const swalOption = {
+  title: "Are you sure?",
+  text: "This action is irreversible. Are you sure you want to perform this action?",
+  icon: "warning", // updated from `type`
+  showCloseButton: true,
+  showCancelButton: true,
+  confirmButtonColor: "#DD6B55",
+  confirmButtonText: "Yes, Delete it!",
+  cancelButtonText: "No, Keep it",
+  animation: false,
+};
+
 // Check localStorage availability
 function checkLocalStorage() {
   try {
@@ -122,6 +135,16 @@ app.use(pinia)
 app.use(ToastPlugin);
 
 window.$toast = useToast({position:'top-right'});
+window.$confirm = function (overrideOpt = {}, callback = () => {}) {
+  Swal.fire({
+    ...swalOption,
+    ...overrideOpt,
+  }).then((result) => {
+    if (result.isConfirmed) {
+      callback();
+    }
+  });
+};
 
 
 // Check localStorage before mounting

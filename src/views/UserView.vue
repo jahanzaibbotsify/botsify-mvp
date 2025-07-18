@@ -321,29 +321,19 @@ const handlePerPageChange = (perPage: PerPage): void => {
 }
 
 // Watch for action changes
-watch(selectedAction, async (newAction) => {
+watch(selectedAction, (newAction) => {
   if (newAction) {
     if (selectedUsersCount.value > 0) {
       // Show confirmation dialog with SweetAlert2
       const actionText = getActionText(newAction)
       const userCount = selectedUsersCount.value
       const userText = userCount === 1 ? 'user' : 'users'
-
-      const result = await window.Swal.fire({
-        title: 'Are you sure?',
+      await window.$confirm({
         text: `Are you sure you want to ${actionText} ${userCount} ${userText}?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes',
-        cancelButtonText: 'Cancel'
-      });
-
-      if (result.isConfirmed) {
+      }, async() => {
         executeSelectedAction()
-      } else {
-        // Reset action if user cancels
-        selectedAction.value = ''
-      }
+      });
+      selectedAction.value = ''
     } else {
       // Show notification for no users selected
       window.$toast.error('Please select at least 1 user to perform this action.')

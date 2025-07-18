@@ -115,9 +115,20 @@ const exportChat = (extension: 'csv' | 'txt') => {
   showExportDropdown.value = false
 }
 
-const deleteConversation = () => {
-  // TODO: Implement delete conversation functionality
-  console.log('Delete conversation clicked')
+const deleteConversation = async () => {
+  window.$confirm({}, async () => {
+    try {
+      const response = await conversationStore.deleteConversation()
+      if (response?.success) {
+        window.$toast.success(response.message || 'Conversation deleted successfully')
+      } else {
+        window.$toast.error(response?.message || 'Failed to delete conversation')
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error)
+      window.$toast.error('An error occurred while deleting the conversation')
+    }
+  })
 }
 
 const handleClickOutside = (event: Event) => {

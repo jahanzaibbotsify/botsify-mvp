@@ -77,28 +77,15 @@ function toggleMobileSidebar() {
   }
 }
 
-async function clearVersionHistory() {
-  const result = await showWarning('Are you sure you want to clear version history for this chat? This cannot be undone.');
-  if (result.isConfirmed) {
+function clearVersionHistory() {
+  window.$confirm({}, () => {
     chatStore.clearVersionHistory(chatId.value);
-  }
+  });
 }
 
-async function clearAllChats() {
-  const result = await showWarning('Are you sure you want to clear all conversations and version history? This cannot be undone.');
-  if (result.isConfirmed) {
+function clearAllChats() {
+  window.$confirm({}, () => {
     chatStore.clearAllChatsExceptActive();
-  }
-}
-
-const showWarning = (message: string) => {
-  return window.Swal.fire({
-    title: 'Are you sure?',
-    text: message,
-    icon: 'warning',
-    showCancelButton: true, 
-    confirmButtonText: 'Yes',
-    cancelButtonText: 'Cancel'
   });
 }
 

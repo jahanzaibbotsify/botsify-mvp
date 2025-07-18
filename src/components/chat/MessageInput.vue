@@ -475,165 +475,138 @@ const loadWebSearchData = async () => {
 };
 
 // Delete File Search entry
-const deleteFileSearchEntry = async (fileSearchId: string, fileSearchName: string) => {
-  const result = await showWarning('Are you sure you want to delete this File Search entry?');
-  if (!result.isConfirmed) {
-    return;
-  }
-
-  try {
-    fileSearchDeleteLoading.value = true;
-    fileSearchSelectedId.value = fileSearchId;
-    console.log('Deleting File Search entry:', fileSearchId);
-    const response = await botsifyApi.deleteAllFileSearch([fileSearchId]);
-    
-    if (response.success) {
-      // Remove from local results
-      // fileSearchResults.value = fileSearchResults.value.filter(result => result.id !== fileSearchId);
-      console.log('File Search entry deleted successfully');
-
-      const index = fileSearchResults.findIndex(file => file.id === fileSearchId);
-
-      if (index !== -1) {
-        fileSearchResults.splice(index, 1);
-      }
+const deleteFileSearchEntry = (fileSearchId: string, fileSearchName: string) => {
+  window.$confirm({}, async() => {
+    try {
+      fileSearchDeleteLoading.value = true;
+      fileSearchSelectedId.value = fileSearchId;
+      console.log('Deleting File Search entry:', fileSearchId);
+      const response = await botsifyApi.deleteAllFileSearch([fileSearchId]);
       
-      // Add success message to chat
-      const successMessage = `✅ File Search ${fileSearchName} removed successfully`;
-      await chatStore.addMessage(props.chatId, successMessage, 'assistant');
-
-      closeFileSearchModal();
-    } else {
-      console.error('Failed to delete File Search entry:', response.message);
-      window.$toast.error('Failed to delete File Search entry: ' + response.message);
+      if (response.success) {
+        // Remove from local results
+        // fileSearchResults.value = fileSearchResults.value.filter(result => result.id !== fileSearchId);
+        console.log('File Search entry deleted successfully');
+  
+        const index = fileSearchResults.findIndex(file => file.id === fileSearchId);
+  
+        if (index !== -1) {
+          fileSearchResults.splice(index, 1);
+        }
+        
+        // Add success message to chat
+        const successMessage = `✅ File Search ${fileSearchName} removed successfully`;
+        await chatStore.addMessage(props.chatId, successMessage, 'assistant');
+  
+        closeFileSearchModal();
+      } else {
+        console.error('Failed to delete File Search entry:', response.message);
+        window.$toast.error('Failed to delete File Search entry: ' + response.message);
+      }
+    } catch (error: any) {
+      console.error('Error deleting File Search entry:', error);
+      window.$toast.error('Error deleting File Search entry: ' + error.message);
+    }finally{
+      fileSearchDeleteLoading.value = false;
     }
-  } catch (error: any) {
-    console.error('Error deleting File Search entry:', error);
-    window.$toast.error('Error deleting File Search entry: ' + error.message);
-  }finally{
-    fileSearchDeleteLoading.value = false;
-  }
+  });
 };
 
 // Delete File Search entry
-const deleteAllFileSearchEntry = async () => {
-  const result = await showWarning('Are you sure you want to delete this File Search entry?');
-  if (!result.isConfirmed) {
-    return;
-  }
-
-  try {
-    fileSearchAllDeleteLoading.value = true;
-    const ids = fileSearchResults.map(file=>file.id);
-    const response = await botsifyApi.deleteAllFileSearch(ids);
-    
-    if (response.success) {
-      console.log('All File Search entry deleted successfully');
-      fileSearchResults.splice(0, fileSearchResults.length);
-      // Add success message to chat
-      const successMessage = `✅ All File Search removed successfully`;
-      await chatStore.addMessage(props.chatId, successMessage, 'assistant');
-
-      closeFileSearchModal();
-    } else {
-      console.error('Failed to delete File Search entry:', response.message);
-      window.$toast.error('Failed to delete File Search entry: ' + response.message);
-    }
-  } catch (error: any) {
-    console.error('Error deleting File Search entry:', error);
-    window.$toast.error('Error deleting File Search entry: ' + error.message);
-  }finally{
-    fileSearchAllDeleteLoading.value = false;
-  }
-};
-
-// Delete Web Search entry
-const deleteWebSearchEntry = async (webSearchId: string, webSearchUrl: string) => {
+const deleteAllFileSearchEntry = () => {
+  window.$confirm({}, async() => {
+    try {
+      fileSearchAllDeleteLoading.value = true;
+      const ids = fileSearchResults.map(file=>file.id);
+      const response = await botsifyApi.deleteAllFileSearch(ids);
+      
+      if (response.success) {
+        console.log('All File Search entry deleted successfully');
+        fileSearchResults.splice(0, fileSearchResults.length);
+        // Add success message to chat
+        const successMessage = `✅ All File Search removed successfully`;
+        await chatStore.addMessage(props.chatId, successMessage, 'assistant');
   
-  const result = await showWarning('Are you sure you want to delete this Web Search entry?');
-  if (!result.isConfirmed) {
-    return;
-  }
-
-  try {
-    webSearchDeleteLoading.value = true;
-    webSearchSelectedUrlId.value = webSearchId;
-    console.log('Deleting Web Search entry:', webSearchId, '-', webSearchUrl);
-    // const response = await botsifyApi.deleteWebSearch(apikey, webSearchId, webSearchUrl);
-    
-    const response = await botsifyApi.deleteAllWebSearch([webSearchId]);
-    if (response.success) {
-      // Clear web search results if this was the active one
-      // if (webSearchResults.value && webSearchResults.value.id === webSearchId) {
-      //   webSearchResults.value = null;
-      // }
-      console.log('Web Search entry deleted successfully');
-      const index = webSearchResults.findIndex(item => item.id === webSearchId);
-      if (index !== -1) {
-        webSearchResults.splice(index, 1);
+        closeFileSearchModal();
+      } else {
+        console.error('Failed to delete File Search entry:', response.message);
+        window.$toast.error('Failed to delete File Search entry: ' + response.message);
       }
-      // Add success message to chat
-      const successMessage = `✅ Web Search for ${webSearchUrl} removed successfully`;
-      await chatStore.addMessage(props.chatId, successMessage, 'assistant');
-
-      closeWebSearchModal();
-    } else {
-      console.error('Failed to delete Web Search entry:', response.message);
-      window.$toast.error('Failed to delete Web Search entry: ' + response.message);
+    } catch (error: any) {
+      console.error('Error deleting File Search entry:', error);
+      window.$toast.error('Error deleting File Search entry: ' + error.message);
+    }finally{
+      fileSearchAllDeleteLoading.value = false;
     }
-  } catch (error: any) {
-    console.error('Error deleting Web Search entry:', error);
-    window.$toast.error('Error deleting Web Search entry: ' + error.message);
-  }finally{
-    webSearchDeleteLoading.value = false;
-  }
+  });
 };
 
 // Delete Web Search entry
-const deleteWebSearchAllEntry = async () => {
-  const result = await showWarning('Are you sure you want to delete this Web Search entry?');
-  if (!result.isConfirmed) {
-    return;
-  }
-  const ids = webSearchResults.map(item=>item.id);
-
-  try {
-    webSearchDeleteAllLoading.value = true;
-    const response = await botsifyApi.deleteAllWebSearch(ids);
-    
-    if (response.success) {
-      console.log('Web Search entry deleted successfully');
-      webSearchResults.splice(0, webSearchResults.length);
-      // Add success message to chat
-      const successMessage = `✅ All Web Search removed successfully`;
-      await chatStore.addMessage(props.chatId, successMessage, 'assistant');
-
-      closeWebSearchModal();
-    } else {
-      console.error('Failed to delete Web Search entry:', response.message);
-      window.$toast.error('Failed to delete Web Search entry: ' + response.message);
-    }
-  } catch (error: any) {
-    console.error('Error deleting Web Search entry:', error);
-    window.$toast.error('Error deleting Web Search entry: ' + error.message);
-  }finally{
-    webSearchDeleteAllLoading.value = false;
-  }
-
+const deleteWebSearchEntry = (webSearchId: string, webSearchUrl: string) => {
+  window.$confirm({}, async() => {
+    try {
+      webSearchDeleteLoading.value = true;
+      webSearchSelectedUrlId.value = webSearchId;
+      console.log('Deleting Web Search entry:', webSearchId, '-', webSearchUrl);
+      // const response = await botsifyApi.deleteWebSearch(apikey, webSearchId, webSearchUrl);
+      
+      const response = await botsifyApi.deleteAllWebSearch([webSearchId]);
+      if (response.success) {
+        // Clear web search results if this was the active one
+        // if (webSearchResults.value && webSearchResults.value.id === webSearchId) {
+        //   webSearchResults.value = null;
+        // }
+        console.log('Web Search entry deleted successfully');
+        const index = webSearchResults.findIndex(item => item.id === webSearchId);
+        if (index !== -1) {
+          webSearchResults.splice(index, 1);
+        }
+        // Add success message to chat
+        const successMessage = `✅ Web Search for ${webSearchUrl} removed successfully`;
+        await chatStore.addMessage(props.chatId, successMessage, 'assistant');
   
+        closeWebSearchModal();
+      } else {
+        console.error('Failed to delete Web Search entry:', response.message);
+        window.$toast.error('Failed to delete Web Search entry: ' + response.message);
+      }
+    } catch (error: any) {
+      console.error('Error deleting Web Search entry:', error);
+      window.$toast.error('Error deleting Web Search entry: ' + error.message);
+    }finally{
+      webSearchDeleteLoading.value = false;
+    }
+  });
 };
 
+// Delete Web Search entry
+const deleteWebSearchAllEntry = () => {
+  window.$confirm({}, async() => {
+    const ids = webSearchResults.map(item=>item.id);
+    try {
+      webSearchDeleteAllLoading.value = true;
+      const response = await botsifyApi.deleteAllWebSearch(ids);
+      
+      if (response.success) {
+        console.log('Web Search entry deleted successfully');
+        webSearchResults.splice(0, webSearchResults.length);
+        // Add success message to chat
+        const successMessage = `✅ All Web Search removed successfully`;
+        await chatStore.addMessage(props.chatId, successMessage, 'assistant');
 
-const showWarning = async (message: string) => {
-    return await window.Swal.fire({
-    title: 'Are you sure?',
-    text: message,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes',
-    cancelButtonText: 'Cancel'
+        closeWebSearchModal();
+      } else {
+        console.error('Failed to delete Web Search entry:', response.message);
+        window.$toast.error('Failed to delete Web Search entry: ' + response.message);
+      }
+    } catch (error: any) {
+      console.error('Error deleting Web Search entry:', error);
+      window.$toast.error('Error deleting Web Search entry: ' + error.message);
+    }finally{
+      webSearchDeleteAllLoading.value = false;
+    }
   });
-  }
+};
 
 const showLoading = (forWhat: string) => {
   loadingFor.value = forWhat;

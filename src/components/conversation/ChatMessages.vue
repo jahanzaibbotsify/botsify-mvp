@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, nextTick, watch, computed } from 'vue'
 import ChatMessage from './ChatMessage.vue'
 import MessageSkeleton from './MessageSkeleton.vue'
+import ImageModal from './ImageModal.vue'
 import type { Message } from '@/types'
 
 const props = defineProps<{
@@ -9,34 +10,138 @@ const props = defineProps<{
   messages: Message[]
   loading?: boolean
   error?: string | null
+  conversationTitle?: string
 }>()
 
 const emit = defineEmits<{
   'retry': []
+  'start-new-conversation': []
 }>()
 
 const messagesContainer = ref<HTMLDivElement>()
+const selectedImage = ref<string | null>(null)
+const showImageModal = ref(false)
 
-// Auto-scroll to bottom when new messages are added
-const scrollToBottom = async () => {
-  await nextTick()
-  if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+// Group messages by date
+const groupedMessages = computed(() => {
+  const groups: { date: string; messages: Message[] }[] = []
+  let currentDate = ''
+  let currentGroup: Message[] = []
+
+  props.messages.forEach(message => {
+    const messageDate = new Date(message.timestamp).toDateString()
+    
+    if (messageDate !== currentDate) {
+      if (currentGroup.length > 0) {
+        groups.push({ date: currentDate, messages: currentGroup })
+      }
+      currentDate = messageDate
+      currentGroup = [message]
+    } else {
+      currentGroup.push(message)
+    }
+  })
+
+  if (currentGroup.length > 0) {
+    groups.push({ date: currentDate, messages: currentGroup })
+  }
+
+  return groups
+})
+
+// Format date for display
+const formatDateHeader = (dateString: string) => {
+  const date = new Date(dateString)
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+
+  if (date.toDateString() === today.toDateString()) {
+    return 'Today'
+  } else if (date.toDateString() === yesterday.toDateString()) {
+    return 'Yesterday'
+  } else {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    })
   }
 }
 
+// Check if message should show avatar (first message from sender in a group)
+const shouldShowAvatar = (message: Message, index: number, messages: Message[]) => {
+  if (index === 0) return true
+  const prevMessage = messages[index - 1]
+  return prevMessage.sender !== message.sender
+}
+
+// Check if message should show timestamp
+const shouldShowTimestamp = (message: Message, index: number, messages: Message[]) => {
+  if (index === messages.length - 1) return true
+  const nextMessage = messages[index + 1]
+  if (nextMessage.sender !== message.sender) return true
+  
+  // Show timestamp if more than 5 minutes apart
+  const timeDiff = new Date(nextMessage.timestamp).getTime() - new Date(message.timestamp).getTime()
+  return timeDiff > 5 * 60 * 1000
+}
+
+// Auto-scroll to bottom when new messages are added
+const scrollToBottom = async (smooth = true) => {
+  await nextTick()
+  if (messagesContainer.value) {
+    messagesContainer.value.scrollTo({
+      top: messagesContainer.value.scrollHeight,
+      behavior: smooth ? 'smooth' : 'auto'
+    })
+  }
+}
+
+// Handle image click
+const handleImageClick = (url: string) => {
+  selectedImage.value = url
+  showImageModal.value = true
+}
+
+// Handle attachment download
+const handleAttachmentDownload = (attachment: any) => {
+  // Create a temporary link and trigger download
+  const link = document.createElement('a')
+  link.href = attachment.url
+  link.download = attachment.name
+  link.target = '_blank'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
 // Watch for messages changes to auto-scroll
-watch(() => props.messages.length, () => {
-  scrollToBottom()
+watch(() => props.messages.length, (newLength, oldLength) => {
+  if (newLength > oldLength) {
+    scrollToBottom()
+  }
+})
+
+// Watch for conversation changes
+watch(() => props.hasSelectedConversation, (hasConversation) => {
+  if (hasConversation) {
+    nextTick(() => scrollToBottom(false))
+  }
 })
 
 onMounted(() => {
-  scrollToBottom()
+  if (props.hasSelectedConversation && props.messages.length > 0) {
+    scrollToBottom(false)
+  }
 })
 </script>
 
 <template>
   <div class="chat-messages">
+    <!-- No Conversation Selected -->
+     
     <div 
       v-if="!hasSelectedConversation" 
       class="no-conversation"
@@ -48,6 +153,7 @@ onMounted(() => {
       </div>
     </div>
     
+    <!-- Loading State -->
     <div 
       v-else-if="loading" 
       class="loading-messages"
@@ -57,51 +163,86 @@ onMounted(() => {
       </div>
     </div>
     
-    <div 
+    
+    <!-- Error State -->
+     <div 
       v-else-if="error" 
       class="error-messages"
     >
       <div class="error-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="15" y1="9" x2="9" y2="15"></line>
-          <line x1="9" y1="9" x2="15" y2="15"></line>
-        </svg>
+        <i class="pi pi-exclamation-triangle"></i>
       </div>
       <p class="error-text">Failed to load messages</p>
       <p class="error-subtext">{{ error }}</p>
       <button class="retry-btn" @click="emit('retry')">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
-          <path d="M21 3v5h-5"></path>
-          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
-          <path d="M3 21v-5h5"></path>
-        </svg>
-        Retry
+        <i class="pi pi-refresh btn-icon"></i>
+        Try Again
       </button>
     </div>
     
-    <div 
-      v-else 
-      ref="messagesContainer"
-      class="messages-container"
-    >
-      <div v-if="messages.length === 0" class="no-messages">
-        <div class="no-messages-content">
-          <div class="no-messages-icon">📝</div>
-          <h3>No Messages Yet</h3>
-          <p>Start the conversation by sending a message.</p>
+    <!-- Messages Container -->
+    <div v-else class="messages-wrapper">
+      <!-- Conversation Header -->
+      <div v-if="conversationTitle" class="conversation-header">
+        <h2 class="conversation-title">{{ conversationTitle }}</h2>
+        <div class="conversation-status">
+          <div class="status-indicator active"></div>
+          <span class="status-text">Active</span>
         </div>
       </div>
-      
-      <div v-else class="messages-list">
-        <ChatMessage 
-          v-for="message in messages" 
-          :key="message.id" 
-          :message="message" 
-        />
+
+      <!-- Messages -->
+      <div 
+        ref="messagesContainer"
+        class="messages-container"
+      >
+        <!-- Empty Messages State -->
+        <div v-if="messages.length === 0" class="no-messages-state">
+          <div class="no-messages-content">
+            <div class="no-messages-icon">💬</div>
+            <h3 class="no-messages-title">No Messages Yet</h3>
+            <p class="no-messages-description">
+              Start the conversation by sending your first message.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Message Groups -->
+        <div v-else class="messages-list">
+          <div 
+            v-for="group in groupedMessages" 
+            :key="group.date"
+            class="message-group"
+          >
+            <!-- Date Header -->
+            <div class="date-header">
+              <span class="date-text">{{ formatDateHeader(group.date) }}</span>
+            </div>
+            
+            <!-- Messages in Group -->
+            <div class="group-messages">
+              <ChatMessage 
+                v-for="(message, index) in group.messages" 
+                :key="message.id" 
+                :message="message"
+                :show-avatar="shouldShowAvatar(message, index, group.messages)"
+                :show-timestamp="shouldShowTimestamp(message, index, group.messages)"
+                :compact="!shouldShowAvatar(message, index, group.messages)"
+                @image-click="handleImageClick"
+                @attachment-download="handleAttachmentDownload"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+
+    <!-- Image Modal -->
+    <ImageModal 
+      v-if="showImageModal && selectedImage"
+      :image-url="selectedImage"
+      @close="showImageModal = false"
+    />
   </div>
 </template>
 
@@ -110,9 +251,12 @@ onMounted(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-bg-primary);
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
   overflow: hidden;
+  position: relative;
 }
+
+/* Empty State */
 
 .no-conversation,
 .no-messages {
@@ -151,41 +295,7 @@ onMounted(() => {
   margin: 0;
 }
 
-.messages-container {
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--space-4) var(--space-6);
-  scroll-behavior: smooth;
-  background: linear-gradient(180deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
-}
-
-.messages-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-/* Custom scrollbar */
-.messages-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.messages-container::-webkit-scrollbar-track {
-  background: var(--color-bg-tertiary);
-}
-
-.messages-container::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 3px;
-}
-
-.messages-container::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-tertiary);
-}
-
-/* Loading Messages */
+/* Loading State */
 .loading-messages {
   flex: 1;
   display: flex;
@@ -197,7 +307,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  max-width: 800px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 
@@ -206,7 +316,41 @@ onMounted(() => {
   to { transform: rotate(360deg); }
 }
 
-/* Error Messages */
+
+.conversation-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success);
+}
+
+.status-indicator.active {
+  animation: pulse 2s infinite;
+}
+
+.status-text {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Error State */
 .error-messages {
   flex: 1;
   display: flex;
@@ -256,6 +400,122 @@ onMounted(() => {
   border-color: var(--color-primary);
 }
 
+/* Messages Wrapper */
+.messages-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+  scroll-behavior: smooth;
+}
+
+.no-messages-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 300px;
+}
+
+.no-messages-content {
+  text-align: center;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.no-messages-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.no-messages-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.no-messages-description {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.messages-list {
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.message-group {
+  margin-bottom: 2rem;
+}
+
+.date-header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.date-header::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-bg-tertiary), transparent);
+}
+
+.date-text {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.5rem 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  position: relative;
+  z-index: 1;
+}
+
+.group-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* Custom Scrollbar */
+.messages-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Responsive Design */
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .messages-container {
@@ -274,4 +534,4 @@ onMounted(() => {
     font-size: 3rem;
   }
 }
-</style> 
+</style>

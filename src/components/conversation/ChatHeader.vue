@@ -4,7 +4,12 @@
       <h2 class="chat-user-name">{{ userName || 'Select a conversation' }}</h2>
     </div>
     <div class="chat-actions">
-      <select class="status-select" v-model="selectedStatus">
+      <select 
+        class="status-select" 
+        :class="{ 'status-active': selectedStatus === 'active', 'status-inactive': selectedStatus === 'inactive' }"
+        v-model="selectedStatus"
+        @change="handleStatusChange"
+      >
         <option value="active">Active</option>
         <option value="inactive">Inactive</option>
       </select>
@@ -20,15 +25,38 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-
+import { useConversationStore } from '@/stores/conversationStore'
 
 interface Props {
   userName?: string
+  userId?: string
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
+const conversationStore = useConversationStore()
 
 const selectedStatus = ref('active')
+
+const handleStatusChange = async () => {
+  if (!props.userId) {
+    window.$toast.error('No user selected for status change')
+    return
+  }
+
+  try {
+    const status = selectedStatus.value === 'active' ? 1 : 0
+    const response = await conversationStore.changeBotActivation(props.userId, status)
+    
+    if (response?.success) {
+      window.$toast.success(response.message || 'Bot status updated successfully')
+    } else {
+      window.$toast.error(response?.message || 'Failed to update bot status')
+    }
+  } catch (error) {
+    console.error('Error changing bot status:', error)
+    window.$toast.error('An error occurred while updating bot status')
+  }
+}
 </script>
 
 <style scoped>
@@ -73,6 +101,18 @@ const selectedStatus = ref('active')
 .status-select:focus {
   outline: none;
   border-color: var(--color-primary);
+}
+
+.status-select.status-active {
+  border-color: var(--color-success);
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--color-success);
+}
+
+.status-select.status-inactive {
+  border-color: var(--color-error);
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--color-error);
 }
 
 .translate-button {

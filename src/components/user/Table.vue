@@ -59,25 +59,16 @@ const handleUpdateAttributes = (attributes: UserAttribute[]): void => {
   selectedUserAttributes.value = attributes
 }
 
-const handleDeleteUser = async (userId: number): Promise<void> => {
-  const result = await window.Swal.fire({
-        title: 'Are you sure?',
-        text: `Are you sure you want to delete this user?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes',
-        cancelButtonText: 'Cancel'
-      });
-
-      if (result.isConfirmed) {
-        const response = await userApi.changeUserStatus(2, [userId]);
-        if (response.success) {
-          window.$toast.success(`Successfully deleted user.`);
-          emit('sort', 'name')
-        } else {
-          window.$toast.error(`Failed to delete users: ${response.message}`);
-        }
-      }
+const handleDeleteUser = (userId: number) => {
+  window.$confirm({}, async() => {
+    const response = await userApi.changeUserStatus(2, [userId]);
+    if (response.success) {
+      window.$toast.success(`Successfully deleted user.`);
+      emit('sort', 'name')
+    } else {
+      window.$toast.error(`Failed to delete users: ${response.message}`);
+    }
+  });
 }
 
 const goToConversation = (userId: number): void => {

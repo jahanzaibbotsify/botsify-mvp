@@ -91,7 +91,10 @@ onMounted(async () => {
       <!-- Main Chat Area -->
       <div class="chat-main">
         <!-- Chat Header -->
-        <ChatHeader :user-name="conversationStore.selectedConversation?.title" />
+        <ChatHeader 
+          :user-name="conversationStore.selectedConversation?.title"
+          :user-id="conversationStore.selectedConversation?.fbid"
+        />
 
         <!-- Chat Messages Area -->
         <ChatMessages 

@@ -369,7 +369,7 @@ export const useConversationStore = defineStore('conversation', () => {
       
       // Platform filter
       if (activeTab.value !== 'all') {
-        queryParams.platforms = activeTab.value
+        queryParams.type = activeTab.value
       }
       
       // Offset for pagination
@@ -534,32 +534,6 @@ export const useConversationStore = defineStore('conversation', () => {
     await fetchConversations()
   }
 
-  // Mark conversation as read on server
-  async function markConversationAsReadOnServer(userId: string) {
-    try {
-      const apiKeyStore = useApiKeyStore();
-      const apikey = apiKeyStore.apiKey;
-      if (!apikey) throw new Error('API key not set');
-      await axios.post(
-        `${import.meta.env.VITE_BOTSIFY_BASE_URL}/v1/user/change-status`,
-        {
-          apikey,
-          user_id: userId,
-          status: 1
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
-          }
-        }
-      );
-      console.log('✅ Marked conversation as read on server:', userId);
-    } catch (error) {
-      console.error('❌ Failed to mark conversation as read on server:', error);
-    }
-  }
-
   const selectConversation = async (conversation: ExtendedChat) => {
     // Stop listening to previous conversation
     if (selectedConversation.value?.fbid) {
@@ -570,9 +544,6 @@ export const useConversationStore = defineStore('conversation', () => {
     // If unread, mark as read locally and on server
     if (conversation.unread) {
       conversation.unread = false
-      if (conversation.fbid) {
-        markConversationAsReadOnServer(conversation.fbid)
-      }
     }
     
     // Load messages for this conversation using API
@@ -652,6 +623,41 @@ export const useConversationStore = defineStore('conversation', () => {
     }
   }
 
+  const deleteConversation = async () => {
+    try {
+      if (!selectedConversation.value?.fbid) {
+        error.value = 'No conversation selected for export'
+        return
+      }
+      const response = await conversationApi.deleteConversation(selectedConversation.value.fbid)
+      if (response.success) {
+        // Clear selected conversation if it was the deleted one
+        messages.value = []
+        return { success: true, message: response.data.message }
+      } else {
+        return { success: false, message: response.message || 'Failed to delete conversation' }
+      }
+    } catch (err) {
+      console.error('Error deleting conversation:', err)
+      return { success: false, message: 'An error occurred while deleting conversation' }
+    }
+  }
+
+  const changeBotActivation = async (userId: string, status: number) => {
+    try {
+      const response = await conversationApi.changeBotActivation(userId, status)
+      if (response.success) {
+        console.log('✅ Bot activation changed successfully:', { userId, status })
+        return { success: true, message: response.data.message }
+      } else {
+        return { success: false, message: response.message || 'Failed to change bot activation' }
+      }
+    } catch (err) {
+      console.error('Error changing bot activation:', err)
+      return { success: false, message: 'An error occurred while changing bot activation' }
+    }
+  }
+
   return {
     // State
     conversations,
@@ -703,6 +709,12 @@ export const useConversationStore = defineStore('conversation', () => {
     firebaseError,
     
     // Export method
-    exportConversation
+    exportConversation,
+    
+    // Delete method
+    deleteConversation,
+    
+    // Bot activation method
+    changeBotActivation
   }
 }) 
