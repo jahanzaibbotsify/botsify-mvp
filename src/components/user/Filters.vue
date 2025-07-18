@@ -38,6 +38,8 @@ const segmentOptions = [
   { label: 'WhatsApp Users', value: 'whatsapp' as SegmentType },
   { label: 'Facebook Users', value: 'facebook' as SegmentType },
   { label: 'Website Users', value: 'website' as SegmentType },
+  { label: 'Instagram Users', value: 'instagram' as SegmentType },
+  { label: 'Telegram Users', value: 'telegram' as SegmentType },
 ]
 
 const actionOptions = [

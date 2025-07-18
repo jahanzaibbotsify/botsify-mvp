@@ -4,6 +4,7 @@ import { ref, computed } from 'vue'
 import type { ExtendedChat } from '@/types'
 import ConversationSkeleton from './ConversationSkeleton.vue'
 import FilterSection from './Filter.vue'
+import { getPlatformClass, getPlatformIcon } from '@/utils'
 
 interface Props {
   searchQuery: string
@@ -17,16 +18,17 @@ interface Props {
   isLoadingMore?: boolean
   loading?: boolean
   error?: string | null
+  isSearching?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  isLoadingMore: false
+  isLoadingMore: false,
+  isSearching: false
 })
 
 const conversationList = ref<HTMLDivElement>()
 const filtersExpanded = ref(false)
 const currentQuickFilter = ref<string | null>(null)
-
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string]
@@ -38,10 +40,11 @@ const emit = defineEmits<{
   'select-conversation': [conversation: ExtendedChat]
   'load-more-conversations': []
   'retry': []
+  'search': [query: string]
 }>()
 
 // Filter Options
-const statusOptions = [
+const quickFilterOptions = [
   { value: 'all', label: 'All', icon: 'pi pi-comments' },
   { value: 'open', label: 'Open', icon: 'pi pi-check-circle' },
   { value: 'closed', label: 'Closed', icon: 'pi pi-times-circle' }
@@ -57,40 +60,10 @@ const platformOptions = [
   { value: 'all', label: 'All', icon: 'pi pi-globe' },
   { value: 'facebook', label: 'Facebook', icon: 'pi pi-facebook' },
   { value: 'whatsapp', label: 'WhatsApp', icon: 'pi pi-whatsapp' },
-  { value: 'web', label: 'Web', icon: 'pi pi-globe' }
+  { value: 'web', label: 'Website', icon: 'pi pi-globe' },
+  { value: 'instagram', label: 'Instagram', icon: 'pi pi-instagram' },
+  { value: 'telegram', label: 'Telegram', icon: 'pi pi-telegram' }
 ];
-
-const chatTypeOptions = [
-  { value: 'all', label: 'All', icon: 'pi pi-users' },
-  { value: 'my', label: 'My Chat', icon: 'pi pi-user' },
-];
-
-const sortOrderOptions = [
-  { value: 'asc', label: 'Asc', icon: 'pi pi-sort-amount-up' },
-  { value: 'desc', label: 'Desc', icon: 'pi pi-sort-amount-down' }
-];
-
-const quickFilterPresets = [
-  {
-    id: 'unread',
-    label: 'Unread',
-    icon: 'pi pi-eye-slash',
-    filters: { readFilter: 'unread' }
-  },
-  {
-    id: 'recent',
-    label: 'Recent',
-    icon: 'pi pi-clock',
-    filters: { sortOrder: 'desc' }
-  },
-  {
-    id: 'my-open',
-    label: 'My Open',
-    icon: 'pi pi-user',
-    filters: { chatTypeFilter: 'my', activeFilter: 'open' }
-  }
-];
-
 
 // Computed Properties
 const activeFiltersCount = computed(() => {
@@ -98,8 +71,6 @@ const activeFiltersCount = computed(() => {
   if (props.activeFilter !== 'all') count++
   if (props.readFilter !== 'all') count++
   if (props.activeTab !== 'all') count++
-  if (props.chatTypeFilter !== 'all') count++
-  if (props.sortOrder !== 'desc') count++
   return count
 })
 
@@ -112,7 +83,7 @@ const activeFiltersList = computed(() => {
     filters.push({
       key: 'activeFilter',
       label: 'Status',
-      value: statusOptions.find(opt => opt.value === props.activeFilter)?.label || props.activeFilter
+      value: quickFilterOptions.find(opt => opt.value === props.activeFilter)?.label || props.activeFilter
     })
   }
   
@@ -132,22 +103,6 @@ const activeFiltersList = computed(() => {
     })
   }
   
-  if (props.chatTypeFilter !== 'all') {
-    filters.push({
-      key: 'chatTypeFilter',
-      label: 'Chat Type',
-      value: chatTypeOptions.find(opt => opt.value === props.chatTypeFilter)?.label || props.chatTypeFilter
-    })
-  }
-  
-  if (props.sortOrder !== 'desc') {
-    filters.push({
-      key: 'sortOrder',
-      label: 'Sort Order',
-      value: sortOrderOptions.find(opt => opt.value === props.sortOrder)?.label || props.sortOrder
-    })
-  }
-  
   return filters
 })
 
@@ -160,8 +115,6 @@ const clearAllFilters = () => {
   emit('update:activeFilter', 'all')
   emit('update:readFilter', 'all')
   emit('update:activeTab', 'all')
-  emit('update:chatTypeFilter', 'all')
-  emit('update:sortOrder', 'desc')
   currentQuickFilter.value = null
 }
 
@@ -176,35 +129,12 @@ const removeFilter = (filterKey: string) => {
     case 'activeTab':
       emit('update:activeTab', 'all')
       break
-    case 'chatTypeFilter':
-      emit('update:chatTypeFilter', 'all')
-      break
-    case 'sortOrder':
-      emit('update:sortOrder', 'desc')
-      break
   }
 }
 
-const applyQuickFilter = (preset: any) => {
-  currentQuickFilter.value = preset.id
-  
-  // Apply preset filters
-  Object.entries(preset.filters).forEach(([key, value]) => {
-    switch (key) {
-      case 'readFilter':
-        emit('update:readFilter', value as any)
-        break
-      case 'sortOrder':
-        emit('update:sortOrder', value as any)
-        break
-      case 'chatTypeFilter':
-        emit('update:chatTypeFilter', value as any)
-        break
-      case 'activeFilter':
-        emit('update:activeFilter', value as any)
-        break
-    }
-  })
+const applyQuickFilter = (value: string) => {
+  currentQuickFilter.value = value
+  emit('update:activeFilter', value)
 }
 
 // Event handlers for FilterSection components
@@ -223,16 +153,12 @@ const handleActiveTabUpdate = (value: string | string[]) => {
   emit('update:activeTab', finalValue)
 }
 
-const handleChatTypeFilterUpdate = (value: string | string[]) => {
-  const finalValue = Array.isArray(value) ? value[0] || 'all' : value
-  emit('update:chatTypeFilter', finalValue as 'all' | 'my' | 'other')
+const handleSearch = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const query = target.value
+  emit('update:searchQuery', query)
+  emit('search', query)
 }
-
-const handleSortOrderUpdate = (value: string | string[]) => {
-  const finalValue = Array.isArray(value) ? value[0] || 'desc' : value
-  emit('update:sortOrder', finalValue as 'asc' | 'desc')
-}
-
 
 const handleScroll = (event: Event) => {
   const target = event.target as HTMLDivElement
@@ -254,32 +180,6 @@ const formatTime = (date: Date) => {
     return `${Math.floor(diffInHours)}h ago`
   } else {
     return date.toLocaleDateString()
-  }
-}
-
-const getPlatformClass = (platform: string = '') => {
-  switch (platform.toLowerCase()) {
-    case 'facebook':
-      return 'platform-facebook'
-    case 'whatsapp':
-      return 'platform-whatsapp'
-    case 'web':
-      return 'platform-web'
-    default:
-      return 'platform-default'
-  }
-}
-
-const getPlatformIcon = (platform: string = '') => {
-  switch (platform?.toLowerCase()) {
-    case 'facebook':
-      return 'pi pi-facebook'
-    case 'whatsapp':
-      return 'pi pi-whatsapp'
-    case 'web':
-      return 'pi pi-globe'
-    default:
-      return 'pi pi-globe'
   }
 }
 
@@ -305,20 +205,31 @@ const getUnreadCount = (conversation: ExtendedChat) => {
       <h2 class="sidebar-title">Conversations</h2>
       <div class="search-container">
         <div class="search-input-wrapper">
-            <span class="search-icon"><i class="pi pi-search"></i></span>
+          <span class="search-icon">
+            <i v-if="!isSearching" class="pi pi-search"></i>
+            <i v-else class="pi pi-spin pi-spinner"></i>
+          </span>
           <input 
             type="text" 
             placeholder="Search conversations..." 
             class="search-input"
             :value="searchQuery"
-            @input="$emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
+            @input="handleSearch"
+            :disabled="isSearching"
           />
+          <div v-if="isSearching" class="search-loading-indicator">
+            <div class="loading-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-     <!-- Enhanced Filters Section -->
-     <div class="filters-section">
+    <!-- Enhanced Filters Section -->
+    <div class="filters-section">
       <!-- Filter Header -->
       <div class="filters-header">
         <div class="filters-title">
@@ -329,7 +240,7 @@ const getUnreadCount = (conversation: ExtendedChat) => {
           </div>
         </div>
         <div class="filter-actions">
-      <button 
+          <button 
             v-if="hasActiveFilters" 
             @click="clearAllFilters" 
             class="clear-all-btn"
@@ -337,89 +248,62 @@ const getUnreadCount = (conversation: ExtendedChat) => {
           >
             <i class="pi pi-times"></i>
             Clear
-      </button>
-      <button 
+          </button>
+          <button 
             @click="toggleFilters" 
             class="toggle-filters-btn"
             :class="{ 'expanded': filtersExpanded }"
           >
             <i class="pi pi-chevron-down"></i>
-      </button>
-    </div>
+          </button>
+        </div>
       </div>
+      
       <!-- Collapsible Filters Container -->
-   <Transition name="filters-collapse">
-     <div v-show="filtersExpanded" class="filters-container">
-       <!-- Quick Filter Chips -->
-       <div class="quick-filters">
-         <div class="quick-filter-label">Quick Filters</div>
-         <div class="quick-filter-chips">
-      <button 
-             v-for="preset in quickFilterPresets" 
-             :key="preset.id"
-             @click="applyQuickFilter(preset)"
-             class="quick-filter-chip"
-             :class="{ 'active': currentQuickFilter === preset.id }"
-           >
-             <i :class="['filter-icon', preset.icon]" />
-             {{ preset.label }}
-      </button>
-         </div>
+      <Transition name="filters-collapse">
+        <div v-show="filtersExpanded" class="filters-container">
+          <!-- Quick Filter Chips -->
+          <div class="quick-filters">
+            <div class="quick-filter-label">Quick Filters</div>
+            <div class="quick-filter-chips">
+              <button 
+                v-for="option in quickFilterOptions" 
+                :key="option.value"
+                @click="applyQuickFilter(option.value)"
+                class="quick-filter-chip"
+                :class="{ 'active': currentQuickFilter === option.value }"
+              >
+                <i :class="['filter-icon', option.icon]" />
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Individual Filter Sections -->
+          <div class="filter-sections">
+            <!-- Read Status Filter -->
+            <FilterSection 
+              title="Read Status"
+              icon="pi pi-eye"
+              :options="readStatusOptions"
+              :selected="readFilter"
+              @update="handleReadFilterUpdate"
+            />
+
+            <!-- Platform Filter -->
+            <FilterSection 
+              title="Platform"
+              icon="pi pi-mobile"
+              :options="platformOptions"
+              :selected="activeTab"
+              @update="handleActiveTabUpdate"
+            />
+          </div>
+        </div>
+      </Transition>
     </div>
 
-       <!-- Individual Filter Sections -->
-       <div class="filter-sections">
-         <!-- Status Filter -->
-         <FilterSection 
-           title="Status"
-           icon="pi pi-comments"
-           :options="statusOptions"
-           :selected="activeFilter"
-           @update="handleActiveFilterUpdate"
-         />
-
-         <!-- Read Status Filter -->
-         <FilterSection 
-           title="Read Status"
-           icon="pi pi-eye"
-           :options="readStatusOptions"
-           :selected="readFilter"
-           @update="handleReadFilterUpdate"
-         />
-
-    <!-- Platform Filter -->
-         <FilterSection 
-           title="Platform"
-           icon="pi pi-mobile"
-           :options="platformOptions"
-           :selected="activeTab"
-           @update="handleActiveTabUpdate"
-           multiple
-         />
-
-         <!-- Chat Type Filter -->
-         <FilterSection 
-           title="Chat Type"
-           icon="pi pi-users"
-           :options="chatTypeOptions"
-           :selected="chatTypeFilter"
-           @update="handleChatTypeFilterUpdate"
-         />
-
-         <!-- Sort Order Filter -->
-         <FilterSection 
-           title="Sort Order"
-           icon="pi pi-sort"
-           :options="sortOrderOptions"
-           :selected="sortOrder"
-           @update="handleSortOrderUpdate"
-         />
-       </div>
-     </div>
-   </Transition>
-      </div>
-
-       <!-- Active Filters Display -->
+    <!-- Active Filters Display -->
     <div v-if="hasActiveFilters" class="active-filters-display">
       <div class="active-filters-label">Active Filters:</div>
       <div class="active-filters-list">
@@ -430,17 +314,16 @@ const getUnreadCount = (conversation: ExtendedChat) => {
         >
           <span class="filter-label">{{ filter.label }}:</span>
           <span class="filter-value">{{ filter.value }}</span>
-      <button 
+          <button 
             @click="removeFilter(filter.key)"
             class="remove-filter-btn"
             :title="`Remove ${filter.label} filter`"
           >
             <i class="pi pi-times"></i>
-      </button>
+          </button>
         </div>
       </div>
     </div>
-
 
     <!-- Conversation List -->
     <div 
@@ -480,7 +363,6 @@ const getUnreadCount = (conversation: ExtendedChat) => {
           </div>
         </div>
 
-
         <!-- Content -->
         <div class="conversation-content">
           <div class="conversation-header">
@@ -488,8 +370,8 @@ const getUnreadCount = (conversation: ExtendedChat) => {
             <span class="conversation-time">{{ formatTime(conversation.timestamp) }}</span>
           </div>
           <p class="conversation-preview">{{ conversation.lastMessage }}</p>
-          </div>
         </div>
+      </div>
 
       <!-- Loading More Skeleton -->
       <div v-if="isLoadingMore" class="loading-more-skeletons">
@@ -527,7 +409,6 @@ const getUnreadCount = (conversation: ExtendedChat) => {
     </div>
   </div>
 </template>
-
 
 <style scoped>
 .conversation-sidebar {
@@ -588,6 +469,48 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   border-color: var(--color-primary);
 }
 
+.search-input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.search-loading-indicator {
+  position: absolute;
+  right: var(--space-3);
+  z-index: 1;
+}
+
+.loading-dots {
+  display: flex;
+  gap: 2px;
+}
+
+.loading-dots span {
+  width: 4px;
+  height: 4px;
+  background-color: var(--color-primary);
+  border-radius: 50%;
+  animation: loading-dots 1.4s infinite ease-in-out;
+}
+
+.loading-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes loading-dots {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
 
 /* Enhanced Filters Section */
 .filters-section {
@@ -798,12 +721,6 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   color: var(--color-error);
 }
 
-
-/* .platform-icon {
-  width: 16px;
-  height: 16px;
-} */
-
 /* Conversation List */
 .conversation-list {
   flex: 1;
@@ -903,33 +820,8 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   right: -2px;
   width: 18px;
   height: 18px;
-  border-radius: 50%;
   font-size: 0.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  border: 2px solid white;
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
 }
-
-/* Platform-specific background colors */
-.platform-facebook {
-  background-color: #1877f2; /* Facebook Blue */
-}
-
-.platform-whatsapp {
-  background-color: #25d366; /* WhatsApp Green */
-}
-
-.platform-web {
-  background-color: #6c757d; /* Neutral gray */
-}
-
-.platform-default {
-  background-color: #adb5bd;
-}
-
 
 /* Content */
 .conversation-content {
@@ -982,23 +874,6 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   color: rgba(255, 255, 255, 0.8);
 }
 
-.conversation-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.7rem;
-}
-
-/* .conversation-platform {
-  color: var(--color-text-tertiary);
-  text-transform: capitalize;
-  font-size: 0.7rem;
-}
-
-.conversation-item.active .conversation-platform {
-  color: rgba(255, 255, 255, 0.7);
-} */
-
 /* Loading More Skeletons */
 .loading-more-skeletons {
   padding: var(--space-2);
@@ -1007,13 +882,6 @@ const getUnreadCount = (conversation: ExtendedChat) => {
 .initial-loading-skeletons {
   padding: var(--space-2);
 }
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-
 
 /* Error State */
 .error-state {

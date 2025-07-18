@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { conversationApi } from '@/services/conversationApi'
 import { firebaseService } from '@/services/firebase'
-import { NotificationService } from '@/utils/notificationService'
+import { NotificationService } from '@/utils/notification'
 import type { FirebaseMessage } from '@/types/firebase'
 import type { 
   ConversationMessage,

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import UserAttributes from './Attributes.vue'
 import { User, UserAttribute, PaginationData, SortingData, SortBy, PerPage } from '@/types/user'
 import { userApi } from '@/services/userApi';
+import { getPlatformClass, getPlatformIcon } from '@/utils';
 
 const props = defineProps<{
   users: User[]
@@ -246,7 +247,14 @@ const getPageNumbers = computed(() => {
                 </div>
               </div>
             </td>
-            <td>{{ user.type || 'N/A' }}</td>
+            <td>
+              <span
+                class="avatar-platform-icon"
+                :class="getPlatformClass(user.type)"
+              >
+                <i :class="getPlatformIcon(user.type)"></i>
+              </span>
+            </td>
             <td>{{ user.created_at }}</td>
             <td>{{ user.country }}</td>
             <td>{{ user.phone_number || 'N/A' }}</td>

@@ -214,7 +214,9 @@ export class UserFilterManager extends BaseFilterManager<UserFilterState> {
         sms: -2,
         whatsapp: -3,
         facebook: -4,
-        website: -5
+        website: -5,
+        instagram: -6,
+        telegram: -7
       }
       params.segment_id = segmentMap[this.state.segment]
     }

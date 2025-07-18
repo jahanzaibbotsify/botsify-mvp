@@ -207,10 +207,13 @@ function clearAllChats() {
   transition: padding-right 0.3s ease;
   position: relative;
   z-index: 1;
+  padding-right: 150px;
+  padding-left: 150px;
 }
 
 .chat-view.with-sidebar {
   padding-right: 400px;
+  padding-left: 0px;
 }
 
 .chat-header {
