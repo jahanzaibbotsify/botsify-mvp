@@ -11,7 +11,6 @@ import ApiErrorNotification from '@/components/chat/ApiErrorNotification.vue';
 import StorySidebar from '@/components/chat/StorySidebar.vue';
 import ThemeToggle from '@/components/ui/ThemeToggle.vue';
 import UserMenu from '@/components/auth/UserMenu.vue';
-import Swal from 'sweetalert2'; 
 
 
 const route = useRoute();
@@ -108,7 +107,7 @@ async function clearAllChats() {
 }
 
 const showWarning = (message: string) => {
-  return Swal.fire({
+  return window.Swal.fire({
     title: 'Are you sure?',
     text: message,
     icon: 'warning',

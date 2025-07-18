@@ -8,14 +8,14 @@ import '@fontsource/ubuntu/400.css'
 import '@fontsource/ubuntu/500.css'
 import '@fontsource/ubuntu/700.css'
 import axios from 'axios';
-import ToastPlugin from 'vue-toast-notification';
+import ToastPlugin, { useToast } from 'vue-toast-notification';
+import 'vue-toast-notification/dist/theme-bootstrap.css';
 import { useApiKeyStore } from './stores/apiKeyStore';
-
+import Swal from 'sweetalert2';
 
 // Import routes
 import routes from '@/router'
-import 'vue-toast-notification/dist/theme-bootstrap.css';
-
+(window as any).Swal = Swal;
 
 // Import OpenAI debug utility in development
 if (import.meta.env.DEV) {
@@ -118,6 +118,9 @@ const app = createApp(App)
 app.use(router)
 app.use(pinia)
 app.use(ToastPlugin);
+
+window.$toast = useToast({position:'top-right'});
+
 
 // Check localStorage before mounting
 const localStorageAvailable = checkLocalStorage();
