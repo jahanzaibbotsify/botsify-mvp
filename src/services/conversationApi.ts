@@ -192,6 +192,46 @@ class ConversationApiService {
       }
     }
   }
+
+  // Save push subscription
+  async saveSubscription(subscription: PushSubscription, userId: string): Promise<ApiResponse<{ message: string }>> {
+    try {
+      const API_KEY = useApiKeyStore().apiKey
+      const response = await axiosInstance.post(`v1/save-subscription/${userId}`, {
+        apikey: API_KEY,
+        subscription: subscription.toJSON()
+      })
+      
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      console.error('Error saving subscription:', error)
+      return {
+        success: false,
+        message: error?.response?.data?.message || 'Failed to save subscription',
+        data: { message: '' }
+      }
+    }
+  }
+
+  // Delete push subscription
+  async deleteSubscription(subscription: PushSubscription, userId: string): Promise<ApiResponse<{ message: string }>> {
+    try {
+      const API_KEY = useApiKeyStore().apiKey
+      const response = await axiosInstance.post(`v1/delete-subscription/${userId}`, {
+        apikey: API_KEY,
+        subscription: subscription.toJSON()
+      })
+      
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      console.error('Error deleting subscription:', error)
+      return {
+        success: false,
+        message: error?.response?.data?.message || 'Failed to delete subscription',
+        data: { message: '' }
+      }
+    }
+  }
 }
 
 export const conversationApi = new ConversationApiService() 

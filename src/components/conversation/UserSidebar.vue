@@ -67,8 +67,8 @@
     <div class="user-actions">
       <div class="export-dropdown">
         <button class="user-action-button icon-button" @click="toggleExportDropdown">
-          <i class="pi pi-file-export"></i>
-        </button>
+        <i class="pi pi-file-export"></i>
+      </button>
         <div v-if="showExportDropdown" class="export-dropdown-content">
           <button @click="exportChat('csv')" class="export-option">
             <i class="pi pi-file"></i> Export as CSV
@@ -108,8 +108,31 @@ const notificationsEnabled = ref(true)
 const showExportDropdown = ref(false)
 const conversationStore = useConversationStore()
 
-const toggleNotifications = () => {
-  notificationsEnabled.value = !notificationsEnabled.value
+const toggleNotifications = async () => {
+  try {
+    if (notificationsEnabled.value) {
+      // Disable notifications
+      const result = await conversationStore.disableNotifications()
+      if (result.success) {
+        notificationsEnabled.value = false
+        window.$toast.success(result.message || 'Notifications disabled')
+      } else {
+        window.$toast.error(result.message || 'Failed to disable notifications')
+      }
+    } else {
+      // Enable notifications
+      const result = await conversationStore.enableNotifications()
+      if (result.success) {
+        notificationsEnabled.value = true
+        window.$toast.success(result.message || 'Notifications enabled')
+      } else {
+        window.$toast.error(result.message || 'Failed to enable notifications')
+      }
+    }
+  } catch (error) {
+    console.error('Error toggling notifications:', error)
+    window.$toast.error('An error occurred while toggling notifications')
+  }
 }
 
 const toggleExportDropdown = () => {
@@ -144,8 +167,16 @@ const handleClickOutside = (event: Event) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
+  
+  // Check initial notification status
+  try {
+    const status = await conversationStore.checkNotificationStatus()
+    notificationsEnabled.value = status.subscribed
+  } catch (error) {
+    console.error('Error checking notification status:', error)
+  }
 })
 
 onUnmounted(() => {

@@ -10,3 +10,6 @@ export const BOTSIFY_FIREBASE_CONFIG = {
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 }
+
+// VAPID public key for push notifications
+export const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';

@@ -15,9 +15,9 @@
         <div class="skeleton-item" v-for="i in 5" :key="i">
           <div class="skeleton-tag"></div>
           <div class="skeleton-value"></div>
-        </div>
       </div>
-    </div>
+      </div>
+      </div>
 
     <!-- Error State -->
     <div v-else-if="error" class="error-state">
@@ -26,13 +26,13 @@
       <button @click="() => fetchAttributes(true)" class="retry-button">
         <i class="pi pi-refresh"></i> Retry
       </button>
-    </div>
+      </div>
 
     <!-- Attributes List -->
     <div v-if="attributes.length === 0" class="no-attributes">
       <i class="pi pi-info-circle"></i>
       <p>No attributes found for this user.</p>
-    </div>
+      </div>
     <div v-else class="attributes-list" v-for="attribute in attributes" :key="attribute.id">
       <div class="attribute-item">
         <span class="attribute-tag">{{ formatAttributeKey(attribute.key) }}</span>

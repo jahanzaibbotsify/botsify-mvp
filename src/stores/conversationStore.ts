@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { conversationApi } from '@/services/conversationApi'
 import { firebaseService } from '@/services/firebase'
+import { NotificationService } from '@/utils/notificationService'
 import type { FirebaseMessage } from '@/types/firebase'
 import type { 
   ConversationMessage,
@@ -660,6 +661,109 @@ export const useConversationStore = defineStore('conversation', () => {
     }
   }
 
+  // Notification methods
+  const enableNotifications = async () => {
+    try {
+      // Check if notifications are supported
+      if (!NotificationService.isSupported()) {
+        return { success: false, message: 'Push notifications are not supported in this browser' }
+      }
+
+      // Get user ID from selected conversation
+      const userId = selectedConversation.value?.fbid
+      if (!userId) {
+        return { success: false, message: 'No user selected for notifications' }
+      }
+
+      // Register service worker
+      const registration = await NotificationService.registerServiceWorker()
+      if (!registration) {
+        return { success: false, message: 'Failed to register service worker' }
+      }
+
+      // Ask for permission
+      const permission = await NotificationService.askPermission()
+      if (permission !== 'granted') {
+        return { success: false, message: 'Notification permission denied' }
+      }
+
+      // Subscribe to push notifications
+      const subscription = await NotificationService.subscribeUserToPush()
+      if (!subscription) {
+        return { success: false, message: 'Failed to subscribe to push notifications' }
+      }
+
+      // Save subscription to backend
+      const response = await conversationApi.saveSubscription(subscription, userId)
+      if (response.success) {
+        console.log('✅ Notifications enabled successfully')
+        return { success: true, message: 'Notifications enabled successfully' }
+      } else {
+        return { success: false, message: response.message || 'Failed to save subscription' }
+      }
+    } catch (err) {
+      console.error('Error enabling notifications:', err)
+      return { success: false, message: 'An error occurred while enabling notifications' }
+    }
+  }
+
+  const disableNotifications = async () => {
+    try {
+      // Get user ID from selected conversation
+      const userId = selectedConversation.value?.fbid
+      if (!userId) {
+        return { success: false, message: 'No user selected for notifications' }
+      }
+
+      // Unsubscribe from push notifications
+      const unsubscribed = await NotificationService.unsubscribeUserFromPush()
+      if (!unsubscribed) {
+        return { success: false, message: 'No active subscription found' }
+      }
+
+      // Get current subscription to send to backend for deletion
+      const registration = await NotificationService.getSWRegistration()
+      const subscription = await registration.pushManager.getSubscription()
+      
+      if (subscription) {
+        // Delete subscription from backend
+        const response = await conversationApi.deleteSubscription(subscription, userId)
+        if (response.success) {
+          console.log('✅ Notifications disabled successfully')
+          return { success: true, message: 'Notifications disabled successfully' }
+        } else {
+          return { success: false, message: response.message || 'Failed to delete subscription' }
+        }
+      }
+
+      return { success: true, message: 'Notifications disabled successfully' }
+    } catch (err) {
+      console.error('Error disabling notifications:', err)
+      return { success: false, message: 'An error occurred while disabling notifications' }
+    }
+  }
+
+  const checkNotificationStatus = async () => {
+    try {
+      const isSupported = NotificationService.isSupported()
+      const permission = NotificationService.getPermissionStatus()
+      const isSubscribed = await NotificationService.isSubscribed()
+      
+      return {
+        supported: isSupported,
+        permission: permission,
+        subscribed: isSubscribed
+      }
+    } catch (err) {
+      console.error('Error checking notification status:', err)
+      return {
+        supported: false,
+        permission: 'denied' as NotificationPermission,
+        subscribed: false
+      }
+    }
+  }
+
   return {
     // State
     conversations,
@@ -716,7 +820,12 @@ export const useConversationStore = defineStore('conversation', () => {
     // Delete method
     deleteConversation,
     
-    // Bot activation method
-    changeBotActivation
+      // Bot activation method
+  changeBotActivation,
+  
+  // Notification methods
+  enableNotifications,
+  disableNotifications,
+  checkNotificationStatus
   }
 }) 
