@@ -318,13 +318,14 @@ const connectFileSearch = async () => {
     isUploading.value = true;
     
     // First upload the file using the new upload endpoint
-    let uploadResult = await botsifyApi.uploadFileNew(selectedFile.value);
+    let response = await botsifyApi.uploadFileNew(selectedFile.value);
     
-    if (!uploadResult.success) {
-      throw new Error(uploadResult.message || 'File upload failed');
+    if (!response.success) {
+      throw new Error(response.message || 'File upload failed');
     }
     
     uploadProgress.value = 50;
+    isUploading.value = false;
 
     // File data which need to display
     
@@ -338,23 +339,23 @@ const connectFileSearch = async () => {
     // };
 
     
-    // const response = await botsifyApi.createFileSearch(props.chatId, fileData);
     
-    const response = await botsifyApi.createFileSearch(selectedFile.value);
+    // const response = await botsifyApi.createFileSearch(selectedFile.value);
 
-    uploadProgress.value = 100;
+    uploadProgress.value = 50;
     isUploading.value = false;
-    
+    uploadProgress.value = 100;
+
     if (response.success) {
       // fileSearchResults.value = response.data?.files || [];
-      console.log('File Search created successfully:', response.data);
-      const fileData = {
-        id: response.data.data.id,
-        file_name: selectedFile.value.name,
-        url: response.data.data.url
-      }
-
-      fileSearchResults.push(fileData);
+      // console.log('File Search created successfully:', response.data);
+      // const fileData = {
+      //   id: response.data.data.id,
+      //   file_name: selectedFile.value.name,
+      //   url: response.data.data.url
+      // }
+      response.data.filename = selectedFile.value.name;
+      fileSearchResults.push(response.data);
 
       // Add success message to chat
       const successMessage = `✅ File "${selectedFile.value.name}" uploaded and File Search connected successfully!`;
@@ -910,7 +911,7 @@ const hideLoading = () => {
                     <div class="file-name">{{ file.file_name || file.filename || 'Unknown File' }}</div>
                     <!-- <div class="file-meta">{{ file.size || file.type || 'File' }}</div> -->
                     <div class="file-download">
-                      <a v-if="file.url" :href="file.url" download>Download</a>
+                      <a v-if="file.url" target="_blank" :href="file.url" download>Download</a>
                     </div>
                   </div>
                   <button 
