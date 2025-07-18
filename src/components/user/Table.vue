@@ -2,31 +2,17 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router';
 import UserAttributes from './Attributes.vue'
-import { User, UserAttribute, PaginationData, SortingData, SortBy, PerPage } from '@/types/user'
+import { UserAttribute, SortBy, PerPage } from '@/types/user'
+import { useUserStore, type ExtendedUser } from '@/stores/userStore'
 import { userApi } from '@/services/userApi';
 import { getPlatformClass, getPlatformIcon } from '@/utils';
 
-const props = defineProps<{
-  users: User[]
-  selectAll: boolean
-  pagination: PaginationData
-  sorting: SortingData
-  loading: boolean
-}>()
-const showAttributes = ref<boolean>(false)
-const selectedUserAttributes = ref<UserAttribute[]>([])
-const selectedUser = ref<User>()
+const userStore = useUserStore()
 const router = useRouter()
 
-const emit = defineEmits<{
-  'update:selectAll': [value: boolean]
-  'update:userSelected': [userId: number]
-  'userClick': [user: User]
-  'sort': [sortBy: SortBy]
-  'changePage': [page: number]
-  'changePerPage': [perPage: PerPage]
-}>()
-
+const showAttributes = ref<boolean>(false)
+const selectedUserAttributes = ref<UserAttribute[]>([])
+const selectedUser = ref<ExtendedUser>()
 
 const getUserInitials = (name: string): string => {
   return name
@@ -38,14 +24,14 @@ const getUserInitials = (name: string): string => {
 }
 
 const toggleSelectAll = (): void => {
-  emit('update:selectAll', !props.selectAll)
+  userStore.handleSelectionChange('all', !userStore.selectAll)
 }
 
 const handleUserSelect = (userId: number): void => {
-  emit('update:userSelected', userId)
+  userStore.handleSelectionChange('single', userId)
 }
 
-const handleShowAttributes = (user: User): void => {
+const handleShowAttributes = (user: ExtendedUser): void => {
   selectedUserAttributes.value = user.attributes
   selectedUser.value = user
   showAttributes.value = true
@@ -57,7 +43,6 @@ const handleCloseAttributes = (): void => {
   selectedUserAttributes.value = []
 }
 
-
 const handleUpdateAttributes = (attributes: UserAttribute[]): void => {
   selectedUserAttributes.value = attributes
 }
@@ -67,7 +52,7 @@ const handleDeleteUser = (userId: number) => {
     const response = await userApi.changeUserStatus(2, [userId]);
     if (response.success) {
       window.$toast.success(`Successfully deleted user.`);
-      emit('sort', 'name')
+      userStore.updateSorting('name', userStore.sorting.sortOrder === 'asc' ? 'desc' : 'asc')
     } else {
       window.$toast.error(`Failed to delete users: ${response.message}`);
     }
@@ -80,36 +65,44 @@ const goToConversation = (fbId: string): void => {
   }
 }
 
-
-const handleRowClick = (user: User): void => {
-  emit('userClick', user)
+const handleRowClick = (user: ExtendedUser): void => {
+  // Convert ExtendedUser to User type for the store
+  const userForStore = {
+    id: user.id.toString(),
+    name: user.name,
+    email: user.email,
+    plan: 'free' as const,
+    avatar: user.profile_pic
+  }
+  userStore.selectedUser = userForStore
+  userStore.showUserDetails = true
 }
 
-
 const handleSort = (sortBy: SortBy): void => {
-  emit('sort', sortBy)
+  const newSortOrder = userStore.sorting.sortBy === sortBy && userStore.sorting.sortOrder === 'asc' ? 'desc' : 'asc'
+  userStore.updateSorting(sortBy, newSortOrder)
 }
 
 const handlePageChange = (page: number): void => {
-  emit('changePage', page)
+  userStore.handlePageChange(page)
 }
 
 const handlePerPageChange = (event: Event): void => {
   const target = event.target as HTMLSelectElement
   const perPage = parseInt(target.value) as PerPage
-  emit('changePerPage', perPage)
+  userStore.handlePerPageChange(perPage)
 }
 
 const getSortIcon = (column: SortBy): string => {
-  if (props.sorting.sortBy !== column) return ''
-  return props.sorting.sortOrder === 'asc' ? 'asc' : 'desc'
+  if (userStore.sorting.sortBy !== column) return ''
+  return userStore.sorting.sortOrder === 'asc' ? 'asc' : 'desc'
 }
 
 const getPageNumbers = computed(() => {
   const pages = []
-  const { currentPage, totalPages } = props.pagination
+  const { currentPage, totalPages } = userStore.pagination
   
-  console.log('getPageNumbers - pagination props:', props.pagination)
+  console.log('getPageNumbers - pagination props:', userStore.pagination)
   console.log('getPageNumbers - currentPage:', currentPage, 'totalPages:', totalPages)
   
   // Always show first page
@@ -146,7 +139,7 @@ const getPageNumbers = computed(() => {
         <label for="per-page">Show:</label>
         <select 
           id="per-page" 
-          :value="pagination.perPage" 
+          :value="userStore.pagination.perPage" 
           @change="handlePerPageChange"
           class="per-page-select"
         >
@@ -158,9 +151,9 @@ const getPageNumbers = computed(() => {
       </div>
       
       <div class="table-info">
-        Showing {{ ((pagination.currentPage - 1) * pagination.perPage) + 1 }} 
-        to {{ Math.min(pagination.currentPage * pagination.perPage, pagination.totalItems) }} 
-        of {{ pagination.totalItems }} entries
+        Showing {{ ((userStore.pagination.currentPage - 1) * userStore.pagination.perPage) + 1 }} 
+        to {{ Math.min(userStore.pagination.currentPage * userStore.pagination.perPage, userStore.pagination.totalItems) }} 
+        of {{ userStore.pagination.totalItems }} entries
       </div>
     </div>
     <div class="table-scroll-container">
@@ -170,7 +163,7 @@ const getPageNumbers = computed(() => {
             <th>
               <input 
                 type="checkbox" 
-                :checked="selectAll" 
+                :checked="userStore.selectAll" 
                 @change="toggleSelectAll"
               >
             </th>
@@ -188,7 +181,7 @@ const getPageNumbers = computed(() => {
           </tr>
         </thead>
         <tbody>
-          <tr v-if="loading" v-for="i in pagination.perPage" :key="`skeleton-${i}`" class="skeleton-row">
+          <tr v-if="userStore.loading" v-for="i in userStore.pagination.perPage" :key="`skeleton-${i}`" class="skeleton-row">
             <td>
               <div class="skeleton-checkbox"></div>
             </td>
@@ -214,7 +207,7 @@ const getPageNumbers = computed(() => {
               </div>
             </td>
           </tr>
-          <tr v-else-if="users.length === 0" class="no-data-row">
+          <tr v-else-if="userStore.users.length === 0" class="no-data-row">
             <td colspan="10" class="no-data-cell">
               <div class="no-data-content">
                 <div class="no-data-icon">📄</div>
@@ -225,7 +218,7 @@ const getPageNumbers = computed(() => {
           </tr>
           <tr 
             v-else 
-            v-for="user in users" 
+            v-for="user in userStore.users" 
             :key="user.id"
             class="clickable-row"
             @click="handleRowClick(user)"
@@ -310,8 +303,8 @@ const getPageNumbers = computed(() => {
       <div class="pagination">
         <button 
           class="pagination-btn"
-          :disabled="pagination.currentPage === 1"
-          @click="handlePageChange(pagination.currentPage - 1)"
+          :disabled="userStore.pagination.currentPage === 1"
+          @click="handlePageChange(userStore.pagination.currentPage - 1)"
         >
           Previous
         </button>
@@ -320,7 +313,7 @@ const getPageNumbers = computed(() => {
           <button 
             v-if="typeof page === 'number'"
             class="pagination-btn page-number"
-            :class="{ active: page === pagination.currentPage }"
+            :class="{ active: page === userStore.pagination.currentPage }"
             @click="handlePageChange(page)"
           >
             {{ page }}
@@ -330,8 +323,8 @@ const getPageNumbers = computed(() => {
         
         <button 
           class="pagination-btn"
-          :disabled="pagination.currentPage === pagination.totalPages"
-          @click="handlePageChange(pagination.currentPage + 1)"
+          :disabled="userStore.pagination.currentPage === userStore.pagination.totalPages"
+          @click="handlePageChange(userStore.pagination.currentPage + 1)"
         >
           Next
         </button>
