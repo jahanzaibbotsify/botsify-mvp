@@ -1,6 +1,6 @@
 import axios from 'axios';
 import type { MCPConfigurationFile, MCPServer } from '../types/mcp';
-import { BOTSIFY_BASE_URL, BOTSIFY_AUTH_TOKEN } from '../utils/config';
+import { BOTSIFY_BASE_URL, BOTSIFY_AUTH_TOKEN, BOTSIFY_FILE_UPLOAD } from '../utils/config';
 import { useApiKeyStore } from '@/stores/apiKeyStore';
 
 export interface BotsifyResponse {
@@ -1120,7 +1120,7 @@ export class BotsifyApiService {
       formData.append('file', file);
       
       const response = await axios.post(
-        `${BOTSIFY_BASE_URL}/v1/upload-file`,
+        `${BOTSIFY_FILE_UPLOAD}/v1/upload-file`,
         formData,
         { 
           headers: {
@@ -1204,7 +1204,7 @@ export class BotsifyApiService {
 
   async saveBotTemplates(chatsJson: string, templatesJson: string): Promise<void> {
     axios.post(import.meta.env.VITE_BOTSIFY_BASE_URL + '/v1/bot-update', {
-      'apikey': localStorage.getItem('apikey'),
+      'apikey': useApiKeyStore().apiKey,
       'data' : {
         chat_flow: chatsJson,
         bot_flow: templatesJson

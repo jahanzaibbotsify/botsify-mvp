@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue';
-import Swal from 'sweetalert2'; // Add this import
 // import { useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 
@@ -36,7 +35,7 @@ const formattedSize = computed(() => {
 
 // Clear old chats (keep only the 5 most recent)
 function clearOldChats() {
-  Swal.fire({
+  window.Swal.fire({
     title: 'Are you sure?',
     text: 'This will delete all but your 5 most recent chats. Continue?',
     icon: 'warning',
@@ -59,7 +58,7 @@ function clearOldChats() {
       if (storageSizeMB.value < 3) {
         showStorageWarning.value = false;
       }
-      Swal.fire('Success!', 'Old chats cleared successfully!', 'success');
+      window.Swal.fire('Success!', 'Old chats cleared successfully!', 'success');
     }
   });
 }

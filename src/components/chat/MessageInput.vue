@@ -6,11 +6,6 @@ import type { Attachment } from '@/types';
 import FileUpload from '@/components/ui/FileUpload.vue';
 import MCPConnectionModal from './MCPConnectionModal.vue';
 import { botsifyApi } from '@/services/botsifyApi';
-import Swal from 'sweetalert2'; // Add at the top with other imports
-import {useToast} from 'vue-toast-notification';
-
-
-const $toast = useToast({position: 'top-right'});
 
 const props = defineProps<{
   chatId: string;
@@ -28,6 +23,7 @@ const showCustomServerOnOpen = ref(false);
 
 
 const loadingData = ref(false);
+const loadingFor =  ref('');
 
 
 // New refs for File Search
@@ -75,86 +71,93 @@ const sendMessage = async () => {
   
   let finalMessageText = messageText.value.trim();
   let processedAttachments = [...attachments.value];
-  
-  // If there are attachments (images/videos), upload them first
-  try {
-    console.log('Uploading media files for AI prompt...');
-    
-    // Show uploading status
-    const originalText = finalMessageText;
-    finalMessageText = finalMessageText + (finalMessageText ? '\n\n' : '');
-    
-    // Add temporary message to show upload progress
-    chatStore.addMessage(props.chatId, finalMessageText, 'user', processedAttachments);
-    
-    // Convert blob URLs to File objects for upload
-    const filesToUpload: File[] = [];
-    for (const attachment of attachments.value) {
-      try {
-        const response = await fetch(attachment.url);
-        const blob = await response.blob();
-        const file = new File([blob], attachment.name, { type: attachment.type });
-        filesToUpload.push(file);
-      } catch (error) {
-        console.error('Error converting attachment to file:', error);
+
+  if (attachments.value.length > 0) {
+
+    // If there are attachments (images/videos), upload them first
+    try {
+      console.log('Uploading media files for AI prompt...');
+      showLoading('fileUploadingFromPin');
+
+      // Show uploading status
+      const originalText = finalMessageText;
+      finalMessageText = finalMessageText + (finalMessageText ? '\n\n' : '');
+
+      // Add temporary message to show upload progress
+      // chatStore.addMessage(props.chatId, finalMessageText, 'user', processedAttachments);
+
+
+      // Convert blob URLs to File objects for upload
+      const filesToUpload: File[] = [];
+      for (const attachment of attachments.value) {
+        try {
+          const response = await fetch(attachment.url);
+          const blob = await response.blob();
+          const file = new File([blob], attachment.name, { type: attachment.type });
+          filesToUpload.push(file);
+        } catch (error) {
+          console.error('Error converting attachment to file:', error);
+        }
       }
-    }
-    
-    if (filesToUpload.length > 0) {
-      // Upload files to get URLs using new endpoint
-      const uploadResult = await botsifyApi.uploadMultipleFilesNew(filesToUpload);
-      
-      if (uploadResult.success && uploadResult.data.uploadedFiles.length > 0) {
-        // Update attachments with uploaded URLs
-        uploadResult.data.uploadedFiles.forEach((uploadedFile: any, index: number) => {
-          if (!uploadedFile.url) throw new Error(`File ${index + 1} upload failed.`);
-          if(attachments.value[index].type.startsWith('image/')){
-            attachments.value[index].preview = uploadedFile.url;
-          }
-          
-          const attachmentIndex = processedAttachments.findIndex(att => 
-            att.name === uploadedFile.fileName && att.type === uploadedFile.fileType
-          );
-          
-          if (attachmentIndex !== -1) {
-            processedAttachments[attachmentIndex] = {
-              ...processedAttachments[attachmentIndex],
-              uploadedUrl: uploadedFile.url,
-              fileId: uploadedFile.fileId,
-              uploadedAt: uploadedFile.uploadedAt,
-              isUploaded: true
-            };
-          }
-        });
-        
-        // Append file URLs to the AI prompt
-        const fileUrls = uploadResult.data.uploadedFiles.map((file: any) => {
-          const fileType = file.fileType.startsWith('image/') ? 'Image' : 
-                          file.fileType.startsWith('video/') ? 'Video' : 'Document';
-          return `${fileType}: ${file.url}`;
-        }).join('\n');
-        
-        finalMessageText = originalText + (originalText ? '\n\n' : '') + 
-          'Attached files:\n' + fileUrls;
-        
-        console.log('Files uploaded successfully, URLs added to prompt:', fileUrls);
-      } else {
-        console.error('File upload failed:', uploadResult.message);
-        finalMessageText = originalText + (originalText ? '\n\n' : '') + 
-          '❌ File upload failed: ' + uploadResult.message;
+
+      if (filesToUpload.length > 0) {
+        // Upload files to get URLs using new endpoint
+        const uploadResult = await botsifyApi.uploadMultipleFilesNew(filesToUpload);
+        // && uploadResult.data.uploadedFiles.length > 0
+        if (uploadResult.success) {
+          // Update attachments with uploaded URLs
+          uploadResult.data.uploadedFiles.forEach((uploadedFile: any, index: number) => {
+            if (!uploadedFile.url) throw new Error(`File ${index + 1} upload failed.`);
+            if (attachments.value[index].type.startsWith('image/')) {
+              attachments.value[index].preview = uploadedFile.url;
+            }
+
+            const attachmentIndex = processedAttachments.findIndex(att =>
+              att.name === uploadedFile.fileName
+            ); //att.type === uploadedFile.fileType
+
+            if (attachmentIndex !== -1) {
+              processedAttachments[attachmentIndex] = {
+                ...processedAttachments[attachmentIndex],
+                uploadedUrl: uploadedFile.url,
+                fileId: uploadedFile.fileId,
+                uploadedAt: uploadedFile.uploadedAt,
+                isUploaded: true
+              };
+            }
+          });
+
+          // Append file URLs to the AI prompt
+          const fileUrls = uploadResult.data.uploadedFiles.map((file: any, index: any) => {
+            if (!file.url) throw new Error(`File ${index + 1} upload failed.`);
+            const label = getLabelFromUrl(file.url);
+            return `${label}: ${file.url}`;
+          }).join('\n');
+
+          finalMessageText = originalText + (originalText ? '\n\n' : '') +
+            'Attached files:\n';
+
+          console.log('Files uploaded successfully, URLs added to prompt:', fileUrls);
+        } else {
+          console.error('File upload failed:', uploadResult.message);
+          finalMessageText = originalText + (originalText ? '\n\n' : '') +
+            '❌ File upload failed: ' + uploadResult.message;
+        }
       }
+
+      // Remove the temporary uploading message
+      // chatStore.removeLastMessage(props.chatId);
+
+    } catch (error: any) {
+      console.error('Error uploading files:', error);
+      finalMessageText = messageText.value.trim() + (messageText.value.trim() ? '\n\n' : '') +
+        '❌ File upload error: ' + error.message;
+
+      // Remove the temporary uploading message
+      chatStore.removeLastMessage(props.chatId);
+    }finally{
+      hideLoading()
     }
-    
-    // Remove the temporary uploading message
-    chatStore.removeLastMessage(props.chatId);
-    
-  } catch (error: any) {
-    console.error('Error uploading files:', error);
-    finalMessageText = messageText.value.trim() + (messageText.value.trim() ? '\n\n' : '') + 
-      '❌ File upload error: ' + error.message;
-    
-    // Remove the temporary uploading message
-    chatStore.removeLastMessage(props.chatId);
   }
   
   // Send the final message with uploaded file URLs
@@ -169,6 +172,17 @@ const sendMessage = async () => {
     textareaRef.value.style.height = 'auto';
   }
 };
+
+const getLabelFromUrl = (url: string) => {
+  const ext = (url.split('.').pop() || '').toLowerCase();
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'Image';
+  if (['mp4', 'mov', 'avi', 'webm'].includes(ext)) return 'Video';
+  if (['mp3', 'wav', 'ogg'].includes(ext)) return 'Audio';
+  if (['pdf', 'doc', 'docx', 'txt', 'csv', 'ppt', 'pptx', 'xls', 'xlsx'].includes(ext)) return 'Document';
+  if (['zip', 'rar'].includes(ext)) return 'Archive';
+
+  return 'File';
+}
 
 const handleKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Enter' && !event.shiftKey) {
@@ -293,7 +307,7 @@ const removeSelectedFile = () => {
 
 const connectFileSearch = async () => {
   if (!selectedFile.value) {
-    $toast.error('Please select a file to upload first');
+    window.$toast.error('Please select a file to upload first');
     return;
   }
 
@@ -349,11 +363,11 @@ const connectFileSearch = async () => {
       closeFileSearchModal();
     } else {
       console.error('Failed to create File Search:', response.message);
-      $toast.error('Failed to create File Search: ' + response.message);
+      window.$toast.error('Failed to create File Search: ' + response.message);
     }
   } catch (error: any) {
     console.error('Error creating File Search:', error);
-    $toast.error('Error creating File Search: ' + error.message);
+    window.$toast.error('Error creating File Search: ' + error.message);
   } finally {
     fileSearchLoading.value = false;
     isUploading.value = false;
@@ -362,7 +376,7 @@ const connectFileSearch = async () => {
 
 const connectWebSearch = async () => {
   if (!webSearchUrl.value.trim()) {
-    $toast.error('Please enter a website URL');
+    window.$toast.error('Please enter a website URL');
     return;
   }
 
@@ -389,11 +403,11 @@ const connectWebSearch = async () => {
       closeWebSearchModal();
     } else {
       console.error('Failed to create Web Search:', response.message);
-      $toast.error('Failed to create Web Search: ' + response.message);
+      window.$toast.error('Failed to create Web Search: ' + response.message);
     }
   } catch (error: any) {
     console.error('Error creating Web Search:', error);
-    $toast.error('Error creating Web Search: ' + error.message);
+    window.$toast.error('Error creating Web Search: ' + error.message);
   } finally {
     webSearchLoading.value = false;
   }
@@ -491,11 +505,11 @@ const deleteFileSearchEntry = async (fileSearchId: string, fileSearchName: strin
       closeFileSearchModal();
     } else {
       console.error('Failed to delete File Search entry:', response.message);
-      $toast.error('Failed to delete File Search entry: ' + response.message);
+      window.$toast.error('Failed to delete File Search entry: ' + response.message);
     }
   } catch (error: any) {
     console.error('Error deleting File Search entry:', error);
-    $toast.error('Error deleting File Search entry: ' + error.message);
+    window.$toast.error('Error deleting File Search entry: ' + error.message);
   }finally{
     fileSearchDeleteLoading.value = false;
   }
@@ -523,11 +537,11 @@ const deleteAllFileSearchEntry = async () => {
       closeFileSearchModal();
     } else {
       console.error('Failed to delete File Search entry:', response.message);
-      $toast.error('Failed to delete File Search entry: ' + response.message);
+      window.$toast.error('Failed to delete File Search entry: ' + response.message);
     }
   } catch (error: any) {
     console.error('Error deleting File Search entry:', error);
-    $toast.error('Error deleting File Search entry: ' + error.message);
+    window.$toast.error('Error deleting File Search entry: ' + error.message);
   }finally{
     fileSearchAllDeleteLoading.value = false;
   }
@@ -565,11 +579,11 @@ const deleteWebSearchEntry = async (webSearchId: string, webSearchUrl: string) =
       closeWebSearchModal();
     } else {
       console.error('Failed to delete Web Search entry:', response.message);
-      $toast.error('Failed to delete Web Search entry: ' + response.message);
+      window.$toast.error('Failed to delete Web Search entry: ' + response.message);
     }
   } catch (error: any) {
     console.error('Error deleting Web Search entry:', error);
-    $toast.error('Error deleting Web Search entry: ' + error.message);
+    window.$toast.error('Error deleting Web Search entry: ' + error.message);
   }finally{
     webSearchDeleteLoading.value = false;
   }
@@ -597,11 +611,11 @@ const deleteWebSearchAllEntry = async () => {
       closeWebSearchModal();
     } else {
       console.error('Failed to delete Web Search entry:', response.message);
-      $toast.error('Failed to delete Web Search entry: ' + response.message);
+      window.$toast.error('Failed to delete Web Search entry: ' + response.message);
     }
   } catch (error: any) {
     console.error('Error deleting Web Search entry:', error);
-    $toast.error('Error deleting Web Search entry: ' + error.message);
+    window.$toast.error('Error deleting Web Search entry: ' + error.message);
   }finally{
     webSearchDeleteAllLoading.value = false;
   }
@@ -611,7 +625,7 @@ const deleteWebSearchAllEntry = async () => {
 
 
 const showWarning = async (message: string) => {
-    return await Swal.fire({
+    return await window.Swal.fire({
     title: 'Are you sure?',
     text: message,
     icon: 'warning',
@@ -620,6 +634,14 @@ const showWarning = async (message: string) => {
     cancelButtonText: 'Cancel'
   });
   }
+
+const showLoading = (forWhat: string) => {
+  loadingFor.value = forWhat;
+}
+
+const hideLoading = () => {
+  loadingFor.value = '';
+}
 
 </script>
 
@@ -655,7 +677,7 @@ const showWarning = async (message: string) => {
           <span class="attachment-name">{{ file.name }}</span>
           <span class="attachment-size">{{ (file.size / 1024).toFixed(1) }}KB</span>
           <span v-if="file.isUploaded" class="attachment-status uploaded">✅ Ready for AI</span>
-          <span v-else-if="file.type.startsWith('image/') || file.type.startsWith('video/')" class="attachment-status pending">📤 Will upload</span>
+          <span v-else-if="file.type.startsWith('image/') || file.type.startsWith('video/')" class="attachment-status pending"></span>
           <span v-else class="attachment-status unsupported">⚠️ Not supported</span>
         </div>
         <button class="remove-attachment" @click.stop="removeAttachment(file.id)">
@@ -667,6 +689,12 @@ const showWarning = async (message: string) => {
       </div>
     </div>
 
+    <!-- file loading from pin button -->
+    <div v-if="loadingFor === 'fileUploadingFromPin'" class="text-muted px-3 loading-spinner-of-pin-file-container">
+      <small >Uploading FIles</small>
+      <span class="loading-spinner "></span>
+    </div>
+    <!-- input area -->
     <div class="input-area">
       <textarea
         ref="textareaRef"
@@ -1851,6 +1879,19 @@ const showWarning = async (message: string) => {
 .file-info .file-download{
   font-size: 0.75rem;
   color: var(--color-text-secondary);
+}
+
+.loading-spinner-of-pin-file-container {
+  margin-left: 12px;
+  color: gray;
+}
+
+.loading-spinner-of-pin-file-container .loading-spinner {
+  display: inline-block;
+  color: #00a3ff;
+  margin-left: 3px;
+  width: 12px;
+  height: 12px;
 }
 
 .remove-file {

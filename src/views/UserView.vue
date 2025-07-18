@@ -5,12 +5,7 @@ import UserTable from '@/components/user/Table.vue'
 import ImportPanel from '@/components/user/ImportPanel.vue'
 import { ActionType, User, SortBy, SortOrder, ApiUser, PerPage, PaginationData, SortingData } from '@/types/user'
 import { userApi } from '@/services/userApi'
-import { createUserFilterManager, type UserFilterState } from '@/utils/filterUtils'
-import {useToast} from 'vue-toast-notification';
-import Swal from 'sweetalert2'; // Add this import at the top with others
-
-
-const $toast = useToast({position: 'top-right'});
+import { createUserFilterManager, type UserFilterState } from '@/utils/filterUtils';
 
 // Filter manager
 const filterManager = createUserFilterManager()
@@ -205,15 +200,27 @@ const executeUserAction = async (action: ActionType, userIds: number[]): Promise
     const status = statusMap[action]
     if (status === undefined) {
       console.error('Unknown action:', action)
-      $toast.error('Unknown action selected.');
+      window.$toast.error('Unknown action selected.');
       return
     }
     
     const response = await userApi.changeUserStatus(status, userIds)
     
     if (response.success) {
+      if (response.data.file) {
+        console.log('response.file', response.data.file)
+        const blob = new Blob([response.data.file], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'exported_users.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
       console.log(`Successfully executed ${action} on ${userIds.length} users`)
-      $toast.success(`Successfully executed ${action} on ${userIds.length} users.`);
+      window.$toast.success(`Successfully executed ${action} on ${userIds.length} users.`);
       // Refresh the user list to get updated data
       await fetchUsers()
       
@@ -222,11 +229,11 @@ const executeUserAction = async (action: ActionType, userIds: number[]): Promise
       selectAll.value = false
     } else {
       console.error('Failed to execute action:', response.message)
-      $toast.error(`Failed to ${action} users: ${response.message}`);
+      window.$toast.error(`Failed to ${action} users: ${response.message}`);
     }
   } catch (error) {
     console.error('Error executing action:', error)
-    $toast.error(`Error executing ${action}: ${error}`);
+    window.$toast.error(`Error executing ${action}: ${error}`);
   } finally {
     loading.value = false
   }
@@ -322,7 +329,7 @@ watch(selectedAction, async (newAction) => {
       const userCount = selectedUsersCount.value
       const userText = userCount === 1 ? 'user' : 'users'
 
-      const result = await Swal.fire({
+      const result = await window.Swal.fire({
         title: 'Are you sure?',
         text: `Are you sure you want to ${actionText} ${userCount} ${userText}?`,
         icon: 'warning',
@@ -339,7 +346,7 @@ watch(selectedAction, async (newAction) => {
       }
     } else {
       // Show notification for no users selected
-      $toast.error('Please select at least 1 user to perform this action.')
+      window.$toast.error('Please select at least 1 user to perform this action.')
       selectedAction.value = ''
     }
   }

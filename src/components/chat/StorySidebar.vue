@@ -4,11 +4,8 @@ import { useChatStore } from '@/stores/chatStore';
 import { marked } from 'marked';
 import AiAgentActions from '@/components/sidebar/AiAgentActions.vue';
 import BotsifyLoader from '@/components/ui/BotsifyLoader.vue';
-import Swal from 'sweetalert2'; 
-import {useToast} from 'vue-toast-notification';
 
 
-const $toast = useToast({position: 'top-right'});
 const props = defineProps<{
   chatId: string;
 }>();
@@ -133,7 +130,7 @@ async function deleteVersion(versionId: string) {
 
 function saveAsTemplate() {
   if (!story.value?.content || !newTemplateName.value.trim()) {
-    $toast.error('Please enter a template name and ensure there is prompt content to save.');
+    window.$toast.error('Please enter a template name and ensure there is prompt content to save.');
     return;
   }
 
@@ -145,7 +142,7 @@ function saveAsTemplate() {
 
   newTemplateName.value = '';
   showTemplateManager.value = false;
-  $toast.success('Template saved successfully!');
+  window.$toast.success('Template saved successfully!');
 }
 
 function loadTemplate(templateId: string) {
@@ -189,7 +186,7 @@ const scrollToBottom = async () => {
 };
 
 const showWarning = (message: string) => {
-  return Swal.fire({
+  return window.Swal.fire({
     title: 'Are you sure?',
     text: message,
     icon: 'warning',

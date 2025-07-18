@@ -5,7 +5,6 @@ import { useMCPStore } from './mcpStore';
 import type { Chat, Message, Attachment, PromptVersion, GlobalPromptTemplate } from '../types';
 import { botsifyApi } from '../services/botsifyApi';
 import { useApiKeyStore } from './apiKeyStore';
-import axios from 'axios';
 
 export const useChatStore = defineStore('chat', () => {
   const openAIStore = useOpenAIStore();
@@ -15,7 +14,6 @@ export const useChatStore = defineStore('chat', () => {
   const isTyping = ref(false);
   const isAIPromptGenerating = ref(false);
   const globalPromptTemplates = ref<GlobalPromptTemplate[]>([]);
-  const apiKeyStore = useApiKeyStore();
 
   // Load data from localStorage on initialization
   function loadFromStorage() {
@@ -110,24 +108,6 @@ export const useChatStore = defineStore('chat', () => {
       botsifyApi.saveBotTemplates(chatsJson, templatesJson);
 
       //save bot templates
-      axios.post(import.meta.env.VITE_BOTSIFY_BASE_URL + '/v1/bot-update', {
-        'apikey': apiKeyStore.apiKey,
-        'data' : {
-          chat_flow: chatsJson,
-          bot_flow: templatesJson
-        }
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
-        }
-      }).then(response => {
-        if (response.data.status == 'success') {
-          console.log('Message stored: ', response.data.bot);
-        }
-      }).catch((error) => {
-        console.log('error:', error);
-      });
     } catch (error) {
       console.error('❌ Error saving to storage:', error);
       return false;
@@ -1060,44 +1040,44 @@ Use the above connected services information to understand what tools and data s
       }
 
       // Check for File Search data
-      try {
-        const fileSearchResponse = await botsifyApi.getFileSearch();
-        if (fileSearchResponse.success && fileSearchResponse.data?.files?.length > 0) {
-          connectedServices.services.file_search = {
-            status: 'connected',
-            files: fileSearchResponse.data.files.map((file: any) => ({
-              id: file.id,
-              name: file.name || file.filename,
-              type: file.type || file.fileType,
-              size: file.size,
-              uploadedAt: file.uploadedAt || file.createdAt
-            })),
-            totalFiles: fileSearchResponse.data.files.length,
-            lastUpdated: new Date().toISOString()
-          };
-          hasServices = true;
-        }
-      } catch (error) {
-        console.log('No file search data or error loading:', error);
-      }
+      // try {
+      //   const fileSearchResponse = await botsifyApi.getFileSearch();
+      //   if (fileSearchResponse.success && fileSearchResponse.data?.files?.length > 0) {
+      //     connectedServices.services.file_search = {
+      //       status: 'connected',
+      //       files: fileSearchResponse.data.files.map((file: any) => ({
+      //         id: file.id,
+      //         name: file.name || file.filename,
+      //         type: file.type || file.fileType,
+      //         size: file.size,
+      //         uploadedAt: file.uploadedAt || file.createdAt
+      //       })),
+      //       totalFiles: fileSearchResponse.data.files.length,
+      //       lastUpdated: new Date().toISOString()
+      //     };
+      //     hasServices = true;
+      //   }
+      // } catch (error) {
+      //   console.log('No file search data or error loading:', error);
+      // }
 
       // Check for Web Search data
-      try {
-        const webSearchResponse = await botsifyApi.getWebSearch();
-        if (webSearchResponse.success && webSearchResponse.data) {
-          connectedServices.services.web_search = {
-            status: 'connected',
-            url: webSearchResponse.data.url,
-            title: webSearchResponse.data.title,
-            domain: webSearchResponse.data.domain,
-            connectedAt: webSearchResponse.data.connectedAt,
-            lastUpdated: new Date().toISOString()
-          };
-          hasServices = true;
-        }
-      } catch (error) {
-        console.log('No web search data or error loading:', error);
-      }
+      // try {
+      //   const webSearchResponse = await botsifyApi.getWebSearch();
+      //   if (webSearchResponse.success && webSearchResponse.data) {
+      //     connectedServices.services.web_search = {
+      //       status: 'connected',
+      //       url: webSearchResponse.data.url,
+      //       title: webSearchResponse.data.title,
+      //       domain: webSearchResponse.data.domain,
+      //       connectedAt: webSearchResponse.data.connectedAt,
+      //       lastUpdated: new Date().toISOString()
+      //     };
+      //     hasServices = true;
+      //   }
+      // } catch (error) {
+      //   console.log('No web search data or error loading:', error);
+      // }
 
       // Return JSON only if we have connected services
       if (hasServices) {
