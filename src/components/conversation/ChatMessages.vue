@@ -140,10 +140,19 @@ onMounted(() => {
 
 <template>
   <div class="chat-messages">
-    <!-- No Conversation Selected -->
-     
+    <!-- Loading State - Show first when loading -->
     <div 
-      v-if="!hasSelectedConversation" 
+      v-if="loading" 
+      class="loading-messages"
+    >
+      <div class="messages-skeleton-list">
+        <MessageSkeleton v-for="i in 6" :key="`skeleton-${i}`" :lines="Math.floor(Math.random() * 3) + 1" :is-user="i % 2 === 0" />
+      </div>
+    </div>
+    
+    <!-- No Conversation Selected - Only show when not loading and no conversation selected -->
+    <div 
+      v-else-if="!hasSelectedConversation" 
       class="no-conversation"
     >
       <div class="no-conversation-content">
@@ -153,19 +162,8 @@ onMounted(() => {
       </div>
     </div>
     
-    <!-- Loading State -->
-    <div 
-      v-else-if="loading" 
-      class="loading-messages"
-    >
-      <div class="messages-skeleton-list">
-        <MessageSkeleton v-for="i in 6" :key="`skeleton-${i}`" :lines="Math.floor(Math.random() * 3) + 1" :is-user="i % 2 === 0" />
-      </div>
-    </div>
-    
-    
     <!-- Error State -->
-     <div 
+    <div 
       v-else-if="error" 
       class="error-messages"
     >

@@ -1,24 +1,37 @@
 <template>
   <div class="chat-header">
     <div class="chat-user-info">
-      <h2 class="chat-user-name">{{ userName || 'Select a conversation' }}</h2>
+      <!-- Loading skeleton for user name -->
+      <div v-if="loading" class="user-name-skeleton">
+        <div class="skeleton-line"></div>
+      </div>
+      <!-- User name when loaded -->
+      <h2 v-else class="chat-user-name">{{ userName || 'Select a conversation' }}</h2>
     </div>
     <div class="chat-actions">
-      <select 
-        class="status-select" 
-        :class="{ 'status-active': selectedStatus === 'active', 'status-inactive': selectedStatus === 'inactive' }"
-        v-model="selectedStatus"
-        @change="handleStatusChange"
-      >
-        <option value="active">Active</option>
-        <option value="inactive">Inactive</option>
-      </select>
-      <button class="translate-button">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.01-4.65.83-6.67l2.16-2.16c-.56-.56-1.47-.56-2.03 0L9.5 5.5c-.56.56-.56 1.47 0 2.03l.03.03c-2.02 1.18-4.73.91-6.67-.83l-.03-.03c-.56-.56-1.47-.56-2.03 0L.5 5.5c-.56.56-.56 1.47 0 2.03l2.16 2.16c1.74 1.94 2.01 4.65.83 6.67l-.03.03c-.56-.56-.56 1.47 0 2.03l2.16 2.16c.56.56 1.47.56 2.03 0l2.16-2.16c.56-.56.56-1.47 0-2.03l-.03-.03z"/>
-        </svg>
-        G Translate
-      </button>
+      <!-- Loading skeleton for actions -->
+      <div v-if="loading" class="actions-skeleton">
+        <div class="skeleton-button"></div>
+        <div class="skeleton-button"></div>
+      </div>
+      <!-- Actions when loaded -->
+      <template v-else>
+        <select 
+          class="status-select" 
+          :class="{ 'status-active': selectedStatus === 'active', 'status-inactive': selectedStatus === 'inactive' }"
+          v-model="selectedStatus"
+          @change="handleStatusChange"
+        >
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+        <button class="translate-button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.01-4.65.83-6.67l2.16-2.16c-.56-.56-1.47-.56-2.03 0L9.5 5.5c-.56.56-.56 1.47 0 2.03l.03.03c-2.02 1.18-4.73.91-6.67-.83l-.03-.03c-.56-.56-1.47-.56-2.03 0L.5 5.5c-.56.56-.56 1.47 0 2.03l2.16 2.16c1.74 1.94 2.01 4.65.83 6.67l-.03.03c-.56-.56-.56 1.47 0 2.03l2.16 2.16c.56.56 1.47.56 2.03 0l2.16-2.16c.56-.56.56-1.47 0-2.03l-.03-.03z"/>
+          </svg>
+          G Translate
+        </button>
+      </template>
     </div>
   </div>
 </template>
@@ -30,9 +43,13 @@ import { useConversationStore } from '@/stores/conversationStore'
 interface Props {
   userName?: string
   userId?: string
+  loading?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  loading: false
+})
+
 const conversationStore = useConversationStore()
 
 const selectedStatus = ref('active')
@@ -132,5 +149,37 @@ const handleStatusChange = async () => {
 
 .translate-button:hover {
   background-color: var(--color-bg-hover);
+}
+
+/* Skeleton Styles */
+.user-name-skeleton {
+  min-width: 200px;
+}
+
+.skeleton-line {
+  height: 1.5rem;
+  background: linear-gradient(90deg, var(--color-bg-tertiary) 25%, var(--color-bg-hover) 50%, var(--color-bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+.actions-skeleton {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.skeleton-button {
+  width: 100px;
+  height: 36px;
+  background: linear-gradient(90deg, var(--color-bg-tertiary) 25%, var(--color-bg-hover) 50%, var(--color-bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-md);
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 </style> 

@@ -23,14 +23,25 @@ export class NotificationService {
   }
 
   // Get service worker registration
-  static getSWRegistration(): Promise<ServiceWorkerRegistration> {
-    return new Promise((resolve, reject) => {
-      if (_registration != null) {
-        resolve(_registration);
-      } else {
-        reject(new Error("Service Worker registration not available"));
+  static async getSWRegistration(): Promise<ServiceWorkerRegistration | null> {
+    if (_registration != null) {
+      return _registration;
+    }
+    
+    // Try to get existing registration
+    if (navigator.serviceWorker) {
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          _registration = registration;
+          return registration;
+        }
+      } catch (error) {
+        console.warn('Error getting existing service worker registration:', error);
       }
-    });
+    }
+    
+    return null;
   }
 
   // Ask for notification permission
@@ -64,6 +75,10 @@ export class NotificationService {
   static async subscribeUserToPush(): Promise<PushSubscription | null> {
     try {
       const registration = await this.getSWRegistration();
+      if (!registration) {
+        console.warn('No service worker registration available for push subscription');
+        return null;
+      }
       
       const subscribeOptions = {
         userVisibleOnly: true,
@@ -83,6 +98,11 @@ export class NotificationService {
   static async unsubscribeUserFromPush(): Promise<boolean> {
     try {
       const registration = await this.getSWRegistration();
+      if (!registration) {
+        console.warn('No service worker registration available for push unsubscription');
+        return false;
+      }
+      
       const subscription = await registration.pushManager.getSubscription();
       
       if (subscription) {
@@ -111,6 +131,11 @@ export class NotificationService {
   static async isSubscribed(): Promise<boolean> {
     try {
       const registration = await this.getSWRegistration();
+      if (!registration) {
+        console.warn('No service worker registration available for subscription check');
+        return false;
+      }
+      
       const subscription = await registration.pushManager.getSubscription();
       return subscription !== null;
     } catch (error) {

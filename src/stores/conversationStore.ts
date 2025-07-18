@@ -267,7 +267,20 @@ export const useConversationStore = defineStore('conversation', () => {
       }
       
       // Duplicate check: Only add if not already present (by content and timestamp)
-      const isDuplicate = messages.value.some(m => m.content === content && Math.abs(m.timestamp.getTime() - Date.now()) < 2000);
+      const isDuplicate = messages.value.some(m => {
+        // Check if content matches
+        const contentMatches = m.content === content;
+        
+        // Check if timestamp is within 5 seconds (more generous than 2 seconds)
+        const timeDiff = Math.abs(m.timestamp.getTime() - Date.now());
+        const timeMatches = timeDiff < 5000;
+        
+        // Check if sender matches
+        const senderMatches = m.sender === sender;
+        
+        return contentMatches && timeMatches && senderMatches;
+      });
+      
       if (!isDuplicate) {
         const newMessage: Message = {
           id: Date.now().toString(),
@@ -279,7 +292,7 @@ export const useConversationStore = defineStore('conversation', () => {
         messages.value.push(newMessage)
         console.log('💬 Added message to current conversation:', newMessage)
       } else {
-        console.log('⚠️ Duplicate message ignored:', content)
+        console.log('⚠️ Duplicate message ignored:', { content, sender, timestamp: new Date() })
       }
     }
   }
@@ -333,7 +346,7 @@ export const useConversationStore = defineStore('conversation', () => {
   }
 
   // Actions
-  const fetchConversations = async (isLoadMore = false) => {
+  const fetchConversations = async (isLoadMore = false, chatId?: string) => {
     if (isLoadMore) {
       isLoadingMore.value = true
     } else {
@@ -346,6 +359,9 @@ export const useConversationStore = defineStore('conversation', () => {
       // Build query parameters based on current filters
       const queryParams: Record<string, string> = {}
       
+      if(chatId){
+        queryParams.chatId = chatId;
+      }
       // Search query
       if (searchQuery.value.trim()) {
         queryParams.query = searchQuery.value.trim()
@@ -463,6 +479,18 @@ export const useConversationStore = defineStore('conversation', () => {
     if (!content.trim()) return
     
     try {
+      // Add the message immediately for better UX with a temporary ID
+      const tempMessageId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      const message: Message = {
+        id: tempMessageId,
+        content: content,
+        sender: 'assistant',
+        timestamp: new Date(),
+        status: 'sending',
+        attachments: []
+      }
+      messages.value.push(message)
+      
       let response
       if (type === 'text') {
         response = await conversationApi.sendTextMessage(to, content)
@@ -474,26 +502,33 @@ export const useConversationStore = defineStore('conversation', () => {
       }
       
       if (response.success) {
-        // Add the sent message to the current conversation
-        const message: Message = {
-          id: Date.now().toString(),
-          content: content,
-          sender: 'assistant',
-          timestamp: new Date(),
-          status: 'sent',
-          attachments: []
+        // Update the message status to sent
+        const sentMessage = messages.value.find(m => m.id === tempMessageId)
+        if (sentMessage) {
+          sentMessage.status = 'sent'
         }
-        messages.value.push(message)
         
         // Update the last message in the selected conversation
         if (selectedConversation.value) {
           selectedConversation.value.lastMessage = content
           selectedConversation.value.timestamp = new Date()
         }
+        
+        console.log('✅ Message sent successfully')
       } else {
+        // Remove the message if sending failed
+        const messageIndex = messages.value.findIndex(m => m.id === tempMessageId)
+        if (messageIndex > -1) {
+          messages.value.splice(messageIndex, 1)
+        }
         error.value = response.message || 'Failed to send message'
       }
     } catch (err) {
+      // Remove the message if there was an error
+      const messageIndex = messages.value.findIndex(m => m.id.startsWith('temp_'))
+      if (messageIndex > -1) {
+        messages.value.splice(messageIndex, 1)
+      }
       error.value = 'An error occurred while sending message'
       console.error('Error sending message:', err)
     }
@@ -723,6 +758,9 @@ export const useConversationStore = defineStore('conversation', () => {
 
       // Get current subscription to send to backend for deletion
       const registration = await NotificationService.getSWRegistration()
+      if (!registration) {
+        return { success: false, message: 'No service worker registration available' }
+      }
       const subscription = await registration.pushManager.getSubscription()
       
       if (subscription) {
@@ -747,7 +785,12 @@ export const useConversationStore = defineStore('conversation', () => {
     try {
       const isSupported = NotificationService.isSupported()
       const permission = NotificationService.getPermissionStatus()
-      const isSubscribed = await NotificationService.isSubscribed()
+      
+      // Only check subscription if notifications are supported and permission is granted
+      let isSubscribed = false
+      if (isSupported && permission === 'granted') {
+        isSubscribed = await NotificationService.isSubscribed()
+      }
       
       return {
         supported: isSupported,

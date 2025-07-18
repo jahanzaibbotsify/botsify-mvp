@@ -138,11 +138,6 @@ const applyQuickFilter = (value: string) => {
 }
 
 // Event handlers for FilterSection components
-const handleActiveFilterUpdate = (value: string | string[]) => {
-  const finalValue = Array.isArray(value) ? value[0] || 'all' : value
-  emit('update:activeFilter', finalValue)
-}
-
 const handleReadFilterUpdate = (value: string | string[]) => {
   const finalValue = Array.isArray(value) ? value[0] || 'all' : value
   emit('update:readFilter', finalValue as 'all' | 'read' | 'unread')

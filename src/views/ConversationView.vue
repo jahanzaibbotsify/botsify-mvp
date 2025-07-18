@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useApiKeyStore } from '@/stores/apiKeyStore'
 import { useConversationStore } from '@/stores/conversationStore'
 import {
   ConversationSidebar,
@@ -14,7 +13,6 @@ import {
 
 
 const route = useRoute()
-const apiKeyStore = useApiKeyStore()
 const conversationStore = useConversationStore()
 
 // Local state
@@ -37,21 +35,8 @@ const sendMessage = async (message: string, fileUrls?: string[]) => {
 onMounted(async () => {
   // Set API key from route
   const chatId = route.params.id as string
-  if (chatId) {
-    apiKeyStore.setApiKey(chatId)
-    console.log('Chat API Key set:', chatId)
-    
-    // Initialize Firebase with the bot API key
-    conversationStore.initializeFirebase()
-    
-    // Check Firebase status after initialization
-    setTimeout(() => {
-      conversationStore.checkFirebaseStatus()
-    }, 1000)
-  }
-
   // Fetch conversations from API
-  await conversationStore.fetchConversations()
+  await conversationStore.fetchConversations(false, chatId)
 
   // Select first conversation by default if available
   if (conversationStore.conversations.length > 0) {
@@ -94,6 +79,7 @@ onMounted(async () => {
         <ChatHeader 
           :user-name="conversationStore.selectedConversation?.title"
           :user-id="conversationStore.selectedConversation?.fbid"
+          :loading="conversationStore.loading"
         />
 
         <!-- Chat Messages Area -->
@@ -120,6 +106,7 @@ onMounted(async () => {
         :user="conversationStore.selectedConversation"
         :active-tab="activeUserTab"
         :satisfaction-percentage="satisfactionPercentage"
+        :loading="conversationStore.loading"
         @update:active-tab="activeUserTab = $event"
       />
     </div>

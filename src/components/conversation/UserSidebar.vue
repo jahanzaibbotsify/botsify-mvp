@@ -3,15 +3,28 @@
     <!-- User Profile Header -->
     <div class="user-profile-header">
       <div class="user-avatar">
-        <div class="avatar-placeholder">
+        <!-- Loading skeleton for avatar -->
+        <div v-if="loading" class="avatar-skeleton"></div>
+        <!-- Avatar when loaded -->
+        <div v-else class="avatar-placeholder">
           <i class="pi pi-user"></i>
         </div>
       </div>
       <div class="user-info">
+        <!-- Loading skeleton for user info -->
+        <div v-if="loading" class="user-info-skeleton">
+          <div class="skeleton-line name-skeleton"></div>
+          <div class="skeleton-line email-skeleton"></div>
+        </div>
+        <!-- User info when loaded -->
+        <template v-else>
         <div class="user-name">{{ user?.title || 'Select User' }}</div>
         <div class="user-email">{{ user?.email || 'user@example.com' }}</div>
+        </template>
       </div>
+      <!-- Notification button - only show when not loading -->
       <button 
+        v-if="!loading"
         class="notification-button icon-button" 
         :class="{ enabled: notificationsEnabled, disabled: !notificationsEnabled }"
         @click="toggleNotifications"
@@ -21,8 +34,8 @@
       </button>
     </div>
 
-    <!-- User Details Tabs -->
-    <div class="user-tabs">
+    <!-- User Details Tabs - only show when not loading -->
+    <div v-if="!loading" class="user-tabs">
       <button 
         class="user-tab" 
         :class="{ active: activeTab === 'profile', disabled: !user?.fbid }"
@@ -43,16 +56,26 @@
 
     <!-- User Details Content -->
     <div class="user-content">
-      <UserProfile v-if="activeTab === 'profile' && user?.fbid" :user="user" />
-      <UserAttributes v-else-if="activeTab === 'data' && user?.fbid" :user="user" />
-      <div v-else-if="!user?.fbid" class="no-user-selected">
-        <i class="pi pi-user"></i>
-        <p>Select a user to view details</p>
+      <!-- Loading skeleton for content -->
+      <div v-if="loading" class="content-skeleton">
+        <div class="skeleton-section" v-for="i in 3" :key="i">
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line short"></div>
+        </div>
       </div>
+      <!-- Content when loaded -->
+      <template v-else>
+        <UserProfile v-if="activeTab === 'profile' && user?.fbid" :user="user" />
+        <UserAttributes v-else-if="activeTab === 'data' && user?.fbid" :user="user" />
+        <div v-else-if="!user?.fbid" class="no-user-selected">
+          <i class="pi pi-user"></i>
+          <p>Select a user to view details</p>
+        </div>
+      </template>
     </div>
 
-    <!-- User Satisfaction -->
-    <div class="user-satisfaction">
+    <!-- User Satisfaction - only show when not loading -->
+    <div v-if="!loading" class="user-satisfaction">
       <div class="satisfaction-header">
         <span class="satisfaction-label">User Satisfaction</span>
       </div>
@@ -63,8 +86,8 @@
       </div>
     </div>
 
-    <!-- Action Buttons -->
-    <div class="user-actions">
+    <!-- Action Buttons - only show when not loading -->
+    <div v-if="!loading" class="user-actions">
       <div class="export-dropdown">
         <button class="user-action-button icon-button" @click="toggleExportDropdown">
         <i class="pi pi-file-export"></i>
@@ -96,6 +119,7 @@ interface Props {
   user?: ExtendedChat | null
   activeTab: string
   satisfactionPercentage: number
+  loading?: boolean
 }
 
 defineProps<Props>()
@@ -170,12 +194,19 @@ const handleClickOutside = (event: Event) => {
 onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
   
-  // Check initial notification status
-  try {
-    const status = await conversationStore.checkNotificationStatus()
-    notificationsEnabled.value = status.subscribed
-  } catch (error) {
-    console.error('Error checking notification status:', error)
+  // Check initial notification status - only if notifications are supported
+  if ('Notification' in window && 'serviceWorker' in navigator) {
+    try {
+      const status = await conversationStore.checkNotificationStatus()
+      notificationsEnabled.value = status.subscribed
+    } catch (error) {
+      console.error('Error checking notification status:', error)
+      // Default to disabled if there's an error
+      notificationsEnabled.value = false
+    }
+  } else {
+    // Notifications not supported, default to disabled
+    notificationsEnabled.value = false
   }
 })
 
@@ -422,7 +453,6 @@ onUnmounted(() => {
 .export-dropdown {
   flex: 1;
   position: relative;
-  /* display: inline-block; */
 }
 
 .export-dropdown-content {
@@ -465,6 +495,64 @@ onUnmounted(() => {
   border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 
+/* Skeleton Styles */
+.avatar-skeleton {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--color-bg-tertiary) 25%, var(--color-bg-hover) 50%, var(--color-bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.user-info-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+}
+
+.skeleton-line {
+  height: 1rem;
+  background: linear-gradient(90deg, var(--color-bg-tertiary) 25%, var(--color-bg-hover) 50%, var(--color-bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+.name-skeleton {
+  width: 80%;
+}
+
+.email-skeleton {
+  width: 60%;
+}
+
+.content-skeleton {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.skeleton-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.skeleton-section .skeleton-line {
+  height: 0.875rem;
+}
+
+.skeleton-section .skeleton-line.short {
+  width: 60%;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
 
 @media (max-width: 1024px) {
   .user-sidebar {
