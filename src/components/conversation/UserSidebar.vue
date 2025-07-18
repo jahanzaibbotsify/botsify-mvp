@@ -72,7 +72,7 @@
           </button>
         </div>
       </div>
-      <button class="user-action-button icon-button" @click="deleteConversation">
+      <button class="user-action-button delete-button" @click="deleteConversation">
         <i class="pi pi-trash"></i>
       </button>
     </div>
@@ -323,8 +323,8 @@ onUnmounted(() => {
 
 .user-action-button {
   background-color: var(--color-bg-secondary);
-  border: 1px solid var(--color-text-tertiary);
-  color: var(--color-text-secondary);
+  border: 1px solid var(--color-text-primary);
+  color: var(--color-text-primary);
   cursor: pointer;
   width: 100px;
   transition: all var(--transition-normal);
@@ -332,6 +332,16 @@ onUnmounted(() => {
 
 .user-action-button:hover {
   background-color: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.user-action-button.delete-button{
+  border: 1px solid var(--color-text-danger);
+  color: var(--color-text-danger);
+}
+
+.user-action-button.delete-button:hover{
+  background-color: var(--color-error);
   color: var(--color-text-primary);
 }
 

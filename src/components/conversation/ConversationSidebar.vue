@@ -257,6 +257,32 @@ const formatTime = (date: Date) => {
   }
 }
 
+const getPlatformClass = (platform: string = '') => {
+  switch (platform.toLowerCase()) {
+    case 'facebook':
+      return 'platform-facebook'
+    case 'whatsapp':
+      return 'platform-whatsapp'
+    case 'web':
+      return 'platform-web'
+    default:
+      return 'platform-default'
+  }
+}
+
+const getPlatformIcon = (platform: string = '') => {
+  switch (platform?.toLowerCase()) {
+    case 'facebook':
+      return 'pi pi-facebook'
+    case 'whatsapp':
+      return 'pi pi-whatsapp'
+    case 'web':
+      return 'pi pi-globe'
+    default:
+      return 'pi pi-globe'
+  }
+}
+
 const getInitials = (name: string) => {
   return name
     .split(' ')
@@ -433,17 +459,27 @@ const getUnreadCount = (conversation: ExtendedChat) => {
         @click="$emit('select-conversation', conversation)"
       >
         <!-- Avatar -->
-        <div class="conversation-avatar" >
+        <div class="conversation-avatar">
           <div v-if="conversation.profilePic" class="avatar-image">
             <img :src="conversation.profilePic" :alt="conversation.title" />
           </div>
           <div v-else class="avatar-placeholder">
             {{ getInitials(conversation.title) }}
           </div>
+
+          <!-- Platform Icon Badge -->
+          <span
+            class="avatar-platform-icon"
+            :class="getPlatformClass(conversation.source)"
+          >
+            <i :class="getPlatformIcon(conversation.source)"></i>
+          </span>
+
           <div v-if="conversation.unread" class="unread-badge">
             {{ getUnreadCount(conversation) }}
           </div>
         </div>
+
 
         <!-- Content -->
         <div class="conversation-content">
@@ -452,9 +488,6 @@ const getUnreadCount = (conversation: ExtendedChat) => {
             <span class="conversation-time">{{ formatTime(conversation.timestamp) }}</span>
           </div>
           <p class="conversation-preview">{{ conversation.lastMessage }}</p>
-          <div class="conversation-meta">
-            <span class="conversation-platform">{{ conversation.source || 'Unknown' }}</span>
-          </div>
         </div>
       </div>
 
@@ -466,21 +499,12 @@ const getUnreadCount = (conversation: ExtendedChat) => {
       <!-- Error State -->
       <div v-if="error" class="error-state">
         <div class="error-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="15" y1="9" x2="9" y2="15"></line>
-            <line x1="9" y1="9" x2="15" y2="15"></line>
-          </svg>
+          <i class="pi pi-exclamation-triangle"></i>
         </div>
         <p class="error-text">Failed to load conversations</p>
         <p class="error-subtext">{{ error }}</p>
         <button class="retry-btn" @click="$emit('retry')">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
-            <path d="M21 3v5h-5"></path>
-            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
-            <path d="M3 21v-5h5"></path>
-          </svg>
+          <i class="pi pi-refresh retry-icon"></i>
           Retry
         </button>
       </div>
@@ -873,6 +897,40 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   padding: 0 var(--space-1);
 }
 
+.avatar-platform-icon {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+}
+
+/* Platform-specific background colors */
+.platform-facebook {
+  background-color: #1877f2; /* Facebook Blue */
+}
+
+.platform-whatsapp {
+  background-color: #25d366; /* WhatsApp Green */
+}
+
+.platform-web {
+  background-color: #6c757d; /* Neutral gray */
+}
+
+.platform-default {
+  background-color: #adb5bd;
+}
+
+
 /* Content */
 .conversation-content {
   flex: 1;
@@ -931,7 +989,7 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   font-size: 0.7rem;
 }
 
-.conversation-platform {
+/* .conversation-platform {
   color: var(--color-text-tertiary);
   text-transform: capitalize;
   font-size: 0.7rem;
@@ -939,7 +997,7 @@ const getUnreadCount = (conversation: ExtendedChat) => {
 
 .conversation-item.active .conversation-platform {
   color: rgba(255, 255, 255, 0.7);
-}
+} */
 
 /* Loading More Skeletons */
 .loading-more-skeletons {
