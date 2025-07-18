@@ -187,10 +187,30 @@ const getPageNumbers = computed(() => {
           </tr>
         </thead>
         <tbody>
-          <tr v-if="loading" class="no-data-row">
-            <td colspan="10" class="no-data-cell">
-              <div class="loading-spinner"></div>
-              <span>Loading data...</span>
+          <tr v-if="loading" v-for="i in pagination.perPage" :key="`skeleton-${i}`" class="skeleton-row">
+            <td>
+              <div class="skeleton-checkbox"></div>
+            </td>
+            <td>
+              <div class="skeleton-user-info">
+                <div class="skeleton-avatar"></div>
+                <div class="skeleton-user-details">
+                  <div class="skeleton-name"></div>
+                  <div class="skeleton-email"></div>
+                </div>
+              </div>
+            </td>
+            <td><div class="skeleton-text"></div></td>
+            <td><div class="skeleton-text"></div></td>
+            <td><div class="skeleton-text"></div></td>
+            <td><div class="skeleton-text"></div></td>
+            <td><div class="skeleton-badge"></div></td>
+            <td>
+              <div class="skeleton-actions">
+                <div class="skeleton-action-btn"></div>
+                <div class="skeleton-action-btn"></div>
+                <div class="skeleton-action-btn"></div>
+              </div>
             </td>
           </tr>
           <tr v-else-if="users.length === 0" class="no-data-row">
@@ -691,19 +711,95 @@ const getPageNumbers = computed(() => {
 
   
 
-.loading-spinner {
-  margin: 0 auto 10px;
-  border: 4px solid #eee;
-  border-top: 4px solid var(--color-text-primary);
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  animation: spin 0.8s linear infinite;
+
+
+/* Skeleton Loading Styles */
+.skeleton-row {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+.skeleton-row:hover td {
+  background-color: white !important;
+}
+
+.skeleton-checkbox {
+  width: 16px;
+  height: 16px;
+  background-color: #e5e7eb;
+  border-radius: 3px;
+  margin: 0 auto;
+}
+
+.skeleton-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.skeleton-avatar {
+  width: 35px;
+  height: 35px;
+  background-color: #e5e7eb;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.skeleton-name {
+  height: 16px;
+  background-color: #e5e7eb;
+  border-radius: 4px;
+  width: 80%;
+}
+
+.skeleton-email {
+  height: 12px;
+  background-color: #e5e7eb;
+  border-radius: 4px;
+  width: 60%;
+}
+
+.skeleton-text {
+  height: 14px;
+  background-color: #e5e7eb;
+  border-radius: 4px;
+  width: 70%;
+}
+
+.skeleton-badge {
+  height: 24px;
+  background-color: #e5e7eb;
+  border-radius: 12px;
+  width: 60px;
+  margin: 0 auto;
+}
+
+.skeleton-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.skeleton-action-btn {
+  width: 32px;
+  height: 32px;
+  background-color: #e5e7eb;
+  border-radius: 6px;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }
 
