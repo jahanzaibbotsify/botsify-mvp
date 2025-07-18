@@ -155,7 +155,7 @@ onUnmounted(() => {
 
 <style scoped>
 .user-sidebar {
-  width: 320px;
+  width: 280px;
   background-color: var(--color-bg-secondary);
   border-left: 1px solid var(--color-border);
   display: flex;
@@ -363,11 +363,12 @@ onUnmounted(() => {
 }
 
 .user-action-button {
+  flex: 1;
   background-color: var(--color-bg-secondary);
   border: 1px solid var(--color-text-primary);
   color: var(--color-text-primary);
   cursor: pointer;
-  width: 100px;
+  width: 100%;
   transition: all var(--transition-normal);
 }
 
@@ -383,11 +384,12 @@ onUnmounted(() => {
 
 .user-action-button.delete-button:hover{
   background-color: var(--color-error);
-  color: var(--color-text-primary);
+  color: white;
 }
 
 /* Export Dropdown Styles */
 .export-dropdown {
+  flex: 1;
   position: relative;
   /* display: inline-block; */
 }
@@ -432,12 +434,6 @@ onUnmounted(() => {
   border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 
-/* Responsive Design */
-@media (max-width: 1200px) {
-  .user-sidebar {
-    width: 280px;
-  }
-}
 
 @media (max-width: 1024px) {
   .user-sidebar {
