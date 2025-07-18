@@ -283,10 +283,10 @@ onMounted(() => {
     <!-- Message bubble -->
     <div class="message-bubble">
       <!-- Message header (for assistant messages with timestamp) -->
-      <div v-if="message.sender === 'assistant' && showTimestamp" class="message-header">
+      <!-- <div v-if="message.sender === 'assistant' && showTimestamp" class="message-header">
         <span class="sender-name">Assistant</span>
         <span class="message-time">{{ formatTimestamp(message.timestamp) }}</span>
-      </div>
+      </div> -->
 
       <!-- Message content -->
       <div class="message-content">

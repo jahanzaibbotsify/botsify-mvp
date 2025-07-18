@@ -18,6 +18,7 @@ const chatId = computed(() => route.params.id as string);
 const messagesContainer = ref<HTMLElement | null>(null);
 const storySidebar = ref<InstanceType<typeof StorySidebar> | null>(null);
 const showSystemMessageModal = ref(false);
+const showStorySidebar = ref(false);
 
 const chat = computed(() => {
   let foundChat = chatStore.chats.find(c => c.id === chatId.value);
@@ -77,6 +78,10 @@ function toggleMobileSidebar() {
   }
 }
 
+function toggleStorySidebar() {
+  showStorySidebar.value = !showStorySidebar.value;
+}
+
 function clearVersionHistory() {
   window.$confirm({}, () => {
     chatStore.clearVersionHistory(chatId.value);
@@ -97,13 +102,28 @@ function clearAllChats() {
 </script>
 
 <template>
-  <div v-if="chat" class="chat-view with-sidebar">
+  <div v-if="chat" class="chat-view" :class="{ 'with-sidebar': showStorySidebar }">
     <!-- API Error Notification -->
     <ApiErrorNotification />
     
     <div class="chat-header">
       <h2>{{ chat.title }}</h2>
       <div class="chat-actions">
+        <!-- AI Prompt Toggle -->
+        <button 
+          class="icon-button ai-prompt-toggle" 
+          @click="toggleStorySidebar"
+          title="AI Prompt"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 12l2 2 4-4"></path>
+            <path d="M21 12c-1 0-2-1-2-2s1-2 2-2 2 1 2 2-1 2-2 2z"></path>
+            <path d="M3 12c1 0 2-1 2-2s-1-2-2-2-2 1-2 2 1 2 2 2z"></path>
+            <path d="M12 3c0 1-1 2-2 2s-2-1-2-2 1-2 2-2 2 1 2 2z"></path>
+            <path d="M12 21c0-1 1-2 2-2s2 1 2 2-1 2-2 2-2-1-2-2z"></path>
+          </svg>
+        </button>
+        
         <!-- Clear History Dropdown -->
         <div class="dropdown">
           <button class="icon-button" title="Delete">
@@ -151,8 +171,8 @@ function clearAllChats() {
     
     <MessageInput :chatId="chatId" />
     
-    <!-- Story Sidebar -->
-    <StorySidebar ref="storySidebar" :chatId="chatId" />
+    <!-- Story Sidebar - Only show when enabled -->
+    <StorySidebar v-if="showStorySidebar" ref="storySidebar" :chatId="chatId" />
     
     <!-- System Message Modal -->
     <div v-if="showSystemMessageModal" class="modal-overlay" @click.self="toggleSystemMessageModal">
@@ -240,6 +260,42 @@ function clearAllChats() {
 .icon-button:hover {
   background-color: var(--color-bg-tertiary);
   color: var(--color-text-primary);
+}
+
+.ai-prompt-toggle {
+  color: var(--color-primary);
+  position: relative;
+}
+
+.ai-prompt-toggle:hover {
+  background-color: rgba(0, 163, 255, 0.1);
+  color: var(--color-primary);
+}
+
+.ai-prompt-toggle::after {
+  content: 'AI Prompt';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-fast);
+  z-index: var(--z-dropdown);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+  margin-top: var(--space-1);
+}
+
+.ai-prompt-toggle:hover::after {
+  opacity: 1;
+  visibility: visible;
 }
 
 /* Dropdown styles */
@@ -438,11 +494,15 @@ function clearAllChats() {
   
   .chat-header h2 {
     font-size: 1rem;
-    max-width: calc(100% - 120px);
+    max-width: calc(100% - 140px);
   }
   
   .modal-content {
     width: 95%;
+  }
+  
+  .ai-prompt-toggle::after {
+    display: none;
   }
 }
 
