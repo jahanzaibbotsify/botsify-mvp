@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router';
 import UserAttributes from './Attributes.vue'
 import { User, UserAttribute, PaginationData, SortingData, SortBy, PerPage } from '@/types/user'
 import { userApi } from '@/services/userApi';
@@ -14,6 +15,7 @@ const props = defineProps<{
 const showAttributes = ref<boolean>(false)
 const selectedUserAttributes = ref<UserAttribute[]>([])
 const selectedUser = ref<User>()
+const router = useRouter()
 
 const emit = defineEmits<{
   'update:selectAll': [value: boolean]
@@ -71,13 +73,12 @@ const handleDeleteUser = (userId: number) => {
   });
 }
 
-const goToConversation = (userId: number): void => {
-  const user = props.users.find(u => u.id === userId)
-  if (user) {
-      console.log('goToConversation', userId)
-      // Add navigation logic here
+const goToConversation = (fbId: string): void => {
+  if (fbId) {
+    router.push({ name: 'conversation', params: { id: fbId } })
   }
 }
+
 
 const handleRowClick = (user: User): void => {
   emit('userClick', user)
@@ -240,7 +241,7 @@ const getPageNumbers = computed(() => {
                   v-if="user.hasConversation" 
                   class="action-btn conversation-btn"
                   @click.stop
-                  @click="goToConversation(user.id)"
+                  @click="goToConversation(user.fbId)"
                   title="Go to Conversation"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

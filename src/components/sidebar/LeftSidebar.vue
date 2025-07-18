@@ -39,7 +39,7 @@ const navigationButtons = [
   {
     id: 'analytics',
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 5a1 1 0 0 1 1 1v12a1 1 0 1 1-2 0V6a1 1 0 0 1 1-1Zm4 5a1 1 0 0 1 1 1v2a1 1 0 1 1-2 0v-2a1 1 0 0 1 1-1Zm5-1a1 1 0 1 0-2 0v6a1 1 0 1 0 2 0V9ZM8 8a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0V9a1 1 0 0 1 1-1Zm-3 3a1 1 0 1 0-2 0v2a1 1 0 1 0 2 0v-2Z" clip-rule="evenodd"></path></svg>',
-    name: 'Analytics'
+    name: 'Reports & Analytics'
   },
   {
     id: `conversation`,

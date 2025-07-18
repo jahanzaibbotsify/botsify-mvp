@@ -304,16 +304,16 @@ const getUnreadCount = (conversation: ExtendedChat) => {
     <div class="sidebar-header">
       <h2 class="sidebar-title">Conversations</h2>
       <div class="search-container">
-          <div class="search-input-wrapper">
+        <div class="search-input-wrapper">
             <span class="search-icon"><i class="pi pi-search"></i></span>
-            <input 
-              type="text" 
-              placeholder="Search conversations..." 
-              class="search-input"
-              :value="searchQuery"
-              @input="$emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
-            />
-          </div>
+          <input 
+            type="text" 
+            placeholder="Search conversations..." 
+            class="search-input"
+            :value="searchQuery"
+            @input="$emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
+          />
+        </div>
       </div>
     </div>
 
@@ -329,7 +329,7 @@ const getUnreadCount = (conversation: ExtendedChat) => {
           </div>
         </div>
         <div class="filter-actions">
-          <button 
+      <button 
             v-if="hasActiveFilters" 
             @click="clearAllFilters" 
             class="clear-all-btn"
@@ -337,15 +337,15 @@ const getUnreadCount = (conversation: ExtendedChat) => {
           >
             <i class="pi pi-times"></i>
             Clear
-          </button>
-          <button 
+      </button>
+      <button 
             @click="toggleFilters" 
             class="toggle-filters-btn"
             :class="{ 'expanded': filtersExpanded }"
           >
             <i class="pi pi-chevron-down"></i>
-          </button>
-        </div>
+      </button>
+    </div>
       </div>
       <!-- Collapsible Filters Container -->
    <Transition name="filters-collapse">
@@ -354,7 +354,7 @@ const getUnreadCount = (conversation: ExtendedChat) => {
        <div class="quick-filters">
          <div class="quick-filter-label">Quick Filters</div>
          <div class="quick-filter-chips">
-           <button 
+      <button 
              v-for="preset in quickFilterPresets" 
              :key="preset.id"
              @click="applyQuickFilter(preset)"
@@ -363,9 +363,9 @@ const getUnreadCount = (conversation: ExtendedChat) => {
            >
              <i :class="['filter-icon', preset.icon]" />
              {{ preset.label }}
-           </button>
+      </button>
          </div>
-       </div>
+    </div>
 
        <!-- Individual Filter Sections -->
        <div class="filter-sections">
@@ -387,7 +387,7 @@ const getUnreadCount = (conversation: ExtendedChat) => {
            @update="handleReadFilterUpdate"
          />
 
-         <!-- Platform Filter -->
+    <!-- Platform Filter -->
          <FilterSection 
            title="Platform"
            icon="pi pi-mobile"
@@ -430,13 +430,13 @@ const getUnreadCount = (conversation: ExtendedChat) => {
         >
           <span class="filter-label">{{ filter.label }}:</span>
           <span class="filter-value">{{ filter.value }}</span>
-          <button 
+      <button 
             @click="removeFilter(filter.key)"
             class="remove-filter-btn"
             :title="`Remove ${filter.label} filter`"
           >
             <i class="pi pi-times"></i>
-          </button>
+      </button>
         </div>
       </div>
     </div>
@@ -488,8 +488,8 @@ const getUnreadCount = (conversation: ExtendedChat) => {
             <span class="conversation-time">{{ formatTime(conversation.timestamp) }}</span>
           </div>
           <p class="conversation-preview">{{ conversation.lastMessage }}</p>
+          </div>
         </div>
-      </div>
 
       <!-- Loading More Skeleton -->
       <div v-if="isLoadingMore" class="loading-more-skeletons">

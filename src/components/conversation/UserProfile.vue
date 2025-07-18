@@ -50,14 +50,34 @@ defineProps<Props>()
   flex: 1;
   padding: var(--space-4);
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.user-profile-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.user-profile-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.user-profile-content::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 3px;
+}
+
+.user-profile-content::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-tertiary);
 }
 
 .detail-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
   padding: var(--space-2) 0;
   border-bottom: 1px solid var(--color-border);
+  align-items: center;
 }
 
 .detail-item:last-child {
@@ -67,14 +87,17 @@ defineProps<Props>()
 .detail-label {
   font-weight: 500;
   color: var(--color-text-secondary);
-  font-size: 0.875rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .detail-value {
   color: var(--color-text-primary);
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   text-align: right;
-  max-width: 60%;
   word-break: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style> 

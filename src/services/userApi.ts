@@ -139,6 +139,21 @@ class UserApiService {
       }
     }
   }
+
+  async getUserAttributes(fbId: string): Promise<ApiResponse<UserAttribute[]>> {
+    try {
+      const API_KEY = useApiKeyStore().apiKey
+      const response = await axiosInstance.get(`v1/get-user-attribute-data/${fbId}?apikey=${API_KEY}`)
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      console.error('Error fetching user attributes:', error)
+      return {
+        success: false,
+        message: error?.response?.data?.message || 'Failed to fetch user attributes',
+        data: []
+      }
+    }
+  }
 }
 
   

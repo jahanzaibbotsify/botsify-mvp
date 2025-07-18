@@ -25,15 +25,17 @@
     <div class="user-tabs">
       <button 
         class="user-tab" 
-        :class="{ active: activeTab === 'profile' }"
-        @click="$emit('update:activeTab', 'profile')"
+        :class="{ active: activeTab === 'profile', disabled: !user?.fbid }"
+        @click="user?.fbid && $emit('update:activeTab', 'profile')"
+        :disabled="!user?.fbid"
       >
         <i class="pi pi-user"></i>
       </button>
       <button 
         class="user-tab" 
-        :class="{ active: activeTab === 'data' }"
-        @click="$emit('update:activeTab', 'data')"
+        :class="{ active: activeTab === 'data', disabled: !user?.fbid }"
+        @click="user?.fbid && $emit('update:activeTab', 'data')"
+        :disabled="!user?.fbid"
       >
         <i class="pi pi-database"></i>
       </button>
@@ -41,8 +43,12 @@
 
     <!-- User Details Content -->
     <div class="user-content">
-      <UserProfile v-if="activeTab === 'profile'" :user="user" />
-      <UserAttributes v-else-if="activeTab === 'data'" />
+      <UserProfile v-if="activeTab === 'profile' && user?.fbid" :user="user" />
+      <UserAttributes v-else-if="activeTab === 'data' && user?.fbid" :user="user" />
+      <div v-else-if="!user?.fbid" class="no-user-selected">
+        <i class="pi pi-user"></i>
+        <p>Select a user to view details</p>
+      </div>
     </div>
 
     <!-- User Satisfaction -->
@@ -255,9 +261,44 @@ onUnmounted(() => {
   border-color: var(--color-primary);
 }
 
+.user-tab.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-tertiary);
+}
+
+.user-tab.disabled:hover {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-tertiary);
+}
+
 .user-content {
   flex: 1;
   overflow: hidden;
+}
+
+.no-user-selected {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  color: var(--color-text-secondary);
+  text-align: center;
+  height: 100%;
+}
+
+.no-user-selected i {
+  font-size: 3rem;
+  margin-bottom: var(--space-3);
+  opacity: 0.6;
+}
+
+.no-user-selected p {
+  margin: 0;
+  font-size: 0.875rem;
+  font-style: italic;
 }
 
 .user-satisfaction {

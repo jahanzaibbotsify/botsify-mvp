@@ -291,8 +291,8 @@ onMounted(() => {
       <!-- Message content -->
       <div class="message-content">
         <div v-if="message.content" class="content-text" v-html="parsedContent"></div>
-        
-        <!-- Attachments -->
+      
+      <!-- Attachments -->
         <div v-if="message.attachments?.length" class="attachments-grid">
           <div 
             v-for="file in message.attachments" 
