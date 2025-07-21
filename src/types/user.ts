@@ -2,7 +2,7 @@ export type FilterType = 'all' | 'active' | 'inactive'
 export type ActionType = '' | 'activate' | 'deactivate' | 'delete' | 'test' | 'export' | 'delete_conversation'
 export type SegmentType = 'all' | 'sms' | 'whatsapp' | 'facebook' | 'website' | 'instagram' | 'telegram'
 export type SegmentId = -2 | -3 | -4 | -5 | -6 | -7 | null
-export type SortBy = 'id' | 'name' | 'type' | 'active_for_bot'
+export type SortBy = 'id' | 'name' | 'type' | 'active_for_bot' | 'created_at' | 'country'
 export type SortOrder = 'asc' | 'desc'
 export type PerPage = 20 | 50 | 100
 

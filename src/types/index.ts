@@ -78,6 +78,7 @@ export interface ExtendedChat extends Chat {
   lastConverse?: string
   phone?: string
   country?: string
+  active_for_bot?: number;
   os?: string
   lastPage?: string
   fbid?: string

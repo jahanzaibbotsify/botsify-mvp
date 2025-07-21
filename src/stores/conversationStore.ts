@@ -460,6 +460,8 @@ export const useConversationStore = defineStore('conversation', () => {
         
         // Update selected conversation with user data
         if (selectedConversation.value) {
+          selectedConversation.value.id = response.data.user.id.toString()
+          selectedConversation.value.active_for_bot = response.data.user.active_for_bot
           selectedConversation.value.email = response.data.user.email
           selectedConversation.value.assignedTo = response.data.agent_assigned
           selectedConversation.value.status = response.data.conv_status
@@ -669,11 +671,28 @@ export const useConversationStore = defineStore('conversation', () => {
       }
       const response = await conversationApi.deleteConversation(selectedConversation.value.fbid)
       if (response.success) {
-        // Clear selected conversation if it was the deleted one
-        messages.value = []
-        return { success: true, message: response.data.message }
+        // Find index of the conversation to delete
+        const index = conversations.value.findIndex(c => c.fbid === selectedConversation.value?.fbid);
+  
+        if (index !== -1) {
+          // Remove the deleted conversation
+          conversations.value.splice(index, 1);
+  
+          // Determine next selected conversation (prioritize next, fallback to previous)
+          const nextConversation =
+            conversations.value[index] || conversations.value[index - 1] || null;
+  
+          selectedConversation.value = nextConversation;
+  
+          // Clear messages if nothing is selected
+          if (!nextConversation) {
+            messages.value = [];
+          }
+        }
+  
+        return { success: true, message: response.data.message };
       } else {
-        return { success: false, message: response.message || 'Failed to delete conversation' }
+        return { success: false, message: response.message || 'Failed to delete conversation' };
       }
     } catch (err) {
       console.error('Error deleting conversation:', err)
@@ -681,11 +700,14 @@ export const useConversationStore = defineStore('conversation', () => {
     }
   }
 
-  const changeBotActivation = async (userId: string, status: number) => {
+  const changeBotActivation = async (status: number) => {
     try {
+      const userId = selectedConversation.value?.id
+      if (!userId) {
+        return { success: false, message: 'No user selected for bot activation' }
+      }
       const response = await conversationApi.changeBotActivation(userId, status)
       if (response.success) {
-        console.log('✅ Bot activation changed successfully:', { userId, status })
         return { success: true, message: response.data.message }
       } else {
         return { success: false, message: response.message || 'Failed to change bot activation' }

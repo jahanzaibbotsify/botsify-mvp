@@ -18,14 +18,14 @@
       <template v-else>
         <select 
           class="status-select" 
-          :class="{ 'status-active': selectedStatus === 'active', 'status-inactive': selectedStatus === 'inactive' }"
+          :class="{ 'status-active': selectedStatus === 1, 'status-inactive': selectedStatus === 0 }"
           v-model="selectedStatus"
           @change="handleStatusChange"
         >
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
+          <option value="1">Active</option>
+          <option value="0">Inactive</option>
         </select>
-        <button class="translate-button">
+        <button class="translate-button" @click="openTranslateModal">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.01-4.65.83-6.67l2.16-2.16c-.56-.56-1.47-.56-2.03 0L9.5 5.5c-.56.56-.56 1.47 0 2.03l.03.03c-2.02 1.18-4.73.91-6.67-.83l-.03-.03c-.56-.56-1.47-.56-2.03 0L.5 5.5c-.56.56-.56 1.47 0 2.03l2.16 2.16c1.74 1.94 2.01 4.65.83 6.67l-.03.03c-.56-.56-.56 1.47 0 2.03l2.16 2.16c.56.56 1.47.56 2.03 0l2.16-2.16c.56-.56.56-1.47 0-2.03l-.03-.03z"/>
           </svg>
@@ -33,16 +33,18 @@
         </button>
       </template>
     </div>
+    <TranslateModal ref="translateModalRef" @select-language="handleLanguageSelect" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useConversationStore } from '@/stores/conversationStore'
+import TranslateModal from './TranslateModal.vue'
 
 interface Props {
   userName?: string
-  userId?: string
+  status?: number
   loading?: boolean
 }
 
@@ -52,18 +54,16 @@ const props = withDefaults(defineProps<Props>(), {
 
 const conversationStore = useConversationStore()
 
-const selectedStatus = ref('active')
+const selectedStatus = ref(props.status)
+
+watch(() => props.status, (newVal) => {
+  selectedStatus.value = newVal
+})
+
 
 const handleStatusChange = async () => {
-  if (!props.userId) {
-    window.$toast.error('No user selected for status change')
-    return
-  }
-
   try {
-    const status = selectedStatus.value === 'active' ? 1 : 0
-    const response = await conversationStore.changeBotActivation(props.userId, status)
-    
+    const response = await conversationStore.changeBotActivation(selectedStatus.value ?? 0)
     if (response?.success) {
       window.$toast.success(response.message || 'Bot status updated successfully')
     } else {
@@ -73,6 +73,18 @@ const handleStatusChange = async () => {
     console.error('Error changing bot status:', error)
     window.$toast.error('An error occurred while updating bot status')
   }
+}
+
+const translateModalRef = ref<InstanceType<typeof TranslateModal> | null>(null)
+
+const openTranslateModal = () => {
+  translateModalRef.value?.openModal()
+}
+
+const emit = defineEmits(['translate-language'])
+
+const handleLanguageSelect = (lang: string) => {
+  emit('translate-language', lang)
 }
 </script>
 

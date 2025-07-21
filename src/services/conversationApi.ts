@@ -176,7 +176,7 @@ class ConversationApiService {
   async changeBotActivation(userId: string, status: number): Promise<ApiResponse<{ message: string }>> {
     try {
       const API_KEY = useApiKeyStore().apiKey
-      const response = await axiosInstance.post('v1/user/change-status', {
+      const response = await axiosInstance.post('v1/live-chat/change-status', {
         apikey: API_KEY,
         status: status,
         user_id: userId

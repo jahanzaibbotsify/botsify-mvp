@@ -6,11 +6,11 @@ import ImageModal from './ImageModal.vue'
 import type { Message } from '@/types'
 
 const props = defineProps<{
-  hasSelectedConversation: boolean
   messages: Message[]
   loading?: boolean
   error?: string | null
   conversationTitle?: string
+  selectedLanguage?: string // <-- add this
 }>()
 
 const emit = defineEmits<{
@@ -124,15 +124,15 @@ watch(() => props.messages.length, (newLength, oldLength) => {
   }
 })
 
-// Watch for conversation changes
-watch(() => props.hasSelectedConversation, (hasConversation) => {
-  if (hasConversation) {
-    nextTick(() => scrollToBottom(false))
+watch(() => props.selectedLanguage, (lang) => {
+  if (lang) {
+    console.log('Selected language changed:', lang)
+    // Translation logic will be added here
   }
 })
 
 onMounted(() => {
-  if (props.hasSelectedConversation && props.messages.length > 0) {
+  if (props.messages.length > 0) {
     scrollToBottom(false)
   }
 })
@@ -150,17 +150,6 @@ onMounted(() => {
       </div>
     </div>
     
-    <!-- No Conversation Selected - Only show when not loading and no conversation selected -->
-    <div 
-      v-else-if="!hasSelectedConversation" 
-      class="no-conversation"
-    >
-      <div class="no-conversation-content">
-        <div class="no-conversation-icon">💬</div>
-        <h3>No Conversation Selected</h3>
-        <p>Select a conversation from the sidebar to start chatting.</p>
-      </div>
-    </div>
     
     <!-- Error State -->
     <div 
@@ -256,7 +245,6 @@ onMounted(() => {
 
 /* Empty State */
 
-.no-conversation,
 .no-messages {
   flex: 1;
   display: flex;
@@ -265,20 +253,17 @@ onMounted(() => {
   padding: var(--space-6);
 }
 
-.no-conversation-content,
 .no-messages-content {
   text-align: center;
   max-width: 400px;
 }
 
-.no-conversation-icon,
 .no-messages-icon {
   font-size: 4rem;
   margin-bottom: var(--space-4);
   opacity: 0.5;
 }
 
-.no-conversation-content h3,
 .no-messages-content h3 {
   font-size: 1.25rem;
   font-weight: 600;
@@ -286,7 +271,6 @@ onMounted(() => {
   margin-bottom: var(--space-2);
 }
 
-.no-conversation-content p,
 .no-messages-content p {
   font-size: 0.875rem;
   color: var(--color-text-secondary);
@@ -520,14 +504,12 @@ onMounted(() => {
     padding: var(--space-3);
   }
   
-  .no-conversation,
   .no-messages,
   .loading-messages,
   .error-messages {
     padding: var(--space-4);
   }
   
-  .no-conversation-icon,
   .no-messages-icon {
     font-size: 3rem;
   }
