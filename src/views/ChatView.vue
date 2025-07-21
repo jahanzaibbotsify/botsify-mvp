@@ -84,11 +84,6 @@ function toggleSystemMessageModal() {
   showSystemMessageModal.value = !showSystemMessageModal.value;
 }
 
-function toggleMobileSidebar() {
-  if (storySidebar.value) {
-    storySidebar.value.toggleSidebar();
-  }
-}
 
 function toggleStorySidebar() {
   showStorySidebar.value = !showStorySidebar.value;
