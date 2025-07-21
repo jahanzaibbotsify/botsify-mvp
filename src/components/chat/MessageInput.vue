@@ -9,6 +9,9 @@ import { botsifyApi } from '@/services/botsifyApi';
 
 const props = defineProps<{
   chatId: string;
+  message?: string;
+  loading?: boolean;
+  centered?: boolean;
 }>();
 
 const chatStore = useChatStore();
@@ -620,7 +623,7 @@ const hideLoading = () => {
 </script>
 
 <template>
-  <div class="message-input-container">
+  <div class="message-input-container" :class="{ centered: props.centered }">
     <!-- Backdrop to close dropdown -->
     <div v-if="showMCPDropdown" class="dropdown-backdrop" @click="closeMCPDropdown"></div>
 
@@ -1040,6 +1043,12 @@ const hideLoading = () => {
   position: sticky;
   bottom: 0;
   z-index: var(--z-sticky);
+}
+
+/* Centered state overrides */
+.message-input-container.centered {
+  padding: 0;
+  background-color: white;
 }
 
 .input-area {

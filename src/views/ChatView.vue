@@ -7,18 +7,18 @@ import MessageInput from '@/components/chat/MessageInput.vue';
 import TypingIndicator from '@/components/chat/TypingIndicator.vue';
 import SystemMessageSender from '@/components/chat/SystemMessageSender.vue';
 import ApiErrorNotification from '@/components/chat/ApiErrorNotification.vue';
-import StorySidebar from '@/components/chat/StorySidebar.vue';
 import ThemeToggle from '@/components/ui/ThemeToggle.vue';
 import UserMenu from '@/components/auth/UserMenu.vue';
+import { botsifyApi } from '@/services/botsifyApi';
+import { BOTSIFY_WEB_URL } from '@/utils/config';
 
 
 const route = useRoute();
 const chatStore = useChatStore();
 const chatId = computed(() => route.params.id as string);
 const messagesContainer = ref<HTMLElement | null>(null);
-const storySidebar = ref<InstanceType<typeof StorySidebar> | null>(null);
 const showSystemMessageModal = ref(false);
-const showStorySidebar = ref(false);
+const hasMessages = computed(() => chat.value && chat.value.messages && chat.value.messages.length > 0)
 
 const chat = computed(() => {
   let foundChat = chatStore.chats.find(c => c.id === chatId.value);
@@ -34,6 +34,10 @@ const chat = computed(() => {
   
   return foundChat;
 });
+
+const isDeployingAI = ref(false);
+const latestPromptContent = computed(() => chat.value?.story?.content || '');
+const hasPromptContent = computed(() => latestPromptContent.value.trim().length > 0);
 
 const scrollToBottom = async () => {
   await nextTick();
@@ -61,6 +65,12 @@ watch(() => chatStore.isTyping, (isTyping, wasTyping) => {
   scrollToBottom();
 });
 
+const showCenteredInput = computed(() => {
+  if (!chat.value || !chat.value.messages) return true;
+  const msgs = chat.value.messages;
+  return msgs.length === 0 || (msgs.length === 1 && (!msgs[0].content || msgs[0].content === null || msgs[0].content === ''));
+});
+
 onMounted(() => {
   // Set active chat when component mounts
   chatStore.setActiveChat(chatId.value);
@@ -72,14 +82,36 @@ function toggleSystemMessageModal() {
   showSystemMessageModal.value = !showSystemMessageModal.value;
 }
 
-function toggleMobileSidebar() {
-  if (storySidebar.value) {
-    storySidebar.value.toggleSidebar();
+async function testAI() {
+  if (!hasPromptContent.value) {
+    window.$toast.error('No prompt content available to deploy. Please generate some content first.');
+    return;
   }
+  const apiKey = (await import('@/stores/apiKeyStore')).useApiKeyStore().apiKey;
+  const url = `${BOTSIFY_WEB_URL}/web-bot/agent/${apiKey}`;
+  window.open(url, '_blank');
 }
 
-function toggleStorySidebar() {
-  showStorySidebar.value = !showStorySidebar.value;
+function deployAI() {
+  if (!hasPromptContent.value) {
+    window.$toast.error('No prompt content available to deploy. Please generate some content first.');
+    return;
+  }
+  window.$confirm({}, async () => {
+    isDeployingAI.value = true;
+    try {
+      const result = await botsifyApi.deployAiAgent(latestPromptContent.value);
+      if (result.success) {
+        window.$toast.success(`🚀 ${result.message}`);
+      } else {
+        window.$toast.error(`❌ Deployment failed: ${result.message}`);
+      }
+    } catch (error) {
+      window.$toast.error('❌ An unexpected error occurred during deployment.');
+    } finally {
+      isDeployingAI.value = false;
+    }
+  });
 }
 
 function clearVersionHistory() {
@@ -102,36 +134,46 @@ function clearAllChats() {
 </script>
 
 <template>
-  <div v-if="chat" class="chat-view" :class="{ 'with-sidebar': showStorySidebar }">
+  <div v-if="chat" class="chat-view">
     <!-- API Error Notification -->
     <ApiErrorNotification />
     
     <div class="chat-header">
       <h2>{{ chat.title }}</h2>
       <div class="chat-actions">
-        <!-- AI Prompt Toggle -->
+        <!-- Deploy/Test AI Buttons -->
         <button 
-          class="icon-button ai-prompt-toggle" 
-          @click="toggleStorySidebar"
-          title="AI Prompt"
+          class="action-button deploy-button"
+          @click="deployAI"
+          :disabled="isDeployingAI || !hasPromptContent"
+          :title="!hasPromptContent ? 'Generate prompt content first' : 'Deploy your AI agent'"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 12l2 2 4-4"></path>
-            <path d="M21 12c-1 0-2-1-2-2s1-2 2-2 2 1 2 2-1 2-2 2z"></path>
-            <path d="M3 12c1 0 2-1 2-2s-1-2-2-2-2 1-2 2 1 2 2 2z"></path>
-            <path d="M12 3c0 1-1 2-2 2s-2-1-2-2 1-2 2-2 2 1 2 2z"></path>
-            <path d="M12 21c0-1 1-2 2-2s2 1 2 2-1 2-2 2-2-1-2-2z"></path>
-          </svg>
+          <div class="button-content">
+            <svg v-if="!isDeployingAI" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polygon points="10,8 16,12 10,16 10,8"></polygon>
+            </svg>
+            <div v-else class="loading-spinner"></div>
+            <span>{{ isDeployingAI ? 'Deploying...' : 'Deploy AI' }}</span>
+          </div>
         </button>
-        
+        <button 
+          class="action-button test-button"
+          @click="testAI"
+          :disabled="!hasPromptContent"
+          :title="!hasPromptContent ? 'Generate prompt content first' : 'Test your AI agent'"
+        >
+          <div class="button-content">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+            </svg>
+            <span>Test AI</span>
+          </div>
+        </button>
         <!-- Clear History Dropdown -->
         <div class="dropdown">
           <button class="icon-button" title="Delete">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 6h18"></path>
-              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-            </svg>
+            <i class="pi pi-trash"></i>
           </button>
           <div class="dropdown-content">
             <button @click="clearAllChats" class="dropdown-item danger">
@@ -143,15 +185,6 @@ function clearAllChats() {
           </div>
         </div>
         
-        <!-- Mobile sidebar toggle button -->
-        <button class="icon-button mobile-sidebar-toggle" @click="toggleMobileSidebar" title="Toggle Sidebar">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="9" y1="9" x2="15" y2="9"></line>
-            <line x1="9" y1="12" x2="15" y2="12"></line>
-            <line x1="9" y1="15" x2="15" y2="15"></line>
-          </svg>
-        </button>
         <ThemeToggle />
         <UserMenu />
       </div>
@@ -167,12 +200,17 @@ function clearAllChats() {
         
         <TypingIndicator v-if="chatStore.isTyping" />
       </div>
+      <!-- Centered MessageInput if no messages or first message is empty -->
+      <div v-if="showCenteredInput" class="centered-message-input">
+        <div class="centered-heading">
+          <h1>How can I help you today?</h1>
+        </div>
+        <MessageInput :chatId="chatId" :centered="true" />
+      </div>
     </div>
     
-    <MessageInput :chatId="chatId" />
-    
-    <!-- Story Sidebar - Only show when enabled -->
-    <StorySidebar v-if="showStorySidebar" ref="storySidebar" :chatId="chatId" />
+    <!-- Bottom MessageInput if there are real messages -->
+    <MessageInput v-if="!showCenteredInput" :chatId="chatId" />
     
     <!-- System Message Modal -->
     <div v-if="showSystemMessageModal" class="modal-overlay" @click.self="toggleSystemMessageModal">
@@ -180,10 +218,7 @@ function clearAllChats() {
         <div class="modal-header">
           <h3>System Message</h3>
           <button class="close-button" @click="toggleSystemMessageModal">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
+            <i class="pi pi-times"></i>
           </button>
         </div>
         <SystemMessageSender />
@@ -527,5 +562,138 @@ function clearAllChats() {
   box-shadow: 0 -2px 10px rgba(0, 163, 255, 0.03);
   border: 1px solid rgba(0, 163, 255, 0.1);
   border-top: none;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-normal);
+  border: none;
+  margin-left: var(--space-2);
+}
+.btn-primary {
+  background-color: var(--color-primary);
+  color: white;
+}
+.btn-primary:hover {
+  background-color: var(--color-primary-hover);
+}
+.btn-secondary {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+.btn-secondary:hover {
+  background-color: var(--color-bg-hover);
+}
+.centered-message-input {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  width: 100%;
+  padding: 0;
+  background-color: white;
+}
+.centered-message-input > * {
+  width: 100%;
+  max-width: 100%;
+}
+/* Centered heading styles */
+.centered-heading {
+  width: 100%;
+  text-align: center;
+  margin-bottom: var(--space-6);
+}
+.centered-heading h1 {
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-4);
+  font-family: var(--font-family);
+  line-height: 1.2;
+}
+.action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all var(--transition-normal);
+  cursor: pointer;
+  border: none;
+  width: 100%;
+  height: 40px;
+  min-height: 40px;
+  max-height: 40px;
+}
+.action-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.button-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.test-button {
+  background-color: var(--color-warning);
+  color: white;
+}
+.test-button:hover:not(:disabled) {
+  background-color: var(--color-warning-hover, #e6a700);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+.deploy-button {
+  background-color: var(--color-success);
+  color: white;
+}
+.deploy-button:hover:not(:disabled) {
+  background-color: var(--color-success-hover, #16a34a);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.status-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+}
+.status-info.warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: var(--color-warning);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+.status-info.success {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: var(--color-success);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+.status-info svg {
+  flex-shrink: 0;
 }
 </style>
