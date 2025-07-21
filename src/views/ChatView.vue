@@ -2,10 +2,10 @@
 import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
+import StorySidebar from '@/components/sidebar/StorySidebar.vue';
 import ChatMessage from '@/components/chat/ChatMessage.vue';
 import MessageInput from '@/components/chat/MessageInput.vue';
 import TypingIndicator from '@/components/chat/TypingIndicator.vue';
-import StorySidebar from '@/components/chat/StorySidebar.vue';
 import SystemMessageSender from '@/components/chat/SystemMessageSender.vue';
 import ApiErrorNotification from '@/components/chat/ApiErrorNotification.vue';
 import ThemeToggle from '@/components/ui/ThemeToggle.vue';
@@ -243,7 +243,7 @@ function clearAllChats() {
     
      <!-- Story Sidebar - Only show when enabled -->
      <StorySidebar v-if="showStorySidebar" ref="storySidebar" :chatId="chatId" />
-     
+
     <!-- System Message Modal -->
     <div v-if="showSystemMessageModal" class="modal-overlay" @click.self="toggleSystemMessageModal">
       <div class="modal-content">
