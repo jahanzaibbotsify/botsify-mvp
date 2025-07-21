@@ -75,7 +75,6 @@ const handleStatusChange = async () => {
   }
 }
 
-const showTranslateModal = ref(false)
 const translateModalRef = ref<InstanceType<typeof TranslateModal> | null>(null)
 
 const openTranslateModal = () => {

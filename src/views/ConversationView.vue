@@ -9,7 +9,6 @@ import {
   MessageInput,
   UserSidebar
 } from '@/components/conversation'
-import TranslateModal from '@/components/conversation/TranslateModal.vue'
 
 
 const route = useRoute()
