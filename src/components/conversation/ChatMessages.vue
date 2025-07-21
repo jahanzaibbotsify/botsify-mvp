@@ -10,6 +10,7 @@ const props = defineProps<{
   loading?: boolean
   error?: string | null
   conversationTitle?: string
+  selectedLanguage?: string // <-- add this
 }>()
 
 const emit = defineEmits<{
@@ -120,6 +121,13 @@ const handleAttachmentDownload = (attachment: any) => {
 watch(() => props.messages.length, (newLength, oldLength) => {
   if (newLength > oldLength) {
     scrollToBottom()
+  }
+})
+
+watch(() => props.selectedLanguage, (lang) => {
+  if (lang) {
+    console.log('Selected language changed:', lang)
+    // Translation logic will be added here
   }
 })
 

@@ -25,7 +25,7 @@
           <option value="1">Active</option>
           <option value="0">Inactive</option>
         </select>
-        <button class="translate-button">
+        <button class="translate-button" @click="openTranslateModal">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.01-4.65.83-6.67l2.16-2.16c-.56-.56-1.47-.56-2.03 0L9.5 5.5c-.56.56-.56 1.47 0 2.03l.03.03c-2.02 1.18-4.73.91-6.67-.83l-.03-.03c-.56-.56-1.47-.56-2.03 0L.5 5.5c-.56.56-.56 1.47 0 2.03l2.16 2.16c1.74 1.94 2.01 4.65.83 6.67l-.03.03c-.56-.56-.56 1.47 0 2.03l2.16 2.16c.56.56 1.47.56 2.03 0l2.16-2.16c.56-.56.56-1.47 0-2.03l-.03-.03z"/>
           </svg>
@@ -33,12 +33,14 @@
         </button>
       </template>
     </div>
+    <TranslateModal ref="translateModalRef" @select-language="handleLanguageSelect" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useConversationStore } from '@/stores/conversationStore'
+import TranslateModal from './TranslateModal.vue'
 
 interface Props {
   userName?: string
@@ -71,6 +73,19 @@ const handleStatusChange = async () => {
     console.error('Error changing bot status:', error)
     window.$toast.error('An error occurred while updating bot status')
   }
+}
+
+const showTranslateModal = ref(false)
+const translateModalRef = ref<InstanceType<typeof TranslateModal> | null>(null)
+
+const openTranslateModal = () => {
+  translateModalRef.value?.openModal()
+}
+
+const emit = defineEmits(['translate-language'])
+
+const handleLanguageSelect = (lang: string) => {
+  emit('translate-language', lang)
 }
 </script>
 

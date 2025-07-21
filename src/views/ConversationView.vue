@@ -9,7 +9,7 @@ import {
   MessageInput,
   UserSidebar
 } from '@/components/conversation'
-
+import TranslateModal from '@/components/conversation/TranslateModal.vue'
 
 
 const route = useRoute()
@@ -18,6 +18,7 @@ const conversationStore = useConversationStore()
 // Local state
 const activeUserTab = ref('profile')
 const newMessage = ref('')
+const selectedLanguage = ref('en')
 
 // Computed properties
 const satisfactionPercentage = computed(() => {
@@ -29,6 +30,11 @@ const sendMessage = async (message: string, fileUrls?: string[]) => {
   if (!message.trim()) return
   await conversationStore.sendMessage(message, fileUrls)
   newMessage.value = ''
+}
+
+const handleTranslateLanguage = (lang: string) => {
+  selectedLanguage.value = lang
+  // Translation logic will be added in next step
 }
 
 // Lifecycle
@@ -93,6 +99,7 @@ onMounted(async () => {
           :user-name="conversationStore.selectedConversation?.title"
           :status="conversationStore.selectedConversation?.active_for_bot ?? 0"
           :loading="conversationStore.loading"
+          @translate-language="handleTranslateLanguage"
         />
 
         <!-- Chat Messages Area -->
@@ -100,6 +107,7 @@ onMounted(async () => {
           :messages="conversationStore.messages"
           :loading="conversationStore.loading"
           :error="conversationStore.error"
+          :selected-language="selectedLanguage"
           @retry="conversationStore.fetchUserConversation(conversationStore.selectedConversation?.fbid || '')"
         />
 
