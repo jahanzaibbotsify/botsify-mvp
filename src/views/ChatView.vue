@@ -5,6 +5,7 @@ import { useChatStore } from '@/stores/chatStore';
 import ChatMessage from '@/components/chat/ChatMessage.vue';
 import MessageInput from '@/components/chat/MessageInput.vue';
 import TypingIndicator from '@/components/chat/TypingIndicator.vue';
+import StorySidebar from '@/components/chat/StorySidebar.vue';
 import SystemMessageSender from '@/components/chat/SystemMessageSender.vue';
 import ApiErrorNotification from '@/components/chat/ApiErrorNotification.vue';
 import ThemeToggle from '@/components/ui/ThemeToggle.vue';
@@ -16,8 +17,10 @@ import { BOTSIFY_WEB_URL } from '@/utils/config';
 const route = useRoute();
 const chatStore = useChatStore();
 const chatId = computed(() => route.params.id as string);
+const storySidebar = ref<InstanceType<typeof StorySidebar> | null>(null);
 const messagesContainer = ref<HTMLElement | null>(null);
 const showSystemMessageModal = ref(false);
+const showStorySidebar = ref(false);
 
 const chat = computed(() => {
   let foundChat = chatStore.chats.find(c => c.id === chatId.value);
@@ -81,6 +84,16 @@ function toggleSystemMessageModal() {
   showSystemMessageModal.value = !showSystemMessageModal.value;
 }
 
+function toggleMobileSidebar() {
+  if (storySidebar.value) {
+    storySidebar.value.toggleSidebar();
+  }
+}
+
+function toggleStorySidebar() {
+  showStorySidebar.value = !showStorySidebar.value;
+}
+
 async function testAI() {
   if (!hasPromptContent.value) {
     window.$toast.error('No prompt content available to deploy. Please generate some content first.');
@@ -133,13 +146,14 @@ function clearAllChats() {
 </script>
 
 <template>
-  <div v-if="chat" class="chat-view">
+  <div v-if="chat" class="chat-view" :class="{ 'with-sidebar': showStorySidebar }">
     <!-- API Error Notification -->
     <ApiErrorNotification />
     
     <div class="chat-header">
       <h2>{{ chat.title }}</h2>
       <div class="chat-actions">
+        
         <!-- Deploy/Test AI Buttons -->
         <button 
           class="action-button deploy-button"
@@ -169,6 +183,22 @@ function clearAllChats() {
             <span>Test AI</span>
           </div>
         </button>
+
+        <!-- AI Prompt Toggle -->
+        <button 
+          class="icon-button ai-prompt-toggle" 
+          @click="toggleStorySidebar"
+          title="AI Prompt"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 12l2 2 4-4"></path>
+            <path d="M21 12c-1 0-2-1-2-2s1-2 2-2 2 1 2 2-1 2-2 2z"></path>
+            <path d="M3 12c1 0 2-1 2-2s-1-2-2-2-2 1-2 2 1 2 2 2z"></path>
+            <path d="M12 3c0 1-1 2-2 2s-2-1-2-2 1-2 2-2 2 1 2 2z"></path>
+            <path d="M12 21c0-1 1-2 2-2s2 1 2 2-1 2-2 2-2-1-2-2z"></path>
+          </svg>
+        </button>
+
         <!-- Clear History Dropdown -->
         <div class="dropdown">
           <button class="icon-button" title="Delete">
@@ -211,6 +241,9 @@ function clearAllChats() {
     <!-- Bottom MessageInput if there are real messages -->
     <MessageInput v-if="!showCenteredInput" :chatId="chatId" />
     
+     <!-- Story Sidebar - Only show when enabled -->
+     <StorySidebar v-if="showStorySidebar" ref="storySidebar" :chatId="chatId" />
+     
     <!-- System Message Modal -->
     <div v-if="showSystemMessageModal" class="modal-overlay" @click.self="toggleSystemMessageModal">
       <div class="modal-content">
