@@ -154,6 +154,7 @@ const helpLinks = [
 const showZen = () => {
   window.showZen()
   closeAllDropdowns();
+  closeHelpDropdown();
 }
 
 // Function to open the BookMeeting modal
@@ -171,6 +172,7 @@ const openBookMeetingModal = () => {
 const openExternalLink = (url: string) => {
   window.open(url, '_blank');
   closeAllDropdowns();
+  closeHelpDropdown();
 };
 
 // Handle help item click
