@@ -42,7 +42,6 @@ import { useConversationStore } from '@/stores/conversationStore'
 
 interface Props {
   userName?: string
-  userId?: string
   loading?: boolean
 }
 
@@ -55,15 +54,9 @@ const conversationStore = useConversationStore()
 const selectedStatus = ref('active')
 
 const handleStatusChange = async () => {
-  if (!props.userId) {
-    window.$toast.error('No user selected for status change')
-    return
-  }
-
   try {
     const status = selectedStatus.value === 'active' ? 1 : 0
-    const response = await conversationStore.changeBotActivation(props.userId, status)
-    
+    const response = await conversationStore.changeBotActivation(status)
     if (response?.success) {
       window.$toast.success(response.message || 'Bot status updated successfully')
     } else {

@@ -46,37 +46,15 @@ const handleImport = async () => {
 }
 
 const downloadSampleCSV = () => {
-  const csvContent = `name,locale,source,country,os,phone,status
-John Doe,en,facebook,United States,Windows,1234567890,Active
-Jane Smith,en,instagram,Canada,iOS,0987654321,Inactive
-Mike Johnson,en,twitter,United Kingdom,Android,1122334455,Active`
-  
-  const blob = new Blob([csvContent], { type: 'text/csv' })
-  const url = window.URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'sample_users.csv'
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  window.URL.revokeObjectURL(url)
-}
+  const url = 'https://bot-file-upload-eu-1.s3.eu-west-1.amazonaws.com/templates/images/messager_user_template.csv';
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'messager_user_template.csv'; // Optional: override filename
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
 
-const downloadSampleTXT = () => {
-  const txtContent = `John Doe,en,facebook,United States,Windows,1234567890,Active
-Jane Smith,en,instagram,Canada,iOS,0987654321,Inactive
-Mike Johnson,en,twitter,United Kingdom,Android,1122334455,Active`
-  
-  const blob = new Blob([txtContent], { type: 'text/plain' })
-  const url = window.URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'sample_users.txt'
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  window.URL.revokeObjectURL(url)
-}
 </script>
 
 <template>
@@ -108,13 +86,12 @@ Mike Johnson,en,twitter,United Kingdom,Android,1122334455,Active`
 
       <div class="import-info">
         <p class="info-text">
-          <strong>Note:</strong> Supported formats: .csv, .txt<br>
+          <strong>Note:</strong> Supported formats: .csv<br>
           <strong>Sample Files:</strong> 
           <button class="sample-link" @click="downloadSampleCSV">CSV</button> | 
-          <button class="sample-link" @click="downloadSampleTXT">TXT</button>
         </p>
         <p class="info-text">
-          <strong>Format:</strong> name,locale,source,country,os,phone,status
+          <strong>Format:</strong> name,phone
         </p>
       </div>
 

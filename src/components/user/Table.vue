@@ -5,7 +5,6 @@ import UserAttributes from './Attributes.vue'
 import { UserAttribute, SortBy, PerPage } from '@/types/user'
 import { useUserStore, type ExtendedUser } from '@/stores/userStore'
 import { userApi } from '@/services/userApi';
-import { getPlatformClass, getPlatformIcon } from '@/utils';
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -170,11 +169,9 @@ const getPageNumbers = computed(() => {
             <th class="sortable" :class="getSortIcon('name')" @click="handleSort('name')">
               NAME
             </th>
-            <th class="sortable" :class="getSortIcon('type')" @click="handleSort('type')">
-              TYPE
             </th>
-            <th>CREATED AT</th>
-            <th>COUNTRY</th>
+            <th :class="getSortIcon('created_at')" @click="handleSort('created_at')">CREATED AT</th>
+            <th :class="getSortIcon('country')" @click="handleSort('country')">COUNTRY</th>
             <th>PHONE</th>
             <th>STATUS</th>
             <th>ACTIONS</th>
@@ -239,14 +236,6 @@ const getPageNumbers = computed(() => {
                   <div class="user-email">{{ user.email }}</div>
                 </div>
               </div>
-            </td>
-            <td>
-              <span
-                class="avatar-platform-icon"
-                :class="getPlatformClass(user.type)"
-              >
-                <i :class="getPlatformIcon(user.type)"></i>
-              </span>
             </td>
             <td>{{ user.created_at }}</td>
             <td>{{ user.country }}</td>
