@@ -91,6 +91,7 @@ onMounted(async () => {
         <!-- Chat Header -->
         <ChatHeader 
           :user-name="conversationStore.selectedConversation?.title"
+          :status="conversationStore.selectedConversation?.active_for_bot ?? 0"
           :loading="conversationStore.loading"
         />
 

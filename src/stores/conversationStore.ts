@@ -458,10 +458,10 @@ export const useConversationStore = defineStore('conversation', () => {
         // Cache the messages
         setCachedMessages(messengerUserId, convertedMessages, response.data.last_msg_key)
         
-        console.log(response.data, "........")
         // Update selected conversation with user data
         if (selectedConversation.value) {
           selectedConversation.value.id = response.data.user.id
+          selectedConversation.value.active_for_bot = response.data.user.active_for_bot
           selectedConversation.value.email = response.data.user.email
           selectedConversation.value.assignedTo = response.data.agent_assigned
           selectedConversation.value.status = response.data.conv_status
