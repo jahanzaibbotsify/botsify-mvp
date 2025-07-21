@@ -171,7 +171,7 @@ if (!localStorageAvailable) {
 async function confirmApiKey() { 
   const params = window.location.pathname.split('/');
   if (['agent', 'conversation'].includes(params[1])) {
-    let apikey = '7byx4phUYF56NRPB1svnIho13im6W7nD2n5eADZA';
+    let apikey = params[2];
     if (apikey) {
       const bot = await getBotDetails(apikey);    
       if (bot) {
