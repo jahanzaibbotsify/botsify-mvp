@@ -15,7 +15,7 @@ const routes: RouteRecordRaw[] = [
         props: true
       },
       {
-        path: '/conversation/:id',
+        path: '/conversation/:id?',
         name: 'conversation',
         component: () => import('../views/ConversationView.vue'),
         props: true

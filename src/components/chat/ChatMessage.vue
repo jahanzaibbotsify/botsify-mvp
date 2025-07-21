@@ -15,15 +15,42 @@ const parsedContent = computed(() => {
       return '<p><em>No message content</em></p>';
     }
     
-    // Check if it's an error message
-    if (props.message.content.startsWith('Error:')) {
-      return `<p class="error-text">${props.message.content}</p>`;
+    // Handle different message content types
+    let contentToRender = props.message.content;
+    
+    // If content is an object, try to extract the text
+    if (typeof props.message.content === 'object') {
+      console.log('Message content is an object:', props.message.content);
+      
+      // Handle nested text object structure
+      const contentObj = props.message.content as any;
+      if (contentObj.text) {
+        if (typeof contentObj.text === 'object') {
+          // Handle double-nested text object
+          contentToRender = contentObj.text.text || JSON.stringify(contentObj.text);
+        } else {
+          contentToRender = contentObj.text;
+        }
+      } else {
+        // Try to find any text property or stringify the object
+        contentToRender = JSON.stringify(props.message.content);
+      }
     }
     
-    return marked(props.message.content);
+    // Check if it's an error message
+    if (typeof contentToRender === 'string' && contentToRender.startsWith('Error:')) {
+      return `<p class="error-text">${contentToRender}</p>`;
+    }
+    
+    // Ensure we have a string to render
+    if (typeof contentToRender !== 'string') {
+      contentToRender = JSON.stringify(contentToRender);
+    }
+    
+    return marked(contentToRender);
   } catch (error) {
     console.error('Error parsing markdown:', error);
-    return `<p class="error-text">Error rendering message: ${props.message.content}</p>`;
+    return `<p class="error-text">Error rendering message: ${JSON.stringify(props.message.content)}</p>`;
   }
 });
 

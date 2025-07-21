@@ -16,6 +16,7 @@ This is a modern chat application built with Vue 3, TypeScript, and Vite. It fea
 - **Date Handling**: Day.js
 - **Image Processing**: Vue Advanced Cropper
 - **HTTP Client**: Axios
+- **Icons**: primevue
 
 ## Project Structure
 ```

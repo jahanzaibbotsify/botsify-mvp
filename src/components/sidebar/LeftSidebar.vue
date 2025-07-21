@@ -7,7 +7,7 @@ import { useSidebarStore } from '@/stores/sidebarStore';
 // import ChatListItem from '@/components/chat/ChatListItem.vue';
 import SidebarPricing from './SidebarPricing.vue';
 import BookMeeting from '@/components/ui/BookMeeting.vue';
-import { BOTSIFY_BASE_URL } from '@/utils/config';
+import { BOTSIFY_WEB_URL } from '@/utils/config';
 
 
 const chatStore = useChatStore();
@@ -28,6 +28,7 @@ const selectedNavigationButton = computed(() => {
 });
 // const isMobile = computed(() => width.value < 768);
 const showNavDropdown = ref(false);
+const showHelpDropdown = ref(false);
 const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
 
 const navigationButtons = [
@@ -39,10 +40,10 @@ const navigationButtons = [
   {
     id: 'analytics',
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 5a1 1 0 0 1 1 1v12a1 1 0 1 1-2 0V6a1 1 0 0 1 1-1Zm4 5a1 1 0 0 1 1 1v2a1 1 0 1 1-2 0v-2a1 1 0 0 1 1-1Zm5-1a1 1 0 1 0-2 0v6a1 1 0 1 0 2 0V9ZM8 8a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0V9a1 1 0 0 1 1-1Zm-3 3a1 1 0 1 0-2 0v2a1 1 0 1 0 2 0v-2Z" clip-rule="evenodd"></path></svg>',
-    name: 'Analytics'
+    name: 'Reports & Analytics'
   },
   {
-    id: `conversation/${chatStore.activeChat}`,
+    id: `conversation`,
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 4a8 8 0 0 0-5.687 13.627 1 1 0 0 1 .147 1.217L5.766 20H12a8 8 0 1 0 0-16ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10H4a1 1 0 0 1-.857-1.515l1.218-2.03A9.964 9.964 0 0 1 2 12Z" clip-rule="evenodd"></path><path d="M9.25 12a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Zm4 0a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Zm4 0a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Z"></path></svg>',
     name: 'Chat'
   },
@@ -75,44 +76,85 @@ const navigateToPage = (pageId: string) => {
 
 const toggleNavDropdown = () => {
   showNavDropdown.value = !showNavDropdown.value;
+  // Close help dropdown if it's open
+  if (showNavDropdown.value) {
+    showHelpDropdown.value = false;
+  }
+};
+
+const toggleHelpDropdown = () => {
+  showHelpDropdown.value = !showHelpDropdown.value;
+  // Close nav dropdown if it's open
+  if (showHelpDropdown.value) {
+    showNavDropdown.value = false;
+  }
 };
 
 const closeNavDropdown = () => {
   showNavDropdown.value = false;
 };
 
+const closeHelpDropdown = () => {
+  showHelpDropdown.value = false;
+};
+
+const closeAllDropdowns = () => {
+  showNavDropdown.value = false;
+  showHelpDropdown.value = false;
+};
+
 // Navigation links for the dropdown with icons
 const navLinks = [
   {
     name: 'Legacy Platform',
-    url: `${BOTSIFY_BASE_URL}/bot`,
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" ...></svg>`
+    url: `${BOTSIFY_WEB_URL}/bot`,
+    icon: 'pi pi-check-circle'
   },
   {
     name: 'Video Guide',
-    url: `${BOTSIFY_BASE_URL}/bot/youtube-guide`,
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" ...></svg>`
+    url: `https://www.youtube.com/@Botsify`,
+    icon: 'pi pi-video'
   },
   {
     name: 'Documentation',
     url: 'https://botsify.zendesk.com/hc/en-us',
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" ...></svg>`
+    icon: 'pi pi-book'
   },
   {
     name: 'Developer Hub',
     url: 'https://documenter.getpostman.com/view/13814537/TVmTdF7W#d1e2a194-6d34-4d64-8dff-9628a2dc1077',
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" ...></svg>`
+    icon: 'pi pi-code'
   },
   {
     name: 'Billing',
-    url: `${BOTSIFY_BASE_URL}/account-settings/billing`,
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" ...></svg>`
+    url: `${BOTSIFY_WEB_URL}/account-settings/billing`,
+    icon: 'pi pi-credit-card'
+  }
+];
+
+// Help links for the help dropdown
+const helpLinks = [
+  {
+    name: 'Tutorial',
+    url: `https://www.youtube.com/@Botsify`,
+    icon: 'pi pi-play-circle'
+  },
+  {
+    name: 'Documentation',
+    url: 'https://botsify.zendesk.com/hc/en-us',
+    icon: 'pi pi-book'
+  },
+  {
+    name: 'Support',
+    action: 'showZen',
+    icon: 'pi pi-question-circle'
   }
 ];
 
 const showZen = () => {
   window.showZen()
-  closeNavDropdown();
+  closeAllDropdowns();
+  closeHelpDropdown();
 }
 
 // Function to open the BookMeeting modal
@@ -126,26 +168,49 @@ const openBookMeetingModal = () => {
   closeNavDropdown();
 };
 
-
-
 // Open external link
 const openExternalLink = (url: string) => {
   window.open(url, '_blank');
-  closeNavDropdown();
+  closeAllDropdowns();
+  closeHelpDropdown();
+};
+
+// Handle help item click
+const handleHelpItemClick = (item: any) => {
+  if (item.action === 'showZen') {
+    showZen();
+  } else if (item.url) {
+    openExternalLink(item.url);
+  }
 };
 
 // Close dropdown when clicking outside
 const dropdownRef = ref<HTMLElement | null>(null);
+const helpDropdownRef = ref<HTMLElement | null>(null);
 const menuButtonRef = ref<HTMLElement | null>(null);
+const helpButtonRef = ref<HTMLElement | null>(null);
 
 const handleClickOutside = (event: MouseEvent) => {
-  if (
-    dropdownRef.value &&
-    menuButtonRef.value &&
-    !dropdownRef.value.contains(event.target as Node) &&
-    !menuButtonRef.value.contains(event.target as Node)
-  ) {
+  const target = event.target as Node;
+  
+  // Check if click is outside nav dropdown
+  const isOutsideNavDropdown = dropdownRef.value && 
+    !dropdownRef.value.contains(target) && 
+    menuButtonRef.value && 
+    !menuButtonRef.value.contains(target);
+    
+  // Check if click is outside help dropdown
+  const isOutsideHelpDropdown = helpDropdownRef.value && 
+    !helpDropdownRef.value.contains(target) && 
+    helpButtonRef.value && 
+    !helpButtonRef.value.contains(target);
+
+  if (isOutsideNavDropdown) {
     showNavDropdown.value = false;
+  }
+  
+  if (isOutsideHelpDropdown) {
+    showHelpDropdown.value = false;
   }
 };
 
@@ -212,21 +277,23 @@ const isLinkActive = (url: string) => {
               <div class="dropdown-arrow"></div>
               <div v-for="link in navLinks" :key="link.url" class="nav-item"
                 :class="{ 'active': isLinkActive(link.url) }" @click="openExternalLink(link.url)">
-                <div class="nav-item-icon" v-html="link.icon"></div>
+                <div class="nav-item-icon">
+                  <i :class="link.icon"></i>
+                </div>
                 <span>{{ link.name }}</span>
               </div>
 
 
               <div class="nav-item" role="button" @click="openBookMeetingModal">
                 <div class="nav-item-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"></svg>
+                  <i class="pi pi-calendar"></i>
                 </div>
                 <span>Book a Meeting</span>
               </div>
 
               <div class="nav-item" id="showWidget" @click="showZen()">
                 <div class="nav-item-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"></svg>
+                  <i class="pi pi-question-circle"></i>
                 </div>
                 <span>Support</span>
               </div>
@@ -261,22 +328,27 @@ const isLinkActive = (url: string) => {
         </div>
 
       </div>
-      <div>
-        <button class="navigation-button">
-          <span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor"
-              viewBox="0 0 24 24">
-              <path fill-rule="evenodd"
-                d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Z"
-                clip-rule="evenodd"></path>
-              <path fill-rule="evenodd"
-                d="M12 9a1 1 0 0 0-.879.522 1 1 0 0 1-1.754-.96A3 3 0 0 1 12 7c1.515 0 2.567 1.006 2.866 2.189.302 1.189-.156 2.574-1.524 3.258A.618.618 0 0 0 13 13a1 1 0 1 1-2 0c0-.992.56-1.898 1.447-2.342.455-.227.572-.618.48-.978C12.836 9.314 12.529 9 12 9Z"
-                clip-rule="evenodd"></path>
-              <path d="M13.1 16a1.1 1.1 0 1 1-2.2 0 1.1 1.1 0 0 1 2.2 0Z"></path>
-            </svg>
-          </span>
-          <span>Help</span>
-        </button>
+      <div class="help-container">
+        <div class="dropdown-container">
+          <button ref="helpButtonRef" class="navigation-button help-button" @click.stop="toggleHelpDropdown">
+            <span>
+              <i class="pi pi-question-circle" style="font-size: 1.5em;"></i>
+            </span>
+            <span>Help</span>
+          </button>
+
+          <!-- Help dropdown -->
+          <div ref="helpDropdownRef" v-if="showHelpDropdown" class="help-dropdown">
+            <div class="dropdown-arrow"></div>
+            <div v-for="item in helpLinks" :key="item.name" class="nav-item"
+              @click="handleHelpItemClick(item)">
+              <div class="nav-item-icon">
+                <i :class="item.icon"></i>
+              </div>
+              <span>{{ item.name }}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -430,6 +502,52 @@ const isLinkActive = (url: string) => {
   border-color: var(--color-border);
 }
 
+/* Help container and dropdown */
+.help-container {
+  position: relative;
+}
+
+.help-button {
+  position: relative;
+}
+
+.help-dropdown {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: 180px;
+  background-color: var(--color-bg-primary);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-border);
+  z-index: var(--z-dropdown);
+  overflow: hidden;
+}
+
+/* Override for ChatGPT-style dark mode */
+[data-theme="dark"] .help-dropdown {
+  background-color: #262626;
+  border-color: #404040;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.help-dropdown .dropdown-arrow {
+  position: absolute;
+  bottom: -8px;
+  left: 20px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid var(--color-bg-primary);
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1));
+}
+
+/* Override for ChatGPT-style dark mode */
+[data-theme="dark"] .help-dropdown .dropdown-arrow {
+  border-top-color: #262626;
+}
+
 /* Override for ChatGPT-style dark mode */
 [data-theme="dark"] .new-chat-button {
   color: #e5e5e5;
@@ -558,6 +676,7 @@ const isLinkActive = (url: string) => {
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 16px;
 }
 
 .nav-item.active .nav-item-icon {
@@ -667,7 +786,8 @@ const isLinkActive = (url: string) => {
     max-height: 34px;
   }
 
-  .nav-dropdown {
+  .nav-dropdown,
+  .help-dropdown {
     width: 180px;
   }
 }

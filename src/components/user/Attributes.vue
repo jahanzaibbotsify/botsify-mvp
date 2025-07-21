@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, defineEmits, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { UserAttribute } from '@/types/user';
 import { userApi } from '@/services/userApi'
 import { User } from '@/types/user';
@@ -102,55 +102,49 @@ const saveEdit = async (id: number): Promise<void> => {
   }
 }
 
-const deleteAttribute = async (id: number): Promise<void> => {
-  if (!props.user?.id) {
+const deleteAttribute = (id: number) => {
+  const userId = props.user?.id 
+  const userFbId = props.user?.fbId
+
+  if (!userId || !userFbId) {
     console.error('User ID is required for deleting attributes')
     window.$toast.error('Error: User ID is missing. Please try again.')
     return
   }
 
-  const result = await window.Swal.fire({
-    title: 'Are you sure?',
-    text: 'Are you sure you want to delete this attribute? This action cannot be undone.',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes, delete',
-    cancelButtonText: 'Cancel'
-  });
-  if (!result.isConfirmed) {
-    return
-  }
+  window.$confirm({}, async () => {
+    loading.value = true
+    errorMessage.value = ''
 
-  loading.value = true
-  errorMessage.value = ''
+    try {
+      const response = await userApi.deleteUserAttribute(userFbId, id)
 
-  try {
-    const response = await userApi.deleteUserAttribute(props.user?.fbId, id)
+      if (response.success && response.data) {
+        const deleteData = response.data
 
-    if (response.success && response.data) {
-      const deleteData = response.data
-      
-      if (deleteData.success) {
-        // Remove the attribute from local state
-        localAttributes.value = localAttributes.value.filter(attr => attr.id !== id)
-        emit('update', localAttributes.value)
-        
-        // Show success message
-        window.$toast.success(`Attribute deleted successfully! Deleted: ${deleteData.deleted_count || 1} attribute(s)`)
+        if (deleteData.success) {
+          localAttributes.value = localAttributes.value.filter(attr => attr.id !== id)
+          emit('update', localAttributes.value)
+
+          window.$toast.success(
+            `Attribute deleted successfully! Deleted: ${deleteData.deleted_count || 1} attribute(s)`
+          )
+        } else {
+          throw new Error(deleteData.message || 'Delete failed')
+        }
       } else {
-        throw new Error(deleteData.message || 'Delete failed')
+        throw new Error(response.message || 'Delete failed')
       }
-    } else {
-      throw new Error(response.message || 'Delete failed')
+    } catch (error) {
+      console.error('Error deleting attribute:', error)
+      errorMessage.value = error instanceof Error ? error.message : 'Failed to delete attribute'
+      window.$toast.error(`Failed to delete attribute: ${errorMessage.value}`)
+    } finally {
+      loading.value = false
     }
-  } catch (error) {
-    console.error('Error deleting attribute:', error)
-    errorMessage.value = error instanceof Error ? error.message : 'Failed to delete attribute'
-    window.$toast.error(`Failed to delete attribute: ${errorMessage.value}`)
-  } finally {
-    loading.value = false
-  }
+  })
 }
+
 
 const handleClose = (): void => {
   emit('close')

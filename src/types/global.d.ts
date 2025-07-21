@@ -2,17 +2,6 @@
 
 import Swal from 'sweetalert2';
 declare global {
-  interface Window { Swal: typeof Swal }
-}
-
-import type { ToastInterface } from 'vue-toast-notification';
-declare global {
-  interface Window {
-    $toast: ToastInterface;
-  }
-}
-
-declare global {
   interface Window {
     zE: any;
     showZen: (userName?: string, userEmail?: string) => void;
@@ -24,6 +13,9 @@ declare global {
         offset: { horizontal: string; vertical: string };
       };
     };
+    Swal: typeof Swal
+    $toast: ToastInterface;
+    $confirm: (overrideOpt?: any, callback?: () => void) => void;
   }
 }
 

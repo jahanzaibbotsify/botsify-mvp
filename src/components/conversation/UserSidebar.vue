@@ -3,58 +3,79 @@
     <!-- User Profile Header -->
     <div class="user-profile-header">
       <div class="user-avatar">
-        <div class="avatar-placeholder">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
+        <!-- Loading skeleton for avatar -->
+        <div v-if="loading" class="avatar-skeleton"></div>
+        <!-- Avatar when loaded -->
+        <div v-else class="avatar-placeholder">
+          <i class="pi pi-user"></i>
         </div>
       </div>
       <div class="user-info">
+        <!-- Loading skeleton for user info -->
+        <div v-if="loading" class="user-info-skeleton">
+          <div class="skeleton-line name-skeleton"></div>
+          <div class="skeleton-line email-skeleton"></div>
+        </div>
+        <!-- User info when loaded -->
+        <template v-else>
         <div class="user-name">{{ user?.title || 'Select User' }}</div>
         <div class="user-email">{{ user?.email || 'user@example.com' }}</div>
+        </template>
       </div>
-      <button class="notification-button icon-button">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
-          <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
-        </svg>
+      <!-- Notification button - only show when not loading -->
+      <button 
+        v-if="!loading"
+        class="notification-button icon-button" 
+        :class="{ enabled: notificationsEnabled, disabled: !notificationsEnabled }"
+        @click="toggleNotifications"
+      >
+        <i v-if="notificationsEnabled" class="pi pi-bell"></i>
+        <i v-else class="pi pi-bell-slash"></i>
       </button>
     </div>
 
-    <!-- User Details Tabs -->
-    <div class="user-tabs">
+    <!-- User Details Tabs - only show when not loading -->
+    <div v-if="!loading" class="user-tabs">
       <button 
         class="user-tab" 
-        :class="{ active: activeTab === 'profile' }"
-        @click="$emit('update:activeTab', 'profile')"
+        :class="{ active: activeTab === 'profile', disabled: !user?.fbid }"
+        @click="user?.fbid && $emit('update:activeTab', 'profile')"
+        :disabled="!user?.fbid"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
+        <i class="pi pi-user"></i>
       </button>
       <button 
         class="user-tab" 
-        :class="{ active: activeTab === 'data' }"
-        @click="$emit('update:activeTab', 'data')"
+        :class="{ active: activeTab === 'data', disabled: !user?.fbid }"
+        @click="user?.fbid && $emit('update:activeTab', 'data')"
+        :disabled="!user?.fbid"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
-          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
-        </svg>
+        <i class="pi pi-database"></i>
       </button>
     </div>
 
     <!-- User Details Content -->
     <div class="user-content">
-      <UserProfile v-if="activeTab === 'profile'" :user="user" />
-      <UserAttributes v-else-if="activeTab === 'data'" />
+      <!-- Loading skeleton for content -->
+      <div v-if="loading" class="content-skeleton">
+        <div class="skeleton-section" v-for="i in 3" :key="i">
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line short"></div>
+        </div>
+      </div>
+      <!-- Content when loaded -->
+      <template v-else>
+        <UserProfile v-if="activeTab === 'profile' && user?.fbid" :user="user" />
+        <UserAttributes v-else-if="activeTab === 'data' && user?.fbid" :user="user" />
+        <div v-else-if="!user?.fbid" class="no-user-selected">
+          <i class="pi pi-user"></i>
+          <p>Select a user to view details</p>
+        </div>
+      </template>
     </div>
 
-    <!-- User Satisfaction -->
-    <div class="user-satisfaction">
+    <!-- User Satisfaction - only show when not loading -->
+    <div v-if="!loading" class="user-satisfaction">
       <div class="satisfaction-header">
         <span class="satisfaction-label">User Satisfaction</span>
       </div>
@@ -65,43 +86,40 @@
       </div>
     </div>
 
-    <!-- Action Buttons -->
-    <div class="user-actions">
-      <button class="user-action-button icon-button">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="7 10 12 15 17 10"></polyline>
-          <line x1="12" y1="15" x2="12" y2="3"></line>
-        </svg>
+    <!-- Action Buttons - only show when not loading -->
+    <div v-if="!loading" class="user-actions">
+      <div class="export-dropdown">
+        <button class="user-action-button icon-button" @click="toggleExportDropdown">
+        <i class="pi pi-file-export"></i>
       </button>
-      <button class="user-action-button icon-button">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="18" cy="5" r="3"></circle>
-          <circle cx="6" cy="12" r="3"></circle>
-          <circle cx="18" cy="19" r="3"></circle>
-          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-        </svg>
-      </button>
-      <button class="user-action-button icon-button">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6"></polyline>
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-        </svg>
+        <div v-if="showExportDropdown" class="export-dropdown-content">
+          <button @click="exportChat('csv')" class="export-option">
+            <i class="pi pi-file"></i> Export as CSV
+          </button>
+          <button @click="exportChat('txt')" class="export-option">
+            <i class="pi pi-file"></i> Export as TXT
+          </button>
+        </div>
+      </div>
+      <button class="user-action-button delete-button" @click="deleteConversation">
+        <i class="pi pi-trash"></i>
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue'
 import UserProfile from './UserProfile.vue'
 import UserAttributes from './UserAttributes.vue'
 import type { ExtendedChat } from '@/types'
+import { useConversationStore } from '@/stores/conversationStore'
 
 interface Props {
   user?: ExtendedChat | null
   activeTab: string
   satisfactionPercentage: number
+  loading?: boolean
 }
 
 defineProps<Props>()
@@ -109,11 +127,97 @@ defineProps<Props>()
 defineEmits<{
   'update:activeTab': [value: string]
 }>()
+
+const notificationsEnabled = ref(true)
+const showExportDropdown = ref(false)
+const conversationStore = useConversationStore()
+
+const toggleNotifications = async () => {
+  try {
+    if (notificationsEnabled.value) {
+      // Disable notifications
+      const result = await conversationStore.disableNotifications()
+      if (result.success) {
+        notificationsEnabled.value = false
+        window.$toast.success(result.message || 'Notifications disabled')
+      } else {
+        window.$toast.error(result.message || 'Failed to disable notifications')
+      }
+    } else {
+      // Enable notifications
+      const result = await conversationStore.enableNotifications()
+      if (result.success) {
+        notificationsEnabled.value = true
+        window.$toast.success(result.message || 'Notifications enabled')
+      } else {
+        window.$toast.error(result.message || 'Failed to enable notifications')
+      }
+    }
+  } catch (error) {
+    console.error('Error toggling notifications:', error)
+    window.$toast.error('An error occurred while toggling notifications')
+  }
+}
+
+const toggleExportDropdown = () => {
+  showExportDropdown.value = !showExportDropdown.value
+}
+
+const exportChat = (extension: 'csv' | 'txt') => {
+  conversationStore.exportConversation(extension)
+  showExportDropdown.value = false
+}
+
+const deleteConversation = async () => {
+  window.$confirm({}, async () => {
+    try {
+      const response = await conversationStore.deleteConversation()
+      if (response?.success) {
+        window.$toast.success(response.message || 'Conversation deleted successfully')
+      } else {
+        window.$toast.error(response?.message || 'Failed to delete conversation')
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error)
+      window.$toast.error('An error occurred while deleting the conversation')
+    }
+  })
+}
+
+const handleClickOutside = (event: Event) => {
+  const target = event.target as HTMLElement
+  if (!target.closest('.export-dropdown')) {
+    showExportDropdown.value = false
+  }
+}
+
+onMounted(async () => {
+  document.addEventListener('click', handleClickOutside)
+  
+  // Check initial notification status - only if notifications are supported
+  if ('Notification' in window && 'serviceWorker' in navigator) {
+    try {
+      const status = await conversationStore.checkNotificationStatus()
+      notificationsEnabled.value = status.subscribed
+    } catch (error) {
+      console.error('Error checking notification status:', error)
+      // Default to disabled if there's an error
+      notificationsEnabled.value = false
+    }
+  } else {
+    // Notifications not supported, default to disabled
+    notificationsEnabled.value = false
+  }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <style scoped>
 .user-sidebar {
-  width: 320px;
+  width: 280px;
   background-color: var(--color-bg-secondary);
   border-left: 1px solid var(--color-border);
   display: flex;
@@ -179,6 +283,15 @@ defineEmits<{
   color: var(--color-text-primary);
 }
 
+.notification-button.disabled {
+  color: var(--color-text-tertiary);
+  opacity: 0.5;
+}
+
+.notification-button.enabled {
+  color: var(--color-primary);
+}
+
 .user-tabs {
   display: flex;
   padding: var(--space-3) var(--space-4);
@@ -210,9 +323,44 @@ defineEmits<{
   border-color: var(--color-primary);
 }
 
+.user-tab.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-tertiary);
+}
+
+.user-tab.disabled:hover {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-tertiary);
+}
+
 .user-content {
   flex: 1;
   overflow: hidden;
+}
+
+.no-user-selected {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  color: var(--color-text-secondary);
+  text-align: center;
+  height: 100%;
+}
+
+.no-user-selected i {
+  font-size: 3rem;
+  margin-bottom: var(--space-3);
+  opacity: 0.6;
+}
+
+.no-user-selected p {
+  margin: 0;
+  font-size: 0.875rem;
+  font-style: italic;
 }
 
 .user-satisfaction {
@@ -235,7 +383,7 @@ defineEmits<{
   height: 8px;
   background-color: var(--color-bg-tertiary);
   border-radius: var(--radius-full);
-  overflow: hidden;
+  margin: 12px 0;
 }
 
 .satisfaction-fill {
@@ -247,16 +395,25 @@ defineEmits<{
 
 .satisfaction-emoji {
   position: absolute;
-  top: -8px;
+  top: -6px;
   font-size: 16px;
+  z-index: 10;
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-full);
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .satisfaction-emoji.sad {
-  left: 0;
+  left: -2px;
 }
 
 .satisfaction-emoji.happy {
-  right: 0;
+  right: -2px;
 }
 
 .user-actions {
@@ -270,9 +427,10 @@ defineEmits<{
 .user-action-button {
   flex: 1;
   background-color: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
+  border: 1px solid var(--color-text-primary);
+  color: var(--color-text-primary);
   cursor: pointer;
+  width: 100%;
   transition: all var(--transition-normal);
 }
 
@@ -281,11 +439,119 @@ defineEmits<{
   color: var(--color-text-primary);
 }
 
-/* Responsive Design */
-@media (max-width: 1200px) {
-  .user-sidebar {
-    width: 280px;
-  }
+.user-action-button.delete-button{
+  border: 1px solid var(--color-text-danger);
+  color: var(--color-text-danger);
+}
+
+.user-action-button.delete-button:hover{
+  background-color: var(--color-error);
+  color: white;
+}
+
+/* Export Dropdown Styles */
+.export-dropdown {
+  flex: 1;
+  position: relative;
+}
+
+.export-dropdown-content {
+  position: absolute;
+  bottom: 120%;
+  left: 0;
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: var(--z-dropdown);
+  min-width: 180px;
+  margin-top: var(--space-1);
+}
+
+.export-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  background: none;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color var(--transition-normal);
+  text-align: left;
+}
+
+.export-option:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.export-option:first-child {
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.export-option:last-child {
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+/* Skeleton Styles */
+.avatar-skeleton {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--color-bg-tertiary) 25%, var(--color-bg-hover) 50%, var(--color-bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.user-info-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+}
+
+.skeleton-line {
+  height: 1rem;
+  background: linear-gradient(90deg, var(--color-bg-tertiary) 25%, var(--color-bg-hover) 50%, var(--color-bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+.name-skeleton {
+  width: 80%;
+}
+
+.email-skeleton {
+  width: 60%;
+}
+
+.content-skeleton {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.skeleton-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.skeleton-section .skeleton-line {
+  height: 0.875rem;
+}
+
+.skeleton-section .skeleton-line.short {
+  width: 60%;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 @media (max-width: 1024px) {

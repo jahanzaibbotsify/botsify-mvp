@@ -1,4 +1,4 @@
-<script setup lang="ts">
+  <script setup lang="ts">
 import { ref } from 'vue'
 import ModalLayout from '@/components/ui/ModalLayout.vue'
 
@@ -8,12 +8,8 @@ const openModal = () => {
   modalRef.value?.openModal()
 }
 
-const closeModal = () => {
-  modalRef.value?.closeModal()
-}
-
 const openCalendar = (link: string, help: boolean = false) => {
-  closeModal()
+  modalRef.value?.closeModal()
   if (link) window.open(link, '_blank')
   if (help) (window as any).showZen?.()
 }
@@ -27,7 +23,6 @@ defineExpose({ openModal })
     ref="modalRef"
     title="BOOK A MEETING"
     max-width="500px"
-    @close="closeModal"
   >
     <p>What do you need help with? Please choose one of the following options</p>
     <a class="btn" @click="() => openCalendar('https://calendly.com/samuel-nixon/botsify-customer-success')">

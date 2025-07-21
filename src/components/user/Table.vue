@@ -1,29 +1,18 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router';
 import UserAttributes from './Attributes.vue'
-import { User, UserAttribute, PaginationData, SortingData, SortBy, PerPage } from '@/types/user'
+import { UserAttribute, SortBy, PerPage } from '@/types/user'
+import { useUserStore, type ExtendedUser } from '@/stores/userStore'
 import { userApi } from '@/services/userApi';
+import { getPlatformClass, getPlatformIcon } from '@/utils';
 
-const props = defineProps<{
-  users: User[]
-  selectAll: boolean
-  pagination: PaginationData
-  sorting: SortingData
-  loading: boolean
-}>()
+const userStore = useUserStore()
+const router = useRouter()
+
 const showAttributes = ref<boolean>(false)
 const selectedUserAttributes = ref<UserAttribute[]>([])
-const selectedUser = ref<User>()
-
-const emit = defineEmits<{
-  'update:selectAll': [value: boolean]
-  'update:userSelected': [userId: number]
-  'userClick': [user: User]
-  'sort': [sortBy: SortBy]
-  'changePage': [page: number]
-  'changePerPage': [perPage: PerPage]
-}>()
-
+const selectedUser = ref<ExtendedUser>()
 
 const getUserInitials = (name: string): string => {
   return name
@@ -35,14 +24,14 @@ const getUserInitials = (name: string): string => {
 }
 
 const toggleSelectAll = (): void => {
-  emit('update:selectAll', !props.selectAll)
+  userStore.handleSelectionChange('all', !userStore.selectAll)
 }
 
 const handleUserSelect = (userId: number): void => {
-  emit('update:userSelected', userId)
+  userStore.handleSelectionChange('single', userId)
 }
 
-const handleShowAttributes = (user: User): void => {
+const handleShowAttributes = (user: ExtendedUser): void => {
   selectedUserAttributes.value = user.attributes
   selectedUser.value = user
   showAttributes.value = true
@@ -54,69 +43,66 @@ const handleCloseAttributes = (): void => {
   selectedUserAttributes.value = []
 }
 
-
 const handleUpdateAttributes = (attributes: UserAttribute[]): void => {
   selectedUserAttributes.value = attributes
 }
 
-const handleDeleteUser = async (userId: number): Promise<void> => {
-  const result = await window.Swal.fire({
-        title: 'Are you sure?',
-        text: `Are you sure you want to delete this user?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes',
-        cancelButtonText: 'Cancel'
-      });
-
-      if (result.isConfirmed) {
-        const response = await userApi.changeUserStatus(2, [userId]);
-        if (response.success) {
-          window.$toast.success(`Successfully deleted user.`);
-          emit('sort', 'name')
-        } else {
-          window.$toast.error(`Failed to delete users: ${response.message}`);
-        }
-      }
+const handleDeleteUser = (userId: number) => {
+  window.$confirm({}, async() => {
+    const response = await userApi.changeUserStatus(2, [userId]);
+    if (response.success) {
+      window.$toast.success(`Successfully deleted user.`);
+      userStore.updateSorting('name', userStore.sorting.sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      window.$toast.error(`Failed to delete users: ${response.message}`);
+    }
+  });
 }
 
-const goToConversation = (userId: number): void => {
-  const user = props.users.find(u => u.id === userId)
-  if (user) {
-      console.log('goToConversation', userId)
-      // Add navigation logic here
+const goToConversation = (fbId: string): void => {
+  if (fbId) {
+    router.push({ name: 'conversation', params: { id: fbId } })
   }
 }
 
-const handleRowClick = (user: User): void => {
-  emit('userClick', user)
+const handleRowClick = (user: ExtendedUser): void => {
+  // Convert ExtendedUser to User type for the store
+  const userForStore = {
+    id: user.id.toString(),
+    name: user.name,
+    email: user.email,
+    plan: 'free' as const,
+    avatar: user.profile_pic
+  }
+  userStore.selectedUser = userForStore
+  userStore.showUserDetails = true
 }
 
-
 const handleSort = (sortBy: SortBy): void => {
-  emit('sort', sortBy)
+  const newSortOrder = userStore.sorting.sortBy === sortBy && userStore.sorting.sortOrder === 'asc' ? 'desc' : 'asc'
+  userStore.updateSorting(sortBy, newSortOrder)
 }
 
 const handlePageChange = (page: number): void => {
-  emit('changePage', page)
+  userStore.handlePageChange(page)
 }
 
 const handlePerPageChange = (event: Event): void => {
   const target = event.target as HTMLSelectElement
   const perPage = parseInt(target.value) as PerPage
-  emit('changePerPage', perPage)
+  userStore.handlePerPageChange(perPage)
 }
 
 const getSortIcon = (column: SortBy): string => {
-  if (props.sorting.sortBy !== column) return ''
-  return props.sorting.sortOrder === 'asc' ? 'asc' : 'desc'
+  if (userStore.sorting.sortBy !== column) return ''
+  return userStore.sorting.sortOrder === 'asc' ? 'asc' : 'desc'
 }
 
 const getPageNumbers = computed(() => {
   const pages = []
-  const { currentPage, totalPages } = props.pagination
+  const { currentPage, totalPages } = userStore.pagination
   
-  console.log('getPageNumbers - pagination props:', props.pagination)
+  console.log('getPageNumbers - pagination props:', userStore.pagination)
   console.log('getPageNumbers - currentPage:', currentPage, 'totalPages:', totalPages)
   
   // Always show first page
@@ -153,7 +139,7 @@ const getPageNumbers = computed(() => {
         <label for="per-page">Show:</label>
         <select 
           id="per-page" 
-          :value="pagination.perPage" 
+          :value="userStore.pagination.perPage" 
           @change="handlePerPageChange"
           class="per-page-select"
         >
@@ -165,9 +151,9 @@ const getPageNumbers = computed(() => {
       </div>
       
       <div class="table-info">
-        Showing {{ ((pagination.currentPage - 1) * pagination.perPage) + 1 }} 
-        to {{ Math.min(pagination.currentPage * pagination.perPage, pagination.totalItems) }} 
-        of {{ pagination.totalItems }} entries
+        Showing {{ ((userStore.pagination.currentPage - 1) * userStore.pagination.perPage) + 1 }} 
+        to {{ Math.min(userStore.pagination.currentPage * userStore.pagination.perPage, userStore.pagination.totalItems) }} 
+        of {{ userStore.pagination.totalItems }} entries
       </div>
     </div>
     <div class="table-scroll-container">
@@ -177,7 +163,7 @@ const getPageNumbers = computed(() => {
             <th>
               <input 
                 type="checkbox" 
-                :checked="selectAll" 
+                :checked="userStore.selectAll" 
                 @change="toggleSelectAll"
               >
             </th>
@@ -195,13 +181,33 @@ const getPageNumbers = computed(() => {
           </tr>
         </thead>
         <tbody>
-          <tr v-if="loading" class="no-data-row">
-            <td colspan="10" class="no-data-cell">
-              <div class="loading-spinner"></div>
-              <span>Loading data...</span>
+          <tr v-if="userStore.loading" v-for="i in userStore.pagination.perPage" :key="`skeleton-${i}`" class="skeleton-row">
+            <td>
+              <div class="skeleton-checkbox"></div>
+            </td>
+            <td>
+              <div class="skeleton-user-info">
+                <div class="skeleton-avatar"></div>
+                <div class="skeleton-user-details">
+                  <div class="skeleton-name"></div>
+                  <div class="skeleton-email"></div>
+                </div>
+              </div>
+            </td>
+            <td><div class="skeleton-text"></div></td>
+            <td><div class="skeleton-text"></div></td>
+            <td><div class="skeleton-text"></div></td>
+            <td><div class="skeleton-text"></div></td>
+            <td><div class="skeleton-badge"></div></td>
+            <td>
+              <div class="skeleton-actions">
+                <div class="skeleton-action-btn"></div>
+                <div class="skeleton-action-btn"></div>
+                <div class="skeleton-action-btn"></div>
+              </div>
             </td>
           </tr>
-          <tr v-else-if="users.length === 0" class="no-data-row">
+          <tr v-else-if="userStore.users.length === 0" class="no-data-row">
             <td colspan="10" class="no-data-cell">
               <div class="no-data-content">
                 <div class="no-data-icon">📄</div>
@@ -212,7 +218,7 @@ const getPageNumbers = computed(() => {
           </tr>
           <tr 
             v-else 
-            v-for="user in users" 
+            v-for="user in userStore.users" 
             :key="user.id"
             class="clickable-row"
             @click="handleRowClick(user)"
@@ -234,7 +240,14 @@ const getPageNumbers = computed(() => {
                 </div>
               </div>
             </td>
-            <td>{{ user.type || 'N/A' }}</td>
+            <td>
+              <span
+                class="avatar-platform-icon"
+                :class="getPlatformClass(user.type)"
+              >
+                <i :class="getPlatformIcon(user.type)"></i>
+              </span>
+            </td>
             <td>{{ user.created_at }}</td>
             <td>{{ user.country }}</td>
             <td>{{ user.phone_number || 'N/A' }}</td>
@@ -249,7 +262,7 @@ const getPageNumbers = computed(() => {
                   v-if="user.hasConversation" 
                   class="action-btn conversation-btn"
                   @click.stop
-                  @click="goToConversation(user.id)"
+                  @click="goToConversation(user.fbId)"
                   title="Go to Conversation"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -290,8 +303,8 @@ const getPageNumbers = computed(() => {
       <div class="pagination">
         <button 
           class="pagination-btn"
-          :disabled="pagination.currentPage === 1"
-          @click="handlePageChange(pagination.currentPage - 1)"
+          :disabled="userStore.pagination.currentPage === 1"
+          @click="handlePageChange(userStore.pagination.currentPage - 1)"
         >
           Previous
         </button>
@@ -300,7 +313,7 @@ const getPageNumbers = computed(() => {
           <button 
             v-if="typeof page === 'number'"
             class="pagination-btn page-number"
-            :class="{ active: page === pagination.currentPage }"
+            :class="{ active: page === userStore.pagination.currentPage }"
             @click="handlePageChange(page)"
           >
             {{ page }}
@@ -310,8 +323,8 @@ const getPageNumbers = computed(() => {
         
         <button 
           class="pagination-btn"
-          :disabled="pagination.currentPage === pagination.totalPages"
-          @click="handlePageChange(pagination.currentPage + 1)"
+          :disabled="userStore.pagination.currentPage === userStore.pagination.totalPages"
+          @click="handlePageChange(userStore.pagination.currentPage + 1)"
         >
           Next
         </button>
@@ -699,19 +712,95 @@ const getPageNumbers = computed(() => {
 
   
 
-.loading-spinner {
-  margin: 0 auto 10px;
-  border: 4px solid #eee;
-  border-top: 4px solid var(--color-text-primary);
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  animation: spin 0.8s linear infinite;
+
+
+/* Skeleton Loading Styles */
+.skeleton-row {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+.skeleton-row:hover td {
+  background-color: white !important;
+}
+
+.skeleton-checkbox {
+  width: 16px;
+  height: 16px;
+  background-color: #e5e7eb;
+  border-radius: 3px;
+  margin: 0 auto;
+}
+
+.skeleton-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.skeleton-avatar {
+  width: 35px;
+  height: 35px;
+  background-color: #e5e7eb;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.skeleton-name {
+  height: 16px;
+  background-color: #e5e7eb;
+  border-radius: 4px;
+  width: 80%;
+}
+
+.skeleton-email {
+  height: 12px;
+  background-color: #e5e7eb;
+  border-radius: 4px;
+  width: 60%;
+}
+
+.skeleton-text {
+  height: 14px;
+  background-color: #e5e7eb;
+  border-radius: 4px;
+  width: 70%;
+}
+
+.skeleton-badge {
+  height: 24px;
+  background-color: #e5e7eb;
+  border-radius: 12px;
+  width: 60px;
+  margin: 0 auto;
+}
+
+.skeleton-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.skeleton-action-btn {
+  width: 32px;
+  height: 32px;
+  background-color: #e5e7eb;
+  border-radius: 6px;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }
 

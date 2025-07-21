@@ -30,42 +30,31 @@ const testAiAgent = async () => {
   window.open(url, '_blank');
 }
 
-const deployAiAgent = async () => {
+const deployAiAgent = () => {
   if (!hasPromptContent.value) {
     window.$toast.error('No prompt content available to deploy. Please generate some content first.');
     return;
   }
-  const result = await window.Swal.fire({
-    title: 'Are you sure?',
-    text: 'Are you sure you want to deploy the AI Agent? This will make it live.',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes',
-    cancelButtonText: 'Cancel',
-  });
-
-  // Confirm deployment
-  if (!result.isConfirmed) return;
-
-  isDeployingAgent.value = true;
-  lastDeployResult.value = null;
-
-  try {
-    console.log('Starting AI Agent deployment...');
-    const result = await botsifyApi.deployAiAgent(latestPromptContent.value);
-    lastDeployResult.value = result;
-    
-    if (result.success) {
-      window.$toast.success(`🚀 ${result.message}`);
-    } else {
-      window.$toast.error(`❌ Deployment failed: ${result.message}`);
+  window.$confirm({}, async() => {
+    isDeployingAgent.value = true;
+    lastDeployResult.value = null;
+    try {
+      console.log('Starting AI Agent deployment...');
+      const result = await botsifyApi.deployAiAgent(latestPromptContent.value);
+      lastDeployResult.value = result;
+      
+      if (result.success) {
+        window.$toast.success(`🚀 ${result.message}`);
+      } else {
+        window.$toast.error(`❌ Deployment failed: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Unexpected error during deployment:', error);
+      window.$toast.error('❌ An unexpected error occurred during deployment.');
+    } finally {
+      isDeployingAgent.value = false;
     }
-  } catch (error) {
-    console.error('Unexpected error during deployment:', error);
-    window.$toast.error('❌ An unexpected error occurred during deployment.');
-  } finally {
-    isDeployingAgent.value = false;
-  }
+  })
 };
 </script>
 

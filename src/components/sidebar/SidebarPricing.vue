@@ -12,7 +12,7 @@ const navigateToPricing = () => {
   <div class="sidebar-pricing">
       <button class="pricing-button" @click="navigateToPricing">
         <div class="button-content">
-          <span class="pricing-text">Pricing Plans</span>
+          <span class="pricing-text">Manage Billing</span>
           <span class="pricing-star">★</span>
         </div>
       </button>

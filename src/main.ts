@@ -11,6 +11,8 @@ import axios from 'axios';
 import ToastPlugin, { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-bootstrap.css';
 import { useApiKeyStore } from './stores/apiKeyStore';
+import { useConversationStore } from './stores/conversationStore';
+
 import Swal from 'sweetalert2';
 
 // Import routes
@@ -25,6 +27,19 @@ if (import.meta.env.DEV) {
     console.log('🔧 OpenAI Debugger available globally as window.OpenAIDebugger');
   });
 }
+
+
+const swalOption = {
+  title: "Are you sure?",
+  text: "This action is irreversible. Are you sure you want to perform this action?",
+  icon: "warning", // updated from `type`
+  showCloseButton: true,
+  showCancelButton: true,
+  confirmButtonColor: "#DD6B55",
+  confirmButtonText: "Yes, Delete it!",
+  cancelButtonText: "No, Keep it",
+  animation: false,
+};
 
 // Check localStorage availability
 function checkLocalStorage() {
@@ -120,6 +135,16 @@ app.use(pinia)
 app.use(ToastPlugin);
 
 window.$toast = useToast({position:'top-right'});
+window.$confirm = function (overrideOpt = {}, callback = () => {}) {
+  Swal.fire({
+    ...swalOption,
+    ...overrideOpt,
+  }).then((result) => {
+    if (result.isConfirmed) {
+      callback();
+    }
+  });
+};
 
 
 // Check localStorage before mounting
@@ -152,10 +177,21 @@ async function confirmApiKey() {
       if (bot) {
         const apiKeyStore = useApiKeyStore();
         apiKeyStore.setApiKey(apikey);
+        
+        // Initialize Firebase after API key is set
+        console.log('🔥 Initializing Firebase in main.ts...');
+        try {
+          const conversationStore = useConversationStore();
+          conversationStore.initializeFirebase();
+          console.log('✅ Firebase initialized successfully in main.ts');
+        } catch (error) {
+          console.error('❌ Error initializing Firebase in main.ts:', error);
+        }
+        
         return true;
       }
     }
-    window.location.href = 'https://app.botsify.com/login';  
+    // window.location.href = 'https://app.botsify.com/login';  
     throw new Error('unauthenticated');
   }
   return true;

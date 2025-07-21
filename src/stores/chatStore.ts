@@ -29,28 +29,33 @@ export const useChatStore = defineStore('chat', () => {
         hasStoredActiveChat: !!storedActiveChat
       });
 
-      if (storedChats) {
+      if (storedChats && storedChats !== 'null' && storedChats !== 'undefined') {
         try {
-
           const parsedChats = JSON.parse(storedChats);
-          // Convert date strings back to Date objects
-          chats.value = parsedChats.map((chat: any) => ({
-            ...chat,
-            timestamp: new Date(chat.timestamp),
-            messages: chat.messages.map((msg: any) => ({
-              ...msg,
-              timestamp: new Date(msg.timestamp)
-            })),
-            story: chat.story ? {
-              ...chat.story,
-              updatedAt: new Date(chat.story.updatedAt),
-              versions: chat.story.versions?.map((v: any) => ({
-                ...v,
-                updatedAt: new Date(v.updatedAt)
-              })) || []
-            } : undefined
-          }));
-          console.log('✅ Loaded chats from storage:', chats.value.length);
+          // Ensure parsedChats is an array before mapping
+          if (Array.isArray(parsedChats)) {
+            // Convert date strings back to Date objects
+            chats.value = parsedChats.map((chat: any) => ({
+              ...chat,
+              timestamp: new Date(chat.timestamp),
+              messages: chat.messages?.map((msg: any) => ({
+                ...msg,
+                timestamp: new Date(msg.timestamp)
+              })) || [],
+              story: chat.story ? {
+                ...chat.story,
+                updatedAt: new Date(chat.story.updatedAt),
+                versions: chat.story.versions?.map((v: any) => ({
+                  ...v,
+                  updatedAt: new Date(v.updatedAt)
+                })) || []
+              } : undefined
+            }));
+            console.log('✅ Loaded chats from storage:', chats.value.length);
+          } else {
+            console.warn('⚠️ Stored chats is not an array, clearing storage');
+            localStorage.removeItem('botsify_chats');
+          }
         } catch (jsonError) {
           console.error('❌ Failed to parse stored chats JSON:', jsonError);
           // Clear corrupted data
@@ -60,15 +65,21 @@ export const useChatStore = defineStore('chat', () => {
         console.warn('⚠️ No chats found in localStorage');
       }
 
-      if (storedTemplates) {
+      if (storedTemplates && storedTemplates !== 'null' && storedTemplates !== 'undefined') {
         try {
           const parsedTemplates = JSON.parse(storedTemplates);
-          globalPromptTemplates.value = parsedTemplates.map((template: any) => ({
-            ...template,
-            createdAt: new Date(template.createdAt),
-            updatedAt: new Date(template.updatedAt)
-          }));
-          console.log('✅ Loaded prompt templates from storage:', globalPromptTemplates.value.length);
+          // Ensure parsedTemplates is an array before mapping
+          if (Array.isArray(parsedTemplates)) {
+            globalPromptTemplates.value = parsedTemplates.map((template: any) => ({
+              ...template,
+              createdAt: new Date(template.createdAt),
+              updatedAt: new Date(template.updatedAt)
+            }));
+            console.log('✅ Loaded prompt templates from storage:', globalPromptTemplates.value.length);
+          } else {
+            console.warn('⚠️ Stored templates is not an array, clearing storage');
+            localStorage.removeItem('botsify_prompt_templates');
+          }
         } catch (jsonError) {
           console.error('❌ Failed to parse stored templates JSON:', jsonError);
           // Clear corrupted data

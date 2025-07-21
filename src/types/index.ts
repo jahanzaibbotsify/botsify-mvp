@@ -83,4 +83,8 @@ export interface ExtendedChat extends Chat {
   fbid?: string
   assignedTo?: string
   satisfaction?: number
+  profilePic?: string
 }
+
+// Export conversation types
+export * from './conversation'

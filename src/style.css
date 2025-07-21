@@ -180,6 +180,48 @@ button.primary:hover {
   background-color: var(--color-primary-hover);
 }
 
+
+/* Platform-specific background colors */
+
+
+.avatar-platform-icon {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+}
+.platform-facebook {
+  background-color: #1877f2; /* Facebook Blue */
+}
+
+.platform-whatsapp {
+  background-color: #25d366; /* WhatsApp Green */
+}
+
+.platform-web {
+  background-color: #6c757d; /* Neutral gray */
+}
+
+.platform-instagram {
+  background-color: #c32aa3; /* Instagram Pink */
+}
+
+.platform-telegram {
+  background-color: #0088cc; /* Telegram Blue */
+}
+
+.platform-default {
+  background-color: #414141;
+}
+
+
+
 .icon-button {
   display: flex;
   align-items: center;
@@ -187,7 +229,7 @@ button.primary:hover {
   width: 36px;
   height: 36px;
   padding: 0;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   background-color: transparent;
 }
 
