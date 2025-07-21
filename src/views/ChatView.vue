@@ -18,7 +18,6 @@ const chatStore = useChatStore();
 const chatId = computed(() => route.params.id as string);
 const messagesContainer = ref<HTMLElement | null>(null);
 const showSystemMessageModal = ref(false);
-const hasMessages = computed(() => chat.value && chat.value.messages && chat.value.messages.length > 0)
 
 const chat = computed(() => {
   let foundChat = chatStore.chats.find(c => c.id === chatId.value);
@@ -203,7 +202,7 @@ function clearAllChats() {
       <!-- Centered MessageInput if no messages or first message is empty -->
       <div v-if="showCenteredInput" class="centered-message-input">
         <div class="centered-heading">
-          <h1>How can I help you today?</h1>
+          <h1>Start building your AI chatbot prompt...</h1>
         </div>
         <MessageInput :chatId="chatId" :centered="true" />
       </div>
