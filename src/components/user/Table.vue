@@ -169,7 +169,6 @@ const getPageNumbers = computed(() => {
             <th class="sortable" :class="getSortIcon('name')" @click="handleSort('name')">
               NAME
             </th>
-            </th>
             <th :class="getSortIcon('created_at')" @click="handleSort('created_at')">CREATED AT</th>
             <th :class="getSortIcon('country')" @click="handleSort('country')">COUNTRY</th>
             <th>PHONE</th>

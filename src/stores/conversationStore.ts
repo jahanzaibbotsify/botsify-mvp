@@ -460,7 +460,7 @@ export const useConversationStore = defineStore('conversation', () => {
         
         // Update selected conversation with user data
         if (selectedConversation.value) {
-          selectedConversation.value.id = response.data.user.id
+          selectedConversation.value.id = response.data.user.id.toString()
           selectedConversation.value.active_for_bot = response.data.user.active_for_bot
           selectedConversation.value.email = response.data.user.email
           selectedConversation.value.assignedTo = response.data.agent_assigned
@@ -702,7 +702,11 @@ export const useConversationStore = defineStore('conversation', () => {
 
   const changeBotActivation = async (status: number) => {
     try {
-      const response = await conversationApi.changeBotActivation(selectedConversation.value?.id, status)
+      const userId = selectedConversation.value?.id
+      if (!userId) {
+        return { success: false, message: 'No user selected for bot activation' }
+      }
+      const response = await conversationApi.changeBotActivation(userId, status)
       if (response.success) {
         return { success: true, message: response.data.message }
       } else {

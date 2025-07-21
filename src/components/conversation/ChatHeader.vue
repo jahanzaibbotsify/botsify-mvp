@@ -58,11 +58,10 @@ watch(() => props.status, (newVal) => {
   selectedStatus.value = newVal
 })
 
-console.log(selectedStatus.value, "statuss")
 
 const handleStatusChange = async () => {
   try {
-    const response = await conversationStore.changeBotActivation(selectedStatus.value)
+    const response = await conversationStore.changeBotActivation(selectedStatus.value ?? 0)
     if (response?.success) {
       window.$toast.success(response.message || 'Bot status updated successfully')
     } else {
