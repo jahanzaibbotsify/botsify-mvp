@@ -1,5 +1,6 @@
-export const BOTSIFY_WEB_URL = import.meta.env.VITE_BOTSIFY_WEB_URL || 'https://botsify.com';
-export const BOTSIFY_BASE_URL = `${import.meta.env.VITE_BOTSIFY_BASE_URL}` || 'https://botsify.com/api';
+export const APP_URL = import.meta.env.VITE_APP_URL || 'https://agentic.botsify.com';
+export const BOTSIFY_WEB_URL = import.meta.env.VITE_BOTSIFY_URL || 'https://botsify.com';
+export const BOTSIFY_BASE_URL = `${import.meta.env.VITE_BOTSIFY_URL}/api` || 'https://botsify.com/api';
 export const BOTSIFY_AUTH_TOKEN = import.meta.env.VITE_BOTSIFY_AUTH_TOKEN || '';
 export const BOTSIFY_FIREBASE_CONFIG = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,

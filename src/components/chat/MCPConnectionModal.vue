@@ -487,11 +487,11 @@ onBeforeUnmount(() => {
         <div class="available-section">
           <div class="section-header">
             <h3>{{ showAllServers ? 'All Servers' : 'Popular Servers' }}</h3>
-            <div class="header-actions">
+            <!-- <div class="header-actions">
               <button class="toggle-button" @click="showAllServers = !showAllServers">
                 {{ showAllServers ? 'Show Popular' : 'Show All' }}
               </button>
-            </div>
+            </div> -->
           </div>
           
           <div class="server-grid">

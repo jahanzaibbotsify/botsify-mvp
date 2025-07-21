@@ -5,8 +5,8 @@ import { useChatStore } from '@/stores/chatStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
 // import { useWindowSize } from '@vueuse/core';
 // import ChatListItem from '@/components/chat/ChatListItem.vue';
-import SidebarPricing from './SidebarPricing.vue';
 import BookMeeting from '@/components/ui/BookMeeting.vue';
+import { botsifyApi } from '@/services/botsifyApi'
 import { BOTSIFY_WEB_URL } from '@/utils/config';
 
 
@@ -27,14 +27,11 @@ const selectedNavigationButton = computed(() => {
   return match?.name || null;
 });
 // const isMobile = computed(() => width.value < 768);
-const showNavDropdown = ref(false);
 const showHelpDropdown = ref(false);
 const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
 
 // Close dropdown when clicking outside
-const dropdownRef = ref<HTMLElement | null>(null);
 const helpDropdownRef = ref<HTMLElement | null>(null);
-const menuButtonRef = ref<HTMLElement | null>(null);
 const helpButtonRef = ref<HTMLElement | null>(null);
 
 
@@ -61,22 +58,13 @@ const navigationButtons = [
   }
 ];
 
-// Navigation links for the dropdown with icons
-const navLinks = [
+// Help links for the help dropdown
+const helpLinks = [
   {
     name: 'Legacy Platform',
     url: `${BOTSIFY_WEB_URL}/bot`,
     icon: 'pi pi-check-circle'
   },
-  {
-    name: 'Billing',
-    url: `${BOTSIFY_WEB_URL}/account-settings/billing`,
-    icon: 'pi pi-credit-card'
-  }
-];
-
-// Help links for the help dropdown
-const helpLinks = [
   {
     name: 'Tutorial',
     url: `https://www.youtube.com/@Botsify`,
@@ -124,32 +112,11 @@ const navigateToPage = (pageId: string) => {
   router.push(`/${pageId}`);
 }
 
-const toggleNavDropdown = () => {
-  showNavDropdown.value = !showNavDropdown.value;
-  // Close help dropdown if it's open
-  if (showNavDropdown.value) {
-    showHelpDropdown.value = false;
-  }
-};
-
 const toggleHelpDropdown = () => {
   showHelpDropdown.value = !showHelpDropdown.value;
-  // Close nav dropdown if it's open
-  if (showHelpDropdown.value) {
-    showNavDropdown.value = false;
-  }
-};
-
-const closeNavDropdown = () => {
-  showNavDropdown.value = false;
 };
 
 const closeHelpDropdown = () => {
-  showHelpDropdown.value = false;
-};
-
-const closeAllDropdowns = () => {
-  showNavDropdown.value = false;
   showHelpDropdown.value = false;
 };
 
@@ -166,13 +133,29 @@ const openBookMeetingModal = () => {
   } else {
     console.warn('❌ bookMeetingRef is null')
   }
-  closeNavDropdown();
 };
+
+const billingLoading = ref(false)
+
+const handleManageBilling = async () => {
+  billingLoading.value = true
+  try {
+    const res = await botsifyApi.manageBilling()
+    if (res && res.url) {
+      window.open(res.url, '_blank')
+    } else {
+      window.$toast?.error('Unable to open billing portal. Please try again later.')
+    }
+  } catch (e) {
+    window.$toast?.error('Unable to open billing portal. Please try again later.')
+  } finally {
+    billingLoading.value = false
+  }
+}
 
 // Open external link
 const openExternalLink = (url: string) => {
   window.open(url, '_blank');
-  closeAllDropdowns();
   closeHelpDropdown();
 };
 
@@ -189,22 +172,12 @@ const handleHelpItemClick = (item: any) => {
 
 const handleClickOutside = (event: MouseEvent) => {
   const target = event.target as Node;
-  
-  // Check if click is outside nav dropdown
-  const isOutsideNavDropdown = dropdownRef.value && 
-    !dropdownRef.value.contains(target) && 
-    menuButtonRef.value && 
-    !menuButtonRef.value.contains(target);
     
   // Check if click is outside help dropdown
   const isOutsideHelpDropdown = helpDropdownRef.value && 
     !helpDropdownRef.value.contains(target) && 
     helpButtonRef.value && 
     !helpButtonRef.value.contains(target);
-
-  if (isOutsideNavDropdown) {
-    showNavDropdown.value = false;
-  }
   
   if (isOutsideHelpDropdown) {
     showHelpDropdown.value = false;
@@ -218,37 +191,6 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
 });
-
-// Get current hostname to check active state
-// const getCurrentHostname = () => {
-//   if (typeof window !== 'undefined') {
-//     return window.location.hostname;
-//   }
-//   return '';
-// };
-
-// Check if a link is active by comparing with current URL
-const isLinkActive = (url: string) => {
-  try {
-    const currentPath = window.location.pathname;
-    // Handle relative or same-origin paths
-    if (url.startsWith('/')) {
-      return currentPath.startsWith(url);
-    }
-
-    // Parse full external URLs
-    const linkUrl = new URL(url);
-    const isSameHost = linkUrl.hostname === window.location.hostname;
-    return isSameHost && currentPath.startsWith(linkUrl.pathname);
-  } catch (e) {
-    return false;
-  }
-};
-
-// const selectNavigationButton = (name: string) => {
-//   selectedNavigationButton.value = name;
-//   emit('select-button', name);
-// };
 </script>
 
 <template>
@@ -261,27 +203,6 @@ const isLinkActive = (url: string) => {
             <img src="https://botsify.com/assets/img/logos/logo/logo-color-600w.webp" alt="Botsify" class="logo-icon" />
           </a>
         </div>
-        <div class="sidebar-actions">
-
-          <!-- 3-dot menu button -->
-          <div class="dropdown-container">
-            <button ref="menuButtonRef" class="menu-button" @click.stop="toggleNavDropdown" title="Navigation Menu">
-              <img width="16" height="16" src="https://img.icons8.com/tiny-glyph/16/menu-2.png" alt="menu-2" />
-            </button>
-
-            <!-- Navigation dropdown -->
-            <div ref="dropdownRef" v-if="showNavDropdown" class="nav-dropdown">
-              <div class="dropdown-arrow"></div>
-              <div v-for="link in navLinks" :key="link.url" class="nav-item"
-                :class="{ 'active': isLinkActive(link.url) }" @click="openExternalLink(link.url)">
-                <div class="nav-item-icon">
-                  <i :class="link.icon"></i>
-                </div>
-                <span>{{ link.name }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -293,12 +214,8 @@ const isLinkActive = (url: string) => {
             <button @click="navigateToPage(btn.id)" class="navigation-button"
               :class="{ 'selectedNavigationButton': selectedNavigationButton === btn.name }">
               <span v-html="btn.icon"></span>
-              <!-- <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
-            <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg> -->
               <span>{{ btn.name }}</span>
             </button>
-            <!-- ...existing menu button code... -->
           </div>
         </template>
         <!-- <ChatListItem v-for="chat in filteredChats" :key="chat.id" :chat="chat"
@@ -334,8 +251,17 @@ const isLinkActive = (url: string) => {
       </div>
     </div>
 
-    <!-- Sidebar Pricing (keeping this at the bottom) -->
-    <SidebarPricing />
+    <div class="sidebar-pricing">
+        <button class="pricing-button" @click="handleManageBilling" :disabled="billingLoading">
+          <div class="button-content">
+            <span class="pricing-text">
+              <template v-if="billingLoading">Processing...</template>
+              <template v-else>Manage Billing</template>
+            </span>
+            <span class="pricing-star">★</span>
+          </div>
+        </button>
+    </div>
     <BookMeeting ref="bookMeetingRef"></BookMeeting>
     <User ref="userRef"></User>
   </aside>
@@ -344,6 +270,45 @@ const isLinkActive = (url: string) => {
 
 
 <style scoped>
+.sidebar-pricing {
+  padding: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-bg-secondary);
+}
+
+.pricing-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-full);
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+  width: 100%;
+}
+
+.button-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  justify-content: center;
+}
+
+.pricing-button:hover {
+  background-color: var(--color-primary-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.pricing-star {
+  font-size: 1rem;
+  color: #FFD700;
+}
+
 .left-sidebar {
   width: 230px;
   min-width: 230px;
@@ -417,7 +382,7 @@ const isLinkActive = (url: string) => {
 }
 
 .logo-icon {
-  height: 34px;
+  height: 40px;
   width: auto;
 }
 

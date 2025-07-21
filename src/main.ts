@@ -17,6 +17,7 @@ import Swal from 'sweetalert2';
 
 // Import routes
 import routes from '@/router'
+import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from './utils/config'
 (window as any).Swal = Swal;
 
 // Import OpenAI debug utility in development
@@ -83,11 +84,11 @@ function checkLocalStorage() {
 // Reusable function to make an authenticated GET request with axios
 function getBotDetails(apikey: string) {
   return axios.get(
-    import.meta.env.VITE_BOTSIFY_BASE_URL + `/v1/bot/get-data?apikey=${apikey}`,
+    BOTSIFY_BASE_URL + `/v1/bot/get-data?apikey=${apikey}`,
     {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
+        'Authorization': `Bearer ${BOTSIFY_AUTH_TOKEN}`
       }
     }
   )
@@ -95,6 +96,9 @@ function getBotDetails(apikey: string) {
     console.log('ressssss ', response.data);
     localStorage.setItem('botsify_chats', response.data.data.chat_flow);
     localStorage.setItem('botsify_prompt_templates', response.data.data.bot_flow );
+    
+    const apiKeyStore = useApiKeyStore();
+    apiKeyStore.setUserId(response.data.data.user_id);
 
     return true;
   })

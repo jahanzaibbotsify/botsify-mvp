@@ -1,6 +1,6 @@
 import axios from 'axios';
 import type { MCPConfigurationFile, MCPServer } from '../types/mcp';
-import { BOTSIFY_BASE_URL, BOTSIFY_AUTH_TOKEN } from '../utils/config';
+import { BOTSIFY_BASE_URL, BOTSIFY_AUTH_TOKEN, APP_URL } from '../utils/config';
 import { useApiKeyStore } from '@/stores/apiKeyStore';
 
 export interface BotsifyResponse {
@@ -1221,6 +1221,26 @@ export class BotsifyApiService {
     }).catch((error) => {
       console.log('error:', error);
     });
+  }
+
+  async manageBilling() {
+    try {
+      const {apiKey, userId} = useApiKeyStore();
+      const response = await axios.get(
+        `${BOTSIFY_BASE_URL}/v1/billing/portal`,
+        {
+          headers: this.getBotsifyHeaders(),
+          params: {
+            user_id: userId || undefined,
+            redirect_url: `${APP_URL}/agent/${userId || apiKey}`
+          }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Failed to manage billing:", error);
+      throw error;
+    }
   }
 }
 
