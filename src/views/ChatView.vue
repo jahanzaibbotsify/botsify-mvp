@@ -187,10 +187,10 @@ function toggleStorySidebar() {
   overflow-y: auto;
   padding: var(--space-4);
   background-color: var(--color-bg-primary);
-  border-left: 1px solid rgba(0, 163, 255, 0.1);
-  border-right: 1px solid rgba(0, 163, 255, 0.1);
+  /* border-left: 1px solid rgba(0, 163, 255, 0.1);
+  border-right: 1px solid rgba(0, 163, 255, 0.1); */
   margin: 0 var(--space-4);
-  box-shadow: 0 0 20px rgba(0, 163, 255, 0.06);
+  /* box-shadow: 0 0 20px rgba(0, 163, 255, 0.06); */
 }
 
 .messages {
