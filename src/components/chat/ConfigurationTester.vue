@@ -8,23 +8,23 @@ const isLoading = ref(false);
 const testConfigurations = [
   {
     name: 'Change Language to Arabic',
-    message: 'I want to change the language of the chatbot to Arabic'
+    message: 'I want to change the language of the agent to Arabic'
   },
   {
     name: 'Change Logo',
-    message: 'Please change the chatbot logo to https://example.com/new-logo.png'
+    message: 'Please change the agent logo to https://example.com/new-logo.png'
   },
   {
     name: 'Update Color Scheme',
-    message: 'Change the chatbot color scheme to blue'
+    message: 'Change the agent color scheme to blue'
   },
   {
-    name: 'Turn Off Chatbot',
-    message: 'Please turn off the chatbot'
+    name: 'Turn Off Agent',
+    message: 'Please turn off the agent'
   },
   {
     name: 'Multiple Changes',
-    message: 'Change the chatbot language to French and also update the welcome message to "Bonjour! Comment puis-je vous aider?"'
+    message: 'Change the agent language to French and also update the welcome message to "Bonjour! Comment puis-je vous aider?"'
   }
 ];
 
@@ -56,7 +56,7 @@ async function testConfiguration(config: { name: string; message: string }) {
   <div class="configuration-tester">
     <h3>Configuration Tool Tester</h3>
     <p class="description">
-      Test the configure_chatbot tool with predefined examples. These will trigger the AI to use the configuration tool.
+      Test the configure_agent tool with predefined examples. These will trigger the AI to use the configuration tool.
     </p>
     
     <div class="test-buttons">

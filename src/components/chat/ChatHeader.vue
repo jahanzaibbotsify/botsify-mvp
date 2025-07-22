@@ -135,7 +135,7 @@ async function deploying(content: string){
 function handleDelete() {
   showDropdown.value = false;
   window.$confirm({
-    text: "This action will delete your current chat flow and start a new chatbot. This action is irreversible."
+    text: "This action will delete your current chat flow and start a new agent. This action is irreversible."
   }, async() => {
     chatStore.clearChatMessages(props.chatId)
   });

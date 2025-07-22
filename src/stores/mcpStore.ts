@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { MCPServer, MCPConnection, CustomMCPServerForm } from '../types/mcp';
 import { botsifyApi } from '../services/botsifyApi';
+import { useApiKeyStore } from './apiKeyStore';
 
 export const useMCPStore = defineStore('mcp', () => {
   // All MCP servers (popular + custom)
@@ -368,11 +369,12 @@ export const useMCPStore = defineStore('mcp', () => {
       }
     }
   ]);
+  const apiKey = useApiKeyStore().apiKey;
 
   // Load connections and custom servers from localStorage
   const loadFromStorage = () => {
     // Load connections
-    const storedConnections = localStorage.getItem('mcp_connections');
+    const storedConnections = localStorage.getItem(`mcp_connections_${apiKey}`);
     if (storedConnections) {
       try {
         const parsed = JSON.parse(storedConnections);
@@ -399,7 +401,7 @@ export const useMCPStore = defineStore('mcp', () => {
     }
 
     // Load custom servers
-    const storedCustomServers = localStorage.getItem('mcp_custom_servers');
+    const storedCustomServers = localStorage.getItem(`mcp_custom_servers_${apiKey}`);
     if (storedCustomServers) {
       try {
         const parsedCustomServers = JSON.parse(storedCustomServers);
@@ -450,7 +452,7 @@ export const useMCPStore = defineStore('mcp', () => {
       
       return connectionData;
     });
-    localStorage.setItem('mcp_connections', JSON.stringify(connections));
+    localStorage.setItem(`mcp_connections_${apiKey}`, JSON.stringify(connections));
     const customServers = servers.value.filter(server => !server.isPopular).map(server => ({
       id: server.id,
       name: server.name,
@@ -464,7 +466,7 @@ export const useMCPStore = defineStore('mcp', () => {
       authLabel: server.authLabel,
       features: server.features
     }));
-    localStorage.setItem('mcp_custom_servers', JSON.stringify(customServers));
+    localStorage.setItem(`mcp_custom_servers_${apiKey}`, JSON.stringify(customServers));
   };
 
 
@@ -810,7 +812,7 @@ Remember: You have access to ${connectedServers.value.length} MCP server${connec
   const getConnectedMCPs = async () => {
     try {
       let unmatchedServers: string[] = [];
-      localStorage.removeItem('mcp_connections');
+      localStorage.removeItem(`mcp_connections_${apiKey}`);
 
       const response = await botsifyApi.getAllConnectedMCPs();
       console.log(response, "connected mcp")
