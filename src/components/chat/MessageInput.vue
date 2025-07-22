@@ -358,7 +358,7 @@ const connectFileSearch = async () => {
       //   url: response.data.data.url
       // }
       response.data.filename = selectedFile.value.name;
-      fileSearchResults.push(response.data);
+      fileSearchResults.push(response.data.data);
 
       // Add success message to chat
       const successMessage = `✅ File "${selectedFile.value.name}" uploaded and File Search connected successfully!`;
