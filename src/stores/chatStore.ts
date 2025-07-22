@@ -577,12 +577,16 @@ Use the above connected services information to understand what tools and data s
       }
 
       const stream = await openAIStore.streamChat(messages);
-      console.log('Stream object received:', stream);
+      // console.log('Stream object received:', stream);
+      if (!stream.body) throw new Error('No response body for streaming');
+      const reader = stream.body?.getReader();
+      const decoder = new TextDecoder('utf-8');
 
       // Don't add initial AI message yet - wait for first content
       let aiMessage: Message | null = null;
       let eachStreamContent = '';
       let isChatResponse = false;
+      let dataType = '';
 
       aiMessage = {
         id: Date.now().toString(),
@@ -595,47 +599,51 @@ Use the above connected services information to understand what tools and data s
       console.log('Waiting for first content chunk to create AI message');
 
       console.log('Starting to process stream');
-      for await (const chunk of stream) {
-        console.log('Received chunk:', chunk);
+      // for await (const chunk of stream) {
+        // console.log('Received chunk:', chunk);
+
+      while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          console.log('chunk--->', chunk); // or yield chunk, or process as needed
 
         // Handle Responses API streaming format
-        if (chunk.type === 'response.output_text.delta') {
-          const content = chunk.delta || '';
+        // if (chunk.type === 'response.output_text.delta') {
+          const content = chunk;
           eachStreamContent = content;
 
-          if( // check is 
-            eachStreamContent.includes('---') ||
-            eachStreamContent.includes('AI') ||
-            eachStreamContent.includes('_PROM') ||
-            eachStreamContent.includes('PT')
-          ){}else if (isChatResponse && eachStreamContent) {
-            const content = eachStreamContent;
-            setTimeout(() => {
-              chat.messages[chat.messages.length - 1].content += content;
-            }, 200);
+          
+          
+          if (eachStreamContent.includes('---') && dataType !== '---AI_PROMPT---') {
+            isChatResponse = false;
+            if (!dataType && (streamedContent + eachStreamContent).includes('---CHAT_RESPONSE---')) {
+              dataType =  '---CHAT_RESPONSE---';
+              isTyping.value = false;
+              isChatResponse = true;
+              chat.messages[chat.messages.length - 1].content += (streamedContent + eachStreamContent).replace(dataType, '');
+              }else if (dataType){
+              dataType =  eachStreamContent.split('---')[0];
+              chat.messages[chat.messages.length - 1].content += dataType;
+              dataType = '---AI_PROMPT---';
+              isAIPromptGenerating.value = true;
+            }
+          }else if (isChatResponse && eachStreamContent) {
+            chat.messages[chat.messages.length - 1].content += eachStreamContent;
           }
 
           streamedContent += eachStreamContent;
           eachStreamContent = '';
 
-          if (!isChatResponse && streamedContent.length > 19) {
-            isTyping.value = false;
-            isChatResponse = true;
-          }
-
-          if (streamedContent.includes('---AI_PROMPT---')) {
-            isAIPromptGenerating.value = true;
-            isChatResponse = false;
-          }
           // Just collect content - don't create message bubble yet
-        } else if (chunk.type && chunk.type.includes('function_call')) {
+        // } else if (chunk.type && chunk.type.includes('function_call')) {
           // Handle tool calls for Responses API
-          console.log('Tool call delta received:', chunk);
+          // console.log('Tool call delta received:', chunk);
           // Tool call handling for Responses API format
           // This will need to be implemented based on the actual tool call structure
-        }
+        // }
       }
-
+      isTyping.value = false;
       console.log('Stream processing complete');
       console.log('Final content length:', streamedContent.length);
       console.log('Tool calls received:', toolCalls);

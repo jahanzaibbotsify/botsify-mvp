@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import OpenAI from 'openai';
-import { ConfigurationTask, ConfigurationResponse, ConfigurationResponseData, ApiRequestData, ChatMessage, OpenAIStreamResponse, ApiError } from '../types/openai'
+import { ConfigurationTask, ConfigurationResponse, ConfigurationResponseData, ApiRequestData, ChatMessage, ApiError } from '../types/openai'
 import { useApiKeyStore } from './apiKeyStore';
 
 let openaiClient: OpenAI | null = null;
@@ -73,7 +73,13 @@ export const useOpenAIStore = defineStore('openai', () => {
       "updateTeamMember",
       "deleteTeamMember",
       "getOfflineHours",
-      "setOfflineHours"
+      "setOfflineHours",
+      "getChatBotMenu",
+      "setChatBotMenu",
+      "createPageMessage",
+      "updatePageMessage",
+      "deletePageMessage",
+      "getAllPageMessages"
     ],
     require_approval: "never" as const
   }
@@ -260,7 +266,7 @@ export const useOpenAIStore = defineStore('openai', () => {
     return responseMessage.trim();
   }
 
-  async function streamChat(messages: ChatMessage[]): Promise<AsyncIterable<OpenAIStreamResponse>> {
+  async function streamChat(messages: ChatMessage[]): Promise<Response>  {
     // Debug: Check client state
     console.log('🔍 DEBUG: OpenAI client state:', {
       clientExists: !!openaiClient,
@@ -286,8 +292,10 @@ export const useOpenAIStore = defineStore('openai', () => {
       console.log('🚀 Preparing to stream chat with messages:', messages);
       
       // Convert messages to Responses API format - use simple string input
-      const nonSystemMessages = messages.filter(msg => msg.role !== 'system');
+      const nonSystemMessages = messages.filter(msg => msg.role !== 'system');      
       const inputText = nonSystemMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+      // const latestMessage = nonSystemMessages[nonSystemMessages.length - 1];
+      // const inputText = `${latestMessage.role}: ${latestMessage.content}`;
 
       // Extract system message for instructions
       const systemMessage = messages.find(msg => msg.role === 'system');
@@ -430,32 +438,221 @@ Show 2 items from RSS: https://cdn.mysitemapgenerator.com/...
 Run assistant named Urooj powered by OpenAI.
 23. When user sends "change language", offer "arabic", "urdu", or "french".
 On "arabic" or "urdu", update chatbot_language and reply "language changed".
-24. When user sends "keyword", "word", or "key", show default response (data incomplete in input).`;
+24. When user sends "keyword", "word", or "key", show default response (data incomplete in input).
+
+
+
+Botsify MCP Server: Operations & API Tooling Guide
+    
+    Welcome to the Botsify Master Control Program (MCP) server. This interface provides secure, granular access to a suite of administrative functions for the management of Botsify chatbot assets, configurations, and team resources. Each API Tool serves specific intents. Where required, all user input constraints, confirmation steps, and authentication fields are strictly enforced. Instructions below must be adhered to exactly by any LLM agent or operator.
+    
+    ---
+    
+    ## Tool Catalog & Usage Policies
+    
+    **General Enforcement Principles:**
+    - Always request and confirm all required user information before invoking any tool.
+    - Never infer, autofill, or propagate unspecified field values.
+    - Confirm destructive actions with explicit user permission.
+    
+    ---
+    
+    ### 1. Tools Overview
+    Invoke available tools to perform mission-critical actions on the Botsify platform, including configuration updates, access management, and message delivery.
+    
+    ---
+    
+    ### 2. \`updateBotSettings\`
+    - **Purpose:** Dynamically update configuration keys/values for a chatbot.
+    - **Input:** Only accepted setting keys may be used; disregard unknown or empty keys.
+    
+    ---
+    
+    ### 3. \`updateBotGeneralSettings\`
+    - **Purpose:** Update selected general bot settings only.
+    - **Input Constraints:**
+      - Only update fields the user explicitly requests.
+      - Omit any optional or empty fields not specified by the user.
+    - **Fields:**
+        - \`botStatus\` (boolean): Activate/deactivate if requested.
+        - \`email\` (string): Comma-separated emails if specified by the user.
+        - \`inactiveUrl\` (string): Webhook URL, only if provided by the user.
+        - \`translation\` (boolean): Enable/disable translation if requested.
+        - \`botsifyChatBotApiKey\` (string, required): Always required for authentication.
+    - **DO NOT:** Populate defaults, empty strings, or unset false/undefined values.
+    
+    ---
+    
+    ### 4. \`getBotsifyChatBotApiKey\`
+    - **Purpose:** Retrieve the Botsify ChatBot API key for authentication.
+    
+    ---
+    
+    ### 5. \`getTeamMembers\`
+    - **Purpose:** Fetch team member roster for the chatbot workspace.
+    
+    ---
+    
+    ### 6. \`toggleBotAccessForTeamMember\`
+    - **Purpose:** Enable or disable bot access for a designated team member.
+    
+    ---
+    
+    ### 7. \`resendInvitationToTeamMember\`
+    - **Purpose:** Resend onboarding invitation to a specified team member.
+    
+    ---
+    
+    ### 8. \`toggleBotNotificationForTeamMember\`
+    - **Purpose:** Toggle notification delivery status for a specified team member.
+    
+    ---
+    
+    ### 9. \`getTeamMember\`
+    - **Purpose:** Retrieve details about a specific team member.
+    
+    ---
+    
+    ### 10. \`createTeamMember\`
+    - **Purpose:** Provision a new team member in the Botsify workspace.
+    - **Precondition:** User must provide all required fields explicitly.
+    - **Required Fields:** 
+        - \`name\` (string)
+        - \`email\` (string)
+        - \`role\` (must be one of: "editor", "admin", "live chat agent")
+        - \`botsifyChatBotApiKey\` (string)
+    - **DO NOT:** Autogenerate or leave required fields blank. Always explicitly ask the user for these values.
+    
+    ---
+    
+    ### 11. \`DeleteTeamMember\`
+    - **Purpose:** Remove a team member from the bot workspace.
+    - **Precondition:** User must explicitly confirm deletion (ask: "Do you really want to delete this team member?").
+    - **Confirmation:** The \`confirm\` field **must** be provided by the user as \`true\`. It must **never** be assumed or autofilled. This action is irreversible.
+    
+    ---
+    
+    ### 12. \`clearBotData\`
+    - **Purpose:** Permanently clear all bot instructions and user interactions as of the current date.
+    - **Precondition:** User **must** confirm intent by providing the exact text: \`"DELETE DATA"\`.
+    - **Confirmation:** The \`confirm\` field **must** be user-provided and never automated. Action is irreversible.
+    
+    ---
+    
+    ### 13. \`getChatBotMenu\`
+    - **Purpose:** Retrieve the current chatbot menu structure.
+    
+    ---
+    
+    ### 14. \`setChatBotMenu\`
+    - **Purpose:** Define the chatbot menu.
+    - **Required Inputs:** An array of buttons (type: "postback" or "web_url", with title and response), and input field status.
+    - **Dynamic Variables:** Responses can include template variables (e.g., \`{first_name}\`, \`{last_name}\`, \`{timezone}\`).
+    
+    ---
+    
+    ### 15. \`createPageMessage\`
+    - **Purpose:** Post a page message (text/story) to URLs.
+    - **Parameters:** 
+        - \`url\` (string, comma-separated)
+        - \`html\` (string, message text)
+        - \`show_message_after\` ('scroll' \\| 'delay')
+        - \`story\` (string, optional story ID)
+        - \`timeout\` (int, ms)
+        - \`type\` ('message' \\| 'story')
+        - \`botsifyChatBotApiKey\` (string, required)
+    
+    ---
+    
+    ### 16. \`updatePageMessage\`
+    - **Purpose:** Update existing page messages by ID.
+    - **Precondition:** Always request explicit update confirmation from user prior to execution.
+    - **Required Fields:** 
+        - \`id\`, \`url\`, \`html\`, \`show_message_after\`, \`story\`, \`timeout\`, \`type\`, \`botsifyChatBotApiKey\`, \`confirm\` (must be \`true\`).
+    
+    ---
+    
+    ### 17. \`deletePageMessage\`
+    - **Purpose:** Remove a specific page message by ID.
+    - **Precondition:** Ask for, and require, explicit deletion confirmation.
+    - **Required Inputs:** 
+        - \`id\`, \`botsifyChatBotApiKey\`, \`confirm\` (must be \`true\`).
+    
+    ---
+    
+    ### 18. \`getAllPageMessages\`
+    - **Purpose:** Fetch all current page messages.
+    
+    ---
+    
+    ### 19. \`getOfflineHours\`
+    - **Purpose:** Fetch offline hours of chatbot.
+    
+    ---
+    
+    ### 20. \`setOfflineHours\`
+    - **Purpose:** set offline hours for the chatbot.
+    
+    ---
+    
+    > **Critical Note:**  
+    > All irreversible, destructive, or access-control actions require explicit, user-initiated confirmations (either boolean or strict text matches, as described). NEVER automate, autofill, or bypass confirmation requirements. All authentication fields (API keys) must be explicitly requested from the user when required.
+    
+    ---
+    
+    **End of MCP Server Tooling Guide.** 
+
+`;
 
       console.log('📤 Sending request to OpenAI Responses API with input text:', inputText.substring(0, 100) + '...');
       
       try {
-        // Use responses.create (NOT completions.create) with proper typing
-        const stream = await openaiClient.responses.create({
-          model: 'gpt-4o',
-          input: inputText,
-          instructions: instructions,
-          tools: [configureChatbotTool, mcpConfiguration],
-          tool_choice: "auto",
-          stream: true,
-          temperature: 1,
-          max_output_tokens: 2000,
-          top_p: 1
+
+        const payload = {
+            model: 'gpt-4o',
+            input: inputText,
+            instructions: instructions,
+            tools: [configureChatbotTool, mcpConfiguration],
+            tool_choice: "auto",
+            stream: true,
+            store: true,
+            temperature: 1,
+            max_output_tokens: 2000,
+            top_p: 1
+          };
+
+        const stream = await fetch(import.meta.env.VITE_BOTSIFY_BASE_URL + `/v1/get-ai-response?apikey=${botApiKey}`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
+          },
+          body: JSON.stringify({payload: payload})
         });
+        if (!stream.ok) throw new Error('No response for streaming');
+        return stream;
+
+        // Use responses.create (NOT completions.create) with proper typing
+        // const stream = await openaiClient.responses.create({
+        //   model: 'gpt-4o',
+        //   input: inputText,
+        //   instructions: instructions,
+        //   tools: [configureChatbotTool, mcpConfiguration],
+        //   tool_choice: "auto",
+        //   stream: true,
+        //   temperature: 1,
+        //   max_output_tokens: 2000,
+        //   top_p: 1
+        // });
   
-        console.log('✅ Stream received from OpenAI Responses API:', typeof stream, stream !== null);
+        // console.log('✅ Stream received from OpenAI Responses API:', typeof stream, stream !== null);
         
         // Verify the stream is valid
-        if (!stream) {
-          throw new Error('Received null or undefined stream from OpenAI Responses API');
-        }
+        // if (!stream.body) {
+        //   throw new Error('Received null or undefined stream from OpenAI Responses API');
+        // }
         
-        return stream as AsyncIterable<OpenAIStreamResponse>;
+        // return stream as AsyncIterable<OpenAIStreamResponse>;
       } catch (apiError: unknown) {
         const streamError = apiError as ApiError;
         console.error('❌ API call error:', streamError);

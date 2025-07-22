@@ -27,15 +27,27 @@ async function testApiKey() {
     
     const stream = await openAIStore.streamChat(messages);
     let response = '';
+    if (!stream.body) throw new Error('No response body for streaming');
+    const reader = stream.body?.getReader();
+    const decoder = new TextDecoder('utf-8');
+
+
+    // for await (const chunk of stream) {
+    //   // Handle Responses API streaming format
+    //   if (chunk.type === 'response.output_text.delta') {
+    //     const content = chunk.delta || '';
+    //     response += content;
+    //   }
+    // }
+
     
-    for await (const chunk of stream) {
-      // Handle Responses API streaming format
-      if (chunk.type === 'response.output_text.delta') {
-        const content = chunk.delta || '';
-        response += content;
-      }
+    while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          console.log('chunk--->', chunk); // or yield chunk, or process as needed
+          response += chunk;
     }
-    
     console.log('API test response:', response);
     
     testResult.value = {
