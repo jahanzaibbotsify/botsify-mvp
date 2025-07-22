@@ -45,6 +45,7 @@ export class BotsifyApiService {
       console.log('Deploying AI Agent with story content:', storyContent.substring(0, 100) + '...');
       
       const response = await axios.post(`${BOTSIFY_BASE_URL}/deploy-ai-agent`, {
+        apikey: useApiKeyStore().apiKey,
         story: storyContent,
         timestamp: new Date().toISOString(),
         action: 'deploy'

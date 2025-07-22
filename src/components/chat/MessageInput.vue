@@ -321,11 +321,11 @@ const connectFileSearch = async () => {
     isUploading.value = true;
     
     // First upload the file using the new upload endpoint
-    let response = await botsifyApi.uploadFileNew(selectedFile.value);
+    // let uploadResult = await botsifyApi.uploadFileNew(selectedFile.value);
     
-    if (!response.success) {
-      throw new Error(response.message || 'File upload failed');
-    }
+    // if (!uploadResult.success) {
+    //   throw new Error(uploadResult.message || 'File upload failed');
+    // }
     
     uploadProgress.value = 50;
     isUploading.value = false;
@@ -343,7 +343,7 @@ const connectFileSearch = async () => {
 
     
     
-    // const response = await botsifyApi.createFileSearch(selectedFile.value);
+    const response = await botsifyApi.createFileSearch(selectedFile.value);
 
     uploadProgress.value = 50;
     isUploading.value = false;
