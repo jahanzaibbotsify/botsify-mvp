@@ -2,7 +2,6 @@
   <div class="chat-header">
     <h2>{{ title }}</h2>
     <div class="chat-actions">
-      
       <!-- Deploy/Test AI Buttons -->
       <button 
         class="action-button deploy-button"
@@ -28,40 +27,33 @@
         </div>
       </button>
 
-      <!-- AI Prompt Toggle -->
-      <button 
-        class="icon-button ai-prompt-toggle" 
-        @click="toggleStorySidebar"
-        title="AI Prompt"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 12l2 2 4-4"></path>
-          <path d="M21 12c-1 0-2-1-2-2s1-2 2-2 2 1 2 2-1 2-2 2z"></path>
-          <path d="M3 12c1 0 2-1 2-2s-1-2-2-2-2 1-2 2 1 2 2 2z"></path>
-          <path d="M12 3c0 1-1 2-2 2s-2-1-2-2 1-2 2-2 2 1 2 2z"></path>
-          <path d="M12 21c0-1 1-2 2-2s2 1 2 2-1 2-2 2-2-1-2-2z"></path>
-        </svg>
-      </button>
-
-      <!-- Delete Button -->
-      <button 
-        class="icon-button delete-button" 
-        @click="handleDelete"
-        title="Delete"
-      >
-        <i class="pi pi-trash" style="font-size: 20px;"></i>
-      </button>
-      
-      <ThemeToggle />
-      <!-- <UserMenu /> -->
+      <!-- Dropdown Menu Trigger -->
+      <div class="dropdown" @mouseleave="showDropdown = false">
+        <button class="icon-button" @click="toggleDropdown" title="More actions">
+          <i class="pi pi-ellipsis-v" style="font-size: 22px;"></i>
+        </button>
+        <div v-if="showDropdown" class="dropdown-content">
+          <button class="dropdown-item" @click="toggleTheme">
+            <i :class="themeStore.theme === 'light' ? 'pi pi-moon' : 'pi pi-sun'" style="font-size: 18px;"></i>
+            <span>{{ themeStore.theme === 'light' ? 'Night Theme' : 'Light Theme' }}</span>
+          </button>
+          <button class="dropdown-item" @click="handleAIPrompt">
+            <i class="pi pi-bolt" style="font-size: 18px;"></i>
+            <span>AI Prompt</span>
+          </button>
+          <button class="dropdown-item" @click="handleDelete">
+            <i class="pi pi-replay" style="font-size: 18px;"></i>
+            <span>Reset Conversation</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import ThemeToggle from '@/components/ui/ThemeToggle.vue';
-// import UserMenu from '@/components/auth/UserMenu.vue';
+import { useThemeStore } from '@/stores/themeStore';
 import { botsifyApi } from '@/services/botsifyApi';
 import { BOTSIFY_WEB_URL } from '@/utils/config';
 import { useChatStore } from '@/stores/chatStore';
@@ -75,12 +67,28 @@ interface Props {
 
 const props = defineProps<Props>();
 const chatStore = useChatStore();
+const themeStore = useThemeStore();
+const showDropdown = ref(false);
 
 const emit = defineEmits<{
   toggleStorySidebar: [];
 }>();
 
 const isDeployingAI = ref(false);
+
+function toggleDropdown() {
+  showDropdown.value = !showDropdown.value;
+}
+
+function toggleTheme() {
+  themeStore.setTheme(themeStore.theme === 'light' ? 'dark' : 'light');
+  showDropdown.value = false;
+}
+
+function handleAIPrompt() {
+  emit('toggleStorySidebar');
+  showDropdown.value = false;
+}
 
 async function testAI() {
   if (!props.hasPromptContent) {
@@ -124,15 +132,11 @@ async function deploying(content: string){
   }
 }
 
-function toggleStorySidebar() {
-  emit('toggleStorySidebar');
-}
-
 function handleDelete() {
+  showDropdown.value = false;
   window.$confirm({
     text: "This action will delete your current chat flow and start a new chatbot. This action is irreversible."
   }, async() => {
-    // await deploying('');
     chatStore.clearChatMessages(props.chatId)
   });
 }
@@ -169,6 +173,7 @@ function handleDelete() {
 .chat-actions {
   display: flex;
   gap: var(--space-4);
+  align-items: center;
 }
 
 .icon-button {
@@ -186,51 +191,6 @@ function handleDelete() {
 .icon-button:hover {
   background-color: var(--color-bg-tertiary);
   color: var(--color-text-primary);
-}
-
-.ai-prompt-toggle {
-  color: var(--color-primary);
-  position: relative;
-}
-
-.ai-prompt-toggle:hover {
-  background-color: rgba(0, 163, 255, 0.1);
-  color: var(--color-primary);
-}
-
-.ai-prompt-toggle::after {
-  content: 'AI Prompt';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: all var(--transition-fast);
-  z-index: var(--z-dropdown);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-border);
-  margin-top: var(--space-1);
-}
-
-.ai-prompt-toggle:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
-
-.delete-button {
-  color: var(--color-error);
-}
-
-.delete-button:hover {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: var(--color-error);
 }
 
 .action-button {
@@ -297,20 +257,54 @@ function handleDelete() {
   }
 }
 
-/* Mobile styles */
-@media (max-width: 767px) {
-  .chat-header {
-    padding: var(--space-2) var(--space-3);
-    margin: var(--space-2) var(--space-2) 0;
-  }
-  
-  .chat-header h2 {
-    font-size: 1rem;
-    max-width: calc(100% - 140px);
-  }
-  
-  .ai-prompt-toggle::after {
-    display: none;
-  }
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-content {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  right: 0;
+  top: 110%;
+  background-color: var(--color-bg-primary);
+  background-image: radial-gradient(circle at right top, rgba(0, 163, 255, 0.08), transparent 70%);
+  min-width: 200px;
+  box-shadow: var(--shadow-md), 0 4px 15px rgba(0, 163, 255, 0.08);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0, 163, 255, 0.1);
+  z-index: var(--z-dropdown);
+  overflow: hidden;
+  padding: var(--space-2) 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  text-align: left;
+  padding: var(--space-2) var(--space-4);
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: background-color var(--transition-fast);
+}
+
+.dropdown-item:hover {
+  background-color: rgba(0, 163, 255, 0.05);
+  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.08), transparent 80%);
+}
+
+.dropdown-item.danger {
+  color: var(--color-error);
+}
+
+.dropdown-item.danger:hover {
+  background-color: rgba(239, 68, 68, 0.1);
 }
 </style> 

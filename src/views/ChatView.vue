@@ -347,7 +347,7 @@ function toggleStorySidebar() {
   height: 60vh;
   width: 100%;
   padding: 0;
-  background-color: white;
+  background-color:var(--color-bg-primary);
 }
 .centered-message-input > * {
   width: 100%;

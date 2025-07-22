@@ -1048,7 +1048,7 @@ const hideLoading = () => {
 /* Centered state overrides */
 .message-input-container.centered {
   padding: 0;
-  background-color: white;
+  background-color:  var(--color-bg-primary);
 }
 
 .input-area {
