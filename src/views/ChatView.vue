@@ -101,67 +101,69 @@ function toggleStorySidebar() {
 </script>
 
 <template>
-  <div v-if="chat" class="chat-view" :class="{ 'with-sidebar': showStorySidebar }">
-    <!-- API Error Notification -->
-    <ApiErrorNotification />
-    
+  <div v-if="chat">
     <ChatHeader 
       :title="chat.title"
       :has-prompt-content="hasPromptContent"
       :latest-prompt-content="latestPromptContent"
-      :chatId="chatId"
       @toggle-story-sidebar="toggleStorySidebar"
+      :show-story-sidebar="showStorySidebar"
     />
-    
-    <div ref="messagesContainer" class="messages-container scrollbar">
-      <div class="messages">
-        <ChatMessage 
-          v-for="message in chat.messages" 
-          :key="`${message.id}-${message.content ? message.content.length : 0}`" 
-          :message="message" 
-        />
-        
-        <TypingIndicator v-if="chatStore.isTyping" />
-      </div>
-      <!-- Centered MessageInput if no messages or first message is empty -->
-      <div v-if="showCenteredInput" class="centered-message-input">
-        <div class="centered-heading">
-          <h1>Start building your AI chatbot prompt...</h1>
+    <div class="chat-view" :class="{ 'with-sidebar': showStorySidebar }">
+      <!-- API Error Notification -->
+      <ApiErrorNotification />
+      
+      
+      <div ref="messagesContainer" class="messages-container scrollbar">
+        <div class="messages">
+          <ChatMessage 
+            v-for="message in chat.messages" 
+            :key="`${message.id}-${message.content ? message.content.length : 0}`" 
+            :message="message" 
+          />
+          
+          <TypingIndicator v-if="chatStore.isTyping" />
         </div>
-        <MessageInput :chatId="chatId" :centered="true" />
-        <div class="suggestion-buttons">
-          <button v-for="suggestion in suggestions" :key="suggestion" class="suggestion-btn" @click="sendSuggestion(suggestion)">
-            {{ suggestion }}
-          </button>
+        <!-- Centered MessageInput if no messages or first message is empty -->
+        <div v-if="showCenteredInput" class="centered-message-input">
+          <div class="centered-heading">
+            <h1>Start building your AI chatbot prompt...</h1>
+          </div>
+          <MessageInput :chatId="chatId" :centered="true" />
+          <div class="suggestion-buttons">
+            <button v-for="suggestion in suggestions" :key="suggestion" class="suggestion-btn" @click="sendSuggestion(suggestion)">
+              {{ suggestion }}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-    
-    <!-- Bottom MessageInput if there are real messages -->
-    <MessageInput v-if="!showCenteredInput" :chatId="chatId" />
-    
-     <!-- Story Sidebar - Only show when enabled -->
-     <StorySidebar v-if="showStorySidebar" ref="storySidebar" :chatId="chatId" />
+      
+      <!-- Bottom MessageInput if there are real messages -->
+      <MessageInput v-if="!showCenteredInput" :chatId="chatId" />
+      
+      <!-- Story Sidebar - Only show when enabled -->
+      <StorySidebar v-if="showStorySidebar" ref="storySidebar" :chatId="chatId" />
 
-    <!-- System Message Modal -->
-    <div v-if="showSystemMessageModal" class="modal-overlay" @click.self="toggleSystemMessageModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>System Message</h3>
-          <button class="close-button" @click="toggleSystemMessageModal">
-            <i class="pi pi-times"></i>
-          </button>
+      <!-- System Message Modal -->
+      <div v-if="showSystemMessageModal" class="modal-overlay" @click.self="toggleSystemMessageModal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>System Message</h3>
+            <button class="close-button" @click="toggleSystemMessageModal">
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
+          <SystemMessageSender />
         </div>
-        <SystemMessageSender />
       </div>
     </div>
   </div>
-  
   <div v-else class="chat-not-found">
     <h2>Chat not found</h2>
     <p>The chat you're looking for doesn't exist or has been deleted.</p>
     <button class="primary" @click="$router.push('/')">Back to Home</button>
   </div>
+  
 </template>
 
 <style scoped>
@@ -185,7 +187,7 @@ function toggleStorySidebar() {
 .messages-container {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-4);
+  padding: var(--space-3);
   background-color: var(--color-bg-primary);
   /* border-left: 1px solid rgba(0, 163, 255, 0.1);
   border-right: 1px solid rgba(0, 163, 255, 0.1); */
@@ -303,7 +305,6 @@ function toggleStorySidebar() {
   
   .message-input-container {
     margin: 0 var(--space-2) var(--space-2);
-    padding: var(--space-2);
   }
   
   .modal-content {
@@ -316,19 +317,6 @@ function toggleStorySidebar() {
   .messages-container {
     padding: var(--space-2) var(--space-1);
   }
-}
-
-.message-input-container {
-  padding: var(--space-3);
-  background-color: var(--color-bg-secondary);
-  position: sticky;
-  bottom: 0;
-  z-index: var(--z-sticky);
-  margin: 0 var(--space-4) var(--space-4);
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-  box-shadow: 0 -2px 10px rgba(0, 163, 255, 0.03);
-  border: 1px solid rgba(0, 163, 255, 0.1);
-  border-top: none;
 }
 
 .btn {

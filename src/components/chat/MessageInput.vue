@@ -1045,12 +1045,6 @@ const hideLoading = () => {
   z-index: var(--z-sticky);
 }
 
-/* Centered state overrides */
-.message-input-container.centered {
-  padding: 0;
-  background-color:  var(--color-bg-primary);
-}
-
 .input-area {
   display: flex;
   width: 100%;

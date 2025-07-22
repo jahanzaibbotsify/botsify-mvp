@@ -1,5 +1,5 @@
 <template>
-  <div class="chat-header">
+  <div class="chat-header" :class="{ 'with-sidebar': showStorySidebar }">
     <h2>{{ title }}</h2>
     <div class="chat-actions">
       <!-- Deploy/Test AI Buttons -->
@@ -28,7 +28,7 @@
       </button>
 
       <!-- Dropdown Menu Trigger -->
-      <div class="dropdown" @mouseleave="showDropdown = false">
+      <div class="dropdown" >
         <button class="icon-button" @click="toggleDropdown" title="More actions">
           <i class="pi pi-ellipsis-v" style="font-size: 22px;"></i>
         </button>
@@ -62,7 +62,7 @@ interface Props {
   title: string;
   hasPromptContent: boolean;
   latestPromptContent: string;
-  chatId: string;
+  showStorySidebar: boolean;
 }
 
 const props = defineProps<Props>();
@@ -135,9 +135,9 @@ async function deploying(content: string){
 function handleDelete() {
   showDropdown.value = false;
   window.$confirm({
-    text: "This action will delete your current chat flow and start a new agent. This action is irreversible."
+    text: "This action will delete your current agent flow and start a new agent. This action is irreversible."
   }, async() => {
-    chatStore.clearChatMessages(props.chatId)
+    chatStore.clearChatMessages()
   });
 }
 </script>
@@ -153,12 +153,14 @@ function handleDelete() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 0 var(--space-4);
-  margin-top: var(--space-4);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   box-shadow: 0 4px 15px rgba(0, 163, 255, 0.08);
   border: 1px solid rgba(0, 163, 255, 0.1);
   border-bottom: none;
+}
+
+.chat-header.with-sidebar {
+  width: 62%;
 }
 
 .chat-header h2 {

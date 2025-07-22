@@ -7,25 +7,25 @@ import { useApiKeyStore } from './apiKeyStore';
 export const useMCPStore = defineStore('mcp', () => {
   // All MCP servers (popular + custom)
   const servers = ref<MCPServer[]>([
-    // {
-    //   id: 'github',
-    //   name: 'GitHub',
-    //   description: 'Access GitHub repositories, issues, and pull requests',
-    //   category: 'Development',
-    //   icon: '🐙',
-    //   apiKeyRequired: true,
-    //   botIdRequired: true,
-    //   isPopular: true,
-    //   authMethod: 'api_key',
-    //   authLabel: 'GitHub Personal Access Token',
-    //   features: ['Repository access', 'Issue management', 'Pull requests', 'Code search'],
-    //   connection: {
-    //     isConnected: false,
-    //     mcp_id: null,
-    //     apiKey: null,
-    //     systemPrompt: null
-    //   }
-    // },
+    {
+      id: 'github',
+      name: 'GitHub',
+      description: 'Access GitHub repositories, issues, and pull requests',
+      category: 'Development',
+      icon: '🐙',
+      apiKeyRequired: true,
+      botIdRequired: true,
+      isPopular: true,
+      authMethod: 'api_key',
+      authLabel: 'GitHub Personal Access Token',
+      features: ['Repository access', 'Issue management', 'Pull requests', 'Code search'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
+    },
     // {
     //   id: 'notion',
     //   name: 'Notion',
@@ -45,25 +45,25 @@ export const useMCPStore = defineStore('mcp', () => {
     //     systemPrompt: null
     //   }
     // },
-    // {
-    //   id: 'slack',
-    //   name: 'Slack',
-    //   description: 'Send messages and interact with Slack workspaces',
-    //   category: 'Communication',
-    //   icon: '💬',
-    //   apiKeyRequired: true,
-    //   botIdRequired: true,
-    //   isPopular: true,
-    //   authMethod: 'bearer_token',
-    //   authLabel: 'Slack Bot Token',
-    //   features: ['Send messages', 'Channel management', 'User lookup', 'File sharing'],
-    //   connection: {
-    //     isConnected: false,
-    //     mcp_id: null,
-    //     apiKey: null,
-    //     systemPrompt: null
-    //   }
-    // },
+    {
+      id: 'slack',
+      name: 'Slack',
+      description: 'Send messages and interact with Slack workspaces',
+      category: 'Communication',
+      icon: '💬',
+      apiKeyRequired: true,
+      botIdRequired: true,
+      isPopular: true,
+      authMethod: 'bearer_token',
+      authLabel: 'Slack Bot Token',
+      features: ['Send messages', 'Channel management', 'User lookup', 'File sharing'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
+    },
     // {
     //   id: 'google-drive',
     //   name: 'Google Drive',
@@ -159,25 +159,25 @@ export const useMCPStore = defineStore('mcp', () => {
     //     systemPrompt: null
     //   }
     // },
-    // {
-    //   id: 'calendar',
-    //   name: 'Google Calendar',
-    //   description: 'Manage calendar events and schedules',
-    //   category: 'Productivity',
-    //   icon: '📅',
-    //   apiKeyRequired: true,
-    //   botIdRequired: true,
-    //   isPopular: false,
-    //   authMethod: 'oauth',
-    //   authLabel: 'Google OAuth Token',
-    //   features: ['Event management', 'Schedule viewing', 'Meeting creation', 'Reminder setup'],
-    //   connection: {
-    //     isConnected: false,
-    //     mcp_id: null,
-    //     apiKey: null,
-    //     systemPrompt: null
-    //   }
-    // },
+    {
+      id: 'calendar',
+      name: 'Google Calendar',
+      description: 'Manage calendar events and schedules',
+      category: 'Productivity',
+      icon: '📅',
+      apiKeyRequired: true,
+      botIdRequired: true,
+      isPopular: false,
+      authMethod: 'oauth',
+      authLabel: 'Google OAuth Token',
+      features: ['Event management', 'Schedule viewing', 'Meeting creation', 'Reminder setup'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
+    },
     // {
     //   id: 'email',
     //   name: 'Email (SMTP)',
@@ -254,63 +254,120 @@ export const useMCPStore = defineStore('mcp', () => {
         systemPrompt: null
       }
     },
-    // {
-    //   id: 'paypal',
-    //   name: 'PayPal',
-    //   description: 'Manage PayPal payments and transactions',
-    //   category: 'Payments',
-    //   icon: '💰',
-    //   apiKeyRequired: true,
-    //   botIdRequired: false,
-    //   isPopular: true,
-    //   authMethod: 'oauth',
-    //   authLabel: 'PayPal OAuth Token',
-    //   features: ['Payment processing', 'Transaction history', 'Refund management', 'Merchant services'],
-    //   connection: {
-    //     isConnected: false,
-    //     mcp_id: null,
-    //     apiKey: null,
-    //     systemPrompt: null
-    //   }
-    // },
-    // {
-    //   id: 'square',
-    //   name: 'Square',
-    //   description: 'Handle Square payments and point-of-sale',
-    //   category: 'Payments',
-    //   icon: '🟦',
-    //   apiKeyRequired: true,
-    //   botIdRequired: true,
-    //   isPopular: true,
-    //   authMethod: 'bearer_token',
-    //   authLabel: 'Square Access Token',
-    //   features: ['POS transactions', 'Inventory management', 'Customer management', 'Analytics'],
-    //   connection: {
-    //     isConnected: false,
-    //     mcp_id: null,
-    //     apiKey: null,
-    //     systemPrompt: null
-    //   }
-    // },
-    // {
-    //   id: 'plaid',
-    //   name: 'Plaid',
-    //   description: 'Access bank account and financial data',
-    //   category: 'Financial',
-    //   icon: '🏦',
-    //   apiKeyRequired: true,
-    //   botIdRequired: true,
-    //   isPopular: true,
-    //   authMethod: 'api_key',
-    //   authLabel: 'Plaid Client ID & Secret',
-    //   features: ['Account linking', 'Transaction data', 'Balance checks', 'Financial insights'],
-    //   connection: {
-    //     isConnected: false,
-    //     mcp_id: null,
-    //     apiKey: null,
-    //     systemPrompt: null
-    //   }
-    // }
+    {
+      id: 'paypal',
+      name: 'PayPal',
+      description: 'Manage PayPal payments and transactions',
+      category: 'Payments',
+      icon: '💰',
+      apiKeyRequired: true,
+      botIdRequired: false,
+      isPopular: true,
+      authMethod: 'oauth',
+      authLabel: 'PayPal OAuth Token',
+      features: ['Payment processing', 'Transaction history', 'Refund management', 'Merchant services'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
+    },
+    {
+      id: 'gmail',
+      name: 'Gmail',
+      description: 'Send and receive emails with Gmail integration',
+      category: 'Communication',
+      icon: '📧',
+      apiKeyRequired: true,
+      botIdRequired: true,
+      isPopular: true,
+      authMethod: 'oauth',
+      authLabel: 'Gmail OAuth Token',
+      features: ['Send email', 'Read inbox', 'Manage labels', 'Attachment handling'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
+    },
+    {
+      id: 'zendesk',
+      name: 'Zendesk',
+      description: 'Manage support tickets and customer interactions',
+      category: 'Support',
+      icon: '🎫',
+      apiKeyRequired: true,
+      botIdRequired: true,
+      isPopular: true,
+      authMethod: 'api_key',
+      authLabel: 'Zendesk API Key',
+      features: ['Ticket management', 'Customer lookup', 'Reply to tickets', 'Status updates'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
+    },
+    {
+      id: 'hubspot',
+      name: 'HubSpot',
+      description: 'Manage CRM contacts, deals, and marketing',
+      category: 'CRM',
+      icon: '🌀',
+      apiKeyRequired: true,
+      botIdRequired: true,
+      isPopular: true,
+      authMethod: 'api_key',
+      authLabel: 'HubSpot API Key',
+      features: ['Contact management', 'Deal tracking', 'Marketing automation', 'Email campaigns'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
+    },
+    {
+      id: 'zoho',
+      name: 'Zoho',
+      description: 'Access Zoho CRM and business tools',
+      category: 'CRM',
+      icon: '🧩',
+      apiKeyRequired: true,
+      botIdRequired: true,
+      isPopular: true,
+      authMethod: 'api_key',
+      authLabel: 'Zoho API Key',
+      features: ['CRM access', 'Lead management', 'Workflow automation', 'Email integration'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
+    },
+    {
+      id: 'google-sheet',
+      name: 'Google Sheet',
+      description: 'Read and write to Google Sheets',
+      category: 'Productivity',
+      icon: '📊',
+      apiKeyRequired: true,
+      botIdRequired: true,
+      isPopular: true,
+      authMethod: 'oauth',
+      authLabel: 'Google OAuth Token',
+      features: ['Read sheets', 'Write data', 'Update rows', 'Sheet management'],
+      connection: {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      }
+    }
   ]);
   const apiKey = useApiKeyStore().apiKey;
 
