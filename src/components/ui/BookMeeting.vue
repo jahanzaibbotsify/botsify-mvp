@@ -32,7 +32,7 @@ defineExpose({ openModal })
       🛠️ Bug or feature help
     </a>
     <a class="btn" @click="() => openCalendar('https://calendly.com/samuel-nixon/botsify-customer-success')">
-      🤖 Chatbot discussion
+      🤖 Agent discussion
     </a>
   </ModalLayout>
 </template>
