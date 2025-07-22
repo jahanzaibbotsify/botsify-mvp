@@ -137,7 +137,7 @@ export const useChatStore = defineStore('chat', () => {
   const defaultPromptTemplate = computed(() => {
     return globalPromptTemplates.value.find(t => t.isDefault) || null;
   });
-
+console.log(defaultPromptTemplate, "defaultPromptTemplate");
   function setActiveChat(chatId: string) {
     console.log('Setting active chat:', chatId);
     activeChat.value = chatId;
@@ -1171,19 +1171,8 @@ Use the above connected services information to understand what tools and data s
   }
 
   // Function to clear message history for a specific chat
-  function clearChatMessages(chatId: string) {
-    const chat = chats.value.find(c => c.id === chatId);
-    if (!chat) return false;
-
-    // Keep only the welcome message
-    chat.messages = [{
-      id: Date.now().toString(),
-      content: '',
-      timestamp: new Date(),
-      sender: 'assistant'
-    }];
-    chat.lastMessage = '';
-    console.log(`Cleared message history for chat ${chatId}`);
+  function clearChatMessages() {
+    chats.value = [];
     saveToTemplate();
     return true;
   }
