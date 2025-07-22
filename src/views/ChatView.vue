@@ -194,7 +194,10 @@ function toggleStorySidebar() {
   padding-left: 150px;
   padding-right: 150px;
 }
-
+.message-input-container.centered{
+  padding-left: 10px;
+  padding-right: 10px;
+}
 
 .chat-view.with-sidebar .messages-container,
 .chat-view.with-sidebar .message-input-container{
