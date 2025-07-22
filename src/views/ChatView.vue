@@ -419,8 +419,8 @@ function toggleStorySidebar() {
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-4);
-  font-size: 0.95rem;
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.80rem;
   font-weight: 500;
   cursor: pointer;
   transition: background-color var(--transition-fast), border-color var(--transition-fast);

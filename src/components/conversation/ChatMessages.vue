@@ -209,7 +209,7 @@ onMounted(() => {
             <!-- Messages in Group -->
             <div class="group-messages">
               <ChatMessage 
-                v-for="(message, index) in group.messages" 
+                v-for="(message, index) in group.messages.filter(m => m.content && m.content.trim() !== '')"
                 :key="message.id" 
                 :message="message"
                 :show-avatar="shouldShowAvatar(message, index, group.messages)"
