@@ -27,12 +27,12 @@ const selectedNavigationButton = computed(() => {
   return match?.name || null;
 });
 // const isMobile = computed(() => width.value < 768);
-const showHelpDropdown = ref(false);
+const showDropdown = ref(false);
 const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
 
 // Close dropdown when clicking outside
-const helpDropdownRef = ref<HTMLElement | null>(null);
-const helpButtonRef = ref<HTMLElement | null>(null);
+const dropdownRef = ref<HTMLElement | null>(null);
+const navButtonRef = ref<HTMLElement | null>(null);
 
 
 const navigationButtons = [
@@ -59,7 +59,7 @@ const navigationButtons = [
 ];
 
 // Help links for the help dropdown
-const helpLinks = [
+const navLinks = [
   {
     name: 'Legacy Platform',
     url: `${BOTSIFY_WEB_URL}/bot`,
@@ -112,17 +112,17 @@ const navigateToPage = (pageId: string) => {
   router.push(`/${pageId}`);
 }
 
-const toggleHelpDropdown = () => {
-  showHelpDropdown.value = !showHelpDropdown.value;
+const toggleDropdown = () => {
+  showDropdown.value = !showDropdown.value;
 };
 
-const closeHelpDropdown = () => {
-  showHelpDropdown.value = false;
+const closeDropdown = () => {
+  showDropdown.value = false;
 };
 
 const showZen = () => {
   window.showZen()
-  closeHelpDropdown();
+  closeDropdown();
 }
 
 // Function to open the BookMeeting modal
@@ -156,11 +156,11 @@ const handleManageBilling = async () => {
 // Open external link
 const openExternalLink = (url: string) => {
   window.open(url, '_blank');
-  closeHelpDropdown();
+  closeDropdown();
 };
 
-// Handle help item click
-const handleHelpItemClick = (item: any) => {
+// Handle item click
+const handleItemClick = (item: any) => {
   if (item.action === 'showZen') {
     showZen();
   } else if (item.action === 'bookMeeting') {
@@ -173,14 +173,14 @@ const handleHelpItemClick = (item: any) => {
 const handleClickOutside = (event: MouseEvent) => {
   const target = event.target as Node;
     
-  // Check if click is outside help dropdown
-  const isOutsideHelpDropdown = helpDropdownRef.value && 
-    !helpDropdownRef.value.contains(target) && 
-    helpButtonRef.value && 
-    !helpButtonRef.value.contains(target);
+  // Check if click is outside dropdown
+  const isOutsideDropdown = dropdownRef.value && 
+    !dropdownRef.value.contains(target) && 
+    navButtonRef.value && 
+    !navButtonRef.value.contains(target);
   
-  if (isOutsideHelpDropdown) {
-    showHelpDropdown.value = false;
+  if (isOutsideDropdown) {
+    showDropdown.value = false;
   }
 };
 
@@ -202,6 +202,29 @@ onUnmounted(() => {
           <a href="https://botsify.com" target="_blank" class="logo-link">
             <img src="https://botsify.com/assets/img/logos/logo/logo-color-600w.webp" alt="Botsify" class="logo-icon" />
           </a>
+        </div>
+
+        <div class="sidebar-actions">
+          <!-- 3-dot menu button -->
+          <div class="dropdown-container">
+            <button ref="menuButtonRef" class="menu-button" @click.stop="toggleDropdown" title="Navigation Menu">
+              <i class="pi pi-ellipsis-v"></i>
+            </button>
+
+            <!-- Navigation dropdown -->
+            <Transition>
+              <div ref="dropdownRef" v-if="showDropdown" class="nav-dropdown">
+                <div class="dropdown-arrow"></div>
+                <div v-for="item in navLinks" :key="item.name" class="nav-item"
+                  @click="handleItemClick(item)">
+                  <div class="nav-item-icon">
+                    <i :class="item.icon"></i>
+                  </div>
+                  <span>{{ item.name }}</span>
+                </div>
+              </div>
+            </Transition>
+          </div>
         </div>
       </div>
     </div>
@@ -227,28 +250,14 @@ onUnmounted(() => {
         </div>
 
       </div>
-      <div class="help-container">
-        <div class="dropdown-container">
-          <button ref="helpButtonRef" class="navigation-button help-button" @click.stop="toggleHelpDropdown">
-            <span>
-              <i class="pi pi-question-circle" style="font-size: 1.5em;"></i>
-            </span>
-            <span>Help</span>
-          </button>
-
-          <!-- Help dropdown -->
-          <div ref="helpDropdownRef" v-if="showHelpDropdown" class="help-dropdown">
-            <div class="dropdown-arrow"></div>
-            <div v-for="item in helpLinks" :key="item.name" class="nav-item"
-              @click="handleHelpItemClick(item)">
-              <div class="nav-item-icon">
-                <i :class="item.icon"></i>
-              </div>
-              <span>{{ item.name }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- <div class="help-container">
+        <button class="navigation-button help-button">
+          <span>
+            <i class="pi pi-question-circle" style="font-size: 1.5em;"></i>
+          </span>
+          <span>Help</span>
+        </button>
+      </div> -->
     </div>
 
     <div class="sidebar-pricing">
@@ -382,7 +391,7 @@ onUnmounted(() => {
 }
 
 .logo-icon {
-  height: 40px;
+  height: 35px;
   width: auto;
 }
 
@@ -457,44 +466,6 @@ onUnmounted(() => {
 .help-button {
   position: relative;
 }
-
-.help-dropdown {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 0;
-  width: 180px;
-  background-color: var(--color-bg-primary);
-  border-radius: 8px;
-  box-shadow: var(--shadow-lg);
-  border: 1px solid var(--color-border);
-  z-index: var(--z-dropdown);
-  overflow: hidden;
-}
-
-/* Override for ChatGPT-style dark mode */
-[data-theme="dark"] .help-dropdown {
-  background-color: #262626;
-  border-color: #404040;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.help-dropdown .dropdown-arrow {
-  position: absolute;
-  bottom: -8px;
-  left: 20px;
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 8px solid var(--color-bg-primary);
-  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1));
-}
-
-/* Override for ChatGPT-style dark mode */
-[data-theme="dark"] .help-dropdown .dropdown-arrow {
-  border-top-color: #262626;
-}
-
 /* Override for ChatGPT-style dark mode */
 [data-theme="dark"] .new-chat-button {
   color: #e5e5e5;
@@ -517,7 +488,6 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   padding: var(--space-1);
-  color: var(--color-text-secondary);
   transition: all var(--transition-normal);
   margin-left: var(--space-2);
 }
@@ -582,7 +552,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2);
+  padding: var(--space-3);
   cursor: pointer;
   font-size: 14px;
   color: var(--color-text-primary);
@@ -733,8 +703,7 @@ onUnmounted(() => {
     max-height: 34px;
   }
 
-  .nav-dropdown,
-  .help-dropdown {
+  .nav-dropdown {
     width: 180px;
   }
 }

@@ -166,19 +166,6 @@ const selectOption = (value: string) => {
   transform: rotate(180deg);
 }
 
-.section-collapse-enter-active,
-.section-collapse-leave-active {
-  transition: all var(--transition-normal);
-  max-height: 200px;
-  opacity: 1;
-}
-
-.section-collapse-enter-from,
-.section-collapse-leave-to {
-  max-height: 0;
-  opacity: 0;
-}
-
 .filter-options {
   padding: var(--space-3);
 }

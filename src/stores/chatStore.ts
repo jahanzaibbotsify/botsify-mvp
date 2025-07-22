@@ -1178,11 +1178,11 @@ Use the above connected services information to understand what tools and data s
     // Keep only the welcome message
     chat.messages = [{
       id: Date.now().toString(),
-      content: 'Chat history has been cleared.',
+      content: '',
       timestamp: new Date(),
       sender: 'assistant'
     }];
-    chat.lastMessage = 'Chat history has been cleared.';
+    chat.lastMessage = '';
     console.log(`Cleared message history for chat ${chatId}`);
     saveToTemplate();
     return true;

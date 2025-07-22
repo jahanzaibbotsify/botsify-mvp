@@ -8,10 +8,7 @@ import MessageInput from '@/components/chat/MessageInput.vue';
 import TypingIndicator from '@/components/chat/TypingIndicator.vue';
 import SystemMessageSender from '@/components/chat/SystemMessageSender.vue';
 import ApiErrorNotification from '@/components/chat/ApiErrorNotification.vue';
-import ThemeToggle from '@/components/ui/ThemeToggle.vue';
-import UserMenu from '@/components/auth/UserMenu.vue';
-import { botsifyApi } from '@/services/botsifyApi';
-import { BOTSIFY_WEB_URL } from '@/utils/config';
+import ChatHeader from '@/components/chat/ChatHeader.vue';
 
 
 const route = useRoute();
@@ -37,7 +34,6 @@ const chat = computed(() => {
   return foundChat;
 });
 
-const isDeployingAI = ref(false);
 const latestPromptContent = computed(() => chat.value?.story?.content || '');
 const hasPromptContent = computed(() => latestPromptContent.value.trim().length > 0);
 
@@ -88,62 +84,6 @@ function toggleSystemMessageModal() {
 function toggleStorySidebar() {
   showStorySidebar.value = !showStorySidebar.value;
 }
-
-async function testAI() {
-  if (!hasPromptContent.value) {
-    window.$toast.error('No prompt content available to deploy. Please generate some content first.');
-    return;
-  }
-  const apiKey = (await import('@/stores/apiKeyStore')).useApiKeyStore().apiKey;
-  const url = `${BOTSIFY_WEB_URL}/web-bot/agent/${apiKey}`;
-  window.open(url, '_blank');
-}
-
-function deployAI() {
-  if (!hasPromptContent.value) {
-    window.$toast.error('No prompt content available to deploy. Please generate some content first.');
-    return;
-  }
-  window.$confirm({
-    text: "Do you really want to deploy your AI agent? This will make it available for use.",
-    confirmButtonColor: "#00A3FF",
-    confirmButtonText: "Yes, Deploy it!",
-    cancelButtonText: "No, Cancel",
-    animation: false,
-  }, async () => {
-    isDeployingAI.value = true;
-    try {
-      const result = await botsifyApi.deployAiAgent(latestPromptContent.value);
-      if (result.success) {
-        window.$toast.success(`🚀 ${result.message}`);
-      } else {
-        window.$toast.error(`❌ Deployment failed: ${result.message}`);
-      }
-    } catch (error) {
-      window.$toast.error('❌ An unexpected error occurred during deployment.');
-    } finally {
-      isDeployingAI.value = false;
-    }
-  });
-}
-
-function clearVersionHistory() {
-  window.$confirm({}, () => {
-    chatStore.clearVersionHistory(chatId.value);
-  });
-}
-
-function clearAllChats() {
-  window.$confirm({}, () => {
-    chatStore.clearAllChatsExceptActive();
-  });
-}
-
-// function clearMessageHistory() {
-//   if (confirm('Are you sure you want to clear the message history for this conversation? This cannot be undone.')) {
-//     chatStore.clearChatMessages(chatId.value);
-//   }
-// }
 </script>
 
 <template>
@@ -151,74 +91,13 @@ function clearAllChats() {
     <!-- API Error Notification -->
     <ApiErrorNotification />
     
-    <div class="chat-header">
-      <h2>{{ chat.title }}</h2>
-      <div class="chat-actions">
-        
-        <!-- Deploy/Test AI Buttons -->
-        <button 
-          class="action-button deploy-button"
-          @click="deployAI"
-          :disabled="isDeployingAI || !hasPromptContent"
-          :title="!hasPromptContent ? 'Generate prompt content first' : 'Deploy your AI agent'"
-        >
-          <div class="button-content">
-            <svg v-if="!isDeployingAI" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polygon points="10,8 16,12 10,16 10,8"></polygon>
-            </svg>
-            <div v-else class="loading-spinner"></div>
-            <span>{{ isDeployingAI ? 'Deploying...' : 'Deploy AI' }}</span>
-          </div>
-        </button>
-        <button 
-          class="action-button test-button"
-          @click="testAI"
-          :disabled="!hasPromptContent"
-          :title="!hasPromptContent ? 'Generate prompt content first' : 'Test your AI agent'"
-        >
-          <div class="button-content">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
-            </svg>
-            <span>Test AI</span>
-          </div>
-        </button>
-
-        <!-- AI Prompt Toggle -->
-        <button 
-          class="icon-button ai-prompt-toggle" 
-          @click="toggleStorySidebar"
-          title="AI Prompt"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 12l2 2 4-4"></path>
-            <path d="M21 12c-1 0-2-1-2-2s1-2 2-2 2 1 2 2-1 2-2 2z"></path>
-            <path d="M3 12c1 0 2-1 2-2s-1-2-2-2-2 1-2 2 1 2 2 2z"></path>
-            <path d="M12 3c0 1-1 2-2 2s-2-1-2-2 1-2 2-2 2 1 2 2z"></path>
-            <path d="M12 21c0-1 1-2 2-2s2 1 2 2-1 2-2 2-2-1-2-2z"></path>
-          </svg>
-        </button>
-
-        <!-- Clear History Dropdown -->
-        <div class="dropdown">
-          <button class="icon-button" title="Delete">
-            <i class="pi pi-trash"></i>
-          </button>
-          <div class="dropdown-content">
-            <button @click="clearAllChats" class="dropdown-item danger">
-              Delete Conversations
-            </button>
-            <button @click="clearVersionHistory" class="dropdown-item danger">
-              Delete Version History
-            </button>
-          </div>
-        </div>
-        
-        <ThemeToggle />
-        <UserMenu />
-      </div>
-    </div>
+    <ChatHeader 
+      :title="chat.title"
+      :has-prompt-content="hasPromptContent"
+      :latest-prompt-content="latestPromptContent"
+      :chatId="chatId"
+      @toggle-story-sidebar="toggleStorySidebar"
+    />
     
     <div ref="messagesContainer" class="messages-container scrollbar">
       <div class="messages">
@@ -282,156 +161,6 @@ function clearAllChats() {
 .chat-view.with-sidebar {
   padding-right: 400px;
   padding-left: 0px;
-}
-
-.chat-header {
-  padding: var(--space-3) var(--space-4);
-  background-color: var(--color-bg-secondary);
-  border-bottom: none;
-  z-index: var(--z-sticky);
-  position: sticky;
-  top: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 0 var(--space-4);
-  margin-top: var(--space-4);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  box-shadow: 0 4px 15px rgba(0, 163, 255, 0.08);
-  border: 1px solid rgba(0, 163, 255, 0.1);
-  border-bottom: none;
-}
-
-.chat-header h2 {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.chat-actions {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.icon-button {
-  background: transparent;
-  border: none;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  padding: var(--space-1);
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.icon-button:hover {
-  background-color: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-}
-
-.ai-prompt-toggle {
-  color: var(--color-primary);
-  position: relative;
-}
-
-.ai-prompt-toggle:hover {
-  background-color: rgba(0, 163, 255, 0.1);
-  color: var(--color-primary);
-}
-
-.ai-prompt-toggle::after {
-  content: 'AI Prompt';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: all var(--transition-fast);
-  z-index: var(--z-dropdown);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-border);
-  margin-top: var(--space-1);
-}
-
-.ai-prompt-toggle:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* Dropdown styles */
-.dropdown {
-  position: relative;
-  display: inline-block;
-}
-
-.dropdown-content {
-  display: none;
-  position: absolute;
-  right: 0;
-  background-color: var(--color-bg-primary);
-  background-image: 
-    radial-gradient(circle at right top, rgba(0, 163, 255, 0.08), transparent 70%);
-  min-width: 200px;
-  box-shadow: var(--shadow-md), 0 4px 15px rgba(0, 163, 255, 0.08);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(0, 163, 255, 0.1);
-  z-index: var(--z-dropdown);
-  overflow: hidden;
-}
-
-.dropdown:hover .dropdown-content,
-.dropdown:focus-within .dropdown-content {
-  display: block;
-}
-
-.dropdown-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: var(--space-2) var(--space-3);
-  background: none;
-  border: none;
-  border-bottom: 1px solid rgba(0, 163, 255, 0.05);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  font-size: 0.875rem;
-  transition: background-color var(--transition-fast);
-}
-
-.dropdown-item:last-child {
-  border-bottom: none;
-}
-
-.dropdown-item:hover {
-  background-color: rgba(0, 163, 255, 0.05);
-  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.08), transparent 80%);
-}
-
-.dropdown-item.danger {
-  color: var(--color-error);
-}
-
-.dropdown-item.danger:hover {
-  background-color: rgba(239, 68, 68, 0.1);
-}
-
-.system-button {
-  color: var(--color-primary);
-}
-
-.debug-button {
-  color: var(--color-warning);
 }
 
 .messages-container {
@@ -553,27 +282,13 @@ function clearAllChats() {
     margin: 0 var(--space-2);
   }
   
-  .chat-header {
-    padding: var(--space-2) var(--space-3);
-    margin: var(--space-2) var(--space-2) 0;
-  }
-  
   .message-input-container {
     margin: 0 var(--space-2) var(--space-2);
     padding: var(--space-2);
   }
   
-  .chat-header h2 {
-    font-size: 1rem;
-    max-width: calc(100% - 140px);
-  }
-  
   .modal-content {
     width: 95%;
-  }
-  
-  .ai-prompt-toggle::after {
-    display: none;
   }
 }
 
@@ -651,62 +366,6 @@ function clearAllChats() {
   margin-bottom: var(--space-4);
   font-family: var(--font-family);
   line-height: 1.2;
-}
-.action-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 var(--space-4);
-  border-radius: var(--radius-md);
-  font-weight: 500;
-  font-size: 0.875rem;
-  transition: all var(--transition-normal);
-  cursor: pointer;
-  border: none;
-  width: 100%;
-  height: 40px;
-  min-height: 40px;
-  max-height: 40px;
-}
-.action-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-.button-content {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-.test-button {
-  background-color: var(--color-warning);
-  color: white;
-}
-.test-button:hover:not(:disabled) {
-  background-color: var(--color-warning-hover, #e6a700);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-.deploy-button {
-  background-color: var(--color-success);
-  color: white;
-}
-.deploy-button:hover:not(:disabled) {
-  background-color: var(--color-success-hover, #16a34a);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-.loading-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s ease-in-out infinite;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 .status-info {
   display: flex;

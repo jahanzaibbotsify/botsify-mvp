@@ -255,7 +255,7 @@ const getUnreadCount = (conversation: ExtendedChat) => {
       </div>
       
       <!-- Collapsible Filters Container -->
-      <Transition name="filters-collapse">
+      <Transition name="section-collapse">
         <div v-show="filtersExpanded" class="filters-container">
           <!-- Quick Filter Chips -->
           <div class="quick-filters">
@@ -590,19 +590,6 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   transform: rotate(180deg);
 }
 
-/* Filter Collapse Animation */
-.filters-collapse-enter-active,
-.filters-collapse-leave-active {
-  transition: all var(--transition-normal);
-  max-height: 500px;
-  opacity: 1;
-}
-
-.filters-collapse-enter-from,
-.filters-collapse-leave-to {
-  max-height: 0;
-  opacity: 0;
-}
 
 .filters-container {
   padding: var(--space-4);
