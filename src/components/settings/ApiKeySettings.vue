@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { useOpenAIStore } from '@/stores/openaiStore';
+import { useDeepSeekStore } from '@/stores/deepseekStore';
 import ApiKeyTester from './ApiKeyTester.vue';
 
-const openAIStore = useOpenAIStore();
+const deepSeekStore = useDeepSeekStore();
 const apiKey = ref('');
 const showApiKey = ref(false);
 const saved = ref(false);
 const errorMsg = ref('');
-const hasEnvApiKey = ref(!!import.meta.env.VITE_OPENAI_API_KEY);
+const hasEnvApiKey = ref(true); // DeepSeek is always available
 
 onMounted(() => {
   // If there's an API key stored, show asterisks as a placeholder
-  if (openAIStore.apiKey) {
+  if (deepSeekStore.apiKey) {
     apiKey.value = '••••••••••••••••••••••••••••••';
   }
 });
@@ -23,7 +23,7 @@ const saveApiKey = () => {
   }
   
   try {
-    openAIStore.setApiKey(apiKey.value);
+    deepSeekStore.setApiKey(apiKey.value);
     saved.value = true;
     errorMsg.value = '';
     
@@ -60,33 +60,33 @@ const toggleShowApiKey = () => {
 
 const clearApiKey = () => {
   apiKey.value = '';
-  openAIStore.setApiKey('');
+  deepSeekStore.setApiKey('');
   errorMsg.value = '';
 };
 </script>
 
 <template>
   <div class="api-key-settings">
-    <h2>OpenAI API Key Settings</h2>
+    <h2>DeepSeek API Settings</h2>
     
     <p class="description">
-      To use the chat functionality, you need to provide your OpenAI API key.
-      Your key is stored locally in your browser and never sent to our servers.
+      The chat functionality now uses the DeepSeek API. No API key is required - 
+      the service is ready to use out of the box.
     </p>
     
-    <div class="status-indicator" :class="{ connected: openAIStore.connected }">
+    <div class="status-indicator" :class="{ connected: deepSeekStore.connected }">
       <span class="status-dot"></span>
-      <span class="status-text">{{ openAIStore.connected ? 'Connected' : 'Not Connected' }}</span>
+      <span class="status-text">{{ deepSeekStore.connected ? 'Connected' : 'Not Connected' }}</span>
     </div>
     
     <div class="input-group">
-      <label for="apiKey">OpenAI API Key</label>
+      <label for="apiKey">DeepSeek Configuration (Optional)</label>
       <div class="key-input-container">
         <input 
           id="apiKey"
           v-model="apiKey"
           :type="showApiKey ? 'text' : 'password'"
-          placeholder="Enter your OpenAI API key"
+          placeholder="Custom endpoint (optional)"
           autocomplete="off"
         />
         <button class="icon-button toggle-visibility" @click="toggleShowApiKey">
@@ -103,30 +103,30 @@ const clearApiKey = () => {
     </div>
     
     <div class="actions">
-      <button class="primary save-button" @click="saveApiKey" :disabled="!apiKey">Save API Key</button>
-      <button class="clear-button" @click="clearApiKey">Clear API Key</button>
+      <button class="primary save-button" @click="saveApiKey" :disabled="!apiKey">Save Configuration</button>
+      <button class="clear-button" @click="clearApiKey">Clear Configuration</button>
     </div>
     
-    <div v-if="saved" class="success-message">API key saved successfully!</div>
+    <div v-if="saved" class="success-message">Configuration saved successfully!</div>
     <div v-if="errorMsg" class="error-message">{{ errorMsg }}</div>
     
-    <!-- API Key Tester -->
+    <!-- API Connection Tester -->
     <div class="api-tester-section">
-      <h3>Test API Connection</h3>
+      <h3>Test DeepSeek Connection</h3>
       <p class="tester-description">
-        Test your API key to ensure it's working correctly. This will send a small test request to OpenAI.
+        Test the DeepSeek API connection to ensure it's working correctly. This will send a small test request.
       </p>
       <ApiKeyTester />
     </div>
     
     <div class="help-text">
-      <p>You can get your API key from the <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">OpenAI dashboard</a>.</p>
-      <p>Note: Using the OpenAI API requires a paid account with OpenAI.</p>
+      <p>DeepSeek is a powerful open-source code model that runs on a free endpoint.</p>
+      <p>No API key or paid account is required - the service is ready to use immediately.</p>
     </div>
     
     <div class="env-key-info" v-if="hasEnvApiKey">
-      <div class="info-badge">Environment Variable Detected</div>
-      <p>An API key has been provided through environment variables.</p>
+      <div class="info-badge">DeepSeek API Ready</div>
+      <p>DeepSeek API is configured and ready to use.</p>
     </div>
   </div>
 </template>

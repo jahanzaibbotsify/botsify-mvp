@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useOpenAIStore } from '@/stores/openaiStore';
+import { useDeepSeekStore } from '@/stores/deepseekStore';
 
-const openAIStore = useOpenAIStore();
-const apiKey = ref(openAIStore.apiKey || '');
+const deepSeekStore = useDeepSeekStore();
+const apiKey = ref(deepSeekStore.apiKey || '');
 const showKey = ref(false);
 
 const saveApiKey = () => {
   if (apiKey.value.trim()) {
-    openAIStore.setApiKey(apiKey.value.trim());
+    deepSeekStore.setApiKey(apiKey.value.trim());
   }
 };
 
@@ -23,7 +23,7 @@ const toggleShowKey = () => {
       <input
         :type="showKey ? 'text' : 'password'"
         v-model="apiKey"
-        placeholder="Enter your OpenAI API key"
+        placeholder="Enter DeepSeek endpoint (optional)"
         class="api-key-field"
         @keyup.enter="saveApiKey"
       />
@@ -36,8 +36,8 @@ const toggleShowKey = () => {
       Save API Key
     </button>
     
-    <div v-if="openAIStore.error" class="error-message">
-      {{ openAIStore.error }}
+    <div v-if="deepSeekStore.error" class="error-message">
+      {{ deepSeekStore.error }}
     </div>
   </div>
 </template>

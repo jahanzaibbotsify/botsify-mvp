@@ -471,21 +471,21 @@ export const useMCPStore = defineStore('mcp', () => {
       }
     } else {
       // Standard validation for other servers
-      if (server.apiKeyRequired && !apiKey?.trim()) {
-        throw new Error(`${server.authLabel || 'Authentication'} is required for this server`);
-      }
+    if (server.apiKeyRequired && !apiKey?.trim()) {
+      throw new Error(`${server.authLabel || 'Authentication'} is required for this server`);
+    }
 
-      // Validate connection URL for custom servers
-      if (server.isCustom && !server.connectionUrl?.trim()) {
-        throw new Error('Connection URL is required for custom servers');
-      }
+    // Validate connection URL for custom servers
+    if (server.isCustom && !server.connectionUrl?.trim()) {
+      throw new Error('Connection URL is required for custom servers');
+    }
     }
 
 
     try {
       // Generate a unique mcp_id if not provided
       const mcp_id = server.connection.mcp_id || '';
-    
+
       // Step 1: Validate the MCP connection with the API
       let connectionUrl = server.connectionUrl;
       if (serverId === 'shopify' && customParams?.domain) {
@@ -505,7 +505,7 @@ export const useMCPStore = defineStore('mcp', () => {
       }
      try {
        server.connection = {
-         isConnected: true,
+        isConnected: true,
          mcp_id: mcp_id || null,
          apiKey: apiKey?.trim() || null,
          systemPrompt: systemPrompt || generateDefaultSystemPrompt(server)
@@ -521,7 +521,7 @@ export const useMCPStore = defineStore('mcp', () => {
        }
        
        const configResult = mcp_id ? await botsifyApi.updateMCPConfiguration(mcp_id, serverConfig) : await botsifyApi.sendMCPConfigurationJSON(serverConfig);
-       if (configResult.success) {
+        if (configResult.success) {
           server.connection.mcp_id = configResult.data.id;
           saveToStorage();
         } else {
@@ -753,12 +753,12 @@ Remember: You have access to ${connectedServers.value.length} MCP server${connec
         });
 
         if (unmatchedServers.length > 0) {
-          return {
+    return {
             success: false,
             message: `Unmatched servers: ${unmatchedServers.join(', ')}`
           };
         }
-
+        
         return {
           success: true,
           message: 'Successfully loaded connected MCP servers'

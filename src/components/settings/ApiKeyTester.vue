@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useOpenAIStore } from '@/stores/openaiStore';
+import { useDeepSeekStore } from '@/stores/deepseekStore';
 
-const openAIStore = useOpenAIStore();
+const deepSeekStore = useDeepSeekStore();
 const isLoading = ref(false);
 const testResult = ref<{success: boolean; message: string} | null>(null);
 
 async function testApiKey() {
-  if (!openAIStore.apiKey) {
+  if (!deepSeekStore.apiKey) {
     testResult.value = {
       success: false,
-      message: 'No API key provided. Please enter an API key first.'
+      message: 'DeepSeek API connection will be tested with default settings.'
     };
-    return;
   }
   
   isLoading.value = true;
@@ -25,7 +24,7 @@ async function testApiKey() {
       { role: 'user', content: 'Hello, this is a test message. Please respond with "API connection successful".' }
     ];
     
-    const stream = await openAIStore.streamChat(messages);
+    const stream = await deepSeekStore.streamChat(messages);
     let response = '';
     
     for await (const chunk of stream) {
@@ -59,7 +58,7 @@ async function testApiKey() {
     <button 
       @click="testApiKey" 
       class="test-button"
-      :disabled="isLoading || !openAIStore.apiKey"
+              :disabled="isLoading"
     >
       <span v-if="isLoading">Testing...</span>
       <span v-else>Test API Connection</span>

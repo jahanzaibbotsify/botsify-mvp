@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { useOpenAIStore } from '@/stores/openaiStore';
+import { useDeepSeekStore } from '@/stores/deepseekStore';
 import { computed } from 'vue';
 
-const openAIStore = useOpenAIStore();
+const deepSeekStore = useDeepSeekStore();
 
-const hasError = computed(() => !!openAIStore.error);
-const errorMessage = computed(() => openAIStore.error || '');
+const hasError = computed(() => !!deepSeekStore.error);
+const errorMessage = computed(() => deepSeekStore.error || '');
 
 function goToSettings() {
   window.location.href = '/settings';

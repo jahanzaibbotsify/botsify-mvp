@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useOpenAIStore } from '@/stores/openaiStore';
+import { useDeepSeekStore } from '@/stores/deepseekStore';
 import { useChatStore } from '@/stores/chatStore';
 
-const openAIStore = useOpenAIStore();
+const deepSeekStore = useDeepSeekStore();
 const chatStore = useChatStore();
 const systemMessage = ref('');
 const isLoading = ref(false);
@@ -18,10 +18,10 @@ async function sendSystemMessage() {
     return;
   }
 
-  if (!openAIStore.connected) {
+  if (!deepSeekStore.connected) {
     result.value = {
       success: false,
-      message: 'OpenAI API is not connected. Please check your API key in Settings.'
+      message: 'DeepSeek API is not connected. Please check the connection status.'
     };
     return;
   }
@@ -38,7 +38,7 @@ async function sendSystemMessage() {
 
     console.log('Sending system message:', systemMessage.value);
     
-    const stream = await openAIStore.streamChat(messages);
+    const stream = await deepSeekStore.streamChat(messages);
     let response = '';
     
     for await (const chunk of stream) {
@@ -140,7 +140,7 @@ function parsePayload(payload: string) {
       <button 
         class="primary" 
         @click="sendSystemMessage" 
-        :disabled="isLoading || !systemMessage.trim() || !openAIStore.connected"
+        :disabled="isLoading || !systemMessage.trim() || !deepSeekStore.connected"
       >
         <span v-if="isLoading">Sending...</span>
         <span v-else>Send System Message</span>

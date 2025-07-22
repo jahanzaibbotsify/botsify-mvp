@@ -1,13 +1,13 @@
 import { defineStore } from 'pinia';
 import { ref, computed, nextTick } from 'vue';
-import { useOpenAIStore } from './openaiStore';
+import { useDeepSeekStore } from './deepseekStore';
 import { useMCPStore } from './mcpStore';
 import type { Chat, Message, Attachment, PromptVersion, GlobalPromptTemplate } from '../types';
 import { botsifyApi } from '../services/botsifyApi';
 import { useApiKeyStore } from './apiKeyStore';
 
 export const useChatStore = defineStore('chat', () => {
-  const openAIStore = useOpenAIStore();
+  const deepSeekStore = useDeepSeekStore();
   const mcpStore = useMCPStore();
   const chats = ref<Chat[]>([]);
   const activeChat = ref<string | null>(null);
@@ -23,10 +23,10 @@ export const useChatStore = defineStore('chat', () => {
       const storedTemplates = localStorage.getItem('botsify_prompt_templates');
       const storedActiveChat = localStorage.getItem('botsify_active_chat');
 
-      console.log('📊 Storage check:', {
-        hasStoredChats: !!storedChats,
+      console.log('📊 Storage check:', { 
+        hasStoredChats: !!storedChats, 
         hasStoredTemplates: !!storedTemplates,
-        hasStoredActiveChat: !!storedActiveChat
+        hasStoredActiveChat: !!storedActiveChat 
       });
 
       if (storedChats && storedChats !== 'null' && storedChats !== 'undefined') {
@@ -34,24 +34,24 @@ export const useChatStore = defineStore('chat', () => {
           const parsedChats = JSON.parse(storedChats);
           // Ensure parsedChats is an array before mapping
           if (Array.isArray(parsedChats)) {
-            // Convert date strings back to Date objects
-            chats.value = parsedChats.map((chat: any) => ({
-              ...chat,
-              timestamp: new Date(chat.timestamp),
+          // Convert date strings back to Date objects
+          chats.value = parsedChats.map((chat: any) => ({
+            ...chat,
+            timestamp: new Date(chat.timestamp),
               messages: chat.messages?.map((msg: any) => ({
-                ...msg,
-                timestamp: new Date(msg.timestamp)
+              ...msg,
+              timestamp: new Date(msg.timestamp)
               })) || [],
-              story: chat.story ? {
-                ...chat.story,
-                updatedAt: new Date(chat.story.updatedAt),
-                versions: chat.story.versions?.map((v: any) => ({
-                  ...v,
-                  updatedAt: new Date(v.updatedAt)
-                })) || []
-              } : undefined
-            }));
-            console.log('✅ Loaded chats from storage:', chats.value.length);
+            story: chat.story ? {
+              ...chat.story,
+              updatedAt: new Date(chat.story.updatedAt),
+              versions: chat.story.versions?.map((v: any) => ({
+                ...v,
+                updatedAt: new Date(v.updatedAt)
+              })) || []
+            } : undefined
+          }));
+          console.log('✅ Loaded chats from storage:', chats.value.length);
           } else {
             console.warn('⚠️ Stored chats is not an array, clearing storage');
             localStorage.removeItem('botsify_chats');
@@ -70,12 +70,12 @@ export const useChatStore = defineStore('chat', () => {
           const parsedTemplates = JSON.parse(storedTemplates);
           // Ensure parsedTemplates is an array before mapping
           if (Array.isArray(parsedTemplates)) {
-            globalPromptTemplates.value = parsedTemplates.map((template: any) => ({
-              ...template,
-              createdAt: new Date(template.createdAt),
-              updatedAt: new Date(template.updatedAt)
-            }));
-            console.log('✅ Loaded prompt templates from storage:', globalPromptTemplates.value.length);
+          globalPromptTemplates.value = parsedTemplates.map((template: any) => ({
+            ...template,
+            createdAt: new Date(template.createdAt),
+            updatedAt: new Date(template.updatedAt)
+          }));
+          console.log('✅ Loaded prompt templates from storage:', globalPromptTemplates.value.length);
           } else {
             console.warn('⚠️ Stored templates is not an array, clearing storage');
             localStorage.removeItem('botsify_prompt_templates');
@@ -113,7 +113,7 @@ export const useChatStore = defineStore('chat', () => {
       return false;
     }
   }
-
+  
   // Add window event listeners to ensure data is saved before page unload
   // if (typeof window !== 'undefined') {
   //   window.addEventListener('beforeunload', () => {
@@ -170,15 +170,15 @@ export const useChatStore = defineStore('chat', () => {
     chat.timestamp = new Date();
 
     // Only trigger AI response for user messages when connected
-    if (sender === 'user' && openAIStore.connected) {
+    if (sender === 'user' && deepSeekStore.connected) {
       console.log('Triggering AI response');
       await handleAIResponse(chat);
-    } else if (sender === 'user' && !openAIStore.connected) {
-      console.warn('OpenAI not connected, skipping AI response');
+    } else if (sender === 'user' && !deepSeekStore.connected) {
+      console.warn('DeepSeek not connected, skipping AI response');
       // Add a message to inform the user
       addMessage(
-        chatId,
-        'OpenAI API is not connected. Please check your API key in the Settings page.',
+        chatId, 
+        'DeepSeek API is not connected. Please check the connection status.', 
         'assistant'
       );
     }
@@ -189,10 +189,10 @@ export const useChatStore = defineStore('chat', () => {
   async function updateMessage(messageId: string, content: string) {
     const chat = chats.value.find(c => c.messages.some(m => m.id === messageId));
     if (!chat) return;
-
-    const message = chat.messages.find(m => m.id === messageId);
-    if (message) {
-      message.content = content;
+    
+      const message = chat.messages.find(m => m.id === messageId);
+      if (message) {
+        message.content = content;
       message.timestamp = new Date();
 
       // Update the chat's last message if this was the latest message
@@ -253,13 +253,13 @@ export const useChatStore = defineStore('chat', () => {
       if (createNewVersion) {
         // Mark current version as inactive
         chat.story.versions.forEach(v => v.isActive = false);
-
+        
         // Create new version
         const newVersion = createPromptVersion(content);
         chat.story.versions.push(newVersion);
         chat.story.activeVersionId = newVersion.id;
       }
-
+      
       chat.story.content = content;
       chat.story.updatedAt = new Date();
     }
@@ -283,7 +283,7 @@ export const useChatStore = defineStore('chat', () => {
 
     // Mark all versions as inactive
     chat.story.versions.forEach(v => v.isActive = false);
-
+    
     // Mark selected version as active
     version.isActive = true;
     chat.story.activeVersionId = version.id;
@@ -318,7 +318,7 @@ export const useChatStore = defineStore('chat', () => {
 
     // If deleted version was active, make the most recent one active
     if (wasActive) {
-      const mostRecent = chat.story.versions.reduce((prev, current) =>
+      const mostRecent = chat.story.versions.reduce((prev, current) => 
         prev.version > current.version ? prev : current
       );
       mostRecent.isActive = true;
@@ -580,14 +580,14 @@ Use the above connected services information to understand what tools and data s
         messageCount: messages.length,
         finalPromptLength: finalSystemPrompt.length
       });
-
-      // Check if OpenAI is connected
-      if (!openAIStore.connected) {
-        console.error('OpenAI is not connected. Cannot send messages.');
-        throw new Error('OpenAI is not connected. Please check your API key.');
+      
+      // Check if DeepSeek is connected
+      if (!deepSeekStore.connected) {
+        console.error('DeepSeek is not connected. Cannot send messages.');
+        throw new Error('DeepSeek is not connected. Please check the connection.');
       }
-
-      const stream = await openAIStore.streamChat(messages);
+      
+      const stream = await deepSeekStore.streamChat(messages);
       console.log('Stream object received:', stream);
 
       // Don't add initial AI message yet - wait for first content
@@ -608,7 +608,7 @@ Use the above connected services information to understand what tools and data s
       console.log('Starting to process stream');
       for await (const chunk of stream) {
         console.log('Received chunk:', chunk);
-
+        
         // Handle Responses API streaming format
         if (chunk.type === 'response.output_text.delta') {
           const content = chunk.delta || '';
@@ -646,14 +646,14 @@ Use the above connected services information to understand what tools and data s
           // This will need to be implemented based on the actual tool call structure
         }
       }
-
+      
       console.log('Stream processing complete');
       console.log('Final content length:', streamedContent.length);
       console.log('Tool calls received:', toolCalls);
-
+      
       // Parse the dual response format
       const parsedResponse = parseDualResponse(streamedContent);
-
+      
       // Only create AI message when we have content to show
       // if (parsedResponse.chatResponse && parsedResponse.aiPrompt) {
       //   // Create AI message with the chat response
@@ -724,23 +724,23 @@ Use the above connected services information to understand what tools and data s
 
       await nextTick();
 
-
+      
       // Process tool calls if any
       if (toolCalls.length > 0) {
         for (const toolCall of toolCalls) {
           if (toolCall.function.name === 'configure_chatbot') {
             try {
               console.log('Processing configure_chatbot tool call:', toolCall);
-
+              
               // Parse the arguments
               const args = JSON.parse(toolCall.function.arguments);
               console.log('Parsed tool arguments:', args);
-
+              
               if (args.tasks && Array.isArray(args.tasks)) {
                 // Process configuration tasks
-                const configResult = await openAIStore.processConfigurationTool(args.tasks);
+                const configResult = await deepSeekStore.processConfigurationTool(args.tasks);
                 console.log('Configuration result:', configResult);
-
+                
                 // Add configuration result as a new message
                 const configMessage: Message = {
                   id: Date.now().toString() + '_config',
@@ -750,7 +750,7 @@ Use the above connected services information to understand what tools and data s
                 };
                 chat.messages.push(configMessage);
                 chat.lastMessage = configResult;
-
+                
                 // Force UI update
                 await nextTick();
               } else {
@@ -778,7 +778,7 @@ Use the above connected services information to understand what tools and data s
           }
         }
       }
-
+      
       // If no content was received but we expected some, show a fallback message
       if (!streamedContent && !toolCalls.length) {
         console.warn('No content received from stream');
@@ -793,21 +793,21 @@ Use the above connected services information to understand what tools and data s
           chat.lastMessage = aiMessage.content;
         }
       }
-
+      
     } catch (error: any) {
       console.error('AI response error:', error);
       console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-
+      
       // Remove any empty message if it exists
       const lastMessage = chat.messages[chat.messages.length - 1];
       if (lastMessage && lastMessage.sender === 'assistant' && !lastMessage.content) {
         chat.messages.pop();
       }
-
+      
       // Add an error message
       addMessage(
-        chat.id,
-        `Error: ${error.message || 'An unknown error occurred while generating a response.'}`,
+        chat.id, 
+        `Error: ${error.message || 'An unknown error occurred while generating a response.'}`, 
         'assistant'
       );
     } finally {
@@ -823,21 +823,21 @@ Use the above connected services information to understand what tools and data s
     console.log('=== PARSING DUAL RESPONSE ===');
     console.log('Full content received:', content);
     console.log('Content length:', content.length);
-
+    
     // Handle case where content might contain the markers but not in expected order
     const chatResponseMatch = content.match(/---CHAT_RESPONSE---([\s\S]*?)(?=---AI_PROMPT---|---END---|$)/);
     const aiPromptMatch = content.match(/---AI_PROMPT---([\s\S]*?)(?=---END---|$)/);
-
+    
     let chatResponse = chatResponseMatch ? chatResponseMatch[1].trim() : null;
     let aiPrompt = aiPromptMatch ? aiPromptMatch[1].trim() : null;
-
-    console.log('Initial parsing results:', {
-      foundChatMarker: !!chatResponseMatch,
+    
+    console.log('Initial parsing results:', { 
+      foundChatMarker: !!chatResponseMatch, 
       foundAIMarker: !!aiPromptMatch,
       chatResponseLength: chatResponse?.length || 0,
       aiPromptLength: aiPrompt?.length || 0
     });
-
+    
     // Additional validation - if we found markers but content is empty, set to null
     if (chatResponse && chatResponse.length === 0) {
       chatResponse = null;
@@ -845,14 +845,14 @@ Use the above connected services information to understand what tools and data s
     if (aiPrompt && aiPrompt.length === 0) {
       aiPrompt = null;
     }
-
+    
     // If we didn't find the structured format, try to detect patterns more aggressively
     if (!chatResponse && !aiPrompt && content.trim()) {
       console.log('No structured format found, analyzing content patterns...');
-
+      
       const lowerContent = content.toLowerCase().trim();
       const contentLines = content.trim().split('\n');
-
+      
       // Check if it looks like a conversational chat response
       const chatIndicators = [
         'great!', 'perfect!', 'excellent!', 'awesome!', 'wonderful!',
@@ -862,24 +862,24 @@ Use the above connected services information to understand what tools and data s
         'sure!', 'absolutely!', 'of course!', 'no problem!',
         'i can help', 'happy to help', 'glad to help'
       ];
-
+      
       // Check if it looks like an AI prompt/instructions (more comprehensive)
       const promptIndicators = [
         'you are', 'act as', 'your role is', 'instructions:', 'system:',
         'when user', 'if user', 'respond with', 'reply with',
         'user says', 'user sends', 'user clicks', 'user types'
       ];
-
+      
       // Check for numbered list patterns that indicate AI prompts
       const hasNumberedList = /^\d+\.\s/.test(content.trim()) || contentLines.some(line => /^\d+\.\s/.test(line.trim()));
       const hasWhenUserPattern = /when user/i.test(content);
       const hasIfUserPattern = /if user/i.test(content);
       const hasBotRepliesPattern = /(bot replies|reply with|respond with)/i.test(content);
-
+      
       // Count indicators
       const chatIndicatorCount = chatIndicators.filter(indicator => lowerContent.includes(indicator)).length;
       const promptIndicatorCount = promptIndicators.filter(indicator => lowerContent.includes(indicator)).length;
-
+      
       console.log('Content analysis:', {
         chatIndicatorCount,
         promptIndicatorCount,
@@ -889,7 +889,7 @@ Use the above connected services information to understand what tools and data s
         hasBotRepliesPattern,
         contentPreview: content.substring(0, 150) + '...'
       });
-
+      
       // Determine if this is clearly an AI prompt based on multiple indicators
       const isLikelyAIPrompt = (
         (hasNumberedList && (hasWhenUserPattern || hasIfUserPattern)) ||
@@ -897,14 +897,14 @@ Use the above connected services information to understand what tools and data s
         (hasWhenUserPattern && hasBotRepliesPattern) ||
         (promptIndicatorCount > 0 && hasNumberedList)
       );
-
+      
       // Determine if this is clearly a chat response
       const isLikelyChatResponse = (
         chatIndicatorCount >= 1 && promptIndicatorCount === 0 && !hasNumberedList
       );
-
+      
       console.log('Classification:', { isLikelyAIPrompt, isLikelyChatResponse });
-
+      
       if (isLikelyAIPrompt && !isLikelyChatResponse) {
         // This looks like a structured AI prompt
         aiPrompt = content.trim();
@@ -917,28 +917,28 @@ Use the above connected services information to understand what tools and data s
       } else {
         // Ambiguous content - check for mixed content and try to separate
         console.log('⚠️ Ambiguous content detected, attempting separation...');
-
+        
         // Try to find where AI prompt might start within the content
         const lines = contentLines;
         let separationIndex = -1;
-
+        
         // Look for transitions that might indicate AI prompt start
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i].toLowerCase().trim();
-
+          
           // Check if this line starts what looks like an AI prompt
           if (
-            /^\d+\.\s/.test(lines[i].trim()) &&
+            /^\d+\.\s/.test(lines[i].trim()) && 
             (line.includes('when user') || line.includes('if user') || line.includes('user says'))
           ) {
             separationIndex = i;
             break;
           }
-
+          
           // Check for explicit prompt indicators at line start
           if (
-            line.startsWith('you are') ||
-            line.startsWith('act as') ||
+            line.startsWith('you are') || 
+            line.startsWith('act as') || 
             line.startsWith('instructions:') ||
             line.startsWith('system:')
           ) {
@@ -946,12 +946,12 @@ Use the above connected services information to understand what tools and data s
             break;
           }
         }
-
+        
         if (separationIndex > 0) {
           // Found separation point
           const chatPart = lines.slice(0, separationIndex).join('\n').trim();
           const promptPart = lines.slice(separationIndex).join('\n').trim();
-
+          
           if (chatPart.length > 0 && promptPart.length > 0) {
             chatResponse = chatPart;
             aiPrompt = promptPart;
@@ -971,7 +971,7 @@ Use the above connected services information to understand what tools and data s
         }
       }
     }
-
+    
     // Final validation - don't allow AI prompts to leak into chat
     if (chatResponse) {
       // Check if chat response accidentally contains AI prompt content
@@ -981,21 +981,21 @@ Use the above connected services information to understand what tools and data s
         /bot replies with.*buttons:/i,
         /quick replies.*\[.*\]/i
       ];
-
+      
       const hasSuspiciousContent = suspiciousPatterns.some(pattern => pattern.test(chatResponse!));
-
+      
       if (hasSuspiciousContent && !aiPrompt) {
         console.log('🚨 Detected AI prompt content in chat response, moving to sidebar');
         aiPrompt = chatResponse;
         chatResponse = 'I\'ve created your AI prompt. You can see the details in the sidebar.';
       }
     }
-
+    
     console.log('=== FINAL PARSING RESULTS ===');
     console.log('Chat Response:', chatResponse ? `"${chatResponse.substring(0, 100)}..."` : 'null');
     console.log('AI Prompt:', aiPrompt ? `"${aiPrompt.substring(0, 100)}..."` : 'null');
     console.log('============================');
-
+    
     return { chatResponse, aiPrompt };
   }
 
@@ -1102,10 +1102,10 @@ Use the above connected services information to understand what tools and data s
 
   function createNewChat() {
     console.log('Creating new chat');
-
+    
     // Use default template if available
     const initialPrompt = defaultPromptTemplate.value?.content || '';
-
+    
     const newChat: Chat = {
       id: useApiKeyStore().apiKey,
       title: '',
@@ -1132,7 +1132,7 @@ Use the above connected services information to understand what tools and data s
         activeVersionId: initialVersion.id
       };
     }
-
+    
     chats.value.unshift(newChat);
     setActiveChat(newChat.id);
     console.log('New chat created with ID:', newChat.id);
@@ -1142,7 +1142,7 @@ Use the above connected services information to understand what tools and data s
   // Function to clear all chat history except the active chat
   function clearAllChatsExceptActive() {
     if (!activeChat.value) return;
-
+    
     // Keep only the active chat
     const currentActiveChat = chats.value.find(c => c.id === activeChat.value);
     if (currentActiveChat) {
@@ -1158,7 +1158,7 @@ Use the above connected services information to understand what tools and data s
   function clearVersionHistory(chatId: string) {
     const chat = chats.value.find(c => c.id === chatId);
     if (!chat?.story) return false;
-
+    
     // Keep only the active version
     const activeVersion = chat.story.versions.find(v => v.isActive);
     if (activeVersion) {
@@ -1174,7 +1174,7 @@ Use the above connected services information to understand what tools and data s
   function clearChatMessages(chatId: string) {
     const chat = chats.value.find(c => c.id === chatId);
     if (!chat) return false;
-
+    
     // Keep only the welcome message
     chat.messages = [{
       id: Date.now().toString(),
