@@ -70,10 +70,12 @@ const showCenteredInput = computed(() => {
 });
 
 const suggestions = [
-  'Open API',
-  'Connect to Web',
-  'Upload File',
-  'Try: Hello!'
+  'Create an Agent for hotel management',
+  'Fetch data from my API',
+  'Collect user email and name at start',
+  'Add Carousel for products',
+  'Add welcome message with Quick Replies',
+  'Update agent logo'
 ];
 
 function sendSuggestion(suggestion: string) {
