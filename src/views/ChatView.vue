@@ -198,8 +198,8 @@ function toggleStorySidebar() {
 
 .chat-view.with-sidebar .messages-container,
 .chat-view.with-sidebar .message-input-container{
-  padding-left: 150px;
-  padding-right: 150px;
+  padding-left: 30px;
+  padding-right: 30px;
 }
 
 .messages {
