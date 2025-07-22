@@ -93,10 +93,10 @@ function selectServer(server: MCPServer) {
   apiKey.value = existing?.apiKey || '';
   customSystemPrompt.value = existing?.systemPrompt || defaultSystemPrompt.value;
   
-  // Reset Shopify custom fields
+  // Set Shopify custom fields from server data
   if (server.id === 'shopify') {
-    shopifyDomain.value = '';
-    shopifyAuthMethod.value = 'none';
+    shopifyDomain.value = server.domain || '';
+    shopifyAuthMethod.value = server.authMethod || 'none';
   }
 }
 
@@ -175,22 +175,21 @@ function saveCustomServer() {
   }
 }
 
-function deleteCustomServer(serverId: string) {
-  window.$confirm({}, async() => {
-    try {
-      await mcpStore.deleteCustomServer(serverId);
-      goBack();
-    } catch (err: any) {
-      error.value = 'Failed to delete server: ' + err.message;
-    }
-  })
+async function deleteCustomServer(serverId: string) {
+  if(!confirm(`Are you sure you want to delete the custom server? This action cannot be undone.`)) return;
+  try {
+    await mcpStore.deleteCustomServer(serverId);
+    goBack();
+  } catch (err: any) {
+    error.value = 'Failed to delete server: ' + err.message;
+  }
 }
 
 async function connectToServer() {
   const server = selectedServer.value;
   if (!server) return;
 
-  // const connection = mcpStore.servers.find(s => s.id === server.id)?.connection;
+  const connection = mcpStore.servers.find(s => s.id === server.id)?.connection;
 
   // Shopify-specific validation
   if (server.id === 'shopify') {
@@ -269,6 +268,8 @@ function closeModal() {
   connectionSuccess.value = false;
   apiKey.value = '';
   customSystemPrompt.value = '';
+  shopifyDomain.value = '';
+  shopifyAuthMethod.value = 'none';
   showAllServers.value = false;
   resetCustomServerForm();
   emit('close');
@@ -1373,4 +1374,4 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   color: var(--color-success, #22c55e);
 }
-</style>
+</style> 

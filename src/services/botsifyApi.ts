@@ -264,17 +264,17 @@ export class BotsifyApiService {
   /**
    * Validate MCP server connection by pinging the actual server endpoint
    */
-  async validateMCPConnection(serverId: string, serverName: string, apiKey?: string, connectionUrl?: string): Promise<BotsifyResponse> {
+  async validateMCPConnection(serverId: string, serverName: string, apiKey?: string, connectionUrl?: string, authMethod?: string): Promise<BotsifyResponse> {
+    // For Shopify, use backend validation to avoid CORS issues
+    if (serverId === 'shopify') {
+      return await this.validateShopifyConnection(serverName, apiKey, connectionUrl, authMethod);
+    }
+
     try {
       console.log('🔍 Validating MCP connection for server:', serverName);
       
       // For built-in servers, we have predefined validation endpoints
       let validationEndpoint = this.getMCPValidationEndpoint(serverId, connectionUrl);
-      
-      // For Shopify, construct the validation endpoint from the connection URL
-      if (serverId === 'shopify' && connectionUrl) {
-        validationEndpoint = connectionUrl;
-      }
       
       if (!validationEndpoint) {
         // Handle special servers that don't have HTTP endpoints
@@ -310,112 +310,49 @@ export class BotsifyApiService {
       console.log('🌐 Final validation URL:', finalValidationUrl);
       console.log('🔑 Headers:', headers);
 
-      // For Shopify, use POST with JSON-RPC format
-      if (serverId === 'shopify') {
-        const jsonRpcPayload = {
-          jsonrpc: "2.0",
-          method: "tools/call",
-          id: 1,
-          params: {
-            name: "search_shop_catalog",
-            arguments: {
-              query: "",
-              context: "order products on the basis of behaviour of user"
-            }
+      // For other servers, use GET method
+      const response = await axios.get(finalValidationUrl, {
+        headers,
+        timeout: 10000, // 10 seconds timeout for real server ping
+        validateStatus: (status) => status < 500 // Accept all responses except server errors
+      });
+
+      console.log('✅ MCP server responded with status:', response.status);
+      console.log('📄 Response data:', response.data);
+
+      // Check if the response indicates a successful connection
+      if (response.status === 200) {
+        return {
+          success: true,
+          message: 'MCP server connection validated successfully',
+          data: {
+            serverStatus: 'reachable',
+            responseTime: Date.now(),
+            serverInfo: response.data
           }
         };
-
-        console.log('🛒 Shopify MCP validation payload:', JSON.stringify(jsonRpcPayload, null, 2));
-        console.log('🛒 Shopify MCP validation URL:', finalValidationUrl);
-        console.log('🛒 Shopify MCP validation headers:', headers);
-
-        const response = await axios.post(finalValidationUrl, jsonRpcPayload, {
-          headers: {
-            ...headers,
-            'Content-Type': 'application/json'
-          },
-          timeout: 30000, // Increased timeout for Shopify requests
-          validateStatus: (status) => status < 500
-        });
-
-        console.log('✅ Shopify MCP server responded with status:', response.status);
-        console.log('📄 Response data:', response.data);
-
-        // Check if the response indicates a successful connection
-        if (response.status === 200) {
-          return {
-            success: true,
-            message: 'Shopify MCP server connection validated successfully',
-            data: {
-              serverStatus: 'reachable',
-              responseTime: Date.now(),
-              serverInfo: response.data
-            }
-          };
-        } else if (response.status === 401) {
-          if (apiKey?.trim()) {
-            throw new Error('Invalid access token provided. Please check your Shopify access token.');
-          } else {
-            return {
-              success: true,
-              message: 'Shopify MCP server connection validated successfully (authentication required)',
-              data: {
-                serverStatus: 'reachable',
-                responseTime: Date.now(),
-                authRequired: true
-              }
-            };
-          }
-        } else if (response.status === 403) {
-          throw new Error('Invalid access token provided. Please check your Shopify access token.');
-        } else {
-          throw new Error(`Shopify server returned unexpected status: ${response.status}`);
-        }
-      } else {
-        // For other servers, use GET method
-        const response = await axios.get(finalValidationUrl, {
-          headers,
-          timeout: 10000, // 10 seconds timeout for real server ping
-          validateStatus: (status) => status < 500 // Accept all responses except server errors
-        });
-
-        console.log('✅ MCP server responded with status:', response.status);
-        console.log('📄 Response data:', response.data);
-
-        // Check if the response indicates a successful connection
-        if (response.status === 200) {
-          return {
-            success: true,
-            message: 'MCP server connection validated successfully',
-            data: {
-              serverStatus: 'reachable',
-              responseTime: Date.now(),
-              serverInfo: response.data
-            }
-          };
-        } else if (response.status === 401) {
-          if (apiKey && apiKey.trim()) {
-            // 401 with API key provided = invalid credentials
-            throw new Error('Invalid API key provided. Please check your authentication credentials.');
-          } else {
-            // 401 without API key = server reachable but auth required
-            return {
-              success: true,
-              message: 'MCP server connection validated successfully (authentication required)',
-              data: {
-                serverStatus: 'reachable',
-                responseTime: Date.now(),
-                authRequired: true
-              }
-            };
-          }
-        } else if (response.status === 403) {
+      } else if (response.status === 401) {
+        if (apiKey && apiKey.trim()) {
+          // 401 with API key provided = invalid credentials
           throw new Error('Invalid API key provided. Please check your authentication credentials.');
-        } else if (response.status === 404) {
-          throw new Error('MCP server endpoint not found. Please verify the connection URL.');
         } else {
-          throw new Error(`Server returned unexpected status: ${response.status}`);
+          // 401 without API key = server reachable but auth required
+          return {
+            success: true,
+            message: 'MCP server connection validated successfully (authentication required)',
+            data: {
+              serverStatus: 'reachable',
+              responseTime: Date.now(),
+              authRequired: true
+            }
+          };
         }
+      } else if (response.status === 403) {
+        throw new Error('Invalid API key provided. Please check your authentication credentials.');
+      } else if (response.status === 404) {
+        throw new Error('MCP server endpoint not found. Please verify the connection URL.');
+      } else {
+        throw new Error(`Server returned unexpected status: ${response.status}`);
       }
 
     } catch (error: any) {
@@ -423,12 +360,9 @@ export class BotsifyApiService {
       
       // Handle specific error types
       if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-        const timeoutMessage = serverId === 'shopify' 
-          ? 'Shopify MCP server connection timed out. Please check your domain and access token, or try again in a few moments.'
-          : 'Connection timeout. Please check your network and server availability.';
         return {
           success: false,
-          message: timeoutMessage,
+          message: 'Connection timeout. Please check your network and server availability.',
           data: { errorType: 'timeout' }
         };
       } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
@@ -463,12 +397,9 @@ export class BotsifyApiService {
           data: { errorType: 'auth_failed' }
         };
       } else if (error.response?.status === 401 || error.response?.status === 403) {
-        const errorMessage = serverId === 'shopify' 
-          ? 'Invalid access token provided. Please check your Shopify access token.'
-          : 'Invalid API key provided. Please check your authentication credentials.';
         return {
           success: false,
-          message: errorMessage,
+          message: 'Invalid API key provided. Please check your authentication credentials.',
           data: { errorType: 'auth_failed' }
         };
       } else if (error.response?.status === 404) {
@@ -488,6 +419,108 @@ export class BotsifyApiService {
       return {
         success: false,
         message: error.message || 'Failed to validate MCP connection',
+        data: { errorType: 'unknown', originalError: error.message }
+      };
+    }
+  }
+
+  /**
+   * Validate Shopify connection through backend to avoid CORS issues
+   */
+  async validateShopifyConnection(serverName: string, apiKey?: string, connectionUrl?: string, authMethod?: string): Promise<BotsifyResponse> {
+    try {
+      console.log('🛒 Validating Shopify connection through backend:', serverName);
+      
+      // Extract domain from connection URL
+      let domain = '';
+      if (connectionUrl) {
+        try {
+          const url = new URL(connectionUrl);
+          domain = url.hostname;
+        } catch {
+          // If URL parsing fails, try to extract domain from the URL string
+          const domainMatch = connectionUrl.match(/https?:\/\/([^\/]+)/);
+          domain = domainMatch ? domainMatch[1] : '';
+        }
+      }
+
+      if (!domain) {
+        return {
+          success: false,
+          message: 'Invalid Shopify domain. Please provide a valid domain.',
+          data: { errorType: 'invalid_domain' }
+        };
+      }
+
+      // Send validation request to backend
+      const response = await axios.post(`${BOTSIFY_BASE_URL}/shopify-connection`, {
+        domain: domain,
+        apikey: apiKey?.trim() || null,
+        authMethod: authMethod || 'none',
+        timestamp: new Date().toISOString()
+      }, {
+        headers: this.getBotsifyHeaders(),
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('✅ Backend Shopify validation response:', response.data);
+
+      if (response.data.success) {
+        return {
+          success: true,
+          message: 'Shopify connection validated successfully',
+          data: {
+            serverStatus: 'reachable',
+            responseTime: Date.now(),
+            serverInfo: response.data.data
+          }
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data.message || 'Failed to validate Shopify connection',
+          data: { errorType: 'validation_failed', details: response.data.data }
+        };
+      }
+
+    } catch (error: any) {
+      console.error('❌ Error validating Shopify connection:', error);
+      
+      if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+        return {
+          success: false,
+          message: 'Shopify connection validation timed out. Please try again.',
+          data: { errorType: 'timeout' }
+        };
+      } else if (error.response?.status === 400) {
+        return {
+          success: false,
+          message: error.response.data?.message || 'Invalid Shopify configuration',
+          data: { errorType: 'invalid_config' }
+        };
+      } else if (error.response?.status === 401) {
+        return {
+          success: false,
+          message: 'Invalid access token provided. Please check your Shopify access token.',
+          data: { errorType: 'auth_failed' }
+        };
+      } else if (error.response?.status === 404) {
+        return {
+          success: false,
+          message: 'Shopify store not found. Please verify your domain.',
+          data: { errorType: 'store_not_found' }
+        };
+      } else if (error.response?.status === 403) {
+        return {
+          success: false,
+          message: 'Access denied. Please check your Shopify access token permissions.',
+          data: { errorType: 'access_denied' }
+        };
+      }
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to validate Shopify connection',
         data: { errorType: 'unknown', originalError: error.message }
       };
     }

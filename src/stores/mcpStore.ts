@@ -328,6 +328,12 @@ export const useMCPStore = defineStore('mcp', () => {
               apiKey: connection.apiKey,
               systemPrompt: connection.systemPrompt
             };
+            
+            // For Shopify, also load custom parameters
+            if (server.id === 'shopify' && connection.shopifyParams) {
+              server.domain = connection.shopifyParams.domain;
+              server.authMethod = connection.shopifyParams.authMethod;
+            }
           }
         });
       } catch (error) {
@@ -369,12 +375,24 @@ export const useMCPStore = defineStore('mcp', () => {
 
   // Save data to localStorage
   const saveToStorage = () => {
-    const connections = servers.value.filter((server: MCPServer) => server.connection.isConnected === true).map(server => ({
-      serverId: server.id,
-      mcp_id: server.connection.mcp_id,
-      apiKey: server.connection.apiKey,
-      systemPrompt: server.connection.systemPrompt
-    }));
+    const connections = servers.value.filter((server: MCPServer) => server.connection.isConnected === true).map(server => {
+      const connectionData: any = {
+        serverId: server.id,
+        mcp_id: server.connection.mcp_id,
+        apiKey: server.connection.apiKey,
+        systemPrompt: server.connection.systemPrompt
+      };
+      
+      // For Shopify, also save custom parameters
+      if (server.id === 'shopify') {
+        connectionData.shopifyParams = {
+          domain: server.domain,
+          authMethod: server.authMethod
+        };
+      }
+      
+      return connectionData;
+    });
     localStorage.setItem('mcp_connections', JSON.stringify(connections));
     const customServers = servers.value.filter(server => !server.isPopular).map(server => ({
       id: server.id,
@@ -481,7 +499,6 @@ export const useMCPStore = defineStore('mcp', () => {
       }
     }
 
-
     try {
       // Generate a unique mcp_id if not provided
       const mcp_id = server.connection.mcp_id || '';
@@ -497,33 +514,36 @@ export const useMCPStore = defineStore('mcp', () => {
         server.id,
         server.name,
         apiKey?.trim(),
-        connectionUrl
+        connectionUrl,
+        customParams?.authMethod || server.authMethod
       );
 
       if (!validationResult.success) {
         throw new Error(validationResult.message);
       }
-     try {
-       server.connection = {
-         isConnected: true,
-         mcp_id: mcp_id || null,
-         apiKey: apiKey?.trim() || null,
-         systemPrompt: systemPrompt || generateDefaultSystemPrompt(server)
-       };
-       // For Shopify, add custom parameters to the server object
-       let serverConfig: any = { ...server };
-       if (serverId === 'shopify' && customParams) {
-         serverConfig = {
-           ...server,
-           domain: customParams.domain,
-           authMethod: customParams.authMethod
-         };
-       }
-       
-       const configResult = mcp_id ? await botsifyApi.updateMCPConfiguration(mcp_id, serverConfig) : await botsifyApi.sendMCPConfigurationJSON(serverConfig);
-       if (configResult.success) {
+
+      // Step 2: Update server connection state
+      server.connection = {
+        isConnected: true,
+        mcp_id: validationResult.data?.id || mcp_id || null,
+        apiKey: apiKey?.trim() || null,
+        systemPrompt: systemPrompt || generateDefaultSystemPrompt(server)
+      };
+
+      // For Shopify, also save custom parameters
+      if (serverId === 'shopify' && customParams) {
+        server.domain = customParams.domain;
+        server.authMethod = customParams.authMethod;
+      }
+
+      // Step 3: Send configuration to API (only for non-Shopify servers)
+      try {
+        const configResult = mcp_id ? 
+          await botsifyApi.updateMCPConfiguration(mcp_id, server) : 
+          await botsifyApi.sendMCPConfigurationJSON(server);
+        
+        if (configResult.success) {
           server.connection.mcp_id = configResult.data.id;
-          saveToStorage();
         } else {
           console.warn('⚠️ Failed to send MCP configuration to API:', configResult.message);
           // Don't fail the connection if API call fails, just log the warning
@@ -533,20 +553,24 @@ export const useMCPStore = defineStore('mcp', () => {
         // Connection is still successful even if API call fails
       }
 
+      // Save to storage
+      saveToStorage();
+
       return true;
     } catch (error: any) {
       console.error('❌ Failed to connect to MCP server:', error);
-      saveToStorage();
       
       // Provide specific error messages for better user experience
       if (error.message.includes('bot id')){
         throw new Error(error.message);
-      }else if (error.message.includes('Invalid API key')) {
+      } else if (error.message.includes('Invalid API key') || error.message.includes('Invalid access token')) {
         throw new Error('Invalid API key provided. Please check your authentication credentials and try again.');
       } else if (error.message.includes('not found') || error.message.includes('invalid')) {
         throw new Error('MCP server not found or connection URL is invalid. Please verify your configuration.');
       } else if (error.message.includes('timeout')) {
         throw new Error('Connection timeout. Please check your network connection and try again.');
+      } else if (error.message.includes('CORS')) {
+        throw new Error('CORS error detected. This is being handled by the backend for Shopify connections.');
       }
       
       throw new Error(error.message || 'Failed to connect to the server. Please check your configuration and try again.');
@@ -744,6 +768,12 @@ Remember: You have access to ${connectedServers.value.length} MCP server${connec
               apiKey: mcp.setting.headers?.Authorization?.split(' ')[1] || '',
               systemPrompt: mcp.setting.system_prompt || generateDefaultSystemPrompt(server),
             };
+            
+            // For Shopify, also load custom parameters from API data
+            if (server.id === 'shopify' && mcp.setting.shopify_params) {
+              server.domain = mcp.setting.shopify_params.domain;
+              server.authMethod = mcp.setting.shopify_params.authMethod;
+            }
             
             // Save to storage
             saveToStorage();
