@@ -69,6 +69,18 @@ const showCenteredInput = computed(() => {
   return msgs.length === 0 || (msgs.length === 1 && (!msgs[0].content || msgs[0].content === null || msgs[0].content === ''));
 });
 
+const suggestions = [
+  'Open API',
+  'Connect to Web',
+  'Upload File',
+  'Try: Hello!'
+];
+
+function sendSuggestion(suggestion: string) {
+  if (!chatId.value) return;
+  chatStore.addMessage(chatId.value, suggestion, 'user');
+}
+
 onMounted(() => {
   // Set active chat when component mounts
   chatStore.setActiveChat(chatId.value);
@@ -115,6 +127,11 @@ function toggleStorySidebar() {
           <h1>Start building your AI chatbot prompt...</h1>
         </div>
         <MessageInput :chatId="chatId" :centered="true" />
+        <div class="suggestion-buttons">
+          <button v-for="suggestion in suggestions" :key="suggestion" class="suggestion-btn" @click="sendSuggestion(suggestion)">
+            {{ suggestion }}
+          </button>
+        </div>
       </div>
     </div>
     
@@ -387,5 +404,28 @@ function toggleStorySidebar() {
 }
 .status-info svg {
   flex-shrink: 0;
+}
+.suggestion-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+  margin-top: var(--space-4);
+}
+.suggestion-btn {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+.suggestion-btn:hover {
+  background-color: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
 }
 </style>

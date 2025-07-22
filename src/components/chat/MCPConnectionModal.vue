@@ -189,7 +189,7 @@ async function connectToServer() {
   const server = selectedServer.value;
   if (!server) return;
 
-  const connection = mcpStore.servers.find(s => s.id === server.id)?.connection;
+  // const connection = mcpStore.servers.find(s => s.id === server.id)?.connection;
 
   // Shopify-specific validation
   if (server.id === 'shopify') {
