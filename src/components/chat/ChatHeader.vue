@@ -1,5 +1,5 @@
 <template>
-  <div class="chat-header" :class="{ 'with-sidebar': showStorySidebar }">
+  <div class="chat-header">
     <h2>{{ title }}</h2>
     <div class="chat-actions">
       <!-- Deploy/Test AI Buttons -->
@@ -28,7 +28,7 @@
       </button>
 
       <!-- Dropdown Menu Trigger -->
-      <div class="dropdown" >
+      <div class="dropdown" @mouseleave="showDropdown = false">
         <button class="icon-button" @click="toggleDropdown" title="More actions">
           <i class="pi pi-ellipsis-v" style="font-size: 22px;"></i>
         </button>
@@ -62,7 +62,6 @@ interface Props {
   title: string;
   hasPromptContent: boolean;
   latestPromptContent: string;
-  showStorySidebar: boolean;
 }
 
 const props = defineProps<Props>();
@@ -148,8 +147,6 @@ function handleDelete() {
   background-color: var(--color-bg-secondary);
   border-bottom: none;
   z-index: var(--z-sticky);
-  position: sticky;
-  top: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -157,10 +154,6 @@ function handleDelete() {
   box-shadow: 0 4px 15px rgba(0, 163, 255, 0.08);
   border: 1px solid rgba(0, 163, 255, 0.1);
   border-bottom: none;
-}
-
-.chat-header.with-sidebar {
-  width: 62%;
 }
 
 .chat-header h2 {
