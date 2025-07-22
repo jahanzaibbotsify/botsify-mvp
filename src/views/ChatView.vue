@@ -426,8 +426,8 @@ function toggleStorySidebar() {
   transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 .suggestion-btn:hover {
-  background-color: var(--color-primary);
-  color: #fff;
-  border-color: var(--color-primary);
+  /* background-color: var(--color-primary);
+  color: #fff; */
+  border-color: var(--color-text-tertiary);
 }
 </style>
