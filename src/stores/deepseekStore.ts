@@ -5,8 +5,8 @@ import { useApiKeyStore } from './apiKeyStore';
 
 export const useDeepSeekStore = defineStore('deepseek', () => {
   // API endpoint for DeepSeek
-  const DEEPSEEK_API_URL = 'https://deepseek.saasbakers.com/api/generate';
-  const MODEL_NAME = 'deepseek-coder-v2:latest';
+  const DEEPSEEK_API_URL = 'http://deepseek.saasbakers.com/api/generate';
+  const MODEL_NAME = 'llama3:8b';
   
   // Get bot API key from API key store
   const botApiKey = useApiKeyStore().apiKey;
@@ -256,7 +256,7 @@ export const useDeepSeekStore = defineStore('deepseek', () => {
       });
       
       // Add assistant prompt
-      prompt += 'assistant: ';
+      prompt += 'assistant: Donot add any thing extra in your response. Just give me the response in the same language as the user message. Donot change the format of the response. Just follow the format given in system message. ';
       
       console.log('📤 Sending request to DeepSeek API with prompt length:', prompt.length);
       
@@ -269,15 +269,15 @@ export const useDeepSeekStore = defineStore('deepseek', () => {
         body: JSON.stringify({
           model: MODEL_NAME,
           prompt: prompt,
-          stream: true,
+          stream: false,
           options: {
-            temperature: 0.7,
-            top_p: 0.9,
+            temperature: 1,
+            top_p: 1,
             max_tokens: 2000
           }
         })
       });
-
+      console.log('🔍 DEBUG: DeepSeek response:', response);
       if (!response.ok) {
         throw new Error(`DeepSeek API error: ${response.status} ${response.statusText}`);
       }
