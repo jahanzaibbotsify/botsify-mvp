@@ -104,7 +104,13 @@ function deployAI() {
     window.$toast.error('No prompt content available to deploy. Please generate some content first.');
     return;
   }
-  window.$confirm({}, async () => {
+  window.$confirm({
+    text: "Do you really want to deploy your AI agent? This will make it available for use.",
+    confirmButtonColor: "#00A3FF",
+    confirmButtonText: "Yes, Deploy it!",
+    cancelButtonText: "No, Cancel",
+    animation: false,
+  }, async () => {
     isDeployingAI.value = true;
     try {
       const result = await botsifyApi.deployAiAgent(latestPromptContent.value);
