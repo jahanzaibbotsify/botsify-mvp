@@ -779,7 +779,7 @@ export class BotsifyApiService {
       'Code search': ['search_code', 'get_file_content'],
       
       // Stripe tools
-      'Payment processing': ['create_payment_intent', 'capture_payment', 'list_payment_intents'],
+      'Payment processing': ['create_payment_intent', 'capture_payment', 'list_payment_intents',  'list_prices'],
       'Subscription billing': ['create_subscription', 'list_subscriptions', 'update_subscription', 'cancel_subscription'],
       'Invoice management': ['create_invoice', 'list_invoices', 'create_invoice_item', 'finalize_invoice'],
       'Financial reporting': ['retrieve_balance', 'list_transactions'],
@@ -792,7 +792,7 @@ export class BotsifyApiService {
       'Customer management': ['create_customer', 'list_customers', 'update_customer', 'get_customer'],
       
       // Product management (shared across e-commerce services)
-      'Product management': ['create_product', 'list_products', 'update_product', 'create_price', 'list_prices'],
+      'Product management': ['create_product', 'update_product', 'create_price'],
       
       // Shopify-specific tools
       'Order processing': ['list_orders', 'create_order', 'update_order'],

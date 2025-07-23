@@ -463,7 +463,9 @@ onBeforeUnmount(() => {
               class="server-card connected"
               @click="selectServer(config)"
             >
-              <div class="server-icon">{{ config.icon }}</div>
+              <div class="server-icon">
+                <img :src="`/mcp/${config.icon}`" :alt="config.name" width="40" height="40" />
+              </div>
               <div class="server-info">
                 <h4>{{ config.name }}</h4>
                 <p>{{ config.description }}</p>
@@ -503,7 +505,9 @@ onBeforeUnmount(() => {
               :class="{ connected: config.connection?.isConnected }"
               @click="selectServer(config)"
             >
-              <div class="server-icon">{{ config.icon }}</div>
+              <div class="server-icon">
+                <img :src="`/mcp/${config.icon}`" :alt="config.name" width="40" height="40" />
+              </div>
               <div class="server-info">
                 <h4>{{ config.name }}</h4>
                 <p>{{ config.description }}</p>
@@ -545,7 +549,9 @@ onBeforeUnmount(() => {
       <div v-else class="modal-body">
         <div class="server-details">
           <div class="server-header">
-            <div class="server-icon large">{{ selectedServer?.icon }}</div>
+            <div class="server-icon large">
+              <img :src="`/mcp/${selectedServer?.icon}`" :alt="selectedServer?.name" width="40" height="40" />
+            </div>
             <div class="server-title">
               <h3>{{ selectedServer?.name }}</h3>
               <p>{{ selectedServer?.description }}</p>
