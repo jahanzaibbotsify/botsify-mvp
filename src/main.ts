@@ -36,7 +36,8 @@ const swalOption = {
   icon: "warning", // updated from `type`
   showCloseButton: true,
   showCancelButton: true,
-  confirmButtonColor: "#DD6B55",
+  confirmButtonColor: "#00A3FF",
+  cancelButtonColor: "#DD6B55",
   confirmButtonText: "Yes, Delete it!",
   cancelButtonText: "No, Keep it",
   animation: false,

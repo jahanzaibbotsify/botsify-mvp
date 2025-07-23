@@ -28,7 +28,7 @@
       </button>
 
       <!-- Dropdown Menu Trigger -->
-      <div class="dropdown" @mouseleave="showDropdown = false">
+      <div class="dropdown" ref="dropdownRef">
         <button class="icon-button" @click="toggleDropdown" title="More actions">
           <i class="pi pi-ellipsis-v" style="font-size: 22px;"></i>
         </button>
@@ -41,7 +41,7 @@
             <i class="pi pi-bolt" style="font-size: 18px;"></i>
             <span>AI Prompt</span>
           </button>
-          <button class="dropdown-item" @click="handleDelete">
+          <button class="dropdown-item" @click="handleReset">
             <i class="pi pi-replay" style="font-size: 18px;"></i>
             <span>Reset Conversation</span>
           </button>
@@ -52,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch, onBeforeUnmount } from 'vue';
 import { useThemeStore } from '@/stores/themeStore';
 import { botsifyApi } from '@/services/botsifyApi';
 import { BOTSIFY_WEB_URL } from '@/utils/config';
@@ -68,6 +68,7 @@ const props = defineProps<Props>();
 const chatStore = useChatStore();
 const themeStore = useThemeStore();
 const showDropdown = ref(false);
+const dropdownRef = ref<HTMLDivElement | null>(null);
 
 const emit = defineEmits<{
   toggleStorySidebar: [];
@@ -131,14 +132,42 @@ async function deploying(content: string){
   }
 }
 
-function handleDelete() {
+function handleReset() {
   showDropdown.value = false;
   window.$confirm({
-    text: "This action will delete your current agent flow and start a new agent. This action is irreversible."
+    confirmButtonText: "Yes, Reset it!",
+    text: "This will clear your current agent flow and start a new one. This action is irreversible."
   }, async() => {
     chatStore.clearChatMessages()
   });
 }
+
+function handleClickOutside(event: Event) {
+  const target = event.target as Node;
+  if (showDropdown.value && dropdownRef.value && !dropdownRef.value.contains(target)) {
+    showDropdown.value = false;
+  }
+}
+
+// Add/remove event listener when dropdown is toggled
+watch(showDropdown, (newVal) => {
+  if (newVal) {
+    document.addEventListener('click', handleClickOutside);
+  } else {
+    document.removeEventListener('click', handleClickOutside);
+  }
+});
+
+// Clean up on component unmount
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
+
+// function handleMouseLeave() {
+//   setTimeout(() => {
+//     showDropdown.value = false;
+//   }, 5000); // 100ms delay
+// }
 </script>
 
 <style scoped>
