@@ -293,18 +293,17 @@ export const useOpenAIStore = defineStore('openai', () => {
       
       // Convert messages to Responses API format - use simple string input
       const nonSystemMessages = messages.filter(msg => msg.role !== 'system');      
-      const inputText = nonSystemMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
-      // const latestMessage = nonSystemMessages[nonSystemMessages.length - 1];
-      // const inputText = `${latestMessage.role}: ${latestMessage.content}`;
+      //const inputText = nonSystemMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+     const latestMessage = nonSystemMessages[nonSystemMessages.length - 1];
+     const inputText = `${latestMessage.role}: ${latestMessage.content}`;
 
       // Extract system message for instructions
-      const systemMessage = messages.find(msg => msg.role === 'system');
-      const instructions = systemMessage?.content || `You are an AI prompt designer and chatbot configuration assistant. 
+      const instructions = `You are an AI prompt designer and chatbot configuration assistant. 
 
 **IMPORTANT: You must provide DUAL RESPONSES in the following structured format:**
 
 ---CHAT_RESPONSE---
-[Provide a friendly user message here like "I've updated your AI prompt according to your requirements. What would you like me to help you with next?" or "Great! I've created the chatbot flow you requested. The prompt is now ready for testing. How else can I assist you?"]
+[Provide a friendly user message here like "I've updated your AI prompt according to your requirements. What would you like me to help you with next?" or "Great! I've created the chatbot flow you requested. The prompt is now ready for testing. How else can I assist you?" and "Do not add anything like this The updated flow is in the sidebar"]
 ---AI_PROMPT---
 [Provide the detailed technical AI prompt/flow here that will go to the sidebar]
 ---END---
@@ -609,16 +608,9 @@ Botsify MCP Server: Operations & API Tooling Guide
       try {
 
         const payload = {
-            model: 'gpt-4o',
             input: inputText,
             instructions: instructions,
-            tools: [configureChatbotTool, mcpConfiguration],
-            tool_choice: "auto",
-            stream: true,
-            store: true,
-            temperature: 1,
-            max_output_tokens: 2000,
-            top_p: 1
+            tools: [configureChatbotTool, mcpConfiguration]
           };
 
         const stream = await fetch(import.meta.env.VITE_BOTSIFY_BASE_URL + `/v1/get-ai-response?apikey=${botApiKey}`, {
