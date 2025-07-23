@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useConversationStore } from '@/stores/conversationStore'
 import {
@@ -15,7 +15,6 @@ const route = useRoute()
 const conversationStore = useConversationStore()
 
 // Local state
-const activeUserTab = ref('profile')
 const newMessage = ref('')
 const selectedLanguage = ref('en')
 
