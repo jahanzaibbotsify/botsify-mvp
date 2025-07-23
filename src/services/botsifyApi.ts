@@ -206,7 +206,7 @@ export class BotsifyApiService {
           server_label: mcpData.id || mcpData.name?.toLowerCase().replace(/\s+/g, '_'),
           server_url: this.getDefaultServerUrl(mcpData.id),
           headers: this.buildMCPHeaders(mcpData.id, mcpData.connection?.apiKey || '', mcpData.authMethod || 'api_key'),
-          allowed_tools: this.mapFeaturesToTools(mcpData.features || []),
+          allowed_tools: mcpData.features,
           require_approval: "never",
         },
         apikey: useApiKeyStore().apiKey
@@ -687,7 +687,7 @@ export class BotsifyApiService {
           server_label: mcpData.id || mcpData.name?.toLowerCase().replace(/\s+/g, '_'),
           server_url: serverUrl,
           headers: this.buildMCPHeaders(mcpData.id, mcpData.connection?.apiKey || '', mcpData.authMethod || 'api_key'),
-          allowed_tools: this.mapFeaturesToTools(mcpData.features || []),
+          allowed_tools: mcpData.features,
           require_approval: "never",
         },
         apikey: useApiKeyStore().apiKey
@@ -765,100 +765,6 @@ export class BotsifyApiService {
     }
     
     return headers;
-  }
-
-  /**
-   * Map features to standardized tool names
-   */
-  private mapFeaturesToTools(features: string[]): string[] {
-    const toolMapping: Record<string, string[]> = {
-      // GitHub tools
-      'Repository access': ['list_repositories', 'get_repository', 'search_repositories'],
-      'Issue management': ['list_issues', 'create_issue', 'update_issue', 'close_issue'],
-      'Pull requests': ['list_pull_requests', 'create_pull_request', 'merge_pull_request'],
-      'Code search': ['search_code', 'get_file_content'],
-      
-      // Stripe tools
-      'Payment processing': ['create_payment_intent', 'capture_payment', 'list_payment_intents',  'list_prices'],
-      'Subscription billing': ['create_subscription', 'list_subscriptions', 'update_subscription', 'cancel_subscription'],
-      'Invoice management': ['create_invoice', 'list_invoices', 'create_invoice_item', 'finalize_invoice'],
-      'Financial reporting': ['retrieve_balance', 'list_transactions'],
-      'Refund processing': ['create_refund', 'list_refunds'],
-      'Dispute handling': ['update_dispute', 'list_disputes'],
-      'Payment links': ['create_payment_link'],
-      'Coupon management': ['create_coupon', 'list_coupons'],
-      
-      // Customer management (shared across multiple services)
-      'Customer management': ['create_customer', 'list_customers', 'update_customer', 'get_customer'],
-      
-      // Product management (shared across e-commerce services)
-      'Product management': ['create_product', 'update_product', 'create_price'],
-      
-      // Shopify-specific tools
-      'Order processing': ['list_orders', 'create_order', 'update_order'],
-      'Inventory management': ['list_inventory', 'update_inventory', 'list_catalog', 'create_catalog_item'],
-      
-      // Notion tools
-      'Database access': ['query_database', 'create_database_entry', 'update_database_entry'],
-      'Page management': ['get_page', 'create_page', 'update_page'],
-      'Content management': ['search_content', 'get_block_children'],
-      
-      // Slack tools
-      'Message sending': ['send_message', 'send_direct_message'],
-      'Channel management': ['list_channels', 'join_channel', 'create_channel'],
-      'User management': ['list_users', 'get_user_info'],
-      
-      // Google Drive tools
-      'File management': ['list_files', 'create_file', 'update_file', 'delete_file'],
-      'Folder management': ['list_folders', 'create_folder'],
-      'Sharing management': ['share_file', 'update_permissions'],
-      
-      // Database tools
-      'Query execution': ['execute_query', 'execute_select', 'execute_insert', 'execute_update'],
-      'Schema inspection': ['describe_table', 'list_tables', 'get_schema'],
-      'Data analysis': ['analyze_data', 'generate_report'],
-      
-      // Web search tools
-      'Web search': ['search_web', 'get_page_content', 'analyze_content'],
-      'Real-time data': ['get_current_data', 'fetch_news'],
-      
-      // PayPal-specific tools
-      'PayPal payments': ['create_payment', 'execute_payment', 'list_payments'],
-      'Refund management': ['create_refund', 'get_refund'],
-      'Transaction history': ['list_transactions', 'get_transaction'],
-      
-      // Square-specific tools
-      'POS transactions': ['create_payment', 'list_payments'],
-      'Square inventory': ['list_catalog', 'create_catalog_item', 'update_inventory'],
-      'Analytics': ['list_orders', 'get_payment_analytics'],
-      
-      // Plaid tools
-      'Account linking': ['create_link_token', 'exchange_public_token'],
-      'Transaction data': ['get_transactions', 'get_accounts'],
-      'Balance checks': ['get_balances'],
-      'Financial insights': ['get_categories', 'analyze_spending'],
-      
-      // Zapier tools
-      'Workflow automation': ['create_zap', 'trigger_zap', 'list_zaps'],
-      'App connections': ['list_apps', 'authenticate_app'],
-      'Data transformation': ['transform_data', 'map_fields']
-    };
-
-    const tools: string[] = [];
-    
-    features.forEach(feature => {
-      const mappedTools = toolMapping[feature];
-      if (mappedTools) {
-        tools.push(...mappedTools);
-      } else {
-        // If no mapping found, create a generic tool name
-        const toolName = feature.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-        tools.push(toolName);
-      }
-    });
-    
-    // Remove duplicates and return
-    return [...new Set(tools)];
   }
 
   /**
