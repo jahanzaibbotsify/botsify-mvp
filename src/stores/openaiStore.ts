@@ -1,23 +1,17 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import OpenAI from 'openai';
 import { ConfigurationTask, ConfigurationResponse, ConfigurationResponseData, ApiRequestData, ChatMessage, ApiError } from '../types/openai'
 import { useApiKeyStore } from './apiKeyStore';
+import { BOTSIFY_AUTH_TOKEN } from '../utils/config';
 
-let openaiClient: OpenAI | null = null;
 
 export const useOpenAIStore = defineStore('openai', () => {
   // Try to get API key from environment variables first, then fallback to localStorage
-  const envApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  const authToken = BOTSIFY_AUTH_TOKEN;
   const botApiKey = useApiKeyStore().apiKey;
-  console.log('Environment API key available:', !!envApiKey, botApiKey);
-  
-  const apiKey = ref<string | null>(
-    envApiKey || localStorage.getItem('openai_api_key')
-  );
+  console.log('Environment API key available:', botApiKey);
   
   // Reactive state - no OpenAI client here to avoid private member issues
-  const connected = ref(false);
   const error = ref<string | null>(null);
   const rateLimited = ref(false);
 
@@ -84,45 +78,6 @@ export const useOpenAIStore = defineStore('openai', () => {
     require_approval: "never" as const
   }
 
-  function setApiKey(key: string) {
-    console.log('Setting API key');
-    apiKey.value = key;
-    localStorage.setItem('openai_api_key', key);
-    initClient();
-  }
-
-  function initClient() {
-    if (!apiKey.value) {
-      console.warn('No API key provided, client not initialized');
-      connected.value = false;
-      openaiClient = null;
-      error.value = 'No API key provided. Please add your OpenAI API key in Settings.';
-      return;
-    }
-
-    try {
-      console.log('Initializing OpenAI client');
-      console.warn('⚠️ SECURITY WARNING: Using dangerouslyAllowBrowser: true exposes your API key in the browser. Consider implementing a backend proxy for production use.');
-      
-      // Initialize non-reactive OpenAI client
-      openaiClient = new OpenAI({
-        apiKey: apiKey.value,
-        dangerouslyAllowBrowser: true
-      });
-      
-      connected.value = true;
-      error.value = null;
-      console.log('OpenAI client initialized successfully');
-      console.log('Client type:', typeof openaiClient);
-      console.log('Client has responses:', !!openaiClient?.responses);
-    } catch (e: unknown) {
-      const clientError = e as ApiError;
-      console.error('Failed to initialize OpenAI client:', clientError);
-      error.value = `Failed to initialize OpenAI client: ${clientError.message || 'Unknown error'}`;
-      connected.value = false;
-      openaiClient = null;
-    }
-  }
 
   // Handle configuration API requests
   async function handleConfigurationRequest(task: ConfigurationTask): Promise<ConfigurationResponse> {
@@ -201,7 +156,7 @@ export const useOpenAIStore = defineStore('openai', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey.value}` // Assuming API key is used for auth
+          'Authorization': `Bearer ${authToken}` 
         },
         body: JSON.stringify(requestData)
       });
@@ -267,26 +222,6 @@ export const useOpenAIStore = defineStore('openai', () => {
   }
 
   async function streamChat(messages: ChatMessage[]): Promise<Response>  {
-    // Debug: Check client state
-    console.log('🔍 DEBUG: OpenAI client state:', {
-      clientExists: !!openaiClient,
-      clientType: typeof openaiClient,
-      hasResponses: !!openaiClient?.responses,
-      connected: connected.value,
-      apiKeyExists: !!apiKey.value
-    });
-
-    if (!openaiClient) {
-      const errorMsg = 'OpenAI client not initialized. Please check your API key.';
-      console.error('❌', errorMsg);
-      throw new Error(errorMsg);
-    }
-
-    if (!openaiClient.responses) {
-      const errorMsg = 'OpenAI Responses API not available. Please check SDK version.';
-      console.error('❌', errorMsg);
-      throw new Error(errorMsg);
-    }
 
     try {
       console.log('🚀 Preparing to stream chat with messages:', messages);
@@ -624,47 +559,10 @@ Botsify MCP Server: Operations & API Tooling Guide
         if (!stream.ok) throw new Error('No response for streaming');
         return stream;
 
-        // Use responses.create (NOT completions.create) with proper typing
-        // const stream = await openaiClient.responses.create({
-        //   model: 'gpt-4o',
-        //   input: inputText,
-        //   instructions: instructions,
-        //   tools: [configureChatbotTool, mcpConfiguration],
-        //   tool_choice: "auto",
-        //   stream: true,
-        //   temperature: 1,
-        //   max_output_tokens: 2000,
-        //   top_p: 1
-        // });
-  
-        // console.log('✅ Stream received from OpenAI Responses API:', typeof stream, stream !== null);
-        
-        // Verify the stream is valid
-        // if (!stream.body) {
-        //   throw new Error('Received null or undefined stream from OpenAI Responses API');
-        // }
-        
-        // return stream as AsyncIterable<OpenAIStreamResponse>;
       } catch (apiError: unknown) {
         const streamError = apiError as ApiError;
         console.error('❌ API call error:', streamError);
         console.error('API error details:', JSON.stringify(streamError, Object.getOwnPropertyNames(streamError)));
-        
-        // Debug: Test non-streaming call
-        console.log('🔧 DEBUG: Testing non-streaming call...');
-        try {
-          const nonStreamResponse = await openaiClient.responses.create({
-            model: 'gpt-4o',
-            input: inputText,
-            instructions: instructions,
-            stream: false,
-            temperature: 0.7,
-            max_output_tokens: 500
-          });
-          console.log('✅ Non-streaming call successful:', !!nonStreamResponse);
-        } catch (nonStreamError) {
-          console.error('❌ Non-streaming call also failed:', nonStreamError);
-        }
         
         throw streamError;
       }
@@ -677,32 +575,15 @@ Botsify MCP Server: Operations & API Tooling Guide
         throw new Error('Rate limit exceeded. Please try again later.');
       }
       
-      if (streamChatError.status === 401) {
-        error.value = 'Invalid API key. Please check your OpenAI API key.';
-        connected.value = false;
-        throw new Error('Invalid API key. Please check your OpenAI API key.');
-      }
-      
       error.value = streamChatError.message || 'Unknown error occurred';
       throw streamChatError;
     }
   }
 
-  // Initialize client if API key exists
-  if (apiKey.value) {
-    console.log('API key found, initializing client');
-    initClient();
-  } else {
-    console.warn('No API key found');
-    error.value = 'No API key found. Please add your OpenAI API key in Settings.';
-  }
 
   return {
-    apiKey,
-    connected,
     error,
     rateLimited,
-    setApiKey,
     streamChat,
     processConfigurationTool,
     configureChatbotTool

@@ -18,13 +18,6 @@ async function sendSystemMessage() {
     return;
   }
 
-  if (!openAIStore.connected) {
-    result.value = {
-      success: false,
-      message: 'OpenAI API is not connected. Please check your API key in Settings.'
-    };
-    return;
-  }
 
   isLoading.value = true;
   result.value = null;
@@ -150,7 +143,7 @@ function parsePayload(payload: string) {
       <button 
         class="primary" 
         @click="sendSystemMessage" 
-        :disabled="isLoading || !systemMessage.trim() || !openAIStore.connected"
+        :disabled="isLoading || !systemMessage.trim() "
       >
         <span v-if="isLoading">Sending...</span>
         <span v-else>Send System Message</span>
