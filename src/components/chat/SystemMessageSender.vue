@@ -18,13 +18,6 @@ async function sendSystemMessage() {
     return;
   }
 
-  // if (!openAIStore.connected) {
-  //   result.value = {
-  //     success: false,
-  //     message: 'OpenAI API is not connected. Please check your API key in Settings.'
-  //   };
-  //   return;
-  // }
 
   isLoading.value = true;
   result.value = null;
