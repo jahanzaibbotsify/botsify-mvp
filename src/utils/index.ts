@@ -1,4 +1,17 @@
 
+export const formatTime = (date: Date) => {
+  const now = new Date()
+  const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+  
+  if (diffInHours < 1) {
+    return 'Just now'
+  } else if (diffInHours < 24) {
+    return `${Math.floor(diffInHours)}h ago`
+  } else {
+    return date.toLocaleDateString()
+  }
+}
+
 export const getPlatformClass = (platform: string = '') => {
     switch (platform.toLowerCase()) {
       case 'facebook':

@@ -10,14 +10,15 @@
   --color-text-secondary: #495057;
   --color-text-tertiary: #868E96;
   --color-text-danger: #e7515a;
-
+  
   
   --color-border: #E9ECEF;
   
   --color-primary: #4473F6;
-  --color-primary-hover: #33B5FF;
-  --color-primary-active: #0082CC;
+  --color-primary-hover: #3370ff;
+  --color-primary-active: #0052cc;
   
+  --color-neutral: #dddddd;
   --color-secondary: #10B981;
   --color-accent: #8B5CF6;
   --color-error: #e7515a;

@@ -16,15 +16,15 @@
       </div>
       <!-- Actions when loaded -->
       <template v-else>
-        <select 
-          class="status-select" 
-          :class="{ 'status-active': selectedStatus === 1, 'status-inactive': selectedStatus === 0 }"
-          v-model="selectedStatus"
-          @change="handleStatusChange"
-        >
-          <option value="1">Active</option>
-          <option value="0">Inactive</option>
-        </select>
+        <div class="status-dropdown" :class="{ 'status-active': selectedStatus === 1, 'status-inactive': selectedStatus === 0 }">
+          <VueSelect
+            :model-value="selectedStatus"
+            @update:model-value="handleStatusChange"
+            :options="statusOptions"
+            placeholder="Select status"
+            :multiple="false"
+          />
+        </div>
         <button class="translate-button" @click="openTranslateModal">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.01-4.65.83-6.67l2.16-2.16c-.56-.56-1.47-.56-2.03 0L9.5 5.5c-.56.56-.56 1.47 0 2.03l.03.03c-2.02 1.18-4.73.91-6.67-.83l-.03-.03c-.56-.56-1.47-.56-2.03 0L.5 5.5c-.56.56-.56 1.47 0 2.03l2.16 2.16c1.74 1.94 2.01 4.65.83 6.67l-.03.03c-.56-.56-.56 1.47 0 2.03l2.16 2.16c.56.56 1.47.56 2.03 0l2.16-2.16c.56-.56.56-1.47 0-2.03l-.03-.03z"/>
@@ -38,13 +38,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useConversationStore } from '@/stores/conversationStore'
 import TranslateModal from './TranslateModal.vue'
+import VueSelect from "vue3-select-component"
 
 interface Props {
-  userName?: string
-  status?: number
   loading?: boolean
 }
 
@@ -53,17 +52,29 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const conversationStore = useConversationStore()
+const userName = computed(() => conversationStore.selectedConversation?.title)
+const status = computed(() => conversationStore.selectedConversation?.active_for_bot ?? 0)
 
-const selectedStatus = ref(props.status)
+const selectedStatus = ref(status.value)
 
-watch(() => props.status, (newVal) => {
+// Status options for VueSelect
+const statusOptions = [
+  { label: 'Active', value: 1 },
+  { label: 'Inactive', value: 0 }
+]
+
+watch(() => status.value, (newVal) => {
   selectedStatus.value = newVal
 })
 
-
-const handleStatusChange = async () => {
+const handleStatusChange = async (value: number | (number | undefined)[] | undefined) => {
+  const statusValue = Array.isArray(value) ? value[0] : value
+  if (statusValue === undefined) return
+  
+  selectedStatus.value = statusValue
+  
   try {
-    const response = await conversationStore.changeBotActivation(selectedStatus.value ?? 0)
+    const response = await conversationStore.changeBotActivation(statusValue)
     if (response?.success) {
       window.$toast.success(response.message || 'Bot status updated successfully')
     } else {
@@ -110,39 +121,20 @@ const handleLanguageSelect = (lang: string) => {
   gap: var(--space-3);
 }
 
-.status-select {
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background-color: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  min-width: 100px;
+.status-dropdown.status-active ::v-deep(.clear-button){
+  display: none;
+}
+/* Active status styling */
+.status-dropdown.status-active ::v-deep(.control) {
+  border-color: var(--color-success) !important;
+  background-color: rgba(16, 185, 129, 0.1) !important;
 }
 
-.status-select:hover {
-  background-color: var(--color-bg-hover);
+.status-dropdown.status-inactive ::v-deep(.control) {
+  border-color: var(--color-error) !important;
+  background-color: rgba(239, 68, 68, 0.1) !important;
 }
 
-.status-select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.status-select.status-active {
-  border-color: var(--color-success);
-  background-color: rgba(16, 185, 129, 0.1);
-  color: var(--color-success);
-}
-
-.status-select.status-inactive {
-  border-color: var(--color-error);
-  background-color: rgba(239, 68, 68, 0.1);
-  color: var(--color-error);
-}
 
 .translate-button {
   display: flex;

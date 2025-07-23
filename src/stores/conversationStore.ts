@@ -462,6 +462,7 @@ export const useConversationStore = defineStore('conversation', () => {
         if (selectedConversation.value) {
           selectedConversation.value.id = response.data.user.id.toString()
           selectedConversation.value.active_for_bot = response.data.user.active_for_bot
+          selectedConversation.value.csr = response.data.user.csr
           selectedConversation.value.email = response.data.user.email
           selectedConversation.value.assignedTo = response.data.agent_assigned
           selectedConversation.value.status = response.data.conv_status

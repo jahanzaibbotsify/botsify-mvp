@@ -174,7 +174,6 @@ onBeforeUnmount(() => {
 .chat-header {
   padding: var(--space-3) var(--space-4);
   background-color: var(--color-bg-secondary);
-  border-bottom: none;
   z-index: var(--z-sticky);
   display: flex;
   justify-content: space-between;
@@ -182,7 +181,6 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   box-shadow: 0 4px 15px rgba(0, 163, 255, 0.08);
   border: 1px solid rgba(0, 163, 255, 0.1);
-  border-bottom: none;
 }
 
 .chat-header h2 {
@@ -196,7 +194,7 @@ onBeforeUnmount(() => {
 
 .chat-actions {
   display: flex;
-  gap: var(--space-4);
+  gap: var(--space-3);
   align-items: center;
 }
 
@@ -241,7 +239,7 @@ onBeforeUnmount(() => {
 .button-content {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 .test-button {

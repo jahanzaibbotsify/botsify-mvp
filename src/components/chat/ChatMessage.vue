@@ -136,8 +136,8 @@ onMounted(() => {
 }
 
 .message {
-  border-radius: 24px;
-  padding: var(--space-3) var(--space-2);
+  border-radius: 16px;
+  padding: var(--space-3) var(--space-3);
   position: relative;
   word-break: break-word;
   overflow-wrap: break-word;
@@ -149,8 +149,8 @@ onMounted(() => {
   background-color: var(--color-primary);
   color: white;
   box-shadow: 0 4px 12px rgba(0, 163, 255, 0.15);
-  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.9), var(--color-primary));
-  border-radius: 24px;
+  background-image: linear-gradient(to right, rgba(0, 100, 255, 0.9), var(--color-primary));
+  border-radius: 16px;
 }
 
 .ai-message .message {

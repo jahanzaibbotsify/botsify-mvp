@@ -80,7 +80,7 @@
         <span class="satisfaction-label">User Satisfaction</span>
       </div>
       <div class="satisfaction-bar">
-        <div class="satisfaction-fill" :style="{ width: satisfactionPercentage + '%' }"></div>
+        <div class="satisfaction-fill" :style="{ width: satisfactionPercentage + '%', backgroundColor: satisfactionFillColor }"></div>
         <div class="satisfaction-emoji sad">😞</div>
         <div class="satisfaction-emoji happy">😊</div>
       </div>
@@ -109,28 +109,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import UserProfile from './UserProfile.vue'
 import UserAttributes from './UserAttributes.vue'
-import type { ExtendedChat } from '@/types'
 import { useConversationStore } from '@/stores/conversationStore'
 
 interface Props {
-  user?: ExtendedChat | null
-  activeTab: string
-  satisfactionPercentage: number
   loading?: boolean
 }
 
-defineProps<Props>()
+withDefaults(defineProps<Props>(), {
+  loading: false
+})
 
-defineEmits<{
-  'update:activeTab': [value: string]
-}>()
+const activeTab = ref('profile')
 
 const notificationsEnabled = ref(true)
 const showExportDropdown = ref(false)
 const conversationStore = useConversationStore()
+
+const user = computed(() => conversationStore.selectedConversation);
+
+const satisfactionPercentage = computed(() => {
+  return Number(conversationStore.selectedConversation?.csr ?? 25)
+})
+
+const satisfactionFillColor = computed(() => {
+  const csr = Number(conversationStore.selectedConversation?.csr ?? 0)
+  if (csr < 33) return 'var(--color-error)'
+  if (csr >= 33 && csr <= 66) return 'var(--color-neutral)'
+  return 'var(--color-success)'
+})
 
 const toggleNotifications = async () => {
   try {
@@ -388,9 +397,8 @@ onUnmounted(() => {
 
 .satisfaction-fill {
   height: 100%;
-  background-color: var(--color-error);
   border-radius: var(--radius-full);
-  transition: width var(--transition-normal);
+  transition: width var(--transition-normal), background-color var(--transition-normal);
 }
 
 .satisfaction-emoji {

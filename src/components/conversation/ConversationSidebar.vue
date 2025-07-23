@@ -4,7 +4,7 @@ import { ref, computed } from 'vue'
 import type { ExtendedChat } from '@/types'
 import ConversationSkeleton from './ConversationSkeleton.vue'
 import FilterSection from './Filter.vue'
-import { getPlatformClass, getPlatformIcon } from '@/utils'
+import { formatTime, getPlatformClass, getPlatformIcon } from '@/utils'
 
 interface Props {
   searchQuery: string
@@ -162,19 +162,6 @@ const handleScroll = (event: Event) => {
   // Load more when user scrolls to bottom (with 50px threshold)
   if (scrollHeight - scrollTop - clientHeight < 50 && !props.isLoadingMore) {
     emit('load-more-conversations')
-  }
-}
-
-const formatTime = (date: Date) => {
-  const now = new Date()
-  const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-  
-  if (diffInHours < 1) {
-    return 'Just now'
-  } else if (diffInHours < 24) {
-    return `${Math.floor(diffInHours)}h ago`
-  } else {
-    return date.toLocaleDateString()
   }
 }
 
