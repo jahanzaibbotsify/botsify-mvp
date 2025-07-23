@@ -32,6 +32,11 @@ export const useChatStore = defineStore('chat', () => {
       if (storedChats && storedChats !== 'null' && storedChats !== 'undefined') {
         try {
           const parsedChats = JSON.parse(storedChats);
+          if (storedTemplates && storedTemplates !== 'null' && storedTemplates !== 'undefined') {
+            parsedChats[0].story = JSON.parse(storedTemplates);
+          }else{
+            parsedChats[0].story = JSON.parse('{}');
+          }
           // Ensure parsedChats is an array before mapping
           if (Array.isArray(parsedChats)) {
             // Convert date strings back to Date objects
@@ -65,29 +70,29 @@ export const useChatStore = defineStore('chat', () => {
         console.warn('⚠️ No chats found in localStorage');
       }
 
-      if (storedTemplates && storedTemplates !== 'null' && storedTemplates !== 'undefined') {
-        try {
-          const parsedTemplates = JSON.parse(storedTemplates);
-          // Ensure parsedTemplates is an array before mapping
-          if (Array.isArray(parsedTemplates)) {
-            globalPromptTemplates.value = parsedTemplates.map((template: any) => ({
-              ...template,
-              createdAt: new Date(template.createdAt),
-              updatedAt: new Date(template.updatedAt)
-            }));
-            console.log('✅ Loaded prompt templates from storage:', globalPromptTemplates.value.length);
-          } else {
-            console.warn('⚠️ Stored templates is not an array, clearing storage');
-            localStorage.removeItem('botsify_prompt_templates');
-          }
-        } catch (jsonError) {
-          console.error('❌ Failed to parse stored templates JSON:', jsonError);
-          // Clear corrupted data
-          localStorage.removeItem('botsify_prompt_templates');
-        }
-      } else {
-        console.warn('⚠️ No templates found in localStorage');
-      }
+      // if (storedTemplates && storedTemplates !== 'null' && storedTemplates !== 'undefined') {
+      //   try {
+      //     const parsedTemplates = JSON.parse(storedTemplates);
+      //     // Ensure parsedTemplates is an array before mapping
+      //     if (Array.isArray(parsedTemplates)) {
+      //       globalPromptTemplates.value = parsedTemplates.map((template: any) => ({
+      //         ...template,
+      //         createdAt: new Date(template.createdAt),
+      //         updatedAt: new Date(template.updatedAt)
+      //       }));
+      //       console.log('✅ Loaded prompt templates from storage:', globalPromptTemplates.value.length);
+      //     } else {
+      //       console.warn('⚠️ Stored templates is not an array, clearing storage');
+      //       localStorage.removeItem('botsify_prompt_templates');
+      //     }
+      //   } catch (jsonError) {
+      //     console.error('❌ Failed to parse stored templates JSON:', jsonError);
+      //     // Clear corrupted data
+      //     localStorage.removeItem('botsify_prompt_templates');
+      //   }
+      // } else {
+      //   console.warn('⚠️ No templates found in localStorage');
+      // }
 
       if (storedActiveChat && chats.value.some(c => c.id === storedActiveChat)) {
         activeChat.value = storedActiveChat;
@@ -103,9 +108,12 @@ export const useChatStore = defineStore('chat', () => {
   // Save data to localStorage
   function saveToTemplate() {
     try {
-      const chatsJson = JSON.stringify(chats.value);
-      const templatesJson = JSON.stringify(globalPromptTemplates.value);
-      botsifyApi.saveBotTemplates(chatsJson, templatesJson);
+      const chatRecords = JSON.parse(JSON.stringify(chats.value[0]??''));      
+      const aiPrompt = JSON.stringify(chatRecords.story ?? {});
+      delete chatRecords.story;
+      const chatsJson = JSON.stringify([chatRecords]);
+      
+      botsifyApi.saveBotTemplates(chatsJson, aiPrompt);
 
       //save bot templates
     } catch (error) {
