@@ -199,12 +199,19 @@ export class BotsifyApiService {
   async updateMCPConfiguration(id: string, mcpData: MCPServer): Promise<BotsifyResponse> {
     try {
       // Create the new payload structure
+      let serverUrl = this.getDefaultServerUrl(mcpData.id);
+      
+      // For Shopify, use the custom domain if provided
+      if (mcpData.id === 'shopify' && mcpData?.domain) {
+        serverUrl = `https://${mcpData.domain}/api/mcp`;
+      }
+      // Create the new payload structure
       const mcpPayload = {
         settings: {
           apikey : mcpData.connection.apiKey,
           type: "mcp",
           server_label: mcpData.id || mcpData.name?.toLowerCase().replace(/\s+/g, '_'),
-          server_url: this.getDefaultServerUrl(mcpData.id),
+          server_url: serverUrl,
           headers: this.buildMCPHeaders(mcpData.id, mcpData.connection?.apiKey || '', mcpData.authMethod || 'api_key'),
           allowed_tools: mcpData.features,
           require_approval: "never",
