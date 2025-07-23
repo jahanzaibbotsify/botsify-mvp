@@ -170,18 +170,10 @@ console.log(defaultPromptTemplate, "defaultPromptTemplate");
     chat.timestamp = new Date();
 
     // Only trigger AI response for user messages when connected
-    if (sender === 'user' && openAIStore.connected) {
+    if (sender === 'user') {
       console.log('Triggering AI response');
       await handleAIResponse(chat);
-    } else if (sender === 'user' && !openAIStore.connected) {
-      console.warn('OpenAI not connected, skipping AI response');
-      // Add a message to inform the user
-      addMessage(
-        chatId,
-        'OpenAI API is not connected. Please check your API key in the Settings page.',
-        'assistant'
-      );
-    }
+    } 
 
     return newMessage;
   }
@@ -580,12 +572,6 @@ Use the above connected services information to understand what tools and data s
         messageCount: messages.length,
         finalPromptLength: finalSystemPrompt.length
       });
-
-      // Check if OpenAI is connected
-      if (!openAIStore.connected) {
-        console.error('OpenAI is not connected. Cannot send messages.');
-        throw new Error('OpenAI is not connected. Please check your API key.');
-      }
 
       const stream = await openAIStore.streamChat(messages);
       // console.log('Stream object received:', stream);
