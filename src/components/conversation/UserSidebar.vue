@@ -137,7 +137,7 @@ const satisfactionPercentage = computed(() => {
 const satisfactionFillColor = computed(() => {
   const csr = Number(conversationStore.selectedConversation?.csr ?? 0)
   if (csr < 33) return 'var(--color-error)'
-  if (csr >= 33 && csr <= 66) return 'var(--color-neutral)'
+  if (csr >= 33 && csr <= 66) return 'var(--color-warning)'
   return 'var(--color-success)'
 })
 
