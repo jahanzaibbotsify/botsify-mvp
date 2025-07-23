@@ -125,7 +125,7 @@ function toggleStorySidebar() {
       <!-- Centered MessageInput if no messages or first message is empty -->
       <div v-if="showCenteredInput" class="centered-message-input">
         <div class="centered-heading">
-          <h1>Start building your AI chatbot prompt...</h1>
+          <h1>Start building your AI agent prompt...</h1>
         </div>
         <MessageInput :chatId="chatId" :centered="true" />
         <div class="suggestion-buttons">
