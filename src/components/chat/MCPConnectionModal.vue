@@ -237,14 +237,18 @@ async function connectToServer() {
 }
 
 async function disconnectFromServer() {
-  if (!selectedServer.value) return;
-
-  try {
-    await mcpStore.disconnectServer(selectedServer.value.id);
-    goBack();
-  } catch (err: any) {
-    error.value = 'Failed to disconnect: ' + err.message;
-  }
+  window.$confirm({
+    text: 'Are you sure you want to disconnect from this server?',
+    confirmButtonText: 'Yes, Disconnect it!',
+  }, async() => {
+    if (!selectedServer.value) return;
+    try {
+      await mcpStore.disconnectServer(selectedServer.value.id);
+      goBack();
+    } catch (err: any) {
+      error.value = 'Failed to disconnect: ' + err.message;
+    }
+  });
 }
 
 // Shopify helper methods

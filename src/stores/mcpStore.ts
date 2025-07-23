@@ -274,7 +274,7 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: true,
       authMethod: 'none',
       authLabel: 'Shopify Access Token',
-      features: ['list_orders', 'create_order', 'update_order', 'list_inventory', 'update_inventory', 'list_catalog', 'create_catalog_item'],
+      features: ['search_shop_catalog', 'get_product_details', 'search_shop_policies_and_faqs', 'update_cart', 'get_cart'],
       connection: {
         isConnected: false,
         mcp_id: null,
@@ -697,9 +697,16 @@ export const useMCPStore = defineStore('mcp', () => {
       // If mcp_id exists, try to disconnect
       if (server.connection?.mcp_id) {
         await botsifyApi.disconnectMCP(server.connection.mcp_id);
-        server.connection.mcp_id = null;
       }
-      server.connection.isConnected = false;
+      
+      // Reset connection state completely
+      server.connection = {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      };
+      
       saveToStorage();
     } catch (error) {
       console.error('Failed to disconnect from MCP server:', error);
