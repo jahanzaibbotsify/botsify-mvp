@@ -1237,12 +1237,6 @@ export class BotsifyApiService {
 
 
   async saveBotTemplates(chatsJson: string, templatesJson: string): Promise<void> {
-    console.log('🚀 Sending bot-update API request with:', {
-      chat_flow_size: chatsJson.length,
-      bot_flow_size: templatesJson.length,
-      bot_flow_preview: templatesJson.substring(0, 200) + '...'
-    });
-    
     axios.post(`${BOTSIFY_BASE_URL}/v1/bot-update`, {
       'apikey': useApiKeyStore().apiKey,
       'data' : {
@@ -1256,10 +1250,10 @@ export class BotsifyApiService {
       }
     }).then(response => {
       if (response.data.status == 'success') {
-        console.log('✅ Bot-update API success:', response.data.bot);
+        console.log('Message stored: ', response.data.bot);
       }
     }).catch((error) => {
-      console.error('❌ Bot-update API error:', error);
+      console.log('error:', error);
     });
   }
 

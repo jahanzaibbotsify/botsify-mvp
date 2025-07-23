@@ -12,7 +12,6 @@ import ToastPlugin, { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-bootstrap.css';
 import { useApiKeyStore } from './stores/apiKeyStore';
 import { useConversationStore } from './stores/conversationStore';
-import { useChatStore } from './stores/chatStore';
 
 import Swal from 'sweetalert2';
 
@@ -95,29 +94,17 @@ function getBotDetails(apikey: string) {
     }
   )
   .then(response => {
-    console.log('📡 Get-data API response received:', {
-      chat_flow_length: response.data.data.chat_flow?.length || 0,
-      bot_flow_length: response.data.data.bot_flow?.length || 0,
-      user_id: response.data.data.user_id
-    });
-    
-    // Save chat_flow to localStorage for persistence
+    console.log('ressssss ', response.data);
     localStorage.setItem('botsify_chats', response.data.data.chat_flow);
+    localStorage.setItem('botsify_prompt_templates', response.data.data.bot_flow );
     
-    // Set user ID
     const apiKeyStore = useApiKeyStore();
     apiKeyStore.setUserId(response.data.data.user_id);
-
-    // 🚀 Sync bot_flow to chatStore (this also updates localStorage)
-    const chatStore = useChatStore();
-    chatStore.setBotFlow(response.data.data.bot_flow);
-    
-    console.log('✅ Bot data synced: chatStore updated with API bot_flow');
 
     return true;
   })
   .catch(error => {
-    console.error('❌ Get-data API request error:', error);
+    console.error('API request error:', error);
     return false;
   });
 }

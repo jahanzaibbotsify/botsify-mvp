@@ -75,11 +75,7 @@ export const useChatStore = defineStore('chat', () => {
               createdAt: new Date(template.createdAt),
               updatedAt: new Date(template.updatedAt)
             }));
-            console.log('📦 Loaded prompt templates from localStorage:', {
-              count: globalPromptTemplates.value.length,
-              hasDefault: globalPromptTemplates.value.some(t => t.isDefault),
-              source: 'localStorage'
-            });
+            console.log('✅ Loaded prompt templates from storage:', globalPromptTemplates.value.length);
           } else {
             console.warn('⚠️ Stored templates is not an array, clearing storage');
             localStorage.removeItem('botsify_prompt_templates');
@@ -104,68 +100,12 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  // Verification function to ensure AI prompt is in bot_flow
-  function verifyAIPromptInBotFlow(expectedContent?: string): boolean {
-    try {
-      const hasAITemplate = globalPromptTemplates.value.some(t => 
-        t.name.includes('AI Prompt') || t.isDefault
-      );
-      
-      if (expectedContent) {
-        const hasExpectedContent = globalPromptTemplates.value.some(t => 
-          t.content.includes(expectedContent.substring(0, 50))
-        );
-        
-        console.log('🔍 AI Prompt verification:', {
-          hasAITemplate,
-          hasExpectedContent,
-          templateCount: globalPromptTemplates.value.length,
-          expectedContentPreview: expectedContent.substring(0, 50) + '...'
-        });
-        
-        return hasAITemplate && hasExpectedContent;
-      }
-      
-      return hasAITemplate;
-    } catch (error) {
-      console.error('❌ Error verifying AI prompt in bot_flow:', error);
-      return false;
-    }
-  }
-
   // Save data to localStorage
   function saveToTemplate() {
     try {
       const chatsJson = JSON.stringify(chats.value);
       const templatesJson = JSON.stringify(globalPromptTemplates.value);
-      
-      // 🔍 VERIFICATION: Check if latest AI prompt is included in bot_flow
-      const hasAIPromptTemplate = globalPromptTemplates.value.some(t => 
-        t.name.includes('AI Prompt') || t.isDefault
-      );
-      const latestTemplate = globalPromptTemplates.value
-        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
-      
-      console.log('💾 Saving to bot-update API:', {
-        chatCount: chats.value.length,
-        templateCount: globalPromptTemplates.value.length,
-        hasDefaultTemplate: globalPromptTemplates.value.some(t => t.isDefault),
-        hasAIPromptTemplate,
-        latestTemplatePreview: latestTemplate?.content?.substring(0, 100) + '...',
-        latestTemplateUpdated: latestTemplate?.updatedAt,
-        verification: 'AI prompt included in bot_flow'
-      });
-      
-      // 🔍 Final verification before API call
-      const finalVerification = verifyAIPromptInBotFlow();
-      console.log('🚀 Final bot_flow verification before API call:', {
-        passed: finalVerification,
-        templateCount: globalPromptTemplates.value.length,
-        readyForAPI: finalVerification ? '✅ All AI prompts included' : '⚠️ Missing AI prompts'
-      });
-      
       botsifyApi.saveBotTemplates(chatsJson, templatesJson);
-      console.log('✅ Bot-update API called with latest AI prompts in bot_flow');
 
       //save bot templates
     } catch (error) {
@@ -324,114 +264,7 @@ console.log(defaultPromptTemplate, "defaultPromptTemplate");
       chat.story.updatedAt = new Date();
     }
 
-    // 🚀 AUTO-SYNC: Automatically sync AI prompt to default template for bot_flow
-    syncStoryToDefaultTemplate(chatId, content);
-
     return chat.story;
-  }
-
-  // New function to sync bot_flow from API response
-  function setBotFlow(botFlowData: string | any[]) {
-    console.log('🔄 Syncing bot_flow from get-data API response');
-    
-    try {
-      let parsedBotFlow: any[] = [];
-      
-      // Handle both string and array formats
-      if (typeof botFlowData === 'string') {
-        if (botFlowData && botFlowData !== 'null' && botFlowData !== 'undefined') {
-          parsedBotFlow = JSON.parse(botFlowData);
-        }
-      } else if (Array.isArray(botFlowData)) {
-        parsedBotFlow = botFlowData;
-      }
-      
-      if (Array.isArray(parsedBotFlow) && parsedBotFlow.length > 0) {
-        // Update globalPromptTemplates with API data
-        globalPromptTemplates.value = parsedBotFlow.map((template: any) => ({
-          id: template.id || Date.now().toString() + Math.random().toString(36).substr(2, 9),
-          name: template.name || 'API Template',
-          content: template.content || '',
-          isDefault: template.isDefault || false,
-          createdAt: template.createdAt ? new Date(template.createdAt) : new Date(),
-          updatedAt: template.updatedAt ? new Date(template.updatedAt) : new Date()
-        }));
-        
-        // 🚀 CRITICAL: Update localStorage so loadFromStorage() doesn't override API data
-        const templatesJson = JSON.stringify(globalPromptTemplates.value);
-        localStorage.setItem('botsify_prompt_templates', templatesJson);
-        
-        console.log('✅ Bot_flow synced from API:', {
-          templateCount: globalPromptTemplates.value.length,
-          hasDefault: globalPromptTemplates.value.some(t => t.isDefault),
-          localStorage_updated: true,
-          source: 'get-data API'
-        });
-      } else {
-        console.log('ℹ️ No bot_flow templates found in API response');
-      }
-    } catch (error) {
-      console.error('❌ Error parsing bot_flow from API:', error);
-    }
-  }
-
-  // New function to sync story content to default template
-  function syncStoryToDefaultTemplate(chatId: string, content: string) {
-    console.log('🔄 Auto-syncing AI prompt to default template for bot_flow');
-    
-    // Skip if content is empty or invalid
-    if (!content || content.trim().length === 0) {
-      console.log('⚠️ Skipping sync - empty AI prompt content');
-      return;
-    }
-    
-    const defaultTemplateName = `AI Prompt - ${chatId}`;
-    
-    // Find existing default template for this chat
-    let defaultTemplate = globalPromptTemplates.value.find(t => 
-      t.name === defaultTemplateName || (t.isDefault && t.name.includes(chatId))
-    );
-
-    if (defaultTemplate) {
-      // Update existing default template
-      console.log('📝 Updating existing default template with latest AI prompt');
-      defaultTemplate.content = content;
-      defaultTemplate.updatedAt = new Date();
-      defaultTemplate.isDefault = true; // Ensure it remains default
-    } else {
-      // Create new default template
-      console.log('✨ Creating new default template for AI prompt');
-      
-      // Mark all existing templates as non-default
-      globalPromptTemplates.value.forEach(t => t.isDefault = false);
-      
-      defaultTemplate = {
-        id: `default_${chatId}_${Date.now()}`,
-        name: defaultTemplateName,
-        content: content,
-        isDefault: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      globalPromptTemplates.value.push(defaultTemplate);
-    }
-
-    console.log('✅ AI prompt synced to template:', {
-      templateId: defaultTemplate.id,
-      templateName: defaultTemplate.name,
-      contentLength: content.length,
-      isDefault: defaultTemplate.isDefault
-    });
-
-    // 🚀 CRITICAL: Immediately update localStorage to ensure bot_flow contains AI prompt
-    try {
-      const templatesJson = JSON.stringify(globalPromptTemplates.value);
-      localStorage.setItem('botsify_prompt_templates', templatesJson);
-      console.log('💾 AI prompt template immediately saved to localStorage for bot_flow');
-    } catch (error) {
-      console.error('❌ Failed to save AI prompt template to localStorage:', error);
-    }
   }
 
   function revertToPromptVersion(chatId: string, versionId: string) {
@@ -894,20 +727,7 @@ Use the above connected services information to understand what tools and data s
         chat.lastMessage = parsedResponse.chatResponse;
       }
       if (parsedResponse.aiPrompt) {
-        console.log('🤖 Processing AI prompt for bot_flow integration:', {
-          chatId: chat.id,
-          aiPromptLength: parsedResponse.aiPrompt.length,
-          aiPromptPreview: parsedResponse.aiPrompt.substring(0, 100) + '...'
-        });
-        
         updateStory(chat.id, parsedResponse.aiPrompt, true);
-        
-        // 🔍 Verify AI prompt is now in bot_flow
-        const isVerified = verifyAIPromptInBotFlow(parsedResponse.aiPrompt);
-        console.log('🔄 AI prompt processed - will be included in next bot-update API call', {
-          verified: isVerified,
-          status: isVerified ? '✅ Ready for bot-update' : '⚠️ Verification failed'
-        });
       }
 
       await nextTick();
@@ -1002,9 +822,6 @@ Use the above connected services information to understand what tools and data s
       // Always set typing to false when done
       isAIPromptGenerating.value = false;
       console.log('Typing indicator turned off');
-      
-      // 🚀 CRITICAL: Ensure AI prompt is fully synced before saving to bot_flow
-      console.log('📤 Preparing bot-update API call with complete bot_flow data...');
       saveToTemplate();
     }
   }
@@ -1422,8 +1239,6 @@ Keep flows organized, clear, and user-friendly.`,
     clearVersionHistory,
     clearChatMessages,
     removeLastMessage,
-    getConnectedServicesJson,
-    setBotFlow,
-    verifyAIPromptInBotFlow
+    getConnectedServicesJson
   };
 });
