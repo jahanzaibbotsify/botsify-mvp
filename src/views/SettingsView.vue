@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import ApiKeySettings from '@/components/settings/ApiKeySettings.vue';
 import SystemMessageSender from '@/components/chat/SystemMessageSender.vue';
 import ConfigurationTester from '@/components/chat/ConfigurationTester.vue';
 </script>
@@ -13,9 +12,6 @@ import ConfigurationTester from '@/components/chat/ConfigurationTester.vue';
     </div>
     
     <div class="settings-container">
-      <div class="settings-section">
-        <ApiKeySettings />
-      </div>
       
       <div class="settings-section">
         <SystemMessageSender />
