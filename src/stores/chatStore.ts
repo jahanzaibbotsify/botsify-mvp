@@ -16,11 +16,11 @@ export const useChatStore = defineStore('chat', () => {
   const globalPromptTemplates = ref<GlobalPromptTemplate[]>([]);
 
   // Load data from localStorage on initialization
-  function loadFromStorage() {
+  function loadFromStorage(userChats: string, aiPrompts: string) {
     try {
       console.log('🔍 Attempting to load data from localStorage');
-      const storedChats = localStorage.getItem('botsify_chats');
-      const storedTemplates = localStorage.getItem('botsify_prompt_templates');
+      const storedChats = userChats;
+      const storedTemplates = aiPrompts;
       const storedActiveChat = localStorage.getItem('botsify_active_chat');
 
       console.log('📊 Storage check:', {
@@ -1179,8 +1179,6 @@ Use the above connected services information to understand what tools and data s
     return true;
   }
 
-  // Initialize data
-  loadFromStorage();
 
   // Initialize with a default chat if none exists
   if (chats.value.length === 0) {
