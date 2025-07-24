@@ -1,12 +1,65 @@
-import { RouteRecordRaw } from 'vue-router'
+import { RouteRecordRaw, createRouter, createWebHistory } from 'vue-router'
 import ChatLayout from '../layouts/ChatLayout.vue'
+import AuthLayout from '../layouts/AuthLayout.vue'
 import NotFound from '@/views/NotFound.vue';
 import Unauthenticated from '@/views/Unauthenticated.vue';
 
 const routes: RouteRecordRaw[] = [
+  // Auth Routes (with AuthLayout)
+  {
+    path: '/auth',
+    component: AuthLayout,
+    children: [
+      {
+        path: 'login',
+        name: 'login',
+        component: () => import('../views/auth/LoginView.vue'),
+        meta: { requiresGuest: true }
+      },
+      {
+        path: 'signup',
+        name: 'signup',
+        component: () => import('../views/auth/SignupView.vue'),
+        meta: { requiresGuest: true }
+      },
+      {
+        path: 'forgot-password',
+        name: 'forgot-password',
+        component: () => import('../views/auth/ForgotPasswordView.vue'),
+        meta: { requiresGuest: true }
+      },
+      {
+        path: 'reset-password',
+        name: 'reset-password',
+        component: () => import('../views/auth/ResetPasswordView.vue'),
+        meta: { requiresGuest: true }
+      },
+      {
+        path: 'agentic-home',
+        name: 'agentic-home',
+        component: () => import('../views/auth/AgenticHomeView.vue'),
+        meta: { requiresAuth: false }
+      }
+    ]
+  },
+  // Standalone Routes (without AuthLayout)
+  {
+    path: '/pricing',
+    name: 'pricing',
+    component: () => import('../views/auth/PricingView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/select-agent',
+    name: 'agent-selection',
+    component: () => import('../views/auth/AgentSelectionView.vue'),
+    meta: { requiresAuth: false }
+  },
+  // Main App Routes  
   {
     path: '',
     component: ChatLayout,
+    meta: { requiresAuth: true },
     children: [
       {
         path: '/agent/:id',
@@ -21,6 +74,11 @@ const routes: RouteRecordRaw[] = [
         props: true
       },
       {
+        path: '/conversations',
+        name: 'conversations',
+        component: () => import('../views/ConversationView.vue')
+      },
+      {
         path: '/users',
         name: 'users',
         component: () => import('../views/UserView.vue')
@@ -31,6 +89,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/SettingsView.vue')
       }
     ]
+  },
+  // Redirect root to login
+  {
+    path: '/',
+    redirect: '/auth/login'
   },
   {
     path: '/unauthenticated',
@@ -44,4 +107,16 @@ const routes: RouteRecordRaw[] = [
   }
 ]
 
-export default routes
+// Create router instance
+const router = createRouter({
+  history: createWebHistory(),
+  routes
+})
+
+// Navigation guards (temporarily disabled for development)
+router.beforeEach(async (to, from, next) => {
+  // Allow access to all routes for now
+  next()
+})
+
+export default router

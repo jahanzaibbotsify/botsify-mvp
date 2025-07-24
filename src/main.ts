@@ -1,6 +1,5 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { createRouter, createWebHistory } from 'vue-router'
 import App from '@/App.vue'
 import './style.css'
 import 'primeicons/primeicons.css'
@@ -16,8 +15,8 @@ import { useChatStore } from './stores/chatStore';
 
 import Swal from 'sweetalert2';
 
-// Import routes
-import routes from '@/router'
+// Import router
+import router from '@/router'
 import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from './utils/config'
 (window as any).Swal = Swal;
 
@@ -108,25 +107,6 @@ function getBotDetails(apikey: string) {
     return false;
   });
 }
-
-// Create router instance
-const router = createRouter({
-  history: createWebHistory(),
-  routes
-})
-
-
-router.beforeEach(async (to, from, next) => {
-  console.log(from.name);
-  if (to.name === 'agent') {
-      return next();
-  } if (typeof to.name === 'undefined') {    
-    return next({ name: 'NotFound' });
-  } else {
-    return next();
-  }
-
-});
 
 // Create pinia store
 const pinia = createPinia()
