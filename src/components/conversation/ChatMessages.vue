@@ -31,7 +31,9 @@ const groupedMessages = computed(() => {
 
   props.messages.forEach(message => {
     const messageDate = message.timestamp
-    
+    if(message.content && (message.content === 'null' || message.content.trim() === '')) {
+      return // Skip empty messages
+    }
     if (messageDate !== currentDate) {
       if (currentGroup.length > 0) {
         groups.push({ date: currentDate, messages: currentGroup })
@@ -186,11 +188,10 @@ onMounted(() => {
             <div class="date-header">
               <span class="date-text">{{ formatTime(group.date) }}</span>
             </div>
-            
             <!-- Messages in Group -->
             <div class="group-messages">
               <ChatMessage 
-                v-for="(message, index) in group.messages.filter(m => m.content && m.content.trim() !== '')"
+                v-for="(message, index) in group.messages"
                 :key="message.id" 
                 :message="message"
                 :show-avatar="shouldShowAvatar(message, index, group.messages)"
