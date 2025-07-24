@@ -27,12 +27,12 @@ export const useChatStore = defineStore('chat', () => {
         hasStoredChats: !!storedChats,
         hasStoredTemplates: !!storedTemplates,
         hasStoredActiveChat: !!storedActiveChat
-      });
-
-      if (storedChats && storedChats !== 'null' && storedChats !== 'undefined') {
+      });      
+      
+      if (storedChats && storedChats.length > 4 && storedChats !== 'null' && storedChats !== 'undefined') {
         try {
           const parsedChats = JSON.parse(storedChats);
-          if (storedTemplates && storedTemplates !== 'null' && storedTemplates !== 'undefined') {
+          if (storedTemplates && storedTemplates.length > 2 && storedTemplates !== 'null' && storedTemplates !== 'undefined') {
             parsedChats[0].story = JSON.parse(storedTemplates);
           }else{
             parsedChats[0].story = JSON.parse('{}');

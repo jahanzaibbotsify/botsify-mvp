@@ -2,8 +2,11 @@
 import { onMounted, ref, computed } from 'vue';
 // import { useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
+import { useApiKeyStore } from "@/stores/apiKeyStore";
+import BotsifyLoader from './components/ui/BotsifyLoader.vue';
 
 // const router = useRouter();
+const isAuthenticated = computed(() => useApiKeyStore().apiKeyConfirmed);
 const chatStore = useChatStore();
 
 const showStorageWarning = ref(false);
@@ -79,6 +82,10 @@ onMounted(() => {
 
 <template>
   <div class="app-container">
+    <div v-if="!isAuthenticated" class="main-loading">
+      <botsify-loader />
+    </div>
+    <div v-else>  
       <div v-if="showStorageWarning" class="storage-warning">
         <div class="warning-content">
           <span class="warning-icon">⚠️</span>
@@ -95,7 +102,7 @@ onMounted(() => {
       </div>
 
       <router-view />
-      <!-- <ChatLayout /> -->
+      </div>
     </div>
 
 </template>
