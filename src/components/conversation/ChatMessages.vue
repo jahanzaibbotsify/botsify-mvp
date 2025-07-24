@@ -23,6 +23,26 @@ const messagesContainer = ref<HTMLDivElement>()
 const selectedImage = ref<string | null>(null)
 const showImageModal = ref(false)
 
+// Helper function to check if message should be skipped
+const shouldSkipMessage = (content: string): boolean => {
+  if (!content || content === 'null' || content.trim() === '') {
+    return true // Skip empty messages
+  }
+  
+  // Check for typing indicator
+  try {
+    const parsed = JSON.parse(content)
+    if (parsed.typing_indicator === true) {
+      return true // Skip typing indicator messages
+    }
+  } catch (error) {
+    // If parsing fails, it's not a JSON message, so don't skip
+    return false
+  }
+  
+  return false
+}
+
 // Group messages by date
 const groupedMessages = computed(() => {
   const groups: { date: Date; messages: Message[] }[] = []
@@ -31,9 +51,12 @@ const groupedMessages = computed(() => {
 
   props.messages.forEach(message => {
     const messageDate = message.timestamp
-    if(message.content && (message.content === 'null' || message.content.trim() === '')) {
-      return // Skip empty messages
+    
+    // Skip messages that should be filtered out
+    if (shouldSkipMessage(message.content)) {
+      return
     }
+    
     if (messageDate !== currentDate) {
       if (currentGroup.length > 0) {
         groups.push({ date: currentDate, messages: currentGroup })
