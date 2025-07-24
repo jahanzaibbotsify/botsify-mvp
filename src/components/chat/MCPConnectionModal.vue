@@ -237,14 +237,18 @@ async function connectToServer() {
 }
 
 async function disconnectFromServer() {
-  if (!selectedServer.value) return;
-
-  try {
-    await mcpStore.disconnectServer(selectedServer.value.id);
-    goBack();
-  } catch (err: any) {
-    error.value = 'Failed to disconnect: ' + err.message;
-  }
+  window.$confirm({
+    text: 'Are you sure you want to disconnect from this server?',
+    confirmButtonText: 'Yes, Disconnect it!',
+  }, async() => {
+    if (!selectedServer.value) return;
+    try {
+      await mcpStore.disconnectServer(selectedServer.value.id);
+      goBack();
+    } catch (err: any) {
+      error.value = 'Failed to disconnect: ' + err.message;
+    }
+  });
 }
 
 // Shopify helper methods
@@ -463,7 +467,9 @@ onBeforeUnmount(() => {
               class="server-card connected"
               @click="selectServer(config)"
             >
-              <div class="server-icon">{{ config.icon }}</div>
+              <div class="server-icon">
+                <img :src="`/mcp/${config.icon}`" :alt="config.name" width="40" height="40" />
+              </div>
               <div class="server-info">
                 <h4>{{ config.name }}</h4>
                 <p>{{ config.description }}</p>
@@ -503,7 +509,9 @@ onBeforeUnmount(() => {
               :class="{ connected: config.connection?.isConnected }"
               @click="selectServer(config)"
             >
-              <div class="server-icon">{{ config.icon }}</div>
+              <div class="server-icon">
+                <img :src="`/mcp/${config.icon}`" :alt="config.name" width="40" height="40" />
+              </div>
               <div class="server-info">
                 <h4>{{ config.name }}</h4>
                 <p>{{ config.description }}</p>
@@ -545,7 +553,9 @@ onBeforeUnmount(() => {
       <div v-else class="modal-body">
         <div class="server-details">
           <div class="server-header">
-            <div class="server-icon large">{{ selectedServer?.icon }}</div>
+            <div class="server-icon large">
+              <img :src="`/mcp/${selectedServer?.icon}`" :alt="selectedServer?.name" width="40" height="40" />
+            </div>
             <div class="server-title">
               <h3>{{ selectedServer?.name }}</h3>
               <p>{{ selectedServer?.description }}</p>

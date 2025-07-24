@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useConversationStore } from '@/stores/conversationStore'
 import {
@@ -15,14 +15,8 @@ const route = useRoute()
 const conversationStore = useConversationStore()
 
 // Local state
-const activeUserTab = ref('profile')
 const newMessage = ref('')
 const selectedLanguage = ref('en')
-
-// Computed properties
-const satisfactionPercentage = computed(() => {
-  return conversationStore.selectedConversation?.satisfaction || 25
-})
 
 // Methods
 const sendMessage = async (message: string, fileUrls?: string[]) => {
@@ -95,8 +89,6 @@ onMounted(async () => {
       <div class="chat-main">
         <!-- Chat Header -->
         <ChatHeader 
-          :user-name="conversationStore.selectedConversation?.title"
-          :status="conversationStore.selectedConversation?.active_for_bot ?? 0"
           :loading="conversationStore.loading"
           @translate-language="handleTranslateLanguage"
         />
@@ -121,13 +113,7 @@ onMounted(async () => {
       </div>
 
       <!-- Right Sidebar - User Details -->
-      <UserSidebar 
-        :user="conversationStore.selectedConversation"
-        :active-tab="activeUserTab"
-        :satisfaction-percentage="satisfactionPercentage"
-        :loading="conversationStore.loading"
-        @update:active-tab="activeUserTab = $event"
-      />
+      <UserSidebar :loading="conversationStore.loading" />
     </template>
     </div>
   </div>

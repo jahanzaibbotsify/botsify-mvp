@@ -79,6 +79,7 @@ export interface ExtendedChat extends Chat {
   phone?: string
   country?: string
   active_for_bot?: number;
+  csr?: string | null;
   os?: string
   lastPage?: string
   fbid?: string

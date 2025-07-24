@@ -79,14 +79,13 @@ export const useConversationStore = defineStore('conversation', () => {
     return {
       id: fbId,
       title: user.name,
-      timestamp: new Date(user.updated_at),
+      timestamp: new Date(user.last_converse),
       lastMessage: data.last_msg || '',
       unread: data.unread > 0,
       messages: [],
       email: user.email,
       status: user.status === 1 ? 'open' : 'closed',
       source: user.type === 'facebook' ? 'Facebook' : user.type === 'whatsapp' ? 'WhatsApp' : 'Web',
-      lastConverse: user.last_converse,
       phone: user.phone_number || undefined,
       country: user.country,
       os: user.os || undefined,
@@ -462,6 +461,7 @@ export const useConversationStore = defineStore('conversation', () => {
         if (selectedConversation.value) {
           selectedConversation.value.id = response.data.user.id.toString()
           selectedConversation.value.active_for_bot = response.data.user.active_for_bot
+          selectedConversation.value.csr = response.data.user.csr
           selectedConversation.value.email = response.data.user.email
           selectedConversation.value.assignedTo = response.data.agent_assigned
           selectedConversation.value.status = response.data.conv_status

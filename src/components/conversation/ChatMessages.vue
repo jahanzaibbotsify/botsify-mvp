@@ -4,6 +4,7 @@ import ChatMessage from './ChatMessage.vue'
 import MessageSkeleton from './MessageSkeleton.vue'
 import ImageModal from './ImageModal.vue'
 import type { Message } from '@/types'
+import { formatTime } from '@/utils'
 
 const props = defineProps<{
   messages: Message[]
@@ -24,13 +25,15 @@ const showImageModal = ref(false)
 
 // Group messages by date
 const groupedMessages = computed(() => {
-  const groups: { date: string; messages: Message[] }[] = []
-  let currentDate = ''
+  const groups: { date: Date; messages: Message[] }[] = []
+  let currentDate = new Date();
   let currentGroup: Message[] = []
 
   props.messages.forEach(message => {
-    const messageDate = new Date(message.timestamp).toDateString()
-    
+    const messageDate = message.timestamp
+    if(message.content && (message.content === 'null' || message.content.trim() === '')) {
+      return // Skip empty messages
+    }
     if (messageDate !== currentDate) {
       if (currentGroup.length > 0) {
         groups.push({ date: currentDate, messages: currentGroup })
@@ -49,26 +52,6 @@ const groupedMessages = computed(() => {
   return groups
 })
 
-// Format date for display
-const formatDateHeader = (dateString: string) => {
-  const date = new Date(dateString)
-  const today = new Date()
-  const yesterday = new Date(today)
-  yesterday.setDate(yesterday.getDate() - 1)
-
-  if (date.toDateString() === today.toDateString()) {
-    return 'Today'
-  } else if (date.toDateString() === yesterday.toDateString()) {
-    return 'Yesterday'
-  } else {
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    })
-  }
-}
 
 // Check if message should show avatar (first message from sender in a group)
 const shouldShowAvatar = (message: Message, index: number, messages: Message[]) => {
@@ -198,18 +181,17 @@ onMounted(() => {
         <div v-else class="messages-list">
           <div 
             v-for="group in groupedMessages" 
-            :key="group.date"
+            :key="group.date.getTime()"
             class="message-group"
           >
             <!-- Date Header -->
             <div class="date-header">
-              <span class="date-text">{{ formatDateHeader(group.date) }}</span>
+              <span class="date-text">{{ formatTime(group.date) }}</span>
             </div>
-            
             <!-- Messages in Group -->
             <div class="group-messages">
               <ChatMessage 
-                v-for="(message, index) in group.messages.filter(m => m.content && m.content.trim() !== '')"
+                v-for="(message, index) in group.messages"
                 :key="message.id" 
                 :message="message"
                 :show-avatar="shouldShowAvatar(message, index, group.messages)"

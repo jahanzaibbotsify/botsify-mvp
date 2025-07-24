@@ -12,13 +12,18 @@ export const useMCPStore = defineStore('mcp', () => {
       name: 'GitHub',
       description: 'Access GitHub repositories, issues, and pull requests',
       category: 'Development',
-      icon: '🐙',
+      icon: 'github.svg',
       apiKeyRequired: true,
       botIdRequired: true,
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'GitHub Personal Access Token',
-      features: ['Repository access', 'Issue management', 'Pull requests', 'Code search'],
+      features: [
+        'list_repositories', 'get_repository', 'search_repositories',
+        'list_issues', 'create_issue', 'update_issue', 'close_issue',
+        'list_pull_requests', 'create_pull_request', 'merge_pull_request',
+        'search_code', 'get_file_content',
+      ],
       connection: {
         isConnected: false,
         mcp_id: null,
@@ -50,13 +55,13 @@ export const useMCPStore = defineStore('mcp', () => {
       name: 'Slack',
       description: 'Send messages and interact with Slack workspaces',
       category: 'Communication',
-      icon: '💬',
+      icon: 'slack.svg',
       apiKeyRequired: true,
       botIdRequired: true,
       isPopular: true,
       authMethod: 'bearer_token',
       authLabel: 'Slack Bot Token',
-      features: ['Send messages', 'Channel management', 'User lookup', 'File sharing'],
+      features: ['send_message', 'send_direct_message', 'list_channels', 'join_channel', 'create_channel', 'list_users', 'get_user_info'],
       connection: {
         isConnected: false,
         mcp_id: null,
@@ -69,13 +74,13 @@ export const useMCPStore = defineStore('mcp', () => {
     //   name: 'Google Drive',
     //   description: 'Access and manage Google Drive files and folders',
     //   category: 'Storage',
-    //   icon: '📁',
+    //   icon: 'google-drive.svg',
     //   apiKeyRequired: true,
     //   botIdRequired: true,
     //   isPopular: true,
     //   authMethod: 'oauth',
     //   authLabel: 'Google OAuth Token',
-    //   features: ['File access', 'Folder management', 'Document creation', 'Sharing controls'],
+    //   features: [ 'list_files', 'create_file', 'update_file', 'delete_file', 'list_folders', 'create_folder', 'share_file', 'update_permissions'],
     //   connection: {
     //     isConnected: false,
     //     mcp_id: null,
@@ -164,13 +169,25 @@ export const useMCPStore = defineStore('mcp', () => {
       name: 'Google Calendar',
       description: 'Manage calendar events and schedules',
       category: 'Productivity',
-      icon: '📅',
+      icon: 'google-calendar.svg',
       apiKeyRequired: true,
       botIdRequired: true,
       isPopular: false,
       authMethod: 'oauth',
       authLabel: 'Google OAuth Token',
-      features: ['Event management', 'Schedule viewing', 'Meeting creation', 'Reminder setup'],
+      features: [
+        'create_event',
+        'list_events',
+        'update_event',
+        'delete_event',
+        'get_event',
+        'list_calendars',
+        'get_calendar',
+        'create_calendar',
+        'update_calendar',
+        'delete_calendar',
+        'set_reminder'
+      ],
       connection: {
         isConnected: false,
         mcp_id: null,
@@ -221,13 +238,24 @@ export const useMCPStore = defineStore('mcp', () => {
       name: 'Stripe',
       description: 'Process payments and manage billing',
       category: 'Payments',
-      icon: '💳',
+      icon: 'stripe.svg',
       apiKeyRequired: true,
       botIdRequired: true,
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'Stripe Secret Key',
-      features: ['Payment processing', 'Subscription management', 'Customer billing', 'Financial reporting'],
+      features: [
+        'create_payment_intent', 'capture_payment', 'list_payment_intents', 'list_prices',
+        'list_subscriptions', 'cancel_subscription',
+        'list_invoices', 'create_invoice_item', 'finalize_invoice',
+        'retrieve_balance', 'list_transactions',
+        'list_refunds',
+        'update_dispute', 'list_disputes',
+        'create_payment_link',
+        'list_coupons',
+        'list_customers', 'update_customer', 'get_customer',
+        'update_product', 'create_price'
+      ],
       connection: {
         isConnected: false,
         mcp_id: null,
@@ -240,13 +268,13 @@ export const useMCPStore = defineStore('mcp', () => {
       name: 'Shopify',
       description: 'Manage e-commerce store and products (custom domain)',
       category: 'E-commerce',
-      icon: '🛒',
+      icon: 'shopify.svg',
       apiKeyRequired: false,
       botIdRequired: true,
       isPopular: true,
       authMethod: 'none',
       authLabel: 'Shopify Access Token',
-      features: ['Product management', 'Order processing', 'Customer data', 'Store analytics'],
+      features: ['search_shop_catalog', 'get_product_details', 'search_shop_policies_and_faqs', 'update_cart', 'get_cart'],
       connection: {
         isConnected: false,
         mcp_id: null,
@@ -259,13 +287,13 @@ export const useMCPStore = defineStore('mcp', () => {
       name: 'PayPal',
       description: 'Manage PayPal payments and transactions',
       category: 'Payments',
-      icon: '💰',
+      icon: 'paypal.svg',
       apiKeyRequired: true,
       botIdRequired: false,
       isPopular: true,
       authMethod: 'oauth',
       authLabel: 'PayPal OAuth Token',
-      features: ['Payment processing', 'Transaction history', 'Refund management', 'Merchant services'],
+      features: ['create_payment', 'execute_payment', 'list_payments', 'get_refund', 'list_transactions', 'get_transaction'],
       connection: {
         isConnected: false,
         mcp_id: null,
@@ -278,13 +306,18 @@ export const useMCPStore = defineStore('mcp', () => {
       name: 'Gmail',
       description: 'Send and receive emails with Gmail integration',
       category: 'Communication',
-      icon: '📧',
+      icon: 'google-gmail.svg',
       apiKeyRequired: true,
       botIdRequired: true,
       isPopular: true,
       authMethod: 'oauth',
       authLabel: 'Gmail OAuth Token',
-      features: ['Send email', 'Read inbox', 'Manage labels', 'Attachment handling'],
+      features: [
+        'send_email',
+        'read_inbox',
+        'manage_labels',
+        'handle_attachments'
+      ],
       connection: {
         isConnected: false,
         mcp_id: null,
@@ -297,13 +330,18 @@ export const useMCPStore = defineStore('mcp', () => {
       name: 'Zendesk',
       description: 'Manage support tickets and customer interactions',
       category: 'Support',
-      icon: '🎫',
+      icon: 'zendesk.svg',
       apiKeyRequired: true,
       botIdRequired: true,
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'Zendesk API Key',
-      features: ['Ticket management', 'Customer lookup', 'Reply to tickets', 'Status updates'],
+      features: [
+        'ticket_management',
+        'customer_lookup',
+        'reply_tickets',
+        'status_update'
+      ],
       connection: {
         isConnected: false,
         mcp_id: null,
@@ -316,13 +354,18 @@ export const useMCPStore = defineStore('mcp', () => {
       name: 'HubSpot',
       description: 'Manage CRM contacts, deals, and marketing',
       category: 'CRM',
-      icon: '🌀',
+      icon: 'hubspot.svg',
       apiKeyRequired: true,
       botIdRequired: true,
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'HubSpot API Key',
-      features: ['Contact management', 'Deal tracking', 'Marketing automation', 'Email campaigns'],
+      features: [
+        'contact_management',
+        'deal_tracking',
+        'marketing_automation',
+        'email_campaigns'
+      ],
       connection: {
         isConnected: false,
         mcp_id: null,
@@ -335,13 +378,18 @@ export const useMCPStore = defineStore('mcp', () => {
       name: 'Zoho',
       description: 'Access Zoho CRM and business tools',
       category: 'CRM',
-      icon: '🧩',
+      icon: 'zoho.svg',
       apiKeyRequired: true,
       botIdRequired: true,
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'Zoho API Key',
-      features: ['CRM access', 'Lead management', 'Workflow automation', 'Email integration'],
+      features: [
+        'crm_access',
+        'lead_management',
+        'workflow_automation',
+        'email_integration'
+      ],
       connection: {
         isConnected: false,
         mcp_id: null,
@@ -354,13 +402,18 @@ export const useMCPStore = defineStore('mcp', () => {
       name: 'Google Sheet',
       description: 'Read and write to Google Sheets',
       category: 'Productivity',
-      icon: '📊',
+      icon: 'google-sheet.svg',
       apiKeyRequired: true,
       botIdRequired: true,
       isPopular: true,
       authMethod: 'oauth',
       authLabel: 'Google OAuth Token',
-      features: ['Read sheets', 'Write data', 'Update rows', 'Sheet management'],
+      features: [
+        'read_sheets',
+        'write_data',
+        'update_rows',
+        'manage_sheets'
+      ],
       connection: {
         isConnected: false,
         mcp_id: null,
@@ -644,9 +697,16 @@ export const useMCPStore = defineStore('mcp', () => {
       // If mcp_id exists, try to disconnect
       if (server.connection?.mcp_id) {
         await botsifyApi.disconnectMCP(server.connection.mcp_id);
-        server.connection.mcp_id = null;
       }
-      server.connection.isConnected = false;
+      
+      // Reset connection state completely
+      server.connection = {
+        isConnected: false,
+        mcp_id: null,
+        apiKey: null,
+        systemPrompt: null
+      };
+      
       saveToStorage();
     } catch (error) {
       console.error('Failed to disconnect from MCP server:', error);
