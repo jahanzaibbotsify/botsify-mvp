@@ -107,7 +107,6 @@ function deployAI() {
   }
   window.$confirm({
     text: "Do you really want to deploy your AI agent? This will make it available for use.",
-    confirmButtonColor: "#00A3FF",
     confirmButtonText: "Yes, Deploy it!",
     cancelButtonText: "No, Cancel",
     animation: false,
