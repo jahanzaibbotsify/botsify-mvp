@@ -12,6 +12,7 @@ import ToastPlugin, { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-bootstrap.css';
 import { useApiKeyStore } from './stores/apiKeyStore';
 import { useConversationStore } from './stores/conversationStore';
+import { useChatStore } from './stores/chatStore';
 
 import Swal from 'sweetalert2';
 
@@ -95,13 +96,12 @@ function getBotDetails(apikey: string) {
   )
   .then(response => {
     console.log('ressssss ', response.data);
-    localStorage.setItem('botsify_chats', response.data.data.chat_flow);
-    localStorage.setItem('botsify_prompt_templates', response.data.data.bot_flow );
     
     const apiKeyStore = useApiKeyStore();
     apiKeyStore.setUserId(response.data.data.user_id);
+    apiKeyStore.setApiKey(response.data.data.apikey);
 
-    return true;
+    return response.data.data;
   })
   .catch(error => {
     console.error('API request error:', error);
@@ -180,9 +180,9 @@ async function confirmApiKey() {
     if (apikey) {
       const bot = await getBotDetails(apikey);    
       if (bot) {
-        const apiKeyStore = useApiKeyStore();
-        apiKeyStore.setApiKey(apikey);
-        
+        // loading stored chats and ai prompts
+        const chatStore= useChatStore();
+        chatStore.loadFromStorage(bot.chat_flow, bot.bot_flow);
         // Initialize Firebase after API key is set
         console.log('🔥 Initializing Firebase in main.ts...');
         try {
