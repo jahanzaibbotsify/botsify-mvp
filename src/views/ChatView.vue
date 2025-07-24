@@ -106,6 +106,7 @@ function toggleStorySidebar() {
     <ApiErrorNotification />
     <ChatHeader 
       v-if="chat"
+      :chatId="chat.id"
       :title="chat.title"
       :has-prompt-content="hasPromptContent"
       :latest-prompt-content="latestPromptContent"

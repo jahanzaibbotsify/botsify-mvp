@@ -106,14 +106,14 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   // Save data to localStorage
-  function saveToTemplate() {
+  function saveToTemplate(remove_previous_response_id: boolean = false) {
     try {
       const chatRecords = JSON.parse(JSON.stringify(chats.value[0]??''));      
       const aiPrompt = JSON.stringify(chatRecords.story ?? {});
       delete chatRecords.story;
       const chatsJson = JSON.stringify([chatRecords]);
       
-      botsifyApi.saveBotTemplates(chatsJson, aiPrompt);
+      botsifyApi.saveBotTemplates(chatsJson, aiPrompt, remove_previous_response_id);
 
       //save bot templates
     } catch (error) {
@@ -260,8 +260,17 @@ console.log(defaultPromptTemplate, "defaultPromptTemplate");
         chat.story.activeVersionId = newVersion.id;
       }
 
+      // update content
       chat.story.content = content;
       chat.story.updatedAt = new Date();
+
+      // update the active version 
+      const activeVersion = chat.story.versions.find(v => v.isActive);
+      if (activeVersion) {
+        activeVersion.content = content;
+        activeVersion.updatedAt = new Date();
+      }
+
     }
 
     return chat.story;
@@ -721,7 +730,7 @@ Use the above connected services information to understand what tools and data s
         chat.lastMessage = parsedResponse.chatResponse;
       }
       if (parsedResponse.aiPrompt) {
-        updateStory(chat.id, parsedResponse.aiPrompt, true);
+        updateStory(chat.id, parsedResponse.aiPrompt, false);
       }
 
       await nextTick();
@@ -1175,7 +1184,7 @@ Use the above connected services information to understand what tools and data s
   // Function to clear message history for a specific chat
   function clearChatMessages() {
     chats.value = [];
-    saveToTemplate();
+    saveToTemplate(true);
     return true;
   }
 

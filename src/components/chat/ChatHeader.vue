@@ -59,6 +59,7 @@ import { BOTSIFY_WEB_URL } from '@/utils/config';
 import { useChatStore } from '@/stores/chatStore';
 
 interface Props {
+  chatId: string,
   title: string;
   hasPromptContent: boolean;
   latestPromptContent: string;
@@ -120,6 +121,8 @@ async function deploying(content: string){
   isDeployingAI.value = true;
   try {
     const result = await botsifyApi.deployAiAgent(content);
+    chatStore.updateStory(props.chatId, content, true);
+    chatStore.saveToTemplate();
     if (result.success) {
       window.$toast.success(`🚀 ${result.message}`);
     } else {

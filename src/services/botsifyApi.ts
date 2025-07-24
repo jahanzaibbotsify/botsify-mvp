@@ -1149,13 +1149,14 @@ export class BotsifyApiService {
   }
 
 
-  async saveBotTemplates(chatsJson: string, templatesJson: string): Promise<void> {
+  async saveBotTemplates(chatsJson: string, templatesJson: string, remove_agent_previous_response_id: boolean): Promise<void> {
     axios.post(`${BOTSIFY_BASE_URL}/v1/bot-update`, {
       'apikey': useApiKeyStore().apiKey,
       'data' : {
         chat_flow: chatsJson,
-        bot_flow: templatesJson
-      }
+        bot_flow: templatesJson,
+      },
+      remove_agent_previous_response_id: remove_agent_previous_response_id
     }, {
       headers: {
         'Content-Type': 'application/json',

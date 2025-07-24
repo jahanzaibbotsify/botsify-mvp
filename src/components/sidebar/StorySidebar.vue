@@ -103,12 +103,18 @@ function cancelEditing() {
 
 function saveEdit() {
   if (editContent.value.trim()) {
-    chatStore.updateStory(props.chatId, editContent.value.trim(), true);
+    chatStore.updateStory(props.chatId, editContent.value.trim(), false);
     isEditing.value = false;
     editContent.value = '';
 
     // Force save to ensure persistence
-    chatStore.saveToTemplate();
+    try {
+      chatStore.saveToTemplate();
+      window.$toast.success('Prompt updated successfully!');
+    } catch (error) {
+      console.error('Error saving prompt:', error);
+      window.$toast.error('Failed to save prompt. Please try again.');
+    }
   }
 }
 
