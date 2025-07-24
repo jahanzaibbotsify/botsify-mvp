@@ -21,6 +21,10 @@ import routes from '@/router'
 import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from './utils/config'
 (window as any).Swal = Swal;
 
+// set api key to localStorage
+localStorage.setItem('bot_api_key', window.location.pathname.split('/')[2]);
+
+
 // Import OpenAI debug utility in development
 if (import.meta.env.DEV) {
   import('./utils/openai-debug').then(({ OpenAIDebugger }) => {
@@ -98,8 +102,8 @@ function getBotDetails(apikey: string) {
     console.log('ressssss ', response.data);
     
     const apiKeyStore = useApiKeyStore();
+    apiKeyStore.setApiKeyConfirmed(true);
     apiKeyStore.setUserId(response.data.data.user_id);
-    apiKeyStore.setApiKey(response.data.data.apikey);
 
     return response.data.data;
   })
@@ -118,8 +122,28 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   console.log(from.name);
-  if (to.name === 'agent') {
+  if (to.name === 'agent' || to.name === 'conversation') {
+    let apikey = localStorage.getItem('bot_api_key') ?? '';
+    if (apikey) {
+      const bot = await getBotDetails(apikey);    
+      if (bot) {
+        // loading stored chats and ai prompts
+        const chatStore= useChatStore();
+        chatStore.loadFromStorage(bot.chat_flow, bot.bot_flow);
+        // Initialize Firebase after API key is set
+        console.log('🔥 Initializing Firebase in main.ts...');
+        try {
+          const conversationStore = useConversationStore();
+          conversationStore.initializeFirebase();
+          console.log('✅ Firebase initialized successfully in main.ts');
+        } catch (error) {
+          console.error('❌ Error initializing Firebase in main.ts:', error);
+        }
+        
       return next();
+      }
+    }
+    // window.location.href = 'https://app.botsify.com/login';
   } if (typeof to.name === 'undefined') {    
     return next({ name: 'NotFound' });
   } else {
@@ -173,39 +197,5 @@ if (!localStorageAvailable) {
 
 
 
-async function confirmApiKey() { 
-  const params = window.location.pathname.split('/');
-  if (['agent', 'conversation'].includes(params[1])) {
-    let apikey = params[2];
-    if (apikey) {
-      const bot = await getBotDetails(apikey);    
-      if (bot) {
-        // loading stored chats and ai prompts
-        const chatStore= useChatStore();
-        chatStore.loadFromStorage(bot.chat_flow, bot.bot_flow);
-        // Initialize Firebase after API key is set
-        console.log('🔥 Initializing Firebase in main.ts...');
-        try {
-          const conversationStore = useConversationStore();
-          conversationStore.initializeFirebase();
-          console.log('✅ Firebase initialized successfully in main.ts');
-        } catch (error) {
-          console.error('❌ Error initializing Firebase in main.ts:', error);
-        }
-        
-        return true;
-      }
-    }
-    // window.location.href = 'https://app.botsify.com/login';  
-    throw new Error('unauthenticated');
-  }
-  return true;
-}
-
-
 // mount app
-confirmApiKey().then(() => {
-  app.mount('#app');
-}).catch((error) => {
-  console.error('Error during app initialization:', error);
-}); 
+app.mount('#app'); 
