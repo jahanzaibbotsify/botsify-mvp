@@ -39,7 +39,7 @@
       <button 
         class="user-tab" 
         :class="{ active: activeTab === 'profile', disabled: !user?.fbid }"
-        @click="user?.fbid && $emit('update:activeTab', 'profile')"
+        @click="setActiveTab('profile')"
         :disabled="!user?.fbid"
       >
         <i class="pi pi-user"></i>
@@ -47,7 +47,7 @@
       <button 
         class="user-tab" 
         :class="{ active: activeTab === 'data', disabled: !user?.fbid }"
-        @click="user?.fbid && $emit('update:activeTab', 'data')"
+        @click="setActiveTab('data')"
         :disabled="!user?.fbid"
       >
         <i class="pi pi-database"></i>
@@ -191,6 +191,10 @@ const deleteConversation = async () => {
       window.$toast.error('An error occurred while deleting the conversation')
     }
   })
+}
+
+const setActiveTab = (tab: string) => {
+  activeTab.value = tab;
 }
 
 const handleClickOutside = (event: Event) => {
