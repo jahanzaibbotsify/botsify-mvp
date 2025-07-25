@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, watch, ref } from 'vue';
+import { computed, onMounted, watch, ref, nextTick } from 'vue';
 import type { Message } from '@/types';
 import { marked } from 'marked';
 
@@ -144,10 +144,30 @@ const renderTemplate = (payload: any): string => {
 const renderGenericTemplate = (elements: any[]): string => {
   if (!elements || elements.length === 0) return '';
   
-  let html = '<div class="generic-template">';
-  elements.forEach(element => {
+  // If only one element, render normally
+  if (elements.length === 1) {
+    const element = elements[0];
+    return `
+      <div class="generic-template single-element">
+        <div class="template-element">
+          ${element.image_url ? `<div class="template-image-container">
+            <img src="${element.image_url}" alt="${element.title}" class="template-image" />
+          </div>` : ''}
+          <div class="template-content">
+            <h4 class="template-title">${element.title || ''}</h4>
+            ${element.subtitle ? `<p class="template-subtitle">${element.subtitle}</p>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  // If multiple elements, render as slider
+  let html = '<div class="generic-template slider-container">';
+  html += '<div class="template-slider">';
+  elements.forEach((element, index) => {
     html += `
-      <div class="template-element">
+      <div class="template-element slide" data-slide="${index}">
         ${element.image_url ? `<div class="template-image-container">
           <img src="${element.image_url}" alt="${element.title}" class="template-image" />
         </div>` : ''}
@@ -158,6 +178,17 @@ const renderGenericTemplate = (elements: any[]): string => {
       </div>
     `;
   });
+  html += '</div>';
+  
+  // Add navigation dots if more than 1 element
+  if (elements.length > 1) {
+    html += '<div class="slider-dots">';
+    elements.forEach((_, index) => {
+      html += `<button class="slider-dot ${index === 0 ? 'active' : ''}" data-slide="${index}"></button>`;
+    });
+    html += '</div>';
+  }
+  
   html += '</div>';
   return html;
 };
@@ -241,6 +272,64 @@ const handleImageClick = (url: string) => {
   emit('image-click', url);
 };
 
+// Slider functionality
+const initializeSlider = () => {
+  const sliders = messageRef.value?.querySelectorAll('.slider-container');
+  sliders?.forEach(slider => {
+    const sliderTrack = slider.querySelector('.template-slider') as HTMLElement;
+    const dots = slider.querySelectorAll('.slider-dot');
+    let currentSlide = 0;
+    
+    const goToSlide = (index: number) => {
+      if (sliderTrack && index >= 0 && index < dots.length) {
+        currentSlide = index;
+        sliderTrack.style.transform = `translateX(-${index * 100}%)`;
+        
+        // Update active dot
+        dots.forEach((dot, i) => {
+          dot.classList.toggle('active', i === index);
+        });
+      }
+    };
+    
+    // Remove existing click handlers to prevent duplicates
+    dots.forEach((dot) => {
+      const newDot = dot.cloneNode(true);
+      dot.parentNode?.replaceChild(newDot, dot);
+    });
+    
+    // Add click handlers to dots
+    slider.querySelectorAll('.slider-dot').forEach((dot, index) => {
+      dot.addEventListener('click', () => goToSlide(index));
+    });
+    
+    // Add touch/swipe support for mobile
+    let startX = 0;
+    let endX = 0;
+    
+    const handleTouchStart = (e: TouchEvent) => {
+      startX = e.touches[0].clientX;
+    };
+    
+    const handleTouchEnd = (e: TouchEvent) => {
+      endX = e.changedTouches[0].clientX;
+      const diff = startX - endX;
+      const threshold = 50;
+      
+      if (Math.abs(diff) > threshold) {
+        if (diff > 0 && currentSlide < dots.length - 1) {
+          goToSlide(currentSlide + 1);
+        } else if (diff < 0 && currentSlide > 0) {
+          goToSlide(currentSlide - 1);
+        }
+      }
+    };
+    
+    sliderTrack?.addEventListener('touchstart', handleTouchStart);
+    sliderTrack?.addEventListener('touchend', handleTouchEnd);
+  });
+};
+
 // Watch for content changes
 watch(() => props.message.content, (newContent, oldContent) => {
   if (newContent !== oldContent) {
@@ -248,6 +337,10 @@ watch(() => props.message.content, (newContent, oldContent) => {
       id: props.message.id,
       hasContent: !!newContent,
       length: newContent?.length || 0
+    });
+    // Re-initialize slider after content update
+    nextTick(() => {
+      initializeSlider();
     });
   }
 });
@@ -258,6 +351,11 @@ onMounted(() => {
     sender: props.message.sender,
     hasContent: !!props.message.content,
     hasAttachments: !!props.message.attachments?.length
+  });
+  
+  // Initialize slider after mount
+  nextTick(() => {
+    initializeSlider();
   });
 });
 </script>
@@ -620,7 +718,28 @@ onMounted(() => {
   margin: 0.75rem 0;
 }
 
+.content-text :deep(.generic-template.single-element) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.content-text :deep(.generic-template.slider-container) {
+  position: relative;
+  width: 100%;
+  max-width: 400px; /* Adjust as needed */
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.content-text :deep(.template-slider) {
+  display: flex;
+  transition: transform 0.3s ease-in-out;
+}
+
 .content-text :deep(.template-element) {
+  flex: 0 0 100%; /* Ensure each slide takes full width */
   border: 1px solid var(--color-border);
   border-radius: 12px;
   overflow: hidden;
@@ -633,6 +752,10 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
 }
 
+.content-text :deep(.template-element.slide) {
+  min-width: 100%; /* Ensure slides take full width */
+}
+
 .content-text :deep(.template-image-container) {
   position: relative;
   overflow: hidden;
@@ -640,7 +763,7 @@ onMounted(() => {
 
 .content-text :deep(.template-image) {
   width: 100%;
-  height: 160px;
+  height: 160px; /* Adjust as needed */
   object-fit: cover;
 }
 
@@ -710,12 +833,65 @@ onMounted(() => {
   font-weight: 400;
 }
 
+.content-text :deep(.slider-dots) {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+  gap: 0.5rem;
+}
+
+.content-text :deep(.slider-dot) {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #e2e8f0;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+  margin: 0 2px;
+}
+
+.content-text :deep(.slider-dot:hover) {
+  background-color: #cbd5e1;
+  transform: scale(1.2);
+}
+
+.content-text :deep(.slider-dot.active) {
+  background-color: var(--color-primary);
+  transform: scale(1.1);
+}
+
 /* Attachments */
 .attachments-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 0.75rem;
   margin-top: 0.75rem;
+}
+
+/* Attachment image styles */
+.content-text :deep(.attachment-image) {
+  position: relative;
+  overflow: hidden;
+  max-width: 300px;
+  max-height: 200px;
+  border-radius: 8px;
+  margin: 0.5rem 0;
+}
+
+.content-text :deep(.attachment-image img) {
+  width: 100%;
+  height: auto;
+  max-height: 200px;
+  object-fit: cover;
+  display: block;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.content-text :deep(.attachment-image img:hover) {
+  transform: scale(1.05);
 }
 
 .attachment-item {
@@ -736,7 +912,7 @@ onMounted(() => {
 
 .preview-image {
   width: 100%;
-  height: 120px;
+  height: 120px; /* Adjust as needed */
   object-fit: cover;
   transition: transform 0.2s ease;
 }
@@ -877,6 +1053,20 @@ onMounted(() => {
   .content-text :deep(pre) {
     padding: 0.75rem;
     font-size: 0.8rem;
+  }
+  
+  /* Mobile slider adjustments */
+  .content-text :deep(.generic-template.slider-container) {
+    max-width: 100%;
+  }
+  
+  .content-text :deep(.attachment-image) {
+    max-width: 250px;
+    max-height: 150px;
+  }
+  
+  .content-text :deep(.attachment-image img) {
+    max-height: 150px;
   }
 }
 

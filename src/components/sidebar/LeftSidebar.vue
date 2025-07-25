@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted, defineEmits } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
