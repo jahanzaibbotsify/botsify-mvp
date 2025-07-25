@@ -97,7 +97,7 @@ async function testAI() {
     return;
   }
   const apiKey = (await import('@/stores/apiKeyStore')).useApiKeyStore().apiKey;
-  const url = `${BOTSIFY_WEB_URL}/web-bot/agent/${apiKey}`;
+  const url = `${BOTSIFY_WEB_URL}/web-bot/agent/${apiKey}?testagent=true`;
   window.open(url, '_blank');
 }
 
