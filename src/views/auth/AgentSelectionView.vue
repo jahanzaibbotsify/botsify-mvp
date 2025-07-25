@@ -15,6 +15,11 @@ const selectedAgentForDetails = ref<Agent | null>(null)
 const activeTab = ref<'my-agents' | 'shared-agents'>('my-agents')
 const activeMenuId = ref<string | null>(null)
 
+// Edit agent modal state
+const showEditModal = ref(false)
+const editingAgent = ref<Agent | null>(null)
+const editAgentNameValue = ref('')
+
 // Filter agents based on search, category, and tab
 const filteredAgents = computed(() => {
   let agents = authStore.agents
@@ -121,7 +126,9 @@ const toggleAgentMenu = (agentId: string) => {
 }
 
 const editAgentName = (agent: Agent) => {
-  console.log('Edit agent name:', agent.name)
+  editingAgent.value = agent
+  editAgentNameValue.value = agent.name
+  showEditModal.value = true
   activeMenuId.value = null
 }
 
@@ -148,6 +155,28 @@ const exportData = (agent: Agent) => {
 const addAgent = () => {
   console.log('Add new agent')
   // Redirect to agent creation page or open modal
+}
+
+const createAgent = () => {
+  console.log('Create new agent')
+  // Redirect to agent creation page or open modal
+  // router.push('/create-agent')
+}
+
+// Modal functions
+const closeEditModal = () => {
+  showEditModal.value = false
+  editingAgent.value = null
+  editAgentNameValue.value = ''
+}
+
+const saveAgentName = () => {
+  if (editingAgent.value && editAgentNameValue.value.trim()) {
+    // Update the agent name in the store
+    editingAgent.value.name = editAgentNameValue.value.trim()
+    console.log('Agent name updated:', editAgentNameValue.value)
+    closeEditModal()
+  }
 }
 
 // Click outside to close dropdown
@@ -212,6 +241,8 @@ onUnmounted(() => {
           </button>
         </div>
 
+
+
         <!-- Right: Search Bar -->
         <div class="search-wrapper">
           <div class="search-input-container">
@@ -242,10 +273,20 @@ onUnmounted(() => {
     <div class="agents-section">
       <div class="agents-container">
         <div class="section-header">
-          <h2 class="section-title">
-            {{ activeTab === 'my-agents' ? 'My Agents' : 'Shared Agents' }}
-            <span class="results-count">({{ filteredAgents.length }} available)</span>
-          </h2>
+          <div class="section-title-wrapper">
+            <h2 class="section-title">
+              {{ activeTab === 'my-agents' ? 'My Agents' : 'Shared Agents' }}
+              <span class="results-count">({{ filteredAgents.length }} available)</span>
+            </h2>
+          </div>
+          
+          <!-- Create Agent Button -->
+          <div class="create-agent-wrapper">
+            <button @click="createAgent" class="create-agent-btn">
+              <i class="pi pi-plus"></i>
+              <span>Create Agent</span>
+            </button>
+          </div>
           
           <div v-if="filteredAgents.length === 0" class="no-results">
             <div class="no-results-icon">
@@ -394,6 +435,48 @@ onUnmounted(() => {
       </div>
     </div>
   </div>
+
+  <!-- Edit Agent Name Modal -->
+  <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
+    <div class="modal-content edit-modal" @click.stop>
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Agent Name</h3>
+        <button @click="closeEditModal" class="modal-close">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="agentName" class="form-label">Agent Name</label>
+          <input
+            id="agentName"
+            v-model="editAgentNameValue"
+            type="text"
+            class="form-input"
+            placeholder="Enter agent name"
+            @keyup.enter="saveAgentName"
+            maxlength="50"
+          />
+          <div class="char-count">{{ editAgentNameValue.length }}/50</div>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button @click="closeEditModal" class="btn cancel-btn">
+          Cancel
+        </button>
+        <button 
+          @click="saveAgentName" 
+          class="btn save-btn"
+          :disabled="!editAgentNameValue.trim()"
+        >
+          <i class="pi pi-check"></i>
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -494,6 +577,33 @@ onUnmounted(() => {
   max-width: 500px;
   margin: 0;
   flex-shrink: 0;
+}
+
+/* Create Agent Button */
+.create-agent-wrapper {
+  flex-shrink: 0;
+}
+
+.create-agent-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  box-shadow: 0 2px 4px rgba(0, 163, 255, 0.2);
+}
+
+.create-agent-btn:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 163, 255, 0.3);
 }
 
 .tab-button {
@@ -624,21 +734,33 @@ onUnmounted(() => {
 }
 
 .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: var(--space-6);
+  gap: var(--space-4);
+}
+
+.section-title-wrapper {
+  flex: 1;
 }
 
 .section-title {
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--color-text-primary);
-  margin-bottom: var(--space-2);
-  text-align: center;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .results-count {
   color: var(--color-text-secondary);
   font-weight: 400;
   font-size: 1rem;
+  margin-left: var(--space-2);
+  white-space: nowrap;
 }
 
 /* No Results */
@@ -1226,6 +1348,158 @@ onUnmounted(() => {
   background: var(--color-bg-hover);
 }
 
+/* Edit Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.edit-modal {
+  background: white;
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 500px;
+  margin: var(--space-4);
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.2s ease-out;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  padding: var(--space-2);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-normal);
+}
+
+.modal-close:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.modal-body {
+  padding: var(--space-5);
+}
+
+.form-group {
+  margin-bottom: var(--space-4);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  transition: border-color var(--transition-normal);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.char-count {
+  text-align: right;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-top: var(--space-1);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-tertiary);
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
+}
+
+.btn {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: none;
+}
+
+.save-btn {
+  background: var(--color-primary);
+  color: white;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+}
+
+.save-btn:disabled {
+  background: var(--color-bg-hover);
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+  transform: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .hero-title {
@@ -1261,6 +1535,33 @@ onUnmounted(() => {
     max-width: 100%;
     min-width: auto;
     width: 100%;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  .section-title-wrapper {
+    width: 100%;
+    margin-bottom: var(--space-2);
+  }
+
+  .section-title {
+    white-space: normal;
+    text-align: left;
+    overflow: visible;
+    text-overflow: initial;
+  }
+
+  .create-agent-wrapper {
+    width: 100%;
+  }
+
+  .create-agent-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .search-input {
@@ -1329,6 +1630,14 @@ onUnmounted(() => {
 
 [data-theme="dark"] .modal-content {
   background: var(--color-bg-secondary);
+}
+
+[data-theme="dark"] .edit-modal {
+  background: var(--color-bg-secondary);
+}
+
+[data-theme="dark"] .modal-footer {
+  background: var(--color-bg-tertiary);
 }
 
 [data-theme="dark"] .no-results {
