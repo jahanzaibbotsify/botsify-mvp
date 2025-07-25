@@ -4,9 +4,11 @@ import { useRouter } from 'vue-router';
 import UserAttributes from './Attributes.vue'
 import { UserAttribute, SortBy, PerPage } from '@/types/user'
 import { useUserStore, type ExtendedUser } from '@/stores/userStore'
+import { useRoleStore } from '@/stores/roleStore'
 import { userApi } from '@/services/userApi';
 
 const userStore = useUserStore()
+const roleStore = useRoleStore()
 const router = useRouter()
 
 const showAttributes = ref<boolean>(false)
@@ -258,6 +260,7 @@ const getPageNumbers = computed(() => {
                   </svg>
                 </button>
                 <button 
+                  v-if="roleStore.canViewUserAttributes"
                   class="action-btn attributes-btn"
                   @click.stop
                   @click="handleShowAttributes(user)"
@@ -269,6 +272,7 @@ const getPageNumbers = computed(() => {
                   </svg>
                 </button>
                 <button 
+                  v-if="roleStore.canDeleteUsers"
                   class="action-btn delete-btn"
                   @click.stop
                   @click="handleDeleteUser(user.id)"

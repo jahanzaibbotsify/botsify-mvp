@@ -13,6 +13,9 @@ import 'vue-toast-notification/dist/theme-bootstrap.css';
 import { useApiKeyStore } from './stores/apiKeyStore';
 import { useConversationStore } from './stores/conversationStore';
 import { useChatStore } from './stores/chatStore';
+import { useRoleStore } from './stores/roleStore';
+import { useWhitelabelStore } from './stores/whitelabelStore';
+import { installPermissions } from './utils/permissions';
 
 import Swal from 'sweetalert2';
 
@@ -102,8 +105,32 @@ function getBotDetails(apikey: string) {
     console.log('ressssss ', response.data);
     
     const apiKeyStore = useApiKeyStore();
+    const roleStore = useRoleStore();
+    const whitelabelStore = useWhitelabelStore();
+    
     apiKeyStore.setApiKeyConfirmed(true);
-    apiKeyStore.setUserId(response.data.user.id);
+    apiKeyStore.setUserId(response.data.data.user.id);
+
+    // Set user role and permissions
+    if (response.data.data.user) {
+      roleStore.setCurrentUser(response.data.data.user);
+      
+      // Set whitelabel data if user is a whitelabel client
+      if (response.data.data.user.is_whitelabel_client) {
+        console.log('🎨 Setting whitelabel data:', response.data.data.user.whitelabel);
+        whitelabelStore.setWhitelabelData(response.data.data.user);
+        // Set favicon if present
+        if (response.data.data.user.whitelabel && response.data.data.user.whitelabel.favicon) {
+          let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            document.head.appendChild(link);
+          }
+          link.href = response.data.data.user.whitelabel.favicon;
+        }
+      }
+    }
 
     return response.data.data;
   })
@@ -121,35 +148,67 @@ const router = createRouter({
 
 
 router.beforeEach(async (to, from, next) => {
-  console.log(from.name);
-  if (to.name === 'agent' || to.name === 'conversation') {
-    let apikey = localStorage.getItem('bot_api_key') ?? '';
-    if (apikey) {
-      const bot = await getBotDetails(apikey);    
-      if (bot) {
-        // loading stored chats and ai prompts
-        const chatStore= useChatStore();
-        chatStore.loadFromStorage(bot.chat_flow, bot.bot_flow);
-        // Initialize Firebase after API key is set
-        console.log('🔥 Initializing Firebase in main.ts...');
-        try {
-          const conversationStore = useConversationStore();
-          conversationStore.initializeFirebase();
-          console.log('✅ Firebase initialized successfully in main.ts');
-        } catch (error) {
-          console.error('❌ Error initializing Firebase in main.ts:', error);
+  console.log('Route change:', from.name, '->', to.name);
+  
+  // Get API key first for role-based routing
+  let apikey = localStorage.getItem('bot_api_key') ?? '';
+  
+  // If we have an API key, get bot details to determine role
+  if (apikey && (to.name === 'agent' || to.name === 'conversation' || to.name === 'users')) {
+    try {
+      const bot = await getBotDetails(apikey);
+      if (bot && bot.user) {
+        const roleStore = useRoleStore();
+        roleStore.setCurrentUser(bot.user);
+        
+        // Role-based routing logic for live chat agents
+        if (roleStore.isLiveChatAgent) {
+          // Live chat agents can only access conversation page
+          if (to.name === 'agent' || to.name === 'users') {
+            console.log('🔄 Live chat agent redirected to conversation page');
+            return next({ name: 'conversation' });
+          }
+          
+          // Additional check: if live chat agent tries to access any other page, redirect to conversation
+          if (to.name !== 'conversation' && to.name !== 'default') {
+            console.log('🔄 Live chat agent redirected to conversation page (general redirect)');
+            return next({ name: 'conversation' });
+          }
         }
         
-      return next();
+        // For agent and conversation pages, load chat data and initialize Firebase
+        if (to.name === 'agent' || to.name === 'conversation') {
+          // Only load chat data if not already loaded or if coming from a different page
+          const chatStore = useChatStore();
+          if (!chatStore.chats.length || from.name !== to.name) {
+            chatStore.loadFromStorage(bot.chat_flow, bot.bot_flow);
+          }
+          
+          // Initialize Firebase only once
+          const conversationStore = useConversationStore();
+          if (!conversationStore.isFirebaseConnected) {
+            console.log('🔥 Initializing Firebase in main.ts...');
+            try {
+              conversationStore.initializeFirebase();
+              console.log('✅ Firebase initialized successfully in main.ts');
+            } catch (error) {
+              console.error('❌ Error initializing Firebase in main.ts:', error);
+            }
+          }
+        }
+        
+        return next();
       }
+    } catch (error) {
+      console.error('❌ Error getting bot details:', error);
     }
-    // window.location.href = 'https://app.botsify.com/login';
-  } if (typeof to.name === 'undefined') {    
+  }
+  
+  if (typeof to.name === 'undefined') {    
     return next({ name: 'NotFound' });
   } else {
     return next();
   }
-
 });
 
 // Create pinia store
@@ -162,6 +221,7 @@ const app = createApp(App)
 app.use(router)
 app.use(pinia)
 app.use(ToastPlugin);
+installPermissions(app);
 
 window.$toast = useToast({position:'top-right'});
 window.$confirm = function (overrideOpt = {}, callback = () => {}) {
