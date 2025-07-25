@@ -2,8 +2,8 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { ConfigurationTask, ConfigurationResponse, ConfigurationResponseData, ApiRequestData, ChatMessage, ApiError } from '../types/openai'
 import { useApiKeyStore } from './apiKeyStore';
-import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from '../utils/config';
-import { STANDARD_ERROR_MESSAGE, handleApiError } from '../utils/errorHandler';
+import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from '@/utils/config';
+import { handleApiError } from '@/utils/errorHandler';
 
 
 export const useOpenAIStore = defineStore('openai', () => {

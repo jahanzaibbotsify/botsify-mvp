@@ -38,13 +38,6 @@ export function standardizeErrorMessage(error: any): string {
  * Shows error toast to user
  * @param message - Error message to show
  */
-export function showErrorToast(message: string): void {
-  // Disabled toast notifications as requested
-  // if (typeof window !== 'undefined' && window.$toast) {
-  //   window.$toast.error(message);
-  // }
-}
-
 /**
  * Handles API errors with standardized messaging
  * @param error - The error object
@@ -55,8 +48,6 @@ export function handleApiError(error: any, context: string = 'API'): string {
   
   console.error(`❌ ${context} error:`, error);
   console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-  
-  showErrorToast(standardizedMessage);
   
   return standardizedMessage;
 }
