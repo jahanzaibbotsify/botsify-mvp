@@ -24,50 +24,69 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!user.value)
   const fullName = computed(() => user.value ? `${user.value.firstName} ${user.value.lastName}` : '')
 
-  // Mock data for development
+  // Official Botsify pricing plans
   const pricingPlans = ref<PricingPlan[]>([
     {
-      id: 'free',
-      name: 'Free',
-      description: 'Perfect for getting started with AI agents',
-      price: 0,
+      id: 'diy',
+      name: 'Do it yourself',
+      description: 'A basic plan for your personal use, startup websites, and your Facebook page',
+      price: 49,
       currency: 'USD',
       billing: 'monthly',
       features: [
-        '1 AI Agent',
-        '100 conversations/month',
-        'Basic templates',
-        'Email support',
-        'Community access'
+        '2 AI Agents',
+        '5,000 Users/Month',
+        '$10/1,000 additional users',
+        'Unlimited number of stories',
+        'Unlimited conversation, forms, and media',
+        'Messenger, SMS, Website, Instagram, Telegram',
+        'Message Scheduling',
+        'No WhatsApp Agents',
+        'Basic Support',
+        'All integrations',
+        '1 Month Chat History'
       ],
       limits: {
-        conversations: 100,
-        agents: 1,
+        conversations: 5000,
+        agents: 2,
         customBranding: false,
-        apiAccess: false,
+        apiAccess: true,
         prioritySupport: false,
         advancedAnalytics: false
       },
-      trialDays: 14
+      discount: {
+        percentage: 17,
+        originalPrice: 59,
+        yearlyPrice: 490
+      }
     },
     {
-      id: 'pro',
-      name: 'Pro',
-      description: 'For growing businesses and power users',
-      price: 29,
+      id: 'dfy',
+      name: 'Done for you',
+      description: 'A professional service for scalable businesses that want us to build and manage their agents',
+      price: 149,
       currency: 'USD',
       billing: 'monthly',
       features: [
         '5 AI Agents',
-        '1,000 conversations/month',
-        'Premium templates',
-        'Priority support',
-        'Custom branding',
-        'API access',
-        'Advanced analytics'
+        '$25/month/Additional Agent',
+        'Unlimited Users',
+        'Unlimited number of stories',
+        'Unlimited conversation, forms, and media',
+        'FB, SMS, Website, WhatsApp, Instagram, Telegram',
+        '1-Agent development free worth $100/Month',
+        'Whitelabel Dashboard & Reselling Rights',
+        'Access to all Botsify Resources',
+        'Personal Onboarding Session',
+        'Bi-Weekly Training of 1 Agent Free for 12 Months',
+        'Message Scheduling',
+        'WhatsApp Agents (1,000 free conversations each month)',
+        'Priority Support',
+        'All integrations',
+        '3 Months Chat History'
       ],
       limits: {
-        conversations: 1000,
+        conversations: 'unlimited',
         agents: 5,
         customBranding: true,
         apiAccess: true,
@@ -76,28 +95,27 @@ export const useAuthStore = defineStore('auth', () => {
       },
       isPopular: true,
       discount: {
-        percentage: 20,
-        originalPrice: 36
-      },
-      trialDays: 14
+        percentage: 17,
+        originalPrice: 179,
+        yearlyPrice: 1490
+      }
     },
     {
-      id: 'enterprise',
-      name: 'Enterprise',
-      description: 'For large teams and organizations',
-      price: 99,
+      id: 'custom',
+      name: 'Custom',
+      description: 'For enterprises with high usage & on-premises solutions',
+      price: 0,
       currency: 'USD',
-      billing: 'monthly',
+      billing: 'custom',
       features: [
-        'Unlimited AI Agents',
-        'Unlimited conversations',
-        'Custom templates',
-        'Dedicated support',
-        'White-label solution',
-        'Full API access',
-        'Advanced analytics & reporting',
-        'SSO integration',
-        'Custom integrations'
+        'Custom Agent development',
+        'All Platforms',
+        'On-Premises Solution / Cloud Dedicated Licence',
+        '7-day training history',
+        'Unlimited Users',
+        'Unlimited Agents',
+        'Unlimited Stories',
+        'Unlimited Forms and Media'
       ],
       limits: {
         conversations: 'unlimited',
@@ -107,7 +125,7 @@ export const useAuthStore = defineStore('auth', () => {
         prioritySupport: true,
         advancedAnalytics: true
       },
-      trialDays: 30
+      isContactSales: true
     }
   ])
 
@@ -371,9 +389,9 @@ export const useAuthStore = defineStore('auth', () => {
       const mockUser: AuthUser = {
         id: Date.now().toString(),
         email: credentials.email,
-        firstName: credentials.firstName,
-        lastName: credentials.lastName,
-        fullName: `${credentials.firstName} ${credentials.lastName}`,
+        firstName: credentials.fullName.split(' ')[0] || '',
+        lastName: credentials.fullName.split(' ').slice(1).join(' ') || '',
+        fullName: credentials.fullName,
         plan: 'free',
         createdAt: new Date(),
         isEmailVerified: false

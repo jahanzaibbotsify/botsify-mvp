@@ -202,6 +202,7 @@ const pageContent = computed(() => {
 .logo-image {
   height: 40px;
   width: auto;
+  filter: brightness(0) saturate(100%) invert(32%) sepia(88%) saturate(3151%) hue-rotate(227deg) brightness(95%) contrast(93%);
 }
 
 /* Main Content */
@@ -234,7 +235,7 @@ const pageContent = computed(() => {
 .main-title {
   font-size: 2.25rem;
   font-weight: 700;
-  color: white;
+  color: #384348;
   margin-bottom: var(--space-3);
   line-height: 1.2;
   letter-spacing: -0.025em;
@@ -243,7 +244,7 @@ const pageContent = computed(() => {
 .main-subtitle {
   font-size: 1.125rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
+  color: #2e66f4;
   margin-bottom: var(--space-3);
 }
 

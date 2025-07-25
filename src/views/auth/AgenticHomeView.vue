@@ -467,13 +467,14 @@ onMounted(() => {
   font-weight: 700;
   margin-bottom: var(--space-3);
   line-height: 1.2;
+  color: #000;
 }
 
 .welcome-subtitle {
   font-size: 1.125rem;
-  opacity: 0.9;
   margin-bottom: var(--space-6);
   line-height: 1.5;
+  color: #333;
 }
 
 .welcome-actions {

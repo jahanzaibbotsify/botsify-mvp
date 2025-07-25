@@ -363,26 +363,7 @@ const clearFieldError = (field: string) => {
       </button>
     </form>
 
-    <!-- Divider -->
-    <div class="auth-divider">
-      <div class="divider-line"></div>
-      <span class="divider-text">Or sign up with Facebook</span>
-      <div class="divider-line"></div>
-    </div>
 
-    <!-- Social Signup -->
-    <div class="social-login">
-      <button
-        v-for="provider in authStore.socialProviders"
-        :key="provider.id"
-        @click="handleSocialSignup(provider)"
-        class="social-button facebook-button"
-        :disabled="authStore.isLoading"
-      >
-        <!-- <img src="/icons/facebook.svg" alt="Facebook" class="social-icon" /> -->
-        <span>Sign up with {{ provider.name }}</span>
-      </button>
-    </div>
 
     <!-- Login Link -->
     <div class="auth-footer">
@@ -410,7 +391,7 @@ const clearFieldError = (field: string) => {
 .auth-title {
   font-size: 1.75rem;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: #000;
   margin-bottom: var(--space-2);
 }
 
@@ -719,17 +700,7 @@ const clearFieldError = (field: string) => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.facebook-button {
-  background-color: #1877F2;
-  color: white;
-  border-color: #1877F2;
-}
 
-.facebook-button:hover:not(:disabled) {
-  background-color: #166FE5;
-  border-color: #166FE5;
-  box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3);
-}
 
 .social-icon {
   width: 20px;

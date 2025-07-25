@@ -69,9 +69,6 @@ const goBack = () => {
 <template>
   <div class="forgot-password-view">
     <div class="forgot-header">
-      <div class="header-icon">
-        <i class="pi pi-key"></i>
-      </div>
       <h2 class="header-title">Forgot Password?</h2>
       <p class="header-subtitle">
         No worries! Enter your email address and we'll send you a link to reset your password.
@@ -208,7 +205,7 @@ const goBack = () => {
 .header-title {
   font-size: 1.75rem;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: #000;
   margin-bottom: var(--space-3);
 }
 

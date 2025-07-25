@@ -230,31 +230,11 @@ const handlePasswordInput = () => {
         :disabled="!isFormValid || authStore.isLoading"
       >
         <span v-if="authStore.isLoading" class="loading-spinner"></span>
-        <i v-else class="pi pi-sign-in"></i>
         <span>{{ authStore.isLoading ? 'Signing in...' : 'Sign In' }}</span>
       </button>
     </form>
 
-    <!-- Divider -->
-    <div class="auth-divider">
-      <div class="divider-line"></div>
-      <span class="divider-text">Or continue with Facebook</span>
-      <div class="divider-line"></div>
-    </div>
 
-    <!-- Social Login -->
-    <div class="social-login">
-      <button
-        v-for="provider in authStore.socialProviders"
-        :key="provider.id"
-        @click="handleSocialLogin(provider)"
-        class="social-button facebook-button"
-        :disabled="authStore.isLoading"
-      >
-        <!-- <img src="/icons/facebook.svg" alt="Facebook" class="social-icon" /> -->
-        <span>Continue with {{ provider.name }}</span>
-      </button>
-    </div>
 
     <!-- Sign Up Link -->
     <div class="auth-footer">
@@ -284,7 +264,7 @@ const handlePasswordInput = () => {
 .auth-title {
   font-size: 1.75rem;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: #000;
   margin-bottom: var(--space-2);
 }
 
@@ -555,17 +535,7 @@ const handlePasswordInput = () => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.facebook-button {
-  background-color: #1877F2;
-  color: white;
-  border-color: #1877F2;
-}
 
-.facebook-button:hover:not(:disabled) {
-  background-color: #166FE5;
-  border-color: #166FE5;
-  box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3);
-}
 
 .social-icon {
   width: 20px;

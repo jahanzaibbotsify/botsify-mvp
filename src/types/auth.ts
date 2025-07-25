@@ -53,7 +53,7 @@ export interface PricingPlan {
   description: string;
   price: number;
   currency: string;
-  billing: 'monthly' | 'yearly';
+  billing: 'monthly' | 'yearly' | 'custom';
   features: string[];
   limits: {
     conversations: number | 'unlimited';
@@ -67,8 +67,10 @@ export interface PricingPlan {
   discount?: {
     percentage: number;
     originalPrice: number;
+    yearlyPrice?: number;
   };
   trialDays?: number;
+  isContactSales?: boolean;
 }
 
 export interface Agent {
