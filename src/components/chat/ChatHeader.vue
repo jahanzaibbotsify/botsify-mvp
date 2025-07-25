@@ -30,7 +30,7 @@
       <!-- Dropdown Menu Trigger -->
       <div class="dropdown" ref="dropdownRef">
         <button class="icon-button" @click="toggleDropdown" title="More actions">
-          <i class="pi pi-ellipsis-v" style="font-size: 22px;"></i>
+          <i class="pi pi-ellipsis-h" style="font-size: 22px;"></i>
         </button>
         <div v-if="showDropdown" class="dropdown-content">
           <button class="dropdown-item" @click="toggleTheme">

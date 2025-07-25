@@ -103,7 +103,7 @@ function getBotDetails(apikey: string) {
     
     const apiKeyStore = useApiKeyStore();
     apiKeyStore.setApiKeyConfirmed(true);
-    apiKeyStore.setUserId(response.data.data.user_id);
+    apiKeyStore.setUserId(response.data.user.id);
 
     return response.data.data;
   })
