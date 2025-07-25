@@ -59,11 +59,11 @@ const pageContent = computed(() => {
         <!-- Logo Section -->
         <div class="logo-section">
           <div class="logo-container">
-            <img 
-              src="https://botsify.com/assets/img/logos/logo/logo-white-600w.webp" 
-              alt="Botsify" 
-              class="logo-image" 
-            />
+                    <img 
+          src="/images/logos/logo-white-600w.webp" 
+          alt="Botsify" 
+          class="logo-image"
+        />
           </div>
         </div>
 
@@ -95,6 +95,11 @@ const pageContent = computed(() => {
         <!-- Footer -->
         <div class="brand-footer">
           <p>&copy; 2024 Botsify. All rights reserved.</p>
+          <div class="footer-links">
+            <router-link to="/terms-conditions" class="footer-link">Terms & Conditions</router-link>
+            <span class="footer-separator">•</span>
+            <router-link to="/privacy-policy" class="footer-link">Privacy Policy</router-link>
+          </div>
         </div>
       </div>
     </div>
@@ -294,7 +299,32 @@ const pageContent = computed(() => {
 .brand-footer p {
   font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.7);
-  margin: 0;
+  margin: 0 0 var(--space-2) 0;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.footer-link {
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  font-size: 0.75rem;
+  transition: color var(--transition-normal);
+}
+
+.footer-link:hover {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: underline;
+}
+
+.footer-separator {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.75rem;
 }
 
 /* Right Form Panel */

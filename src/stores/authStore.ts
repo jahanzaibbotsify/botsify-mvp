@@ -544,6 +544,75 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const verifyEmail = async (email: string, otp: string): Promise<boolean> => {
+    setLoading(true)
+    clearError()
+    
+    try {
+      // Mock implementation - in real app, this would call your API
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      // Mock success for demonstration (in real app, validate OTP with backend)
+      const isValid = otp === '123456' || otp.length === 6
+      
+      if (isValid && user.value) {
+        user.value.isEmailVerified = true
+      }
+      
+      return isValid
+    } catch (err: any) {
+      setError(err.message || 'Email verification failed')
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const resendVerificationCode = async (email: string): Promise<boolean> => {
+    try {
+      // Mock implementation
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      return true
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend verification code')
+      return false
+    }
+  }
+
+  const setPassword = async (data: { email: string; token: string; password: string }): Promise<boolean> => {
+    setLoading(true)
+    clearError()
+    
+    try {
+      // Mock implementation - in real app, this would call your API
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      // Mock user creation/update for password setup
+      if (!user.value) {
+        user.value = {
+          id: Date.now().toString(),
+          email: data.email,
+          firstName: 'User',
+          lastName: 'Name',
+          fullName: 'User Name',
+          avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${data.email}`,
+          plan: 'free',
+          isEmailVerified: true,
+          createdAt: new Date(),
+          lastLoginAt: new Date()
+        }
+      }
+      
+      onboardingStep.value = 'pricing'
+      return true
+    } catch (err: any) {
+      setError(err.message || 'Failed to set password')
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const updateOnboardingStep = (step: 'signup' | 'pricing' | 'agent-selection' | 'completed') => {
     onboardingStep.value = step
   }
@@ -589,6 +658,9 @@ export const useAuthStore = defineStore('auth', () => {
     socialLogin,
     logout,
     resetPassword,
+    verifyEmail,
+    resendVerificationCode,
+    setPassword,
     updateOnboardingStep,
     getAgentsByCategory,
     getPopularAgents,

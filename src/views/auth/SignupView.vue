@@ -135,8 +135,8 @@ const handleSubmit = async () => {
   const response = await authStore.signup(form)
   
   if (response.success) {
-    window.$toast?.success('Account created successfully! Please choose your plan.')
-    router.push('/pricing')
+    window.$toast?.success('Account created successfully! Please verify your email.')
+    router.push(`/auth/verify-email?email=${encodeURIComponent(form.email)}`)
   } else {
     window.$toast?.error(response.message)
   }
@@ -149,6 +149,7 @@ const handleSocialSignup = async (provider: SocialAuthProvider) => {
   
   if (response.success) {
     window.$toast?.success(`Welcome! Account created with ${provider.name}.`)
+    // Social providers usually have verified emails, so go directly to pricing
     router.push('/pricing')
   } else {
     window.$toast?.error(response.message)
@@ -337,9 +338,9 @@ const clearFieldError = (field: string) => {
           <span class="checkbox-custom"></span>
           <span class="checkbox-label">
             I agree to the 
-            <a href="/terms" target="_blank" class="terms-link">Terms of Service</a>
+            <router-link to="/terms-conditions" target="_blank" class="terms-link">Terms & Conditions</router-link>
             and 
-            <a href="/privacy" target="_blank" class="terms-link">Privacy Policy</a>
+            <router-link to="/privacy-policy" target="_blank" class="terms-link">Privacy Policy</router-link>
             <span class="required">*</span>
           </span>
         </label>

@@ -84,134 +84,134 @@ const testimonials = ref([
   {
     name: "Troy Chartier",
     title: "CEO Premium Rentals",
-    avatar: "https://botsify.com/assets/img/logos/custom/testimonials/tory (1).webp",
+    avatar: "/images/testimonials/tory.webp",
     quote: "Our Bot helped save a lot of time in sharing with our customers what apartments we had available and got them to book appointments.",
     metrics: [
       {
         type: "conversions",
         label: "More Conversions",
         value: "Increased by 60%",
-        icon: "https://botsify.com/assets/img/logos/custom/testimonials/circle1.svg"
+        icon: "/images/icons/circle1.svg"
       }
     ]
   },
   {
     name: "Bryan Ulatowski",
     title: "CEO Uberoom",
-    avatar: "https://botsify.com/assets/img/logos/custom/testimonials/Group945 (1).webp",
+    avatar: "/images/testimonials/bryan.webp",
     quote: "I love your system; your team has made a lot of progress, which is great to see. The web chatbot greatly improves our customer service accuracy and reduces response time, which is essential for our customers.",
     metrics: [
       {
         type: "sales",
         label: "More Sales",
         value: "Increased by 90%",
-        icon: "https://botsify.com/assets/img/logos/custom/testimonials/circle2.svg"
+        icon: "/images/icons/circle2.svg"
       },
       {
         type: "conversions",
         label: "More Conversions",
         value: "Increased by 60%",
-        icon: "https://botsify.com/assets/img/logos/custom/testimonials/circle3.svg"
+        icon: "/images/icons/circle3.svg"
       }
     ]
   },
   {
     name: "Jose Filemon",
     title: "Founder Filemon",
-    avatar: "https://botsify.com/assets/img/logos/custom/testimonials/Group944 (1).webp",
+    avatar: "/images/testimonials/jose.webp",
     quote: "Very easy to use. Very complete, I love the option of being able to talk to my clients by video call. Best tool for businesses",
     metrics: [
       {
         type: "sales",
         label: "More Sales",
         value: "Increased by 50%",
-        icon: "https://botsify.com/assets/img/logos/custom/testimonials/circle4.svg"
+        icon: "/images/icons/circle4.svg"
       },
       {
         type: "conversions",
         label: "More Conversions",
         value: "Increased by 70%",
-        icon: "https://botsify.com/assets/img/logos/custom/testimonials/circle5.svg"
+        icon: "/images/icons/circle5.svg"
       }
     ]
   },
   {
     name: "Mar Diaz",
     title: "CEO Diaz Studio",
-    avatar: "https://botsify.com/assets/img/logos/custom/testimonials/Group943 (1).webp",
+    avatar: "/images/testimonials/mar.webp",
     quote: "Botsify is an excellent tool to improve and automate the customer service, support, and sales area of any company; the limit for the design of your bot is your imagination.",
     metrics: [
       {
         type: "sales",
         label: "More Sales",
         value: "Increased by 95%",
-        icon: "https://botsify.com/assets/img/logos/custom/testimonials/circle2.svg"
+        icon: "/images/icons/circle2.svg"
       },
       {
         type: "conversions",
         label: "More Conversions",
         value: "Increased by 50%",
-        icon: "https://botsify.com/assets/img/logos/custom/testimonials/circle3.svg"
+        icon: "/images/icons/circle3.svg"
       }
     ]
   },
   {
     name: "David Larson",
     title: "Managing Partner Autobahn",
-    avatar: "https://botsify.com/assets/img/logos/custom/testimonials/Group941 (1).webp",
+    avatar: "/images/testimonials/david.webp",
     quote: "I chose Botsify as my customer support automation platform for both the websites and Facebook. I appreciate the direct connection with Usama, who helped me reduce the cost per lead to $4. I instantly.",
     metrics: [
       {
         type: "sales",
         label: "More Sales",
         value: "Increased by 80%",
-        icon: "https://botsify.com/assets/img/logos/custom/testimonials/circle4.svg"
+        icon: "/images/icons/circle4.svg"
       },
       {
         type: "conversions",
         label: "More Conversions",
         value: "Increased by 80%",
-        icon: "https://botsify.com/assets/img/logos/custom/testimonials/circle5.svg"
+        icon: "/images/icons/circle5.svg"
       }
     ]
   },
   {
     name: "Ashfaque Ahmed",
     title: "GM EFU Life",
-    avatar: "https://botsify.com/assets/img/logos/custom/testimonials/Group942 (1).webp",
+    avatar: "/images/testimonials/ashfaque.webp",
     quote: "We are satisfied with the performance of the Botsify platform to handle the queries of over two million Facebook community members. One of the best features is an AI-based routing of queries",
     metrics: [
       {
         type: "sales",
         label: "More Sales",
         value: "Increased by 95%",
-        icon: "https://botsify.com/assets/img/logos/custom/testimonials/circle4.svg"
+        icon: "/images/icons/circle4.svg"
       },
       {
         type: "conversions",
         label: "More Conversions",
         value: "Increased by 80%",
-        icon: "https://botsify.com/assets/img/logos/custom/testimonials/circle5.svg"
+        icon: "/images/icons/circle5.svg"
       }
     ]
   },
   {
     name: "Jennifer Ponzi",
     title: "Founder Taond",
-    avatar: "https://botsify.com/assets/img/logos/custom/testimonials/jen (1).webp",
+    avatar: "/images/testimonials/jennifer.webp",
     quote: "Excellent customer service—very responsive and attempts to satisfy all our needs and requests; the bot is super easy to learn how to use.",
     metrics: [
       {
         type: "sales",
         label: "More Sales",
         value: "Increased by 90%",
-        icon: "https://botsify.com/assets/img/logos/custom/testimonials/circle2.svg"
+        icon: "/images/icons/circle2.svg"
       },
       {
         type: "conversions",
         label: "More Conversions",
         value: "Increased by 65%",
-        icon: "https://botsify.com/assets/img/logos/custom/testimonials/circle3.svg"
+        icon: "/images/icons/circle3.svg"
       }
     ]
   }
@@ -477,36 +477,36 @@ const contactSupport = () => {
             <div class="clients-showcase">
               <div class="clients-grid-professional">
                 <div class="client-card">
-                  <img src="https://botsify.com/assets/img/logos/custom/brands/zong.webp" alt="Zong" class="client-logo-pro">
+                  <img src="/images/brands/zong.webp" alt="Zong" class="client-logo-pro">
                 </div>
                 <div class="client-card">
-                  <img src="https://botsify.com/assets/img/logos/custom/brands/met.webp" alt="Met" class="client-logo-pro">
+                  <img src="/images/brands/met.webp" alt="Met" class="client-logo-pro">
                 </div>
                 <div class="client-card">
-                  <img src="https://botsify.com/assets/img/logos/custom/brands/unilever.webp" alt="Unilever" class="client-logo-pro">
+                  <img src="/images/brands/unilever.webp" alt="Unilever" class="client-logo-pro">
                 </div>
                 <div class="client-card">
-                  <img src="https://botsify.com/assets/img/logos/custom/brands/unicef.webp" alt="UNICEF" class="client-logo-pro">
+                  <img src="/images/brands/unicef.webp" alt="UNICEF" class="client-logo-pro">
                 </div>
                 <div class="client-card">
-                  <img src="https://botsify.com/assets/img/logos/custom/brands/jazz.webp" alt="Jazz" class="client-logo-pro">
+                  <img src="/images/brands/jazz.webp" alt="Jazz" class="client-logo-pro">
                 </div>
                 <div class="client-card">
-                  <img src="https://botsify.com/assets/img/logos/custom/brands/autobahn.webp" alt="Autobahn" class="client-logo-pro">
+                  <img src="/images/brands/autobahn.webp" alt="Autobahn" class="client-logo-pro">
                 </div>
               </div>
               
               <div class="more-clients">
                 <span class="more-text">And many more...</span>
                 <div class="additional-logos">
-                  <img src="https://botsify.com/assets/img/logos/custom/brands/belo.webp" alt="Belo" class="mini-logo">
-                  <img src="https://botsify.com/assets/img/logos/custom/brands/costi.webp" alt="Costi" class="mini-logo">
-                  <img src="https://botsify.com/assets/img/logos/custom/brands/pagosa.webp" alt="Pagosa" class="mini-logo">
-                  <img src="https://botsify.com/assets/img/logos/custom/brands/etrading.webp" alt="E-Trading" class="mini-logo">
-                  <img src="https://botsify.com/assets/img/logos/custom/brands/tamimimarket.webp" alt="Tamimi Market" class="mini-logo">
-                  <img src="https://botsify.com/assets/img/logos/custom/brands/ministry.webp" alt="Ministry" class="mini-logo">
-                  <img src="https://botsify.com/assets/img/logos/custom/brands/world (2).webp" alt="World" class="mini-logo">
-                  <img src="https://botsify.com/assets/img/logos/custom/brands/trax.webp" alt="Trax" class="mini-logo">
+                  <img src="/images/brands/belo.webp" alt="Belo" class="mini-logo">
+                  <img src="/images/brands/costi.webp" alt="Costi" class="mini-logo">
+                  <img src="/images/brands/pagosa.webp" alt="Pagosa" class="mini-logo">
+                  <img src="/images/brands/etrading.webp" alt="E-Trading" class="mini-logo">
+                  <img src="/images/brands/tamimimarket.webp" alt="Tamimi Market" class="mini-logo">
+                  <img src="/images/brands/ministry.webp" alt="Ministry" class="mini-logo">
+                  <img src="/images/brands/world.webp" alt="World" class="mini-logo">
+                  <img src="/images/brands/trax.webp" alt="Trax" class="mini-logo">
                 </div>
               </div>
             </div>
@@ -751,7 +751,7 @@ const contactSupport = () => {
               </div>
               <div class="badges-section">
                 <img 
-                  src="https://botsify.com/assets/img/graphics/as-seen-on-section/badges.webp" 
+                  src="/images/badges/badges.webp" 
                   alt="Awards and Recognition" 
                   class="badges-image"
                   loading="lazy"
@@ -772,7 +772,7 @@ const contactSupport = () => {
                   <img 
                     class="publication-logo" 
                     loading="lazy" 
-                    src="https://botsify.com/assets/img/graphics/publications/npdigital-c.webp" 
+                    src="/images/publications/npdigital.webp" 
                     alt="NPDigital"
                   >
                 </div>
@@ -780,7 +780,7 @@ const contactSupport = () => {
                   <img 
                     class="publication-logo" 
                     loading="lazy" 
-                    src="https://botsify.com/assets/img/graphics/publications/forbes-c.webp" 
+                    src="/images/publications/forbes.webp" 
                     alt="Forbes"
                   >
                 </div>
@@ -788,7 +788,7 @@ const contactSupport = () => {
                   <img 
                     class="publication-logo" 
                     loading="lazy" 
-                    src="https://botsify.com/assets/img/graphics/publications/entrepreneur-c.webp" 
+                    src="/images/publications/entrepreneur.webp" 
                     alt="Entrepreneur"
                   >
                 </div>
@@ -796,7 +796,7 @@ const contactSupport = () => {
                   <img 
                     class="publication-logo" 
                     loading="lazy" 
-                    src="https://botsify.com/assets/img/graphics/publications/insider-c.webp" 
+                    src="/images/publications/insider.webp" 
                     alt="Business Insider"
                   >
                 </div>
@@ -804,7 +804,7 @@ const contactSupport = () => {
                   <img 
                     class="publication-logo" 
                     loading="lazy" 
-                    src="https://botsify.com/assets/img/graphics/publications/hongikat-c.webp" 
+                    src="/images/publications/hongikat.webp" 
                     alt="Hong Kong IT"
                   >
                 </div>
@@ -812,7 +812,7 @@ const contactSupport = () => {
                   <img 
                     class="publication-logo" 
                     loading="lazy" 
-                    src="https://botsify.com/assets/img/graphics/publications/venturebeat-c.webp" 
+                    src="/images/publications/venturebeat.webp" 
                     alt="VentureBeat"
                   >
                 </div>
@@ -1739,7 +1739,6 @@ const contactSupport = () => {
   height: 60px;
   border-radius: 50%;
   overflow: hidden;
-  border: 2px solid var(--color-border);
   flex-shrink: 0;
 }
 

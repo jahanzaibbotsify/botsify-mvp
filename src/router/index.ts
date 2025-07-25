@@ -35,6 +35,18 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresGuest: true }
       },
       {
+        path: 'verify-email',
+        name: 'verify-email',
+        component: () => import('../views/auth/VerifyEmailView.vue'),
+        meta: { requiresGuest: true }
+      },
+      {
+        path: 'set-password',
+        name: 'set-password',
+        component: () => import('../views/auth/SetPasswordView.vue'),
+        meta: { requiresGuest: true }
+      },
+      {
         path: 'agentic-home',
         name: 'agentic-home',
         component: () => import('../views/auth/AgenticHomeView.vue'),
@@ -89,6 +101,19 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/SettingsView.vue')
       }
     ]
+  },
+  // Legal Pages (standalone)
+  {
+    path: '/terms-conditions',
+    name: 'terms-conditions',
+    component: () => import('../views/legal/TermsView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/privacy-policy',
+    name: 'privacy-policy',
+    component: () => import('../views/legal/PrivacyView.vue'),
+    meta: { requiresAuth: false }
   },
   // Redirect root to login
   {

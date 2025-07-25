@@ -200,7 +200,7 @@ onUnmounted(() => {
         <div class="app-title-container">
           <!-- Botsify Logo with link to botsify.com -->
           <a href="https://botsify.com" target="_blank" class="logo-link">
-            <img src="https://botsify.com/assets/img/logos/logo/logo-color-600w.webp" alt="Botsify" class="logo-icon" />
+            <img src="/images/logos/logo-color-600w.webp" alt="Botsify" class="logo-icon" />
           </a>
         </div>
 
@@ -273,6 +273,16 @@ onUnmounted(() => {
     </div>
     <BookMeeting ref="bookMeetingRef"></BookMeeting>
     <User ref="userRef"></User>
+    
+    <!-- Legal Footer -->
+    <div class="sidebar-footer">
+      <div class="footer-links">
+        <router-link to="/terms-conditions" class="footer-link">Terms</router-link>
+        <span class="footer-separator">•</span>
+        <router-link to="/privacy-policy" class="footer-link">Privacy</router-link>
+      </div>
+      <p class="footer-copyright">&copy; 2024 Botsify</p>
+    </div>
   </aside>
 </template>
 
@@ -631,6 +641,40 @@ onUnmounted(() => {
   padding: var(--space-3);
   border-top: 1px solid var(--color-border);
   background-color: transparent;
+  text-align: center;
+  margin-top: auto;
+}
+
+.sidebar-footer .footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.sidebar-footer .footer-link {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-size: 0.75rem;
+  transition: color var(--transition-normal);
+}
+
+.sidebar-footer .footer-link:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.sidebar-footer .footer-separator {
+  color: var(--color-text-tertiary);
+  font-size: 0.75rem;
+}
+
+.sidebar-footer .footer-copyright {
+  color: var(--color-text-tertiary);
+  font-size: 0.7rem;
+  margin: 0;
 }
 
 /* Override for ChatGPT-style dark mode */

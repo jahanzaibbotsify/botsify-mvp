@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import type { Agent, AgentCategory } from '@/types/auth'
@@ -19,6 +19,7 @@ const activeMenuId = ref<string | null>(null)
 const showEditModal = ref(false)
 const editingAgent = ref<Agent | null>(null)
 const editAgentNameValue = ref('')
+const agentNameInput = ref<HTMLInputElement | null>(null)
 
 // Filter agents based on search, category, and tab
 const filteredAgents = computed(() => {
@@ -130,6 +131,17 @@ const editAgentName = (agent: Agent) => {
   editAgentNameValue.value = agent.name
   showEditModal.value = true
   activeMenuId.value = null
+  
+  // Add keyboard event listener
+  document.addEventListener('keydown', handleModalKeydown)
+  
+  // Focus the input after modal opens
+  nextTick(() => {
+    if (agentNameInput.value) {
+      agentNameInput.value.focus()
+      agentNameInput.value.select()
+    }
+  })
 }
 
 const cloneAgent = (agent: Agent) => {
@@ -168,14 +180,37 @@ const closeEditModal = () => {
   showEditModal.value = false
   editingAgent.value = null
   editAgentNameValue.value = ''
+  // Remove keyboard event listener
+  document.removeEventListener('keydown', handleModalKeydown)
+}
+
+// Handle keyboard events in modal
+const handleModalKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape') {
+    closeEditModal()
+  }
 }
 
 const saveAgentName = () => {
-  if (editingAgent.value && editAgentNameValue.value.trim()) {
+  const trimmedName = editAgentNameValue.value.trim()
+  
+  if (editingAgent.value && trimmedName && trimmedName.length >= 2) {
+    // Check if name has actually changed
+    if (trimmedName === editingAgent.value.name) {
+      closeEditModal()
+      return
+    }
+    
     // Update the agent name in the store
-    editingAgent.value.name = editAgentNameValue.value.trim()
-    console.log('Agent name updated:', editAgentNameValue.value)
+    editingAgent.value.name = trimmedName
+    console.log('Agent name updated:', trimmedName)
+    
+    // Show success message
+    window.$toast?.success('Agent name updated successfully!')
+    
     closeEditModal()
+  } else if (trimmedName.length < 2) {
+    window.$toast?.error('Agent name must be at least 2 characters long.')
   }
 }
 
@@ -438,10 +473,10 @@ onUnmounted(() => {
 
   <!-- Edit Agent Name Modal -->
   <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
-    <div class="modal-content edit-modal" @click.stop>
+    <div class="modal-content edit-modal" @click.stop role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
       <div class="modal-header">
-        <h3 class="modal-title">Edit Agent Name</h3>
-        <button @click="closeEditModal" class="modal-close">
+        <h3 id="edit-modal-title" class="modal-title">Edit Agent Name</h3>
+        <button @click="closeEditModal" class="modal-close" aria-label="Close modal">
           <i class="pi pi-times"></i>
         </button>
       </div>
@@ -454,25 +489,32 @@ onUnmounted(() => {
             v-model="editAgentNameValue"
             type="text"
             class="form-input"
-            placeholder="Enter agent name"
+            placeholder="Enter a descriptive name for your agent"
             @keyup.enter="saveAgentName"
+            @keyup.escape="closeEditModal"
             maxlength="50"
+            autocomplete="off"
+            spellcheck="false"
+            ref="agentNameInput"
           />
-          <div class="char-count">{{ editAgentNameValue.length }}/50</div>
+          <div class="char-count" :class="{ 'text-warning': editAgentNameValue.length > 40 }">
+            {{ editAgentNameValue.length }}/50
+          </div>
         </div>
       </div>
       
       <div class="modal-footer">
-        <button @click="closeEditModal" class="btn cancel-btn">
+        <button @click="closeEditModal" class="btn cancel-btn" type="button">
           Cancel
         </button>
         <button 
           @click="saveAgentName" 
           class="btn save-btn"
-          :disabled="!editAgentNameValue.trim()"
+          type="button"
+          :disabled="!editAgentNameValue.trim() || editAgentNameValue.trim().length < 2"
         >
           <i class="pi pi-check"></i>
-          Save
+          Save Changes
         </button>
       </div>
     </div>
@@ -1376,107 +1418,135 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeIn 0.3s ease-out;
+  padding: var(--space-4);
 }
 
 .edit-modal {
   background: white;
   border-radius: var(--radius-lg);
   width: 100%;
-  max-width: 500px;
-  margin: var(--space-4);
-  box-shadow: var(--shadow-lg);
-  animation: slideUp 0.2s ease-out;
+  max-width: 480px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-5);
+  padding: var(--space-6) var(--space-6) var(--space-4);
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   border-bottom: 1px solid var(--color-border);
 }
 
 .modal-title {
+  font-family: var(--font-heading);
   font-size: 1.25rem;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--color-heading);
   margin: 0;
+  line-height: 1.2;
 }
 
 .modal-close {
-  background: none;
+  background: transparent;
   border: none;
   padding: var(--space-2);
   color: var(--color-text-secondary);
   cursor: pointer;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   transition: all var(--transition-normal);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
 }
 
 .modal-close:hover {
-  background: var(--color-bg-hover);
-  color: var(--color-text-primary);
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-error);
+  transform: scale(1.1);
 }
 
 .modal-body {
-  padding: var(--space-5);
+  padding: var(--space-6);
 }
 
 .form-group {
-  margin-bottom: var(--space-4);
+  margin-bottom: 0;
 }
 
 .form-label {
   display: block;
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
+  font-family: var(--font-subheading);
   font-weight: 500;
   color: var(--color-text-primary);
   font-size: 0.875rem;
+  line-height: 1.4;
 }
 
 .form-input {
   width: 100%;
-  padding: var(--space-3);
-  border: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid var(--color-border);
   border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  background: var(--color-bg-tertiary);
+  font-size: 1rem;
+  font-family: inherit;
+  background: var(--color-bg-primary);
   color: var(--color-text-primary);
-  transition: border-color var(--transition-normal);
+  transition: all var(--transition-normal);
+  box-sizing: border-box;
+  line-height: 1.5;
 }
 
 .form-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(46, 102, 244, 0.12);
+  background: white;
+}
+
+.form-input::placeholder {
+  color: var(--color-text-tertiary);
+  font-size: 0.9rem;
 }
 
 .char-count {
   text-align: right;
   font-size: 0.75rem;
-  color: var(--color-text-secondary);
-  margin-top: var(--space-1);
+  color: var(--color-text-tertiary);
+  margin-top: var(--space-2);
+  font-family: var(--font-subheading);
+  transition: color var(--transition-normal);
+}
+
+.char-count.text-warning {
+  color: var(--color-warning);
+  font-weight: 500;
 }
 
 .modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: var(--space-3);
-  padding: var(--space-5);
-  border-top: 1px solid var(--color-border);
-  background: var(--color-bg-tertiary);
-  border-bottom-left-radius: var(--radius-lg);
-  border-bottom-right-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-6) var(--space-6);
+  background: var(--color-bg-primary);
 }
 
 .btn {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-5);
   border-radius: var(--radius-md);
   font-size: 0.875rem;
   font-weight: 500;
@@ -1486,38 +1556,66 @@ onUnmounted(() => {
   align-items: center;
   gap: var(--space-2);
   border: none;
+  font-family: var(--font-subheading);
+  line-height: 1.4;
+  min-width: 80px;
+  justify-content: center;
+}
+
+.cancel-btn {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  transition: all var(--transition-normal);
+}
+
+.cancel-btn:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border-color: var(--color-text-tertiary);
+  transform: translateY(-1px);
 }
 
 .save-btn {
   background: var(--color-primary);
   color: white;
+  border: 1px solid var(--color-primary);
+  box-shadow: 0 2px 4px rgba(46, 102, 244, 0.2);
 }
 
 .save-btn:hover:not(:disabled) {
   background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
   transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(46, 102, 244, 0.3);
 }
 
 .save-btn:disabled {
   background: var(--color-bg-hover);
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
+  border-color: var(--color-border);
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { 
+    opacity: 0; 
+  }
+  to { 
+    opacity: 1; 
+  }
 }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -1597,17 +1695,36 @@ onUnmounted(() => {
   }
 
   .modal-content {
-    margin: var(--space-4);
-    max-height: calc(100vh - 32px);
+    margin: var(--space-3);
+    max-height: calc(100vh - 24px);
+    max-width: calc(100vw - 24px);
+  }
+
+  .edit-modal {
+    max-width: calc(100vw - 24px);
   }
 
   .modal-header {
-    flex-direction: column;
-    text-align: center;
+    padding: var(--space-4) var(--space-4) var(--space-3);
+  }
+
+  .modal-body {
+    padding: var(--space-4);
   }
 
   .modal-footer {
-    flex-direction: column;
+    padding: var(--space-3) var(--space-4) var(--space-4);
+    gap: var(--space-2);
+  }
+
+  .btn {
+    padding: var(--space-3) var(--space-4);
+    font-size: 0.875rem;
+  }
+
+  .form-input {
+    font-size: 1rem; /* Better for mobile input */
+    padding: var(--space-3);
   }
 }
 
@@ -1651,14 +1768,31 @@ onUnmounted(() => {
 
 [data-theme="dark"] .modal-content {
   background: var(--color-bg-secondary);
+  border-color: var(--color-border);
 }
 
 [data-theme="dark"] .edit-modal {
   background: var(--color-bg-secondary);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .modal-header {
+  background: linear-gradient(135deg, var(--color-bg-tertiary) 0%, var(--color-bg-secondary) 100%);
+  border-bottom-color: var(--color-border);
 }
 
 [data-theme="dark"] .modal-footer {
+  background: var(--color-bg-secondary);
+}
+
+[data-theme="dark"] .form-input {
   background: var(--color-bg-tertiary);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .form-input:focus {
+  background: var(--color-bg-primary);
+  border-color: var(--color-primary);
 }
 
 [data-theme="dark"] .no-results {
