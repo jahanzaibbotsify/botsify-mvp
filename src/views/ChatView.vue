@@ -7,7 +7,6 @@ import ChatMessage from '@/components/chat/ChatMessage.vue';
 import MessageInput from '@/components/chat/MessageInput.vue';
 import TypingIndicator from '@/components/chat/TypingIndicator.vue';
 import SystemMessageSender from '@/components/chat/SystemMessageSender.vue';
-import ApiErrorNotification from '@/components/chat/ApiErrorNotification.vue';
 import ChatHeader from '@/components/chat/ChatHeader.vue';
 
 
@@ -103,7 +102,6 @@ function toggleStorySidebar() {
 <template>
   <div v-if="chat" class="chat-view" :class="{ 'with-sidebar': showStorySidebar }">
     <!-- API Error Notification -->
-    <ApiErrorNotification />
     <ChatHeader 
       v-if="chat"
       :title="chat.title"

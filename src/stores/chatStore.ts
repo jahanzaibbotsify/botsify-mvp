@@ -106,20 +106,29 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   // Save data to localStorage
-  function saveToTemplate() {
+  async function saveToTemplate(): Promise<boolean> {
     try {
       const chatRecords = JSON.parse(JSON.stringify(chats.value[0]??''));      
       const aiPrompt = JSON.stringify(chatRecords.story ?? {});
       delete chatRecords.story;
       const chatsJson = JSON.stringify([chatRecords]);
       
-      botsifyApi.saveBotTemplates(chatsJson, aiPrompt);
-
-      //save bot templates
-    } catch (error) {
-      console.error('❌ Error saving to storage:', error);
-      return false;
-    }
+      const response = await botsifyApi.saveBotTemplates(chatsJson, aiPrompt);
+      
+             if (!response.success) {
+         console.error('❌ Error saving bot templates:', response.message);
+         // Error message will be shown in red text in the chat
+         // Toast notifications disabled as requested
+         return false;
+       }
+      
+      return true;
+         } catch (error) {
+       console.error('❌ Error saving to storage:', error);
+       // Error message will be shown in red text in the chat
+       // Toast notifications disabled as requested
+       return false;
+     }
   }
 
   // Add window event listeners to ensure data is saved before page unload
@@ -180,7 +189,14 @@ console.log(defaultPromptTemplate, "defaultPromptTemplate");
     // Only trigger AI response for user messages when connected
     if (sender === 'user') {
       console.log('Triggering AI response');
-      await handleAIResponse(chat);
+      try {
+        await handleAIResponse(chat);
+      } catch (error: any) {
+        console.error('Error in handleAIResponse:', error);
+        // Error is already handled in handleAIResponse, just ensure typing indicators are off
+        isTyping.value = false;
+        isAIPromptGenerating.value = false;
+      }
     } 
 
     return newMessage;
@@ -739,43 +755,92 @@ Use the above connected services information to understand what tools and data s
               console.log('Parsed tool arguments:', args);
 
               if (args.tasks && Array.isArray(args.tasks)) {
-                // Process configuration tasks
-                const configResult = await openAIStore.processConfigurationTool(args.tasks);
-                console.log('Configuration result:', configResult);
+                try {
+                  // Process configuration tasks
+                  const configResult = await openAIStore.processConfigurationTool(args.tasks);
+                  console.log('Configuration result:', configResult);
 
-                // Add configuration result as a new message
-                const configMessage: Message = {
-                  id: Date.now().toString() + '_config',
-                  content: configResult,
-                  timestamp: new Date(),
-                  sender: 'assistant'
-                };
-                chat.messages.push(configMessage);
-                chat.lastMessage = configResult;
+                  // Check if any tasks failed
+                  if (configResult.includes('❌ Failed to complete')) {
+                    // Show error message
+                    const errorMessage: Message = {
+                      id: Date.now().toString() + '_config_error',
+                      content: 'Internal Server Error, Please Contact team@botsify.com',
+                      timestamp: new Date(),
+                      sender: 'assistant'
+                    };
+                    chat.messages.push(errorMessage);
+                    chat.lastMessage = errorMessage.content;
+                    
+                    // Error message will be shown in red text in the chat
+                    // Toast notifications disabled as requested
+                    
+                    // Stop the flow
+                    return;
+                  }
 
-                // Force UI update
-                await nextTick();
+                  // Add configuration result as a new message
+                  const configMessage: Message = {
+                    id: Date.now().toString() + '_config',
+                    content: configResult,
+                    timestamp: new Date(),
+                    sender: 'assistant'
+                  };
+                  chat.messages.push(configMessage);
+                  chat.lastMessage = configResult;
+
+                  // Force UI update
+                  await nextTick();
+                } catch (configError: any) {
+                  console.error('Configuration tool error:', configError);
+                  const errorMessage: Message = {
+                    id: Date.now().toString() + '_config_error',
+                    content: 'Internal Server Error, Please Contact team@botsify.com',
+                    timestamp: new Date(),
+                    sender: 'assistant'
+                  };
+                  chat.messages.push(errorMessage);
+                  chat.lastMessage = errorMessage.content;
+                  
+                  // Error message will be shown in red text in the chat
+                  // Toast notifications disabled as requested
+                  
+                  // Stop the flow
+                  return;
+                }
               } else {
                 console.error('Invalid tool call arguments:', args);
                 const errorMessage: Message = {
                   id: Date.now().toString() + '_error',
-                  content: '❌ Invalid configuration request format.',
+                  content: 'Internal Server Error, Please Contact team@botsify.com',
                   timestamp: new Date(),
                   sender: 'assistant'
                 };
                 chat.messages.push(errorMessage);
                 chat.lastMessage = errorMessage.content;
+                
+                // Error message will be shown in red text in the chat
+                // Toast notifications disabled as requested
+                
+                // Stop the flow
+                return;
               }
             } catch (parseError: any) {
               console.error('Error parsing tool call arguments:', parseError);
               const errorMessage: Message = {
                 id: Date.now().toString() + '_parse_error',
-                content: `❌ Error processing configuration request: ${parseError.message}`,
+                content: 'Internal Server Error, Please Contact team@botsify.com',
                 timestamp: new Date(),
                 sender: 'assistant'
               };
               chat.messages.push(errorMessage);
               chat.lastMessage = errorMessage.content;
+              
+              // Error message will be shown in red text in the chat
+              // Toast notifications disabled as requested
+              
+              // Stop the flow
+              return;
             }
           }
         }
@@ -796,6 +861,14 @@ Use the above connected services information to understand what tools and data s
         }
       }
 
+      // Save templates only on successful completion
+      try {
+        await saveToTemplate();
+      } catch (saveError) {
+        console.error('Error saving templates after successful AI response:', saveError);
+        // Don't show error for template saving to avoid confusion
+      }
+
     } catch (error: any) {
       console.error('AI response error:', error);
       console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
@@ -806,17 +879,27 @@ Use the above connected services information to understand what tools and data s
         chat.messages.pop();
       }
 
-      // Add an error message
+      // Add an error message with standardized message
+      const errorMessage = error.message || 'Internal Server Error, Please Contact team@botsify.com';
       addMessage(
         chat.id,
-        `Error: ${error.message || 'An unknown error occurred while generating a response.'}`,
+        errorMessage,
         'assistant'
       );
+
+      // Error message will be shown in red text in the chat
+      // Toast notifications disabled as requested
+
+      // Stop the flow - don't continue with any other operations
+      return;
     } finally {
       // Always set typing to false when done
+      isTyping.value = false;
       isAIPromptGenerating.value = false;
       console.log('Typing indicator turned off');
-      saveToTemplate();
+      
+      // Note: saveToTemplate() is not called here to prevent additional API calls on error
+      // The flow stops completely when an error occurs
     }
   }
 
