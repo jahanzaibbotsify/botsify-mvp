@@ -295,7 +295,7 @@ onMounted(() => {
 .header-icon {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, var(--color-primary), #2D5BFF);
+  background: #000;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -303,7 +303,32 @@ onMounted(() => {
   margin: 0 auto var(--space-4);
   color: white;
   font-size: 2rem;
-  box-shadow: 0 8px 16px rgba(68, 115, 246, 0.3);
+  box-shadow: 0 8px 16px rgba(255, 0, 128, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.header-icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(
+    from 180deg,
+    #ff0080,
+    #7928ca,
+    #2afadf,
+    #7928ca,
+    #ff0080
+  );
+  filter: blur(40px);
+  opacity: 0.8;
+  z-index: 0;
+  border-radius: 50%;
+}
+
+.header-icon > * {
+  position: relative;
+  z-index: 1;
 }
 
 .header-title {

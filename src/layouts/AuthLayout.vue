@@ -128,7 +128,6 @@ const pageContent = computed(() => {
 /* Left Brand Panel */
 .auth-brand-panel {
   flex: 1;
-  background: linear-gradient(145deg, var(--color-primary) 0%, #1E40AF 100%);
   position: relative;
   display: flex;
   align-items: center;
@@ -140,14 +139,35 @@ const pageContent = computed(() => {
 .auth-brand-panel::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  inset: 0;
+  background: conic-gradient(
+    from 180deg,
+    #ff0080,
+    #7928ca,
+    #2afadf,
+    #7928ca,
+    #ff0080
+  );
+  filter: blur(60px);
+  opacity: 0.6;
+  z-index: 0;
+}
+
+.auth-brand-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(#ffffff20 1px, transparent 1px);
+  background-size: 4px 4px;
+  opacity: 0.18;
+  z-index: 1;
+  mix-blend-mode: color-dodge;
   pointer-events: none;
+}
+
+.auth-brand-panel > * {
+  position: relative;
+  z-index: 2;
 }
 
 .auth-brand-content {
@@ -158,7 +178,7 @@ const pageContent = computed(() => {
   padding: var(--space-8);
   max-width: 480px;
   width: 100%;
-  z-index: 1;
+  z-index: 2;
   position: relative;
   gap: var(--space-8);
 }

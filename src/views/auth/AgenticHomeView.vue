@@ -407,10 +407,6 @@ onMounted(() => {
 }
 
 .welcome-header {
-  background: linear-gradient(135deg, var(--color-primary) 0%, #2D5BFF 100%);
-  background-image: 
-    radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
   border-radius: var(--radius-lg);
   padding: var(--space-8);
   margin-bottom: var(--space-8);
@@ -425,19 +421,44 @@ onMounted(() => {
 .welcome-header::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.02) 50%, transparent 70%),
-    linear-gradient(-45deg, transparent 30%, rgba(255, 255, 255, 0.02) 50%, transparent 70%);
-  pointer-events: none;
+  inset: 0;
+  background: conic-gradient(
+    from 180deg,
+    #ff0080,
+    #7928ca,
+    #2afadf,
+    #7928ca,
+    #ff0080
+  );
+  filter: blur(60px);
+  opacity: 0.6;
+  z-index: 0;
+  border-radius: var(--radius-lg);
 }
+
+.welcome-header::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(#ffffff20 1px, transparent 1px);
+  background-size: 4px 4px;
+  opacity: 0.18;
+  z-index: 1;
+  mix-blend-mode: color-dodge;
+  pointer-events: none;
+  border-radius: var(--radius-lg);
+}
+
+.welcome-header > * {
+  position: relative;
+  z-index: 2;
+}
+
+
 
 .welcome-content {
   flex: 1;
-  z-index: 1;
+  z-index: 2;
   position: relative;
 }
 
@@ -618,7 +639,7 @@ onMounted(() => {
 .stat-icon {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, var(--color-primary), #2D5BFF);
+  background: #000;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -626,6 +647,31 @@ onMounted(() => {
   color: white;
   font-size: 1.25rem;
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(
+    from 180deg,
+    #ff0080,
+    #7928ca,
+    #2afadf,
+    #7928ca,
+    #ff0080
+  );
+  filter: blur(30px);
+  opacity: 0.8;
+  z-index: 0;
+  border-radius: var(--radius-md);
+}
+
+.stat-icon > * {
+  position: relative;
+  z-index: 1;
 }
 
 .stat-content {
@@ -1060,13 +1106,38 @@ onMounted(() => {
   justify-content: center;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
-  background: linear-gradient(135deg, var(--color-primary), #2D5BFF);
+  background: #000;
   color: white;
   border: none;
   border-radius: var(--radius-md);
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.upgrade-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(
+    from 180deg,
+    #ff0080,
+    #7928ca,
+    #2afadf,
+    #7928ca,
+    #ff0080
+  );
+  filter: blur(30px);
+  opacity: 0.8;
+  z-index: 0;
+  border-radius: var(--radius-md);
+}
+
+.upgrade-btn > * {
+  position: relative;
+  z-index: 1;
 }
 
 .upgrade-btn:hover {

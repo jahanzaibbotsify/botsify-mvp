@@ -288,7 +288,9 @@ onUnmounted(() => {
             </button>
           </div>
           
-          <div v-if="filteredAgents.length === 0" class="no-results">
+
+        </div>
+        <div v-if="filteredAgents.length === 0" class="no-results">
             <div class="no-results-icon">
               <i class="pi pi-plus"></i>
             </div>
@@ -306,8 +308,6 @@ onUnmounted(() => {
               <span>Add Agent</span>
             </button>
           </div>
-        </div>
-
         <div v-if="filteredAgents.length > 0" class="agents-grid">
           <div
             v-for="(agent, index) in filteredAgents"
@@ -496,7 +496,6 @@ onUnmounted(() => {
 .hero-section {
   text-align: center;
   padding: var(--space-8) var(--space-6) var(--space-6);
-  background: linear-gradient(135deg, var(--color-primary) 0%, #1e40af 100%);
   color: white;
   position: relative;
   overflow: hidden;
@@ -505,16 +504,40 @@ onUnmounted(() => {
 .hero-section::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M20 20c0 4.4-3.6 8-8 8s-8-3.6-8-8 3.6-8 8-8 8 3.6 8 8zm0-20c0 4.4-3.6 8-8 8s-8-3.6-8-8 3.6-8 8-8 8 3.6 8 8z'/%3E%3C/g%3E%3C/svg%3E") repeat;
+  inset: 0;
+  background: conic-gradient(
+    from 180deg,
+    #ff0080,
+    #7928ca,
+    #2afadf,
+    #7928ca,
+    #ff0080
+  );
+  filter: blur(60px);
+  opacity: 0.6;
+  z-index: 0;
+}
+
+.hero-section::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(#ffffff20 1px, transparent 1px);
+  background-size: 4px 4px;
+  opacity: 0.18;
+  z-index: 1;
+  mix-blend-mode: color-dodge;
+  pointer-events: none;
+}
+
+.hero-section > * {
+  position: relative;
+  z-index: 2;
 }
 
 .hero-content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   max-width: 700px;
   margin: 0 auto;
 }

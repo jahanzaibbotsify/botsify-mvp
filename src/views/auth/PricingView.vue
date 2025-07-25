@@ -222,7 +222,6 @@ const skipForNow = () => {
 .hero-section {
   text-align: center;
   padding: var(--space-8) var(--space-6) var(--space-7);
-  background: linear-gradient(135deg, var(--color-primary) 0%, #1e40af 100%);
   color: white;
   position: relative;
   overflow: hidden;
@@ -231,17 +230,40 @@ const skipForNow = () => {
 .hero-section::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
-  opacity: 0.5;
+  inset: 0;
+  background: conic-gradient(
+    from 180deg,
+    #ff0080,
+    #7928ca,
+    #2afadf,
+    #7928ca,
+    #ff0080
+  );
+  filter: blur(60px);
+  opacity: 0.6;
+  z-index: 0;
+}
+
+.hero-section::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(#ffffff20 1px, transparent 1px);
+  background-size: 4px 4px;
+  opacity: 0.18;
+  z-index: 1;
+  mix-blend-mode: color-dodge;
+  pointer-events: none;
+}
+
+.hero-section > * {
+  position: relative;
+  z-index: 2;
 }
 
 .hero-content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   max-width: 600px;
   margin: 0 auto;
 }
