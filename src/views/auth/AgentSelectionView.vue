@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import type { Agent, AgentCategory } from '@/types/auth'
@@ -13,6 +13,7 @@ const selectedAgentId = ref<string | null>(null)
 const showAgentDetails = ref(false)
 const selectedAgentForDetails = ref<Agent | null>(null)
 const activeTab = ref<'my-agents' | 'shared-agents'>('my-agents')
+const activeMenuId = ref<string | null>(null)
 
 // Filter agents based on search, category, and tab
 const filteredAgents = computed(() => {
@@ -115,11 +116,58 @@ const getRatingStars = (rating: number) => {
   return stars
 }
 
+const toggleAgentMenu = (agentId: string) => {
+  activeMenuId.value = activeMenuId.value === agentId ? null : agentId
+}
+
+const editAgentName = (agent: Agent) => {
+  console.log('Edit agent name:', agent.name)
+  activeMenuId.value = null
+}
+
+const cloneAgent = (agent: Agent) => {
+  console.log('Clone agent:', agent.name)
+  activeMenuId.value = null
+}
+
+const deleteAgent = (agent: Agent) => {
+  console.log('Delete agent:', agent.name)
+  activeMenuId.value = null
+}
+
+const copyPayload = (agent: Agent) => {
+  console.log('Copy payload for:', agent.name)
+  activeMenuId.value = null
+}
+
+const exportData = (agent: Agent) => {
+  console.log('Export data for:', agent.name)
+  activeMenuId.value = null
+}
+
+const addAgent = () => {
+  console.log('Add new agent')
+  // Redirect to agent creation page or open modal
+}
+
+// Click outside to close dropdown
+const handleClickOutside = (event: Event) => {
+  const target = event.target as HTMLElement
+  if (!target.closest('.agent-menu')) {
+    activeMenuId.value = null
+  }
+}
+
 onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
   // Set first popular agent as suggested
   if (popularAgents.value.length > 0) {
     // Could pre-select or highlight first popular agent
   }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -132,16 +180,17 @@ onMounted(() => {
           <i class="pi pi-users"></i>
           <span>AI Agent Selection</span>
         </div>
-        <h1 class="hero-title">Choose Your AI Assistant</h1>
+        <h1 class="hero-title">Choose Your AI Agent</h1>
         <p class="hero-subtitle">
           Select from our curated collection of specialized AI agents, each designed for specific tasks and industries
         </p>
       </div>
     </div>
 
-    <!-- Agent Tabs -->
-    <div class="tabs-section">
-      <div class="tabs-container">
+    <!-- Tabs and Search Section -->
+    <div class="tabs-search-section">
+      <div class="tabs-search-container">
+        <!-- Left: Agent Tabs -->
         <div class="tab-switcher">
           <button
             @click="switchTab('my-agents')"
@@ -162,12 +211,8 @@ onMounted(() => {
             <span class="tab-count">{{ authStore.agents.filter(a => a.createdBy === 'community').length }}</span>
           </button>
         </div>
-      </div>
-    </div>
 
-    <!-- Search and Filters -->
-    <div class="filters-section">
-      <div class="filters-container">
+        <!-- Right: Search Bar -->
         <div class="search-wrapper">
           <div class="search-input-container">
             <i class="pi pi-search search-icon"></i>
@@ -182,8 +227,6 @@ onMounted(() => {
             </button>
           </div>
         </div>
-
-
       </div>
     </div>
 
@@ -206,13 +249,20 @@ onMounted(() => {
           
           <div v-if="filteredAgents.length === 0" class="no-results">
             <div class="no-results-icon">
-              <i class="pi pi-search"></i>
+              <i class="pi pi-plus"></i>
             </div>
-            <h3>No agents found</h3>
-            <p>Try adjusting your search to find more agents</p>
-            <button @click="searchQuery = ''" class="reset-filters-btn">
+            <h3 v-if="searchQuery">No agents found</h3>
+            <h3 v-else>No agents available</h3>
+            <p v-if="searchQuery">Try adjusting your search to find more agents</p>
+            <p v-else>Get started by adding your first agent</p>
+            
+            <button v-if="searchQuery" @click="searchQuery = ''" class="reset-filters-btn">
               <i class="pi pi-refresh"></i>
-              <span>Reset Filters</span>
+              <span>Reset Search</span>
+            </button>
+            <button v-else @click="addAgent" class="add-agent-btn">
+              <i class="pi pi-plus"></i>
+              <span>Add Agent</span>
             </button>
           </div>
         </div>
@@ -230,99 +280,55 @@ onMounted(() => {
             }"
             :style="{ '--card-delay': index * 0.05 + 's' }"
           >
-            <!-- Agent Header -->
-            <div class="agent-header">
-              <div class="agent-avatar-wrapper">
-                <img :src="agent.avatar" :alt="agent.name" class="agent-avatar" />
-                <div v-if="agent.isPremium" class="premium-badge">
-                  <i class="pi pi-crown"></i>
-                </div>
-                <div v-if="agent.isPopular" class="popular-badge">
-                  <i class="pi pi-star-fill"></i>
-                </div>
-              </div>
-              
-              <div class="agent-info">
-                <h3 class="agent-name">{{ agent.name }}</h3>
-                <p class="agent-category">{{ categories.find(c => c.id === agent.category)?.name }}</p>
+            <!-- Agent Card -->
+            <div class="agent-card-content">
+              <!-- Agent Menu (Top Right Corner) -->
+              <div class="agent-menu">
+                <button @click="toggleAgentMenu(agent.id)" class="menu-trigger">
+                  <i class="pi pi-ellipsis-v"></i>
+                </button>
                 
-                <div class="agent-rating">
-                  <div class="stars">
-                    <i
-                      v-for="(star, index) in getRatingStars(agent.rating)"
-                      :key="index"
-                      :class="{
-                        'pi pi-star-fill': star === 'full',
-                        'pi pi-star-half-fill': star === 'half',
-                        'pi pi-star': star === 'empty'
-                      }"
-                    ></i>
-                  </div>
-                  <span class="rating-text">{{ formatRating(agent.rating) }} ({{ agent.reviewCount }})</span>
+                <div v-if="activeMenuId === agent.id" class="menu-dropdown" @click.stop>
+                  <button @click="editAgentName(agent)" class="menu-item">
+                    <i class="pi pi-pencil"></i>
+                    <span>Edit Name</span>
+                  </button>
+                  <button @click="cloneAgent(agent)" class="menu-item">
+                    <i class="pi pi-copy"></i>
+                    <span>Clone</span>
+                  </button>
+                  <button @click="deleteAgent(agent)" class="menu-item delete">
+                    <i class="pi pi-trash"></i>
+                    <span>Delete</span>
+                  </button>
+                  <button @click="copyPayload(agent)" class="menu-item">
+                    <i class="pi pi-clipboard"></i>
+                    <span>Copy Payload</span>
+                  </button>
+                  <button @click="exportData(agent)" class="menu-item">
+                    <i class="pi pi-download"></i>
+                    <span>Export Data</span>
+                  </button>
                 </div>
               </div>
-            </div>
 
-            <!-- Agent Description -->
-            <div class="agent-body">
-              <p class="agent-description">{{ agent.description }}</p>
-              
-              <div class="capabilities">
-                <h4>Key Capabilities:</h4>
-                <ul class="capabilities-list">
-                  <li v-for="capability in agent.capabilities.slice(0, 3)" :key="capability">
-                    <i class="pi pi-check"></i>
-                    <span>{{ capability }}</span>
-                  </li>
-                  <li v-if="agent.capabilities.length > 3" class="more-capabilities">
-                    +{{ agent.capabilities.length - 3 }} more capabilities
-                  </li>
-                </ul>
+              <!-- Agent Info Column -->
+              <div class="agent-info-column">
+                <!-- Agent Avatar -->
+                <div class="agent-avatar-section">
+                  <img :src="agent.avatar" :alt="agent.name" class="agent-avatar" />
+                </div>
+                
+                <!-- Agent Details -->
+                <div class="agent-details">
+                  <h3 class="agent-title">{{ agent.name }}</h3>
+                  <p class="agent-users">{{ agent.reviewCount.toLocaleString() }} users</p>
+                  <p class="agent-role">{{ categories.find(c => c.id === agent.category)?.name }}</p>
+                </div>
               </div>
-
-              <div class="agent-tags">
-                <span v-for="tag in agent.tags.slice(0, 3)" :key="tag" class="tag">
-                  {{ tag }}
-                </span>
-                <span v-if="agent.tags.length > 3" class="more-tags">
-                  +{{ agent.tags.length - 3 }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Agent Actions -->
-            <div class="agent-actions">
-              <button @click="showDetails(agent)" class="details-btn">
-                <i class="pi pi-info"></i>
-                <span>Details</span>
-              </button>
-              
-              <button
-                @click="handleAgentSelect(agent)"
-                class="select-btn"
-                :disabled="authStore.isLoading"
-              >
-                <span v-if="authStore.isLoading && selectedAgentId === agent.id" class="loading-spinner"></span>
-                <template v-else>
-                  <i class="pi pi-plus"></i>
-                  <span>Select Agent</span>
-                </template>
-              </button>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Bottom CTA -->
-    <div class="bottom-cta">
-      <div class="cta-content">
-        <h3>Can't decide? No problem!</h3>
-        <p>You can always add more agents later from your dashboard</p>
-        <button @click="skipSelection" class="skip-button">
-          <i class="pi pi-arrow-right"></i>
-          <span>Skip for Now</span>
-        </button>
       </div>
     </div>
 
@@ -462,15 +468,20 @@ onMounted(() => {
   margin: 0;
 }
 
-/* Tabs Section */
-.tabs-section {
-  padding: var(--space-6) var(--space-6) 0;
+/* Tabs and Search Section */
+.tabs-search-section {
+  padding: var(--space-6);
   background: white;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.tabs-container {
+.tabs-search-container {
   max-width: 1400px;
   margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
 }
 
 .tab-switcher {
@@ -482,6 +493,7 @@ onMounted(() => {
   border: 1px solid var(--color-border);
   max-width: 500px;
   margin: 0;
+  flex-shrink: 0;
 }
 
 .tab-button {
@@ -524,23 +536,11 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* Filters Section */
-.filters-section {
-  padding: var(--space-6);
-  background: white;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.filters-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-}
-
+/* Search Wrapper */
 .search-wrapper {
   flex: 1;
+  max-width: 400px;
+  min-width: 280px;
 }
 
 .search-input-container {
@@ -695,6 +695,26 @@ onMounted(() => {
   transform: translateY(-2px);
 }
 
+.add-agent-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.add-agent-btn:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-2px);
+}
+
 /* Agents Grid */
 .agents-grid {
   display: grid;
@@ -709,7 +729,6 @@ onMounted(() => {
   border-radius: var(--radius-lg);
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
   position: relative;
   animation: slideUp 0.6s ease-out;
   animation-delay: var(--card-delay);
@@ -728,104 +747,140 @@ onMounted(() => {
 }
 
 .agent-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  border-color: var(--color-primary);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
-.agent-card.popular {
-  border-color: var(--color-primary);
-  box-shadow: 0 4px 6px -1px rgba(68, 115, 246, 0.1);
-}
-
-.agent-card.premium {
-  border-color: var(--color-accent);
-  box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.1);
-}
-
-/* Agent Header */
-.agent-header {
-  padding: var(--space-5);
-  border-bottom: 1px solid var(--color-border);
-  background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-primary) 100%);
-}
-
-.agent-avatar-wrapper {
+.agent-card-content {
   position: relative;
-  width: 80px;
-  height: 80px;
-  margin: 0 auto var(--space-4);
+  padding: var(--space-5);
+  min-height: 180px;
+}
+
+/* Agent Info Column */
+.agent-info-column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+/* Agent Avatar Section */
+.agent-avatar-section {
+  flex-shrink: 0;
 }
 
 .agent-avatar {
-  width: 100%;
-  height: 100%;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid var(--color-border);
 }
 
-.premium-badge,
-.popular-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+/* Agent Details */
+.agent-details {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  color: white;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  width: 100%;
 }
 
-.premium-badge {
-  background: linear-gradient(135deg, var(--color-accent), #8B5CF6);
-}
-
-.popular-badge {
-  background: linear-gradient(135deg, var(--color-primary), #1e40af);
-}
-
-.agent-info {
-  text-align: center;
-}
-
-.agent-name {
-  font-size: 1.25rem;
+.agent-title {
+  font-size: 1.125rem;
   font-weight: 600;
   color: var(--color-text-primary);
-  margin-bottom: var(--space-1);
+  margin: 0;
+  line-height: 1.2;
 }
 
-.agent-category {
+.agent-users {
   font-size: 0.875rem;
   color: var(--color-text-secondary);
-  margin-bottom: var(--space-3);
+  margin: 0;
 }
 
-.agent-rating {
+.agent-role {
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
+  background: var(--color-bg-tertiary);
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  margin: 0;
+}
+
+/* Agent Menu */
+.agent-menu {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+}
+
+.menu-trigger {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-}
-
-.stars {
-  display: flex;
-  gap: 2px;
-}
-
-.stars i {
-  font-size: 0.875rem;
-  color: #fbbf24;
-}
-
-.rating-text {
-  font-size: 0.8rem;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
   color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.menu-trigger:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 10;
+  min-width: 160px;
+  margin-top: var(--space-1);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background var(--transition-normal);
+}
+
+.menu-item:hover {
+  background: var(--color-bg-hover);
+}
+
+.menu-item.delete {
+  color: var(--color-error);
+}
+
+.menu-item.delete:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.menu-item i {
+  width: 16px;
+  font-size: 0.875rem;
 }
 
 /* Agent Body */
@@ -1181,11 +1236,16 @@ onMounted(() => {
     font-size: 1rem;
   }
 
-  .tabs-section,
-  .filters-section,
+  .tabs-search-section,
   .agents-section,
   .bottom-cta {
     padding: var(--space-4);
+  }
+
+  .tabs-search-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-4);
   }
 
   .tab-switcher {
@@ -1197,10 +1257,14 @@ onMounted(() => {
     font-size: 0.8rem;
   }
 
-  .filters-container {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-3);
+  .search-wrapper {
+    max-width: 100%;
+    min-width: auto;
+    width: 100%;
+  }
+
+  .search-input {
+    font-size: 1rem; /* Better for mobile */
   }
 
 
@@ -1252,8 +1316,7 @@ onMounted(() => {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
 }
 
-[data-theme="dark"] .tabs-section,
-[data-theme="dark"] .filters-section,
+[data-theme="dark"] .tabs-search-section,
 [data-theme="dark"] .agents-section,
 [data-theme="dark"] .bottom-cta {
   background: var(--color-bg-secondary);

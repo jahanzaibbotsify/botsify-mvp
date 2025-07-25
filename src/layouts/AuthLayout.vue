@@ -69,10 +69,6 @@ const pageContent = computed(() => {
 
         <!-- Main Content -->
         <div class="main-content">
-          <div class="content-icon">
-            <i :class="pageContent.icon"></i>
-          </div>
-          
           <div class="content-text">
             <h1 class="main-title">{{ pageContent.title }}</h1>
             <p class="main-subtitle">{{ pageContent.subtitle }}</p>

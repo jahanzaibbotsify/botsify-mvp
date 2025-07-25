@@ -9,8 +9,7 @@ const authStore = useAuthStore()
 
 // Form state
 const form = reactive<SignupCredentials>({
-  firstName: '',
-  lastName: '',
+  fullName: '',
   email: '',
   password: '',
   confirmPassword: '',
@@ -23,8 +22,7 @@ const validationErrors = ref<FormValidation[]>([])
 
 // Computed properties
 const isFormValid = computed(() => {
-  return form.firstName.trim() !== '' && 
-         form.lastName.trim() !== '' &&
+  return form.fullName.trim() !== '' &&
          form.email.trim() !== '' && 
          form.password.trim() !== '' &&
          form.confirmPassword.trim() !== '' &&
@@ -99,14 +97,9 @@ const validateTerms = (accepted: boolean): string | null => {
 const validateForm = (): boolean => {
   const errors: FormValidation[] = []
   
-  const firstNameError = validateName(form.firstName, 'First name')
-  if (firstNameError) {
-    errors.push({ field: 'firstName', message: firstNameError, type: 'error' })
-  }
-  
-  const lastNameError = validateName(form.lastName, 'Last name')
-  if (lastNameError) {
-    errors.push({ field: 'lastName', message: lastNameError, type: 'error' })
+  const fullNameError = validateName(form.fullName, 'Full name')
+  if (fullNameError) {
+    errors.push({ field: 'fullName', message: fullNameError, type: 'error' })
   }
   
   const emailError = validateEmail(form.email)
@@ -194,56 +187,29 @@ const clearFieldError = (field: string) => {
 
     <!-- Signup Form -->
     <form @submit.prevent="handleSubmit" class="auth-form">
-      <!-- Name Fields -->
-      <div class="name-fields">
-        <div class="form-group">
-          <label for="firstName" class="form-label">
-            First Name
-            <span class="required">*</span>
-          </label>
-          <div class="input-wrapper" :class="{ error: hasFieldError('firstName') }">
-            <div class="input-icon">
-              <i class="pi pi-user"></i>
-            </div>
-            <input
-              id="firstName"
-              v-model="form.firstName"
-              @input="clearFieldError('firstName')"
-              type="text"
-              class="form-input"
-              placeholder="First name"
-              autocomplete="given-name"
-              :disabled="authStore.isLoading"
-            />
+      <!-- Full Name Field -->
+      <div class="form-group">
+        <label for="fullName" class="form-label">
+          Full Name
+          <span class="required">*</span>
+        </label>
+        <div class="input-wrapper" :class="{ error: hasFieldError('fullName') }">
+          <div class="input-icon">
+            <i class="pi pi-user"></i>
           </div>
-          <div v-if="hasFieldError('firstName')" class="field-error">
-            {{ validationErrors.find(e => e.field === 'firstName')?.message }}
-          </div>
+          <input
+            id="fullName"
+            v-model="form.fullName"
+            @input="clearFieldError('fullName')"
+            type="text"
+            class="form-input"
+            placeholder="Enter your full name"
+            autocomplete="name"
+            :disabled="authStore.isLoading"
+          />
         </div>
-
-        <div class="form-group">
-          <label for="lastName" class="form-label">
-            Last Name
-            <span class="required">*</span>
-          </label>
-          <div class="input-wrapper" :class="{ error: hasFieldError('lastName') }">
-            <div class="input-icon">
-              <i class="pi pi-user"></i>
-            </div>
-            <input
-              id="lastName"
-              v-model="form.lastName"
-              @input="clearFieldError('lastName')"
-              type="text"
-              class="form-input"
-              placeholder="Last name"
-              autocomplete="family-name"
-              :disabled="authStore.isLoading"
-            />
-          </div>
-          <div v-if="hasFieldError('lastName')" class="field-error">
-            {{ validationErrors.find(e => e.field === 'lastName')?.message }}
-          </div>
+        <div v-if="hasFieldError('fullName')" class="field-error">
+          {{ validationErrors.find(e => e.field === 'fullName')?.message }}
         </div>
       </div>
 

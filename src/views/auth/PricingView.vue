@@ -94,18 +94,11 @@ const skipForNow = () => {
         >
           <!-- Popular Badge -->
           <div v-if="plan.isPopular" class="plan-badge">
-            <span>🔥 Most Popular</span>
+            <span>Most Popular</span>
           </div>
 
           <!-- Plan Header -->
           <div class="plan-header">
-            <div class="plan-icon-wrapper">
-              <div class="plan-icon">
-                <i v-if="plan.price === 0" class="pi pi-heart"></i>
-                <i v-else-if="plan.id === 'pro'" class="pi pi-bolt"></i>
-                <i v-else class="pi pi-crown"></i>
-              </div>
-            </div>
             <h3 class="plan-title">{{ plan.name }}</h3>
             <p class="plan-subtitle">{{ plan.description }}</p>
           </div>
@@ -315,6 +308,7 @@ const skipForNow = () => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   gap: var(--space-6);
+  align-items: stretch;
 }
 
 /* Plan Cards */
@@ -329,6 +323,9 @@ const skipForNow = () => {
   animation: slideUp 0.6s ease-out;
   animation-delay: var(--card-delay);
   animation-fill-mode: both;
+  display: flex;
+  flex-direction: column;
+  min-height: 500px;
 }
 
 @keyframes slideUp {
@@ -349,20 +346,11 @@ const skipForNow = () => {
 
 .plan-card.popular {
   border-color: var(--color-primary);
-  box-shadow: 0 10px 15px -3px rgba(68, 115, 246, 0.2), 0 4px 6px -2px rgba(68, 115, 246, 0.1);
-  transform: scale(1.05);
+  box-shadow: 0 4px 6px -1px rgba(68, 115, 246, 0.1), 0 2px 4px -1px rgba(68, 115, 246, 0.06);
 }
 
 .plan-card.popular:hover {
-  transform: scale(1.05) translateY(-8px);
-}
-
-.plan-card.free {
-  border-color: var(--color-success);
-}
-
-.plan-card.enterprise {
-  border-color: var(--color-accent);
+  transform: translateY(-8px);
 }
 
 /* Plan Badge */
@@ -371,47 +359,18 @@ const skipForNow = () => {
   top: -12px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(135deg, var(--color-primary), #1e40af);
+  background: var(--color-primary);
   color: white;
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-full);
   font-size: 0.75rem;
-  font-weight: 600;
-  box-shadow: 0 4px 6px -1px rgba(68, 115, 246, 0.3);
+  font-weight: 500;
 }
 
 /* Plan Header */
 .plan-header {
   text-align: center;
   margin-bottom: var(--space-6);
-}
-
-.plan-icon-wrapper {
-  margin-bottom: var(--space-4);
-}
-
-.plan-icon {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary), #1e40af);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;
-  color: white;
-  font-size: 2rem;
-  box-shadow: 0 8px 16px rgba(68, 115, 246, 0.3);
-}
-
-.plan-card.free .plan-icon {
-  background: linear-gradient(135deg, var(--color-success), #16a34a);
-  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
-}
-
-.plan-card.enterprise .plan-icon {
-  background: linear-gradient(135deg, var(--color-accent), #8B5CF6);
-  box-shadow: 0 8px 16px rgba(139, 92, 246, 0.3);
 }
 
 .plan-title {
@@ -578,6 +537,8 @@ const skipForNow = () => {
 /* Plan Action */
 .plan-action {
   text-align: center;
+  margin-top: auto;
+  padding-top: var(--space-4);
 }
 
 .plan-button {
@@ -587,35 +548,20 @@ const skipForNow = () => {
   justify-content: center;
   gap: var(--space-2);
   padding: var(--space-4);
-  background: var(--color-text-primary);
+  background: var(--color-primary);
   color: white;
   border: none;
   border-radius: var(--radius-md);
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-normal);
   margin-bottom: var(--space-3);
   min-height: 56px;
 }
 
-.plan-card.popular .plan-button {
-  background: linear-gradient(135deg, var(--color-primary), #1e40af);
-  box-shadow: 0 4px 12px rgba(68, 115, 246, 0.3);
-}
-
-.plan-card.free .plan-button {
-  background: linear-gradient(135deg, var(--color-success), #16a34a);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
-.plan-card.enterprise .plan-button {
-  background: linear-gradient(135deg, var(--color-accent), #8B5CF6);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
-}
-
 .plan-button:hover:not(:disabled) {
+  background: var(--color-primary-hover);
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .plan-button:disabled {
@@ -727,6 +673,7 @@ const skipForNow = () => {
 
   .plan-card {
     padding: var(--space-4);
+    min-height: 450px;
   }
 
   .plan-card.popular {
@@ -756,10 +703,8 @@ const skipForNow = () => {
     font-size: 1.75rem;
   }
 
-  .plan-icon {
-    width: 64px;
-    height: 64px;
-    font-size: 1.5rem;
+  .plan-card {
+    min-height: 400px;
   }
 
   .price-paid .amount {
