@@ -38,7 +38,7 @@ const parsedContent = computed(() => {
     }
     
     // Check if it's an error message
-    if (typeof contentToRender === 'string' && contentToRender.startsWith('Error:')) {
+    if (typeof contentToRender === 'string' && (contentToRender.startsWith('Error:') || contentToRender.startsWith('Internal Server Error'))) {
       return `<p class="error-text">${contentToRender}</p>`;
     }
     

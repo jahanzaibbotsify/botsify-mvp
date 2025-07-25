@@ -66,7 +66,9 @@ const parsedContent = computed(() => {
     }
     
     // Check if it's an error message
-    if (props.message.content.startsWith('Error:')) {
+    if (props.message.content.startsWith('Error:') || 
+        props.message.content.includes('Internal Server Error, Please Contact team@botsify.com') ||
+        props.message.content.includes('Internal Server Error')) {
       return `<div class="message-error">
         <div class="error-icon-inline">⚠️</div>
         <span>${props.message.content}</span>

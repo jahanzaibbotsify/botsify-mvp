@@ -2,7 +2,8 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { ConfigurationTask, ConfigurationResponse, ConfigurationResponseData, ApiRequestData, ChatMessage, ApiError } from '../types/openai'
 import { useApiKeyStore } from './apiKeyStore';
-import { BOTSIFY_AUTH_TOKEN } from '../utils/config';
+import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from '@/utils/config';
+import { handleApiError } from '@/utils/errorHandler';
 
 
 export const useOpenAIStore = defineStore('openai', () => {
@@ -178,10 +179,10 @@ export const useOpenAIStore = defineStore('openai', () => {
       
     } catch (error: unknown) {
       const apiError = error as ApiError;
-      console.error('Configuration API error:', apiError);
+      const errorMessage = handleApiError(apiError, 'Configuration API');
       return {
         success: false,
-        message: `Error updating ${task.key}: ${apiError.message || 'Network error'}`
+        message: errorMessage
       };
     }
   }
@@ -548,11 +549,11 @@ Botsify MCP Server: Operations & API Tooling Guide
             tools: [configureChatbotTool, mcpConfiguration]
           };
 
-        const stream = await fetch(import.meta.env.VITE_BOTSIFY_BASE_URL + `/v1/get-ai-response?apikey=${botApiKey}`, {
+        const stream = await fetch(`${BOTSIFY_BASE_URL}/v1/get-ai-response`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
+            'Authorization': `Bearer ${authToken}`
           },
           body: JSON.stringify({payload: payload})
         });
@@ -561,22 +562,20 @@ Botsify MCP Server: Operations & API Tooling Guide
 
       } catch (apiError: unknown) {
         const streamError = apiError as ApiError;
-        console.error('❌ API call error:', streamError);
-        console.error('API error details:', JSON.stringify(streamError, Object.getOwnPropertyNames(streamError)));
-        
-        throw streamError;
+        throw new Error(handleApiError(streamError, 'get-ai-response API'));
       }
     } catch (e: unknown) {
       const streamChatError = e as ApiError;
-      console.error('❌ Error in streamChat:', streamChatError);
       
       if (streamChatError.status === 429) {
         rateLimited.value = true;
         throw new Error('Rate limit exceeded. Please try again later.');
       }
       
-      error.value = streamChatError.message || 'Unknown error occurred';
-      throw streamChatError;
+      // Use standardized error handling
+      const errorMessage = handleApiError(streamChatError, 'streamChat');
+      error.value = errorMessage;
+      throw new Error(errorMessage);
     }
   }
 

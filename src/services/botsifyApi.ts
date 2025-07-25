@@ -1149,8 +1149,9 @@ export class BotsifyApiService {
   }
 
 
-  async saveBotTemplates(chatsJson: string, templatesJson: string, remove_agent_previous_response_id: boolean): Promise<void> {
-    axios.post(`${BOTSIFY_BASE_URL}/v1/bot-update`, {
+  async saveBotTemplates(chatsJson: string, templatesJson: string, remove_agent_previous_response_id: boolean): Promise<BotsifyResponse> {
+    try {
+    const response = await axios.post(`${BOTSIFY_BASE_URL}/v1/bot-update`, {
       'apikey': useApiKeyStore().apiKey,
       'data' : {
         chat_flow: chatsJson,
@@ -1162,13 +1163,31 @@ export class BotsifyApiService {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
       }
-    }).then(response => {
-      if (response.data.status == 'success') {
-        console.log('Message stored: ', response.data.bot);
-      }
-    }).catch((error) => {
-      console.log('error:', error);
     });
+
+      if (response.data.status === 'success') {
+        console.log('Message stored: ', response.data.bot);
+        return {
+          success: true,
+          message: 'Bot templates saved successfully',
+          data: response.data
+        };
+      } else {
+        console.error('Bot update failed:', response.data);
+        return {
+          success: false,
+          message: 'Internal Server Error, Please Contact team@botsify.com',
+          data: response.data
+        };
+      }
+    } catch (error: any) {
+      console.error('Bot update error:', error);
+      return {
+        success: false,
+        message: 'Internal Server Error, Please Contact team@botsify.com',
+        data: error
+      };
+    }
   }
 
   async manageBilling() {
