@@ -1149,20 +1149,21 @@ export class BotsifyApiService {
   }
 
 
-  async saveBotTemplates(chatsJson: string, templatesJson: string): Promise<BotsifyResponse> {
+  async saveBotTemplates(chatsJson: string, templatesJson: string, remove_agent_previous_response_id: boolean): Promise<BotsifyResponse> {
     try {
-      const response = await axios.post(`${BOTSIFY_BASE_URL}/v1/bot-update`, {
-        'apikey': useApiKeyStore().apiKey,
-        'data' : {
-          chat_flow: chatsJson,
-          bot_flow: templatesJson
-        }
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
-        }
-      });
+    const response = await axios.post(`${BOTSIFY_BASE_URL}/v1/bot-update`, {
+      'apikey': useApiKeyStore().apiKey,
+      'data' : {
+        chat_flow: chatsJson,
+        bot_flow: templatesJson,
+      },
+      remove_agent_previous_response_id: remove_agent_previous_response_id
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
+      }
+    });
 
       if (response.data.status === 'success') {
         console.log('Message stored: ', response.data.bot);
