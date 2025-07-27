@@ -7,6 +7,7 @@ export const useBotStore = defineStore('bot', {
     apiKeyConfirmed: false,
     userId: '',
     botId: '',
+    botName: '',
   }),
   actions: {
     setBotId(id: string) {
@@ -20,6 +21,9 @@ export const useBotStore = defineStore('bot', {
     },
     setUserId(id: string) {
       this.userId = id;
+    },
+    setBotName(name: string) {
+      this.botName = name;
     }
   }
 })
