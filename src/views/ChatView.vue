@@ -160,7 +160,6 @@ function toggleStorySidebar() {
     <p>The chat you're looking for doesn't exist or has been deleted.</p>
     <button class="primary" @click="$router.push('/')">Back to Home</button>
   </div>
-  {{ chatStore.chats }}
 </template>
 
 <style scoped>
