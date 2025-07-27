@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 
 
-export const useApiKeyStore = defineStore('apiKey', {
+export const useBotStore = defineStore('bot', {
   state: () => ({
     apiKey: localStorage.getItem('bot_api_key') ?? '',
     apiKeyConfirmed: false,

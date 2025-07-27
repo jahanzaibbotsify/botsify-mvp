@@ -10,7 +10,7 @@ import '@fontsource/ubuntu/700.css'
 import axios from 'axios';
 import ToastPlugin, { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-bootstrap.css';
-import { useApiKeyStore } from './stores/apiKeyStore';
+import { useBotStore } from './stores/botStore';
 import { useConversationStore } from './stores/conversationStore';
 import { useChatStore } from './stores/chatStore';
 
@@ -101,10 +101,10 @@ function getBotDetails(apikey: string) {
   .then(response => {
     console.log('ressssss ', response.data);
     
-    const apiKeyStore = useApiKeyStore();
-    apiKeyStore.setApiKeyConfirmed(true);
-    apiKeyStore.setBotId(response.data.data.id);
-    apiKeyStore.setUserId(response.data.data.user_id);
+    const botStore = useBotStore();
+    botStore.setApiKeyConfirmed(true);
+    botStore.setBotId(response.data.data.id);
+    botStore.setUserId(response.data.data.user_id);
 
     return response.data;
   })

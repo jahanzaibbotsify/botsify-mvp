@@ -4,7 +4,7 @@ import { useOpenAIStore } from './openaiStore';
 import { useMCPStore } from './mcpStore';
 import type { Chat, Message, Attachment, PromptVersion, GlobalPromptTemplate } from '../types';
 import { botsifyApi } from '../services/botsifyApi';
-import { useApiKeyStore } from './apiKeyStore';
+import { useBotStore } from './botStore';
 
 export const useChatStore = defineStore('chat', () => {
   const openAIStore = useOpenAIStore();
@@ -16,7 +16,7 @@ export const useChatStore = defineStore('chat', () => {
   const doInputDisable = ref(false);
   const globalPromptTemplates = ref<GlobalPromptTemplate[]>([]);
   const activeAiPromptVersion = computed(() => chats.value[0]?.story?.versions.find(v => v.isActive) || null);
-
+  const botStore = useBotStore();
 
   function convertStoredVersionsToStoryStructure(aiPromptVersions: object[]) {
     let activeVersionId = 0;
@@ -146,7 +146,7 @@ export const useChatStore = defineStore('chat', () => {
 
       
       const payload = {
-          bot_id: useApiKeyStore().botId,
+          bot_id: botStore.botId,
           ai_prompt: aiPrompt,
           chat_flow: chatsJson,
           name: activeAiPromptVersion.value?.name ?? 'version-1',
@@ -1282,7 +1282,7 @@ Use the above connected services information to understand what tools and data s
     const initialPrompt = defaultPromptTemplate.value?.content || '';
 
     const newChat: Chat = {
-      id: useApiKeyStore().apiKey,
+      id: botStore.apiKey,
       title: '',
       timestamp: new Date(),
       messages: [

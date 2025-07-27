@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { MCPServer, MCPConnection, CustomMCPServerForm } from '../types/mcp';
 import { botsifyApi } from '../services/botsifyApi';
-import { useApiKeyStore } from './apiKeyStore';
+import { useBotStore } from './botStore';
 
 export const useMCPStore = defineStore('mcp', () => {
   // All MCP servers (popular + custom)
@@ -422,7 +422,7 @@ export const useMCPStore = defineStore('mcp', () => {
       }
     }
   ]);
-  const apiKey = useApiKeyStore().apiKey;
+  const apiKey = useBotStore().apiKey;
 
   // Load connections and custom servers from localStorage
   const loadFromStorage = () => {

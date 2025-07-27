@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { MCPConfigurationFile, MCPServer } from '../types/mcp';
 import { BOTSIFY_BASE_URL, BOTSIFY_AUTH_TOKEN, APP_URL } from '../utils/config';
-import { useApiKeyStore } from '@/stores/apiKeyStore';
+import { useBotStore } from '@/stores/botStore';
 
 export interface BotsifyResponse {
   success: boolean;
@@ -173,7 +173,7 @@ export class BotsifyApiService {
           `${BOTSIFY_BASE_URL}/ai-tools/mcp`,
           {
             headers: this.getBotsifyHeaders(),
-             params: { apikey: useApiKeyStore().apiKey }
+             params: { apikey: useBotStore().apiKey }
           }
         );
         return {
@@ -213,7 +213,7 @@ export class BotsifyApiService {
           allowed_tools: mcpData.features,
           require_approval: "never",
         },
-        apikey: useApiKeyStore().apiKey
+        apikey: useBotStore().apiKey
       };
       
       const response = await axios.put(`${BOTSIFY_BASE_URL}/mcp/${id}`, mcpPayload, {
@@ -246,7 +246,7 @@ export class BotsifyApiService {
         `${BOTSIFY_BASE_URL}/mcp/${id}`,
         {
           headers: this.getBotsifyHeaders(),
-          data: { apikey: useApiKeyStore().apiKey }
+          data: { apikey: useBotStore().apiKey }
         }
       );
 
@@ -694,7 +694,7 @@ export class BotsifyApiService {
           allowed_tools: mcpData.features,
           require_approval: "never",
         },
-        apikey: useApiKeyStore().apiKey
+        apikey: useBotStore().apiKey
       };
       
       console.log('MCP payload structure:', mcpPayload);
@@ -799,13 +799,13 @@ export class BotsifyApiService {
    */
   async getFileSearch(): Promise<BotsifyResponse> {
     try {
-      console.log('Getting file search files for bot assistant:', useApiKeyStore().apiKey);
+      console.log('Getting file search files for bot assistant:', useBotStore().apiKey);
       
       const response = await axios.get(
         `${BOTSIFY_BASE_URL}/file-search`,
         {
             headers: this.getBotsifyHeaders(),
-             params: { apikey: useApiKeyStore().apiKey }
+             params: { apikey: useBotStore().apiKey }
           }
       );
 
@@ -835,7 +835,7 @@ export class BotsifyApiService {
       formData.append('file', file)
       
       const response = await axios.post(
-        `${BOTSIFY_BASE_URL}/file-search?apikey=${useApiKeyStore().apiKey}`,
+        `${BOTSIFY_BASE_URL}/file-search?apikey=${useBotStore().apiKey}`,
         formData,
         { 
           headers: {
@@ -868,7 +868,7 @@ export class BotsifyApiService {
       console.log('Deleting file from search:', id);
       
       const response = await axios.delete(
-        `${BOTSIFY_BASE_URL}/file-search/${id}?apikey=${useApiKeyStore().apiKey}`,
+        `${BOTSIFY_BASE_URL}/file-search/${id}?apikey=${useBotStore().apiKey}`,
         { headers: this.getBotsifyHeaders() }
       );
       
@@ -899,7 +899,7 @@ export class BotsifyApiService {
         { 
           headers: this.getBotsifyHeaders(),
           data: {
-            "apikey": useApiKeyStore().apiKey,
+            "apikey": useBotStore().apiKey,
             "ids": ids
           }
         }
@@ -925,7 +925,7 @@ export class BotsifyApiService {
    */
   async getWebSearch(): Promise<BotsifyResponse> {
     try {
-      console.log('Getting web search URLs for bot assistant:', useApiKeyStore().apiKey);
+      console.log('Getting web search URLs for bot assistant:', useBotStore().apiKey);
       
       // const response = await axios.get(
       //   `${BOTSIFY_BASE_URL}/web-search/${botAssistantId}`,
@@ -933,7 +933,7 @@ export class BotsifyApiService {
       // );
 
       const response = await axios.get(
-        `${BOTSIFY_BASE_URL}/web-search?apikey=${useApiKeyStore().apiKey}`,
+        `${BOTSIFY_BASE_URL}/web-search?apikey=${useBotStore().apiKey}`,
         { headers: this.getBotsifyHeaders() }
       );
       
@@ -961,7 +961,7 @@ export class BotsifyApiService {
         `${BOTSIFY_BASE_URL}/web-search`,
         {
           // bot_assistant_id: botAssistantId,
-          apikey: useApiKeyStore().apiKey,
+          apikey: useBotStore().apiKey,
           url: url,
           title: title
         },
@@ -995,7 +995,7 @@ export class BotsifyApiService {
         { 
           headers: this.getBotsifyHeaders(),
           data: {
-            apikey: useApiKeyStore().apiKey,
+            apikey: useBotStore().apiKey,
             ids: ids,
           },
       });
@@ -1218,7 +1218,7 @@ export class BotsifyApiService {
 
   async manageBilling() {
     try {
-      const {apiKey, userId} = useApiKeyStore();
+      const {apiKey, userId} = useBotStore();
       const response = await axios.get(
         `${BOTSIFY_BASE_URL}/v1/billing/portal`,
         {

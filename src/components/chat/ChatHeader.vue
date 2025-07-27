@@ -96,7 +96,7 @@ async function testAI() {
     window.$toast.error('No prompt content available to deploy. Please generate some content first.');
     return;
   }
-  const apiKey = (await import('@/stores/apiKeyStore')).useApiKeyStore().apiKey;
+  const apiKey = (await import('@/stores/botStore')).useBotStore().apiKey;
   const url = `${BOTSIFY_WEB_URL}/web-bot/agent/${apiKey}?testagent=true`;
   window.open(url, '_blank');
 }
