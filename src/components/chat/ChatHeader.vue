@@ -41,7 +41,7 @@
             <i class="pi pi-bolt" style="font-size: 18px;"></i>
             <span>AI Prompt</span>
           </button>
-          <button class="dropdown-item" @click="handleReset">
+          <button :disabled="chatStore.chats[0].messages.length < 2"  class="dropdown-item" @click="handleReset">
             <i class="pi pi-replay" style="font-size: 18px;"></i>
             <span>Reset Conversation</span>
           </button>
@@ -119,11 +119,14 @@ function deployAI() {
 async function deploying(content: string){
   isDeployingAI.value = true;
   try {
-    const result = await botsifyApi.deployAiAgent(content);
-    chatStore.updateStory(props.chatId, content, true);
-    chatStore.saveToTemplate();
+    const result = await botsifyApi.deployAiAgent(
+      chatStore.activeAiPromptVersion?.version_id ?? 0,
+      chatStore.createAiPromptVersionName()
+    );
     if (result.success) {
       window.$toast.success(`🚀 ${result.message}`);
+      chatStore.updateStory(props.chatId, content, true);
+      chatStore.updateActivePromptVersionId(result.data.version.id);
     } else {
       window.$toast.error(`❌ Deployment failed: ${result.message}`);
     }
@@ -317,6 +320,11 @@ onBeforeUnmount(() => {
   font-size: 0.95rem;
   font-weight: 500;
   transition: background-color var(--transition-fast);
+}
+
+.dropdown-item:disabled{
+  color: gray;
+  cursor: auto;
 }
 
 .dropdown-item:hover {

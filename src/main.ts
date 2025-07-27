@@ -103,9 +103,10 @@ function getBotDetails(apikey: string) {
     
     const apiKeyStore = useApiKeyStore();
     apiKeyStore.setApiKeyConfirmed(true);
+    apiKeyStore.setBotId(response.data.data.id);
     apiKeyStore.setUserId(response.data.data.user_id);
 
-    return response.data.data;
+    return response.data;
   })
   .catch(error => {
     console.error('API request error:', error);
@@ -125,11 +126,12 @@ router.beforeEach(async (to, from, next) => {
   if (to.name === 'agent' || to.name === 'conversation') {
     let apikey = localStorage.getItem('bot_api_key') ?? '';
     if (apikey) {
-      const bot = await getBotDetails(apikey);    
-      if (bot) {
+      const data = await getBotDetails(apikey);    
+      if (data) {
         // loading stored chats and ai prompts
         const chatStore= useChatStore();
-        chatStore.loadFromStorage(bot.chat_flow, bot.bot_flow);
+        chatStore.loadFromStorage(data.data.chat_flow, data.versions);
+        
         // Initialize Firebase after API key is set
         console.log('🔥 Initializing Firebase in main.ts...');
         try {

@@ -40,15 +40,12 @@ export class BotsifyApiService {
   /**
    * Deploy AI Agent with the latest generated story
    */
-  async deployAiAgent(storyContent: string): Promise<BotsifyResponse> {
+  async deployAiAgent(activeAiPromptVersionId: number, newAiPromptVersionName: string): Promise<BotsifyResponse> {
     try {
-      console.log('Deploying AI Agent with story content:', storyContent.substring(0, 100) + '...');
       
       const response = await axios.post(`${BOTSIFY_BASE_URL}/deploy-ai-agent`, {
-        apikey: useApiKeyStore().apiKey,
-        story: storyContent,
-        timestamp: new Date().toISOString(),
-        action: 'deploy'
+        'version_id': activeAiPromptVersionId,
+        'new_version_name': newAiPromptVersionName,
       }, {
         headers: this.getBotsifyHeaders(),
         timeout: 60000 // 60 seconds timeout for deployment
@@ -1149,16 +1146,10 @@ export class BotsifyApiService {
   }
 
 
-  async saveBotTemplates(chatsJson: string, templatesJson: string, remove_agent_previous_response_id: boolean): Promise<BotsifyResponse> {
+  async saveBotTemplates(payload: object): Promise<BotsifyResponse> {
     try {
-    const response = await axios.post(`${BOTSIFY_BASE_URL}/v1/bot-update`, {
-      'apikey': useApiKeyStore().apiKey,
-      'data' : {
-        chat_flow: chatsJson,
-        bot_flow: templatesJson,
-      },
-      remove_agent_previous_response_id: remove_agent_previous_response_id
-    }, {
+    const response = await axios.post(`${BOTSIFY_BASE_URL}/v1/update-agent`, payload,
+      {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
@@ -1182,6 +1173,41 @@ export class BotsifyApiService {
       }
     } catch (error: any) {
       console.error('Bot update error:', error);
+      return {
+        success: false,
+        message: 'Internal Server Error, Please Contact team@botsify.com',
+        data: error
+      };
+    }
+  }
+
+  async deleteAiPromptVersion(version_ids: number[]): Promise<BotsifyResponse> {
+    try {
+      const response = await axios.delete(`${BOTSIFY_BASE_URL}/v1/delete-version`,{ 
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
+        },
+        data:{
+          version_ids: version_ids
+        },
+      });
+
+      if (response.data.status === 'success') {
+        console.log('AI Prompt version deleted: ', response.data);
+        return {
+          success: true,
+          message: response.data.message,
+        };
+      } else {
+        console.error('AI Prompt version deletion failed:', response.data);
+        return {
+          success: false,
+          message: response.data.message ?? 'Internal Server Error, Please Contact team@botsify.com',
+        };
+      }
+    } catch (error: any) {
+      console.error('AI prompt version deletion error:', error);
       return {
         success: false,
         message: 'Internal Server Error, Please Contact team@botsify.com',

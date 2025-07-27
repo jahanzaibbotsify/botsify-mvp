@@ -5,9 +5,13 @@ export const useApiKeyStore = defineStore('apiKey', {
   state: () => ({
     apiKey: localStorage.getItem('bot_api_key') ?? '',
     apiKeyConfirmed: false,
-    userId: ''
+    userId: '',
+    botId: '',
   }),
   actions: {
+    setBotId(id: string) {
+      this.botId = id;
+    },
     setApiKey(key: string) {
       this.apiKey = key;
     },
