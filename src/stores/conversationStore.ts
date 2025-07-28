@@ -79,7 +79,7 @@ export const useConversationStore = defineStore('conversation', () => {
     return {
       id: fbId,
       title: user.name,
-      timestamp: new Date(user.last_converse),
+      timestamp: user.last_converse,
       lastMessage: data.last_msg || '',
       unread: data.unread > 0,
       messages: [],
@@ -123,7 +123,7 @@ export const useConversationStore = defineStore('conversation', () => {
       id: msg.id.toString(),
       content: content,
       sender: msg.direction === 'to' ? 'assistant' : 'user',
-      timestamp: new Date(msg.created_at),
+      timestamp: msg.created_at,
       attachments: []
     }
   }

@@ -1,10 +1,9 @@
-import moment from 'moment';
+import moment from 'moment-timezone';
+
 export const formatTime = (utcDate: Date | string) => {
-  var stillUtc = moment.utc(utcDate).toDate();
-      var local = moment(stillUtc)
-        .local()
-        .format("YYYY-MM-DD HH:mm:ss");
-      return moment(local).fromNow();
+  // Assume you have a datetime in Berlin timezone
+  const utcDiff = moment.parseZone(utcDate).tz("Europe/Berlin");
+  return utcDiff.fromNow();
 }
 
 

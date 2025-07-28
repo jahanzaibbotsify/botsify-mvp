@@ -338,19 +338,19 @@ watch(() => props.message.content, (newContent, oldContent) => {
   }
 });
 
-onMounted(() => {
-  console.log('ChatMessage mounted:', {
-    id: props.message.id,
-    sender: props.message.sender,
-    hasContent: !!props.message.content,
-    hasAttachments: !!props.message.attachments?.length
-  });
+// onMounted(() => {
+//   console.log('ChatMessage mounted:', {
+//     id: props.message.id,
+//     sender: props.message.sender,
+//     hasContent: !!props.message.content,
+//     hasAttachments: !!props.message.attachments?.length
+//   });
   
-  // Initialize slider after mount
-  nextTick(() => {
-    initializeSlider();
-  });
-});
+//   // Initialize slider after mount
+//   nextTick(() => {
+//     initializeSlider();
+//   });
+// });
 </script>
 
 <template>

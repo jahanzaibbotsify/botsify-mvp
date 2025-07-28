@@ -9,7 +9,7 @@ export interface User {
 export interface Message {
   id: string;
   content: string;
-  timestamp: Date;
+  timestamp: any;
   sender: 'user' | 'assistant';
   status?: 'sending' | 'sent' | 'error';
   attachments?: Attachment[];
