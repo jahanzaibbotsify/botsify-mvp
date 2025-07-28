@@ -77,7 +77,7 @@ const checkAndPreFillConnectedServer = () => {
 
     // Show a message that this server is already connected
     console.log(`Server ${props.server.name} is already connected`);
-    checkConnection();
+    // checkConnection();
   }
 };
 
@@ -308,7 +308,7 @@ onMounted(() => {
   <section @click.self="handleBack" tabindex="0" style="position:relative;">
     <div class="text-center">
       <img
-          v-if="server"
+          v-if="server && !server.isCustom"
           class="server-icon"
           :src="`/mcp/${server.icon}`"
           :alt="server.name"
