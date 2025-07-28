@@ -7,7 +7,7 @@
     <div class="detail-item">
       <span class="detail-label">Last Converse:</span>
       <span class="detail-value">
-        {{ user?.timestamp ? new Date(user.timestamp).toLocaleString() : '0000-00-00' }}
+        {{ user?.timestamp ? new Date(user.timestamp).toISOString().slice(0, 10) : '0000-00-00' }}
       </span>
     </div>
     <div class="detail-item">
