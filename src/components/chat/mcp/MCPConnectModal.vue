@@ -244,7 +244,7 @@ function buildMCPHeaders(): Record<string, string> {
 const addServer = async (allowedTools: string[]) => {
   let url: string;
   if (props.server && props.server.id === 'shopify') {
-    url = (serverUrl.value.endsWith('/') ? serverUrl.value.slice(0, -1) : serverUrl.value) + '/api/mcp';
+    url = (serverUrl.value.endsWith('/') ? serverUrl.value.slice(0, -1) : serverUrl.value) + (alreadyConnected.value ? '' : '/api/mcp');
   } else {
     url = props.server ? props.server.server_url : serverUrl.value;
   }
