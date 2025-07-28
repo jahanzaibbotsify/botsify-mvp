@@ -138,7 +138,7 @@ const sendMessage = async () => {
           }).join('\n');
 
           finalMessageText = originalText + (originalText ? '\n\n' : '') +
-            'Attached files:\n';
+            'Attached files:\n' + fileUrls;
 
           console.log('Files uploaded successfully, URLs added to prompt:', fileUrls);
         } else {
