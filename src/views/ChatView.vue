@@ -33,7 +33,7 @@ const chat = computed(() => {
   return foundChat;
 });
 
-const latestPromptContent = computed(() => (chat.value?.messages && chat.value.messages.length > 1) ? chat.value?.story?.content || '' : '');
+const latestPromptContent = computed(() => chat.value?.story?.content || '');
 const hasPromptContent = computed(() => latestPromptContent.value.trim().length > 0);
 
 const scrollToBottom = async () => {
