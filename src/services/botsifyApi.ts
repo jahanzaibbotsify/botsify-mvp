@@ -1181,6 +1181,41 @@ export class BotsifyApiService {
     }
   }
 
+  async clearAgentConversion(payload: object): Promise<BotsifyResponse> {
+    try {
+    const response = await axios.post(`${BOTSIFY_BASE_URL}/v1/clear-conversation`, payload,
+      {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
+      }
+    });
+
+      if (response.data.status === 'success') {
+        console.log('Message stored: ', response.data.bot);
+        return {
+          success: true,
+          message: 'Agent chat cleared successfully',
+          data: response.data
+        };
+      } else {
+        console.error('Agent chat clear failed:', response.data);
+        return {
+          success: false,
+          message: 'Internal Server Error, Please Contact team@botsify.com',
+          data: response.data
+        };
+      }
+    } catch (error: any) {
+      console.error('Agent update error:', error);
+      return {
+        success: false,
+        message: 'Internal Server Error, Please Contact team@botsify.com',
+        data: error
+      };
+    }
+  }
+
   async deleteAiPromptVersion(version_ids: number[]): Promise<BotsifyResponse> {
     try {
       const response = await axios.delete(`${BOTSIFY_BASE_URL}/v1/delete-version`,{ 

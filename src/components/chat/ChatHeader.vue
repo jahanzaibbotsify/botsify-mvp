@@ -159,7 +159,7 @@ async function deploying(content: string){
 function handleReset(type: string) {
   let confirmButtonText = 'Yes';
   if (type === 'reset') {
-    confirmButtonText += 'Reset it!';
+    confirmButtonText += ' clear it!';
   }
   window.$confirm({
     confirmButtonText: confirmButtonText,

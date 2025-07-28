@@ -60,7 +60,7 @@ export const useChatStore = defineStore('chat', () => {
       });      
       
       if (storedChats && storedChats.length > 4 && storedChats !== 'null' && storedChats !== 'undefined') {
-        try {
+      try {
           const parsedChats = JSON.parse(storedChats);
           if (storedTemplates) {
             parsedChats[0].story = (storedTemplates);
@@ -97,6 +97,11 @@ export const useChatStore = defineStore('chat', () => {
           localStorage.removeItem('botsify_chats');
         }
       } else {
+        chats.value.forEach(chat => {
+          if (chat) {
+            (chat as any).story = storedTemplates; 
+          }
+        });
         console.warn('⚠️ No chats found in localStorage');
       }
 
@@ -136,7 +141,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   // Save data to localStorage
-  async function saveToTemplate(remove_previous_response_id: boolean = false) {
+  async function saveToTemplate() {
 
     try {
       const chatRecords = JSON.parse(JSON.stringify(chats.value[0]??''));
@@ -151,7 +156,6 @@ export const useChatStore = defineStore('chat', () => {
           chat_flow: chatsJson,
           name: activeAiPromptVersion.value?.name ?? 'version-1',
           version_id: '',
-          remove_agent_previous_response_id: remove_previous_response_id
       }
 
       if (activeAiPromptVersion.value?.version_id) {
@@ -1366,10 +1370,26 @@ Use the above connected services information to understand what tools and data s
   }
 
   // Function to clear message history for a specific chat
-  function clearChatMessages() {
-    chats.value = [];
-    saveToTemplate(true);
-    return true;
+  async function clearChatMessages() {
+    try {
+
+      const response = await botsifyApi.clearAgentConversion({apikey: botStore.apiKey});
+      
+      if (!response.success) {
+        console.error('❌ Error clearing conversation:', response.message);
+        window.$toast.error(`❌ ${response.message}`);
+         return false;
+       }
+
+      window.$toast.success(`${response.message}`);
+      chats.value[0].messages = [];
+
+       
+      return true;
+      } catch (error) {
+       console.error('❌ Error clearing convsation from storage:', error);
+       return false;
+     }
   }
 
 
