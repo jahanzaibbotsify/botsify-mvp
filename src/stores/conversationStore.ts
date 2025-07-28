@@ -378,7 +378,7 @@ export const useConversationStore = defineStore('conversation', () => {
       
       // Read status filter
       if (readFilter.value !== 'all') {
-        queryParams.status = readFilter.value
+        queryParams.unread = readFilter.value === 'read' ? 'false' : 'true'
       }
       
       // Platform filter
@@ -483,16 +483,18 @@ export const useConversationStore = defineStore('conversation', () => {
     try {
       // Add the message immediately for better UX with a temporary ID
       const tempMessageId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      const message: Message = {
-        id: tempMessageId,
-        content: content,
-        sender: 'assistant',
-        timestamp: new Date(),
-        status: 'sending',
-        attachments: []
+      if (type !== 'image') {
+        const message: Message = {
+          id: tempMessageId,
+          content: content,
+          sender: 'assistant',
+          timestamp: new Date(),
+          status: 'sending',
+          attachments: []
+        }
+        messages.value.push(message)
       }
-      messages.value.push(message)
-      
+
       let response
       if (type === 'text') {
         response = await conversationApi.sendTextMessage(to, content)
@@ -605,6 +607,11 @@ export const useConversationStore = defineStore('conversation', () => {
       if (fileUrls && fileUrls.length > 0) {
         for (const fileUrl of fileUrls) {
           await sendMessageToUser(fileUrl, selectedConversation.value.fbid, 'image')
+        }
+
+        if(content.trim() == 'Attachment'){
+          clearConversationCache(selectedConversation.value.fbid)
+          return;
         }
       }
       

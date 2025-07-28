@@ -32,8 +32,6 @@ const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
 
 // Close dropdown when clicking outside
 const dropdownRef = ref<HTMLElement | null>(null);
-const navButtonRef = ref<HTMLElement | null>(null);
-
 
 const navigationButtons = [
   {
@@ -175,9 +173,7 @@ const handleClickOutside = (event: MouseEvent) => {
     
   // Check if click is outside dropdown
   const isOutsideDropdown = dropdownRef.value && 
-    !dropdownRef.value.contains(target) && 
-    navButtonRef.value && 
-    !navButtonRef.value.contains(target);
+    !dropdownRef.value.contains(target);
   
   if (isOutsideDropdown) {
     showDropdown.value = false;
