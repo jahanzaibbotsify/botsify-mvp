@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { MCPConfigurationFile, MCPServer } from '../types/mcp';
 import { BOTSIFY_BASE_URL, BOTSIFY_AUTH_TOKEN, APP_URL } from '../utils/config';
-import { useApiKeyStore } from '@/stores/apiKeyStore';
+import { useBotStore } from '@/stores/botStore';
 
 export interface BotsifyResponse {
   success: boolean;
@@ -40,15 +40,11 @@ export class BotsifyApiService {
   /**
    * Deploy AI Agent with the latest generated story
    */
-  async deployAiAgent(storyContent: string): Promise<BotsifyResponse> {
+  async deployAiAgent(activeAiPromptVersionId: number, newAiPromptVersionName: string): Promise<BotsifyResponse> {
     try {
-      console.log('Deploying AI Agent with story content:', storyContent.substring(0, 100) + '...');
-
       const response = await axios.post(`${BOTSIFY_BASE_URL}/deploy-ai-agent`, {
-        apikey: useApiKeyStore().apiKey,
-        story: storyContent,
-        timestamp: new Date().toISOString(),
-        action: 'deploy'
+        'version_id': activeAiPromptVersionId,
+        'new_version_name': newAiPromptVersionName,
       }, {
         headers: this.getBotsifyHeaders(),
         timeout: 60000 // 60 seconds timeout for deployment
@@ -176,7 +172,7 @@ export class BotsifyApiService {
           `${BOTSIFY_BASE_URL}/ai-tools/mcp`,
           {
             headers: this.getBotsifyHeaders(),
-             params: { apikey: useApiKeyStore().apiKey }
+             params: { apikey: useBotStore().apiKey }
           }
         );
         return {
@@ -228,7 +224,7 @@ export class BotsifyApiService {
         `${BOTSIFY_BASE_URL}/mcp/${id}`,
         {
           headers: this.getBotsifyHeaders(),
-          data: { apikey: useApiKeyStore().apiKey }
+          data: { apikey: useBotStore().apiKey }
         }
       );
 
@@ -758,13 +754,12 @@ export class BotsifyApiService {
    */
   async getFileSearch(): Promise<BotsifyResponse> {
     try {
-      console.log('Getting file search files for bot assistant:', useApiKeyStore().apiKey);
-
+      console.log('Getting file search files for bot assistant:', useBotStore().apiKey);
       const response = await axios.get(
         `${BOTSIFY_BASE_URL}/file-search`,
         {
             headers: this.getBotsifyHeaders(),
-             params: { apikey: useApiKeyStore().apiKey }
+             params: { apikey: useBotStore().apiKey }
           }
       );
 
@@ -794,7 +789,7 @@ export class BotsifyApiService {
       formData.append('file', file)
 
       const response = await axios.post(
-        `${BOTSIFY_BASE_URL}/file-search?apikey=${useApiKeyStore().apiKey}`,
+        `${BOTSIFY_BASE_URL}/file-search?apikey=${useBotStore().apiKey}`,
         formData,
         {
           headers: {
@@ -827,7 +822,7 @@ export class BotsifyApiService {
       console.log('Deleting file from search:', id);
 
       const response = await axios.delete(
-        `${BOTSIFY_BASE_URL}/file-search/${id}?apikey=${useApiKeyStore().apiKey}`,
+        `${BOTSIFY_BASE_URL}/file-search/${id}?apikey=${useBotStore().apiKey}`,
         { headers: this.getBotsifyHeaders() }
       );
 
@@ -858,7 +853,7 @@ export class BotsifyApiService {
         {
           headers: this.getBotsifyHeaders(),
           data: {
-            "apikey": useApiKeyStore().apiKey,
+            "apikey": useBotStore().apiKey,
             "ids": ids
           }
         }
@@ -884,15 +879,14 @@ export class BotsifyApiService {
    */
   async getWebSearch(): Promise<BotsifyResponse> {
     try {
-      console.log('Getting web search URLs for bot assistant:', useApiKeyStore().apiKey);
-
+      console.log('Getting web search URLs for bot assistant:', useBotStore().apiKey);
       // const response = await axios.get(
       //   `${BOTSIFY_BASE_URL}/web-search/${botAssistantId}`,
       //   { headers: this.getBotsifyHeaders() }
       // );
 
       const response = await axios.get(
-        `${BOTSIFY_BASE_URL}/web-search?apikey=${useApiKeyStore().apiKey}`,
+        `${BOTSIFY_BASE_URL}/web-search?apikey=${useBotStore().apiKey}`,
         { headers: this.getBotsifyHeaders() }
       );
 
@@ -920,7 +914,7 @@ export class BotsifyApiService {
         `${BOTSIFY_BASE_URL}/web-search`,
         {
           // bot_assistant_id: botAssistantId,
-          apikey: useApiKeyStore().apiKey,
+          apikey: useBotStore().apiKey,
           url: url,
           title: title
         },
@@ -954,7 +948,7 @@ export class BotsifyApiService {
         {
           headers: this.getBotsifyHeaders(),
           data: {
-            apikey: useApiKeyStore().apiKey,
+            apikey: useBotStore().apiKey,
             ids: ids,
           },
       });
@@ -1105,30 +1099,114 @@ export class BotsifyApiService {
   }
 
 
-  async saveBotTemplates(chatsJson: string, templatesJson: string): Promise<void> {
-    axios.post(`${BOTSIFY_BASE_URL}/v1/bot-update`, {
-      'apikey': useApiKeyStore().apiKey,
-      'data' : {
-        chat_flow: chatsJson,
-        bot_flow: templatesJson
-      }
-    }, {
+  async saveBotTemplates(payload: object): Promise<BotsifyResponse> {
+    try {
+    const response = await axios.post(`${BOTSIFY_BASE_URL}/v1/update-agent`, payload,
+      {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
       }
-    }).then(response => {
-      if (response.data.status == 'success') {
-        console.log('Message stored: ', response.data.bot);
-      }
-    }).catch((error) => {
-      console.log('error:', error);
     });
+
+      if (response.data.status === 'success') {
+        console.log('Message stored: ', response.data.bot);
+        return {
+          success: true,
+          message: 'Bot templates saved successfully',
+          data: response.data
+        };
+      } else {
+        console.error('Bot update failed:', response.data);
+        return {
+          success: false,
+          message: 'Internal Server Error, Please Contact team@botsify.com',
+          data: response.data
+        };
+      }
+    } catch (error: any) {
+      console.error('Bot update error:', error);
+      return {
+        success: false,
+        message: 'Internal Server Error, Please Contact team@botsify.com',
+        data: error
+      };
+    }
+  }
+
+  async clearAgentConversion(payload: object): Promise<BotsifyResponse> {
+    try {
+    const response = await axios.post(`${BOTSIFY_BASE_URL}/v1/clear-conversation`, payload,
+      {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
+      }
+    });
+
+      if (response.data.status === 'success') {
+        console.log('Message stored: ', response.data.bot);
+        return {
+          success: true,
+          message: 'Agent chat cleared successfully',
+          data: response.data
+        };
+      } else {
+        console.error('Agent chat clear failed:', response.data);
+        return {
+          success: false,
+          message: 'Internal Server Error, Please Contact team@botsify.com',
+          data: response.data
+        };
+      }
+    } catch (error: any) {
+      console.error('Agent update error:', error);
+      return {
+        success: false,
+        message: 'Internal Server Error, Please Contact team@botsify.com',
+        data: error
+      };
+    }
+  }
+
+  async deleteAiPromptVersion(version_ids: number[]): Promise<BotsifyResponse> {
+    try {
+      const response = await axios.delete(`${BOTSIFY_BASE_URL}/v1/delete-version`,{ 
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
+        },
+        data:{
+          version_ids: version_ids
+        },
+      });
+
+      if (response.data.status === 'success') {
+        console.log('AI Prompt version deleted: ', response.data);
+        return {
+          success: true,
+          message: response.data.message,
+        };
+      } else {
+        console.error('AI Prompt version deletion failed:', response.data);
+        return {
+          success: false,
+          message: response.data.message ?? 'Internal Server Error, Please Contact team@botsify.com',
+        };
+      }
+    } catch (error: any) {
+      console.error('AI prompt version deletion error:', error);
+      return {
+        success: false,
+        message: 'Internal Server Error, Please Contact team@botsify.com',
+        data: error
+      };
+    }
   }
 
   async manageBilling() {
     try {
-      const {apiKey, userId} = useApiKeyStore();
+      const {apiKey, userId} = useBotStore();
       const response = await axios.get(
         `${BOTSIFY_BASE_URL}/v1/billing/portal`,
         {

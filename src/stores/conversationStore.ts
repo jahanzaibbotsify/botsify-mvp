@@ -710,11 +710,11 @@ export const useConversationStore = defineStore('conversation', () => {
       if (response.success) {
         return { success: true, message: response.data.message }
       } else {
-        return { success: false, message: response.message || 'Failed to change bot activation' }
+        return { success: false, message: 'Internal Server Error, Please Contact team@botsify.com' }
       }
     } catch (err) {
       console.error('Error changing bot activation:', err)
-      return { success: false, message: 'An error occurred while changing bot activation' }
+      return { success: false, message: 'Internal Server Error, Please Contact team@botsify.com' }
     }
   }
 

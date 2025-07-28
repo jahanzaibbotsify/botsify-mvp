@@ -7,7 +7,6 @@ import ChatMessage from '@/components/chat/ChatMessage.vue';
 import MessageInput from '@/components/chat/MessageInput.vue';
 import TypingIndicator from '@/components/chat/TypingIndicator.vue';
 import SystemMessageSender from '@/components/chat/SystemMessageSender.vue';
-import ApiErrorNotification from '@/components/chat/ApiErrorNotification.vue';
 import ChatHeader from '@/components/chat/ChatHeader.vue';
 
 
@@ -34,7 +33,7 @@ const chat = computed(() => {
   return foundChat;
 });
 
-const latestPromptContent = computed(() => (chat.value?.messages && chat.value.messages.length > 1) ? chat.value?.story?.content || '' : '');
+const latestPromptContent = computed(() => chat.value?.story?.content || '');
 const hasPromptContent = computed(() => latestPromptContent.value.trim().length > 0);
 
 const scrollToBottom = async () => {
@@ -103,9 +102,9 @@ function toggleStorySidebar() {
 <template>
   <div v-if="chat" class="chat-view" :class="{ 'with-sidebar': showStorySidebar }">
     <!-- API Error Notification -->
-    <ApiErrorNotification />
     <ChatHeader 
       v-if="chat"
+      :chatId="chat.id"
       :title="chat.title"
       :has-prompt-content="hasPromptContent"
       :latest-prompt-content="latestPromptContent"

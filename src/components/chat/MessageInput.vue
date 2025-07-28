@@ -138,7 +138,7 @@ const sendMessage = async () => {
           }).join('\n');
 
           finalMessageText = originalText + (originalText ? '\n\n' : '') +
-            'Attached files:\n';
+            'Attached files:\n' + fileUrls;
 
           console.log('Files uploaded successfully, URLs added to prompt:', fileUrls);
         } else {
@@ -669,7 +669,7 @@ const hideLoading = () => {
       <span class="loading-spinner "></span>
     </div>
     <!-- input area -->
-    <div class="input-area">
+    <div class="input-area" :class="chatStore.doInputDisable ?'disabled': ''" >
       <textarea
         ref="textareaRef"
         v-model="messageText"
@@ -1052,6 +1052,12 @@ const hideLoading = () => {
   padding: var(--space-3);
   transition: all var(--transition-normal);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.input-area.disabled {
+  pointer-events: none;
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 [data-theme="dark"] .input-area {

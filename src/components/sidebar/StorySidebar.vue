@@ -103,12 +103,17 @@ function cancelEditing() {
 
 function saveEdit() {
   if (editContent.value.trim()) {
-    chatStore.updateStory(props.chatId, editContent.value.trim(), true);
+    chatStore.updateStory(props.chatId, editContent.value.trim(), false);
     isEditing.value = false;
     editContent.value = '';
 
     // Force save to ensure persistence
-    chatStore.saveToTemplate();
+    try {
+      window.$toast.success('Prompt updated successfully!');
+    } catch (error) {
+      console.error('Error saving prompt:', error);
+      window.$toast.error('Failed to save prompt. Please try again.');
+    }
   }
 }
 
@@ -117,7 +122,6 @@ function revertToVersion(versionId: string) {
   showVersionHistory.value = false;
 
   // Force save to ensure persistence
-  chatStore.saveToTemplate();
 }
 
 function deleteVersion(versionId: string) {
@@ -281,8 +285,7 @@ defineExpose({
             :class="{ active: version.isActive }">
             <div class="version-info">
               <div class="version-meta">
-                <span class="version-number">Version {{ sortedVersions.length - sortedVersions.indexOf(version)
-                  }}</span>
+                <span class="version-number">{{version.name}}</span>
                 <span v-if="version.isActive" class="active-badge">Active</span>
               </div>
               <div class="version-date">{{ formatVersionDate(version.updatedAt) }}</div>
@@ -729,6 +732,7 @@ defineExpose({
 
 .btn-delete:hover {
   background-color: var(--color-error-hover);
+  color: var(--color-text-danger);
 }
 
 /* Template Manager */
