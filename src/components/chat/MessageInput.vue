@@ -222,30 +222,8 @@ const closeMCPDropdown = () => {
   showMCPDropdown.value = false;
 };
 
-// Load existing Web Search data for this bot assistant
-const loadMCPsData = async () => {
-  try {
-    console.log('Loading already connected MCP servers:', props.chatId);
-    const response = await mcpStore.getConnectedMCPs();
-    
-    if (response.success) {
-      console.log('Fetched MCP data result:', response);
-      
-    } else {
-      console.log('No existing Web Search data found or failed to load:', response.message);
-    }
-  } catch (error: any) {
-    console.error('Error loading Web Search data:', error);
-  }
-};
-
 // New methods for dropdown actions
 const openMCPServers = async() => {
-  if(mcpStore.connectedServers.length === 0) {
-    loadingData.value = true;
-    await loadMCPsData();
-    loadingData.value = false;
-  }
   showMCPModal.value = true;
   closeMCPDropdown();
 };
@@ -421,22 +399,6 @@ const connectWebSearch = async () => {
 //   showWebSearchConfig.value = !showWebSearchConfig.value;
 // };
 
-const handleMCPConnection = (serverId: string) => {
-  // Update the system prompt with MCP capabilities
-  const combinedPrompt = mcpStore.getCombinedSystemPrompt();
-  if (combinedPrompt) {
-    // Log the system prompt for debugging
-    console.log('MCP System Prompt Updated:', combinedPrompt);
-    
-    // Show a success message to the user
-    const connectedServer = mcpStore.connectedServers.find(config => config.id === serverId);
-    if (connectedServer) {
-      // You could add a toast notification here or update the UI
-      console.log(`Successfully connected to ${connectedServer.name}`);
-    }
-  }
-  closeMCPModal();
-};
 
 // Load existing File Search data for this bot assistant
 const loadFileSearchData = async () => {

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { MCPConfigurationFile, MCPServer } from '../types/mcp';
+import type { MCPConfigurationFile } from '../types/mcp';
 import { BOTSIFY_BASE_URL, BOTSIFY_AUTH_TOKEN, APP_URL } from '../utils/config';
 import { useBotStore } from '@/stores/botStore';
 
@@ -678,76 +678,8 @@ export class BotsifyApiService {
   }
 
   /**
-   * Build headers object for MCP configuration based on authentication method
-   */
-  private buildMCPHeaders(serverId: string, apiKey: string, authMethod: string): Record<string, string> {
-    const headers: Record<string, string> = {};
-
-    if (apiKey && apiKey.trim()) {
-      switch (authMethod) {
-        case 'bearer_token':
-          if (serverId === 'shopify'){
-            headers['X-Shopify-Access-Token'] = apiKey.trim();
-          } else{
-            headers['Authorization'] = `Bearer ${apiKey.trim()}`;
-          }
-          break;
-        case 'api_key':
-          // For API key, we might use different header names based on the service
-          if (serverId === 'stripe') {
-            headers['Authorization'] = `Bearer ${apiKey.trim()}`;
-          } else if (serverId === 'github') {
-            headers['Authorization'] = `token ${apiKey.trim()}`;
-          } else if (serverId === 'notion') {
-            headers['Authorization'] = `Bearer ${apiKey.trim()}`;
-            headers['Notion-Version'] = '2022-06-28';
-          } else if (serverId === 'slack') {
-            headers['Authorization'] = `Bearer ${apiKey.trim()}`;
-          } else if (serverId === 'shopify') {
-            headers['X-Shopify-Access-Token'] = apiKey.trim();
-            headers['Content-Type'] = 'application/json';
-          } else {
-            headers['X-API-Key'] = apiKey.trim();
-          }
-          break;
-        case 'basic_auth':
-          // For basic auth, apiKey should contain "username:password"
-          const encoded = btoa(apiKey.trim());
-          headers['Authorization'] = `Basic ${encoded}`;
-          break;
-        case 'oauth':
-          headers['Authorization'] = `Bearer ${apiKey.trim()}`;
-          break;
-        default:
-          headers['X-API-Key'] = apiKey.trim();
-      }
-    }
-
-    return headers;
-  }
-
-  /**
    * Get default server URL for known services
    */
-  private getDefaultServerUrl(serverId: string): string {
-    const defaultUrls: Record<string, string> = {
-      github: 'https://api.github.com',
-      stripe: 'https://mcp.stripe.com',
-      shopify: 'https://api.shopify.com',
-      notion: 'https://api.notion.com/v1',
-      slack: 'https://slack.com/api',
-      'google-drive': 'https://www.googleapis.com/drive/v3',
-      postgres: 'postgresql://localhost:5432',
-      zapier: 'https://zapier.com/api/v1',
-      paypal: 'https://api.paypal.com',
-      square: 'https://connect.squareup.com',
-      plaid: 'https://production.plaid.com',
-      'web-search': 'https://api.openweathermap.org/data/2.5', // Weather API as fallback
-      weather: 'https://api.openweathermap.org/data/2.5'
-    };
-
-    return defaultUrls[serverId] || 'https://localhost:3000';
-  }
 
   /**
    * Get File Search data for a specific bot assistant
