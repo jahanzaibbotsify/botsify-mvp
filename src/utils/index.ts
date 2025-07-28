@@ -1,16 +1,12 @@
-
-export const formatTime = (date: Date) => {
-  const now = new Date()
-  const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-  
-  if (diffInHours < 1) {
-    return 'Just now'
-  } else if (diffInHours < 24) {
-    return `${Math.floor(diffInHours)}h ago`
-  } else {
-    return date.toLocaleDateString()
-  }
+import moment from 'moment';
+export const formatTime = (utcDate: Date | string) => {
+  var stillUtc = moment.utc(utcDate).toDate();
+      var local = moment(stillUtc)
+        .local()
+        .format("YYYY-MM-DD HH:mm:ss");
+      return moment(local).fromNow();
 }
+
 
 export const getPlatformClass = (platform: string = '') => {
     switch (platform.toLowerCase()) {

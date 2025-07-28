@@ -60,7 +60,7 @@ const platformOptions = [
   { value: 'all', label: 'All', icon: 'pi pi-globe' },
   { value: 'facebook', label: 'Facebook', icon: 'pi pi-facebook' },
   { value: 'whatsapp', label: 'WhatsApp', icon: 'pi pi-whatsapp' },
-  { value: 'web', label: 'Website', icon: 'pi pi-globe' },
+  { value: 'website', label: 'Website', icon: 'pi pi-globe' },
   { value: 'instagram', label: 'Instagram', icon: 'pi pi-instagram' },
   { value: 'telegram', label: 'Telegram', icon: 'pi pi-telegram' }
 ];
