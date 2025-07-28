@@ -9,7 +9,8 @@ import type {
   AttributeUpdatePayload,
   AttributeDeletePayload,
   AttributeResponse,
-  UserAttribute
+  UserAttribute,
+  ActionType
 } from '@/types/user'
 
 class UserApiService {
@@ -21,7 +22,7 @@ class UserApiService {
     return filteredParams ? `?${filteredParams}` : ''
   }
 
-  async getUsers(params: GetUsersParams): Promise<ApiResponse<ApiUsersResponse>> {
+  async getUsers(params: GetUsersParams = {}): Promise<ApiResponse<ApiUsersResponse>> {
     try {
       const API_KEY = useApiKeyStore().apiKey
       const queryString = this.buildQueryString({ ...params, apikey: API_KEY })
@@ -151,6 +152,50 @@ class UserApiService {
         success: false,
         message: error?.response?.data?.message || 'Failed to fetch user attributes',
         data: []
+      }
+    }
+  }
+
+  async executeUserAction(action: ActionType, userIds: number[]): Promise<ApiResponse<any>> {
+    try {
+      const API_KEY = useApiKeyStore().apiKey
+      
+      switch (action) {
+        case 'activate':
+          return await this.changeUserStatus(1, userIds)
+        case 'deactivate':
+          return await this.changeUserStatus(0, userIds)
+        case 'delete':
+          const payload: UserActionPayload = { user_ids: userIds, apikey: API_KEY }
+          const response = await axiosInstance.post('v1/user/delete', payload)
+          return { success: true, data: response.data }
+        case 'delete_conversation':
+          const convPayload: UserActionPayload = { user_ids: userIds, apikey: API_KEY }
+          const convResponse = await axiosInstance.post('v1/user/delete-conversation', convPayload)
+          return { success: true, data: convResponse.data }
+        default:
+          throw new Error(`Unknown action: ${action}`)
+      }
+    } catch (error: any) {
+      console.error(`Error executing user action ${action}:`, error)
+      return {
+        success: false,
+        message: error?.response?.data?.message || `Failed to execute ${action}`,
+        data: null
+      }
+    }
+  }
+
+  async login(email: string, password: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await axiosInstance.post('v1/auth/login', { email, password })
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      console.error('Error during login:', error)
+      return {
+        success: false,
+        message: error?.response?.data?.message || 'Login failed',
+        data: null
       }
     }
   }

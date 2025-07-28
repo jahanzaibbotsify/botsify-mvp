@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useConversationStore } from '@/stores/conversationStore'
 import { useRoleStore } from '@/stores/roleStore'
+import { useErrorHandler } from '@/composables'
 import {
   ConversationSidebar,
   ChatHeader,
@@ -10,11 +11,15 @@ import {
   MessageInput,
   UserSidebar
 } from '@/components/conversation'
+import ErrorBoundary from '@/components/ErrorBoundary.vue'
 
 
 const route = useRoute()
 const conversationStore = useConversationStore()
 const roleStore = useRoleStore()
+
+// Setup error handling
+const errorHandler = useErrorHandler()
 
 // Local state
 const newMessage = ref('')
@@ -47,79 +52,81 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="conversation-view">
-    <!-- Main Conversation Area -->
-    <div class="conversation-content">
-      <!-- Left Sidebar - Conversation List -->
-      <ConversationSidebar 
-        :search-query="conversationStore.searchQuery"
-        :active-filter="conversationStore.activeFilter"
-        :active-tab="conversationStore.activeTab"
-        :read-filter="conversationStore.readFilter"
-        :chat-type-filter="conversationStore.chatTypeFilter"
-        :sort-order="conversationStore.sortOrder"
-        :conversations="conversationStore.filteredConversations"
-        :selected-conversation="conversationStore.selectedConversation"
-        :loading="conversationStore.loading"
-        :error="conversationStore.error"
-        :is-loading-more="conversationStore.isLoadingMore"
-        @update:search-query="conversationStore.setSearchQuery"
-        @update:active-filter="conversationStore.setActiveFilter"
-        @update:active-tab="conversationStore.setActiveTab"
-        @update:read-filter="conversationStore.setReadFilter"
-        @update:chat-type-filter="conversationStore.setChatTypeFilter"
-        @update:sort-order="conversationStore.setSortOrder"
-        @select-conversation="conversationStore.selectConversation"
-        @load-more-conversations="conversationStore.loadMoreConversations"
-        @retry="conversationStore.fetchConversations"
-      />
-
-      <!-- No Conversation Selected - Only show when not loading and no conversation selected -->
-    <div 
-      v-if="!conversationStore.selectedConversation" 
-      class="no-conversation"
-    >
-      <div class="no-conversation-content">
-        <div class="no-conversation-icon">💬</div>
-        <h3>No Conversation Selected</h3>
-        <p>Select a conversation from the sidebar to start chatting.</p>
-      </div>
-    </div>
-
-    <template v-else>
-      <!-- Main Chat Area -->
-      <div class="chat-main">
-        <!-- Chat Header -->
-        <ChatHeader 
-          :loading="conversationStore.loading"
-          @translate-language="handleTranslateLanguage"
-        />
-
-        <!-- Chat Messages Area -->
-        <ChatMessages 
-          :messages="conversationStore.messages"
+  <ErrorBoundary @error="errorHandler.handleComponentError">
+    <div class="conversation-view">
+      <!-- Main Conversation Area -->
+      <div class="conversation-content">
+        <!-- Left Sidebar - Conversation List -->
+        <ConversationSidebar 
+          :search-query="conversationStore.searchQuery"
+          :active-filter="conversationStore.activeFilter"
+          :active-tab="conversationStore.activeTab"
+          :read-filter="conversationStore.readFilter"
+          :chat-type-filter="conversationStore.chatTypeFilter"
+          :sort-order="conversationStore.sortOrder"
+          :conversations="conversationStore.filteredConversations"
+          :selected-conversation="conversationStore.selectedConversation"
           :loading="conversationStore.loading"
           :error="conversationStore.error"
-          :selected-language="selectedLanguage"
-          @retry="conversationStore.fetchUserConversation(conversationStore.selectedConversation?.fbid || '')"
+          :is-loading-more="conversationStore.isLoadingMore"
+          @update:search-query="conversationStore.setSearchQuery"
+          @update:active-filter="conversationStore.setActiveFilter"
+          @update:active-tab="conversationStore.setActiveTab"
+          @update:read-filter="conversationStore.setReadFilter"
+          @update:chat-type-filter="conversationStore.setChatTypeFilter"
+          @update:sort-order="conversationStore.setSortOrder"
+          @select-conversation="conversationStore.selectConversation"
+          @load-more-conversations="conversationStore.loadMoreConversations"
+          @retry="conversationStore.fetchConversations"
         />
 
-        <!-- Message Input -->
-        <MessageInput 
-          v-if="roleStore.canSendMessages"
-          :chat-id="conversationStore.selectedConversation?.id || ''"
-          :message="newMessage"
-          :loading="conversationStore.loading"
-          @update:message="newMessage = $event"
-          @send="sendMessage"
-        />
+        <!-- No Conversation Selected - Only show when not loading and no conversation selected -->
+      <div 
+        v-if="!conversationStore.selectedConversation" 
+        class="no-conversation"
+      >
+        <div class="no-conversation-content">
+          <div class="no-conversation-icon">💬</div>
+          <h3>No Conversation Selected</h3>
+          <p>Select a conversation from the sidebar to start chatting.</p>
+        </div>
       </div>
 
-      <!-- Right Sidebar - User Details -->
-      <UserSidebar :loading="conversationStore.loading" />
-    </template>
+      <template v-else>
+        <!-- Main Chat Area -->
+        <div class="chat-main">
+          <!-- Chat Header -->
+          <ChatHeader 
+            :loading="conversationStore.loading"
+            @translate-language="handleTranslateLanguage"
+          />
+
+          <!-- Chat Messages Area -->
+          <ChatMessages 
+            :messages="conversationStore.messages"
+            :loading="conversationStore.loading"
+            :error="conversationStore.error"
+            :selected-language="selectedLanguage"
+            @retry="conversationStore.fetchUserConversation(conversationStore.selectedConversation?.fbid || '')"
+          />
+
+          <!-- Message Input -->
+          <MessageInput 
+            v-if="roleStore.canSendMessages"
+            :chat-id="conversationStore.selectedConversation?.id || ''"
+            :message="newMessage"
+            :loading="conversationStore.loading"
+            @update:message="newMessage = $event"
+            @send="sendMessage"
+          />
+        </div>
+
+        <!-- Right Sidebar - User Details -->
+        <UserSidebar :loading="conversationStore.loading" />
+      </template>
+      </div>
     </div>
-  </div>
+  </ErrorBoundary>
 </template>
 
 <style scoped>

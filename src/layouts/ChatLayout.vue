@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { useChatStore } from '@/stores/chatStore';
+import { useChatStore } from '@/stores/modules';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import LeftSidebar from '@/components/sidebar/LeftSidebar.vue';
 import { useWindowSize } from '@vueuse/core';
@@ -55,7 +55,6 @@ watch(() => sidebarStore.isOpen, (isOpen) => {
 onMounted(() => {
    if (apiKey) {
     apiKeyStore.setApiKey(apiKey)
-    console.log('API Key set:', apiKey)
   } 
   if (isMobile.value) {
     sidebarStore.closeSidebar();

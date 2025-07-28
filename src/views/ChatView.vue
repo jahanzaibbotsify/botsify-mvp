@@ -3,15 +3,20 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 import { useRoleStore } from '@/stores/roleStore';
+import { useErrorHandler } from '@/composables';
 import StorySidebar from '@/components/sidebar/StorySidebar.vue';
 import ChatMessage from '@/components/chat/ChatMessage.vue';
 import MessageInput from '@/components/chat/MessageInput.vue';
 import TypingIndicator from '@/components/chat/TypingIndicator.vue';
 import SystemMessageSender from '@/components/chat/SystemMessageSender.vue';
 import ChatHeader from '@/components/chat/ChatHeader.vue';
+import ErrorBoundary from '@/components/ErrorBoundary.vue';
 
 const router = useRouter();
 const roleStore = useRoleStore();
+
+// Setup error handling
+const errorHandler = useErrorHandler();
 
 
 const route = useRoute();
@@ -37,7 +42,10 @@ const chat = computed(() => {
   return foundChat;
 });
 
-const latestPromptContent = computed(() => (chat.value?.messages && chat.value.messages.length > 1) ? chat.value?.story?.content || '' : '');
+const latestPromptContent = computed(() => {
+  const activeVersion = chatStore.getActiveVersionForChat(chatId.value);
+  return activeVersion?.content || '';
+});
 const hasPromptContent = computed(() => latestPromptContent.value.trim().length > 0);
 
 const scrollToBottom = async () => {
@@ -48,13 +56,13 @@ const scrollToBottom = async () => {
 };
 
 // Watch for new messages to scroll to bottom
-watch(() => chat.value?.messages.length, (newLength, oldLength) => {
+watch(() => chatStore.activeChatMessages.length, (newLength, oldLength) => {
   console.log('Messages length changed:', { newLength, oldLength });
   scrollToBottom();
 });
 
 watch(
-  () => chat.value?.messages.map(m => m.content).join(''),
+  () => chatStore.activeChatMessages.map(m => m.content).join(''),
   () => {
     scrollToBottom();
   }
@@ -67,8 +75,7 @@ watch(() => chatStore.isTyping, (isTyping, wasTyping) => {
 });
 
 const showCenteredInput = computed(() => {
-  if (!chat.value || !chat.value.messages) return true;
-  const msgs = chat.value.messages;
+  const msgs = chatStore.activeChatMessages;
   return msgs.length === 0 || (msgs.length === 1 && (!msgs[0].content || msgs[0].content === null || msgs[0].content === ''));
 });
 
@@ -111,65 +118,67 @@ function toggleStorySidebar() {
 </script>
 
 <template>
-  <div v-if="chat" class="chat-view" :class="{ 'with-sidebar': showStorySidebar }">
-    <!-- API Error Notification -->
-    <ChatHeader 
-      v-if="chat"
-      :title="chat.title"
-      :has-prompt-content="hasPromptContent"
-      :latest-prompt-content="latestPromptContent"
-      @toggle-story-sidebar="toggleStorySidebar"
-    />
-    
-    <div ref="messagesContainer" class="messages-container scrollbar">
-      <div class="messages">
-        <ChatMessage 
-          v-for="message in chat.messages" 
-          :key="`${message.id}-${message.content ? message.content.length : 0}`" 
-          :message="message" 
-        />
-        
-        <TypingIndicator v-if="chatStore.isTyping" />
-      </div>
-      <!-- Centered MessageInput if no messages or first message is empty -->
-      <div v-if="showCenteredInput" class="centered-message-input">
-        <div class="centered-heading">
-          <h1>Start building your AI agent prompt...</h1>
+  <ErrorBoundary @error="errorHandler.handleComponentError">
+    <div v-if="chat" class="chat-view" :class="{ 'with-sidebar': showStorySidebar }">
+      <!-- API Error Notification -->
+      <ChatHeader 
+        v-if="chat"
+        :title="chat.title"
+        :has-prompt-content="hasPromptContent"
+        :latest-prompt-content="latestPromptContent"
+        @toggle-story-sidebar="toggleStorySidebar"
+      />
+      
+      <div ref="messagesContainer" class="messages-container scrollbar">
+        <div class="messages">
+          <ChatMessage 
+            v-for="message in chatStore.activeChatMessages" 
+            :key="`${message.id}-${message.content ? message.content.length : 0}`" 
+            :message="message" 
+          />
+          
+          <TypingIndicator v-if="chatStore.isTyping" />
         </div>
-        <MessageInput :chatId="chatId" :centered="true" />
-        <div class="suggestion-buttons">
-          <button v-for="suggestion in suggestions" :key="suggestion" class="suggestion-btn" @click="sendSuggestion(suggestion)">
-            {{ suggestion }}
-          </button>
+        <!-- Centered MessageInput if no messages or first message is empty -->
+        <div v-if="showCenteredInput" class="centered-message-input">
+          <div class="centered-heading">
+            <h1>Start building your AI agent prompt...</h1>
+          </div>
+          <MessageInput :chatId="chatId" :centered="true" />
+          <div class="suggestion-buttons">
+            <button v-for="suggestion in suggestions" :key="suggestion" class="suggestion-btn" @click="sendSuggestion(suggestion)">
+              {{ suggestion }}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-    
-    <!-- Bottom MessageInput if there are real messages -->
-      <MessageInput v-if="!showCenteredInput" :chatId="chatId" />
-    
-     <!-- Story Sidebar - Only show when enabled -->
-     <StorySidebar v-if="showStorySidebar" ref="storySidebar" :chatId="chatId" />
+      
+      <!-- Bottom MessageInput if there are real messages -->
+        <MessageInput v-if="!showCenteredInput" :chatId="chatId" />
+      
+       <!-- Story Sidebar - Only show when enabled -->
+       <StorySidebar v-if="showStorySidebar" ref="storySidebar" :chatId="chatId" />
 
-    <!-- System Message Modal -->
-    <div v-if="showSystemMessageModal" class="modal-overlay" @click.self="toggleSystemMessageModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>System Message</h3>
-          <button class="close-button" @click="toggleSystemMessageModal">
-            <i class="pi pi-times"></i>
-          </button>
+      <!-- System Message Modal -->
+      <div v-if="showSystemMessageModal" class="modal-overlay" @click.self="toggleSystemMessageModal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>System Message</h3>
+            <button class="close-button" @click="toggleSystemMessageModal">
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
+          <SystemMessageSender />
         </div>
-        <SystemMessageSender />
       </div>
     </div>
-  </div>
-  
-  <div v-else class="chat-not-found">
-    <h2>Chat not found</h2>
-    <p>The chat you're looking for doesn't exist or has been deleted.</p>
-    <button class="primary" @click="$router.push('/')">Back to Home</button>
-  </div>
+    
+    <div v-else class="chat-not-found">
+      <h2>Chat not found</h2>
+      <p>The chat you're looking for doesn't exist or has been deleted.</p>
+      <button class="primary" @click="$router.push('/')">Back to Home</button>
+    </div>
+  </ErrorBoundary>
 </template>
 
 <style scoped>

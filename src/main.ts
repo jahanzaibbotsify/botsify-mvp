@@ -12,10 +12,10 @@ import ToastPlugin, { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-bootstrap.css';
 import { useApiKeyStore } from './stores/apiKeyStore';
 import { useConversationStore } from './stores/conversationStore';
-import { useChatStore } from './stores/chatStore';
+import { useChatStore, useUserStore } from './stores/modules';
 import { useRoleStore } from './stores/roleStore';
-import { useWhitelabelStore } from './stores/whitelabelStore';
 import { installPermissions } from './utils/permissions';
+import { errorMonitoringService } from './services/errorMonitoringService';
 
 import Swal from 'sweetalert2';
 
@@ -106,7 +106,7 @@ function getBotDetails(apikey: string) {
     
     const apiKeyStore = useApiKeyStore();
     const roleStore = useRoleStore();
-    const whitelabelStore = useWhitelabelStore();
+    const userStore = useUserStore();
     
     apiKeyStore.setApiKeyConfirmed(true);
     apiKeyStore.setUserId(response.data.data.user.id);
@@ -118,7 +118,7 @@ function getBotDetails(apikey: string) {
       // Set whitelabel data if user is a whitelabel client
       if (response.data.data.user.is_whitelabel_client) {
         console.log('🎨 Setting whitelabel data:', response.data.data.user.whitelabel);
-        whitelabelStore.setWhitelabelData(response.data.data.user);
+        userStore.setWhitelabelData(response.data.data.user);
         // Set favicon if present
         if (response.data.data.user.whitelabel && response.data.data.user.whitelabel.favicon) {
           let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
@@ -181,7 +181,13 @@ router.beforeEach(async (to, from, next) => {
           // Only load chat data if not already loaded or if coming from a different page
           const chatStore = useChatStore();
           if (!chatStore.chats.length || from.name !== to.name) {
-            chatStore.loadFromStorage(bot.chat_flow, bot.bot_flow);
+            // Load chats and messages from storage
+            if (bot.chat_flow) {
+              chatStore.loadChatsFromStorage(bot.chat_flow);
+            }
+            if (bot.bot_flow) {
+              chatStore.loadTemplatesFromStorage(bot.bot_flow);
+            }
           }
           
           // Initialize Firebase only once
@@ -256,6 +262,9 @@ if (!localStorageAvailable) {
 
 
 
+
+// Initialize error monitoring service
+errorMonitoringService.initialize();
 
 // mount app
 app.mount('#app'); 

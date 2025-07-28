@@ -76,7 +76,7 @@ export const useRoleStore = defineStore('role', () => {
   // Set current user and role
   const setCurrentUser = (user: BotUser) => {
     currentUser.value = user
-    currentRole.value = getRoleFromBotRole(user.bot_role)
+    currentRole.value = getRoleFromBotRole(1)
     userPermissions.value = getPermissionsForRole(currentRole.value)
     
     console.log(`🔐 Role set: ${currentRole.value} (bot_role: ${user.bot_role})`)

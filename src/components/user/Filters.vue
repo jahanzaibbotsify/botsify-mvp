@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { ActionType, FilterType, SegmentType } from '@/types/user'
 import VueSelect from "vue3-select-component"
 import DateRange from '@/components/ui/DateRange.vue'
-import { useUserStore } from '@/stores/userStore'
+import { useUserStore } from '@/stores/modules'
 import { useSidebarStore } from '@/stores/sidebarStore'
 
 const userStore = useUserStore()

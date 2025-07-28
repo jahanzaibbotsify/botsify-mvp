@@ -3,8 +3,9 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router';
 import UserAttributes from './Attributes.vue'
 import { UserAttribute, SortBy, PerPage } from '@/types/user'
-import { useUserStore, type ExtendedUser } from '@/stores/userStore'
+import { useUserStore } from '@/stores/modules'
 import { useRoleStore } from '@/stores/roleStore'
+import { type ExtendedUser } from '@/stores/modules/user/userDataStore';
 import { userApi } from '@/services/userApi';
 
 const userStore = useUserStore()
@@ -205,7 +206,7 @@ const getPageNumbers = computed(() => {
               </div>
             </td>
           </tr>
-          <tr v-else-if="userStore.users.length === 0" class="no-data-row">
+          <tr v-else-if="userStore.paginatedUsers.length === 0" class="no-data-row">
             <td colspan="10" class="no-data-cell">
               <div class="no-data-content">
                 <div class="no-data-icon">📄</div>
@@ -216,7 +217,7 @@ const getPageNumbers = computed(() => {
           </tr>
           <tr 
             v-else 
-            v-for="user in userStore.users" 
+            v-for="user in userStore.paginatedUsers" 
             :key="user.id"
             class="clickable-row"
             @click="handleRowClick(user)"

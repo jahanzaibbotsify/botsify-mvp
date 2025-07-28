@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, nextTick } from 'vue';
-import { useChatStore } from '@/stores/chatStore';
+import { useChatStore } from '@/stores/modules';
 import { marked } from 'marked';
 import BotsifyLoader from '@/components/ui/BotsifyLoader.vue';
 

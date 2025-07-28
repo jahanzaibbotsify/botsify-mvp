@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue';
 // import { useRouter } from 'vue-router';
-import { useChatStore } from '@/stores/chatStore';
+import { useChatStore } from '@/stores/modules';
 import { useApiKeyStore } from "@/stores/apiKeyStore";
+import { useErrorHandler } from '@/composables';
 import BotsifyLoader from './components/ui/BotsifyLoader.vue';
+import ErrorBoundary from './components/ErrorBoundary.vue';
+import ErrorDashboard from './components/debug/ErrorDashboard.vue';
 
 // const router = useRouter();
 const isAuthenticated = computed(() => useApiKeyStore().apiKeyConfirmed);
 const chatStore = useChatStore();
+
+// Setup error handling
+const errorHandler = useErrorHandler();
 
 const showStorageWarning = ref(false);
 const storageSizeMB = ref(0);
@@ -66,6 +72,9 @@ onMounted(() => {
   //   router.push('/');
   // }
   
+  // Setup global error handlers
+  errorHandler.setupGlobalErrorHandlers();
+  
   // Check storage size
   checkStorageSize();
   
@@ -75,31 +84,36 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="app-container">
-    <div v-if="!isAuthenticated" class="main-loading">
-      <botsify-loader />
-    </div>
-    <div v-else>  
-      <div v-if="showStorageWarning" class="storage-warning">
-        <div class="warning-content">
-          <span class="warning-icon">⚠️</span>
-          <span class="warning-text">
-            Storage usage: {{ formattedSize }}MB (may affect persistence)
-          </span>
-          <button class="clear-button" @click="clearOldChats">
-            Clear Old Chats
-          </button>
-          <button class="close-button" @click="showStorageWarning = false">
-            ✕
-          </button>
+  <ErrorBoundary @error="errorHandler.handleComponentError">
+    <div class="app-container">
+      <div v-if="!isAuthenticated" class="main-loading">
+        <botsify-loader />
+      </div>
+      <div v-else>  
+        <div v-if="showStorageWarning" class="storage-warning">
+          <div class="warning-content">
+            <span class="warning-icon">⚠️</span>
+            <span class="warning-text">
+              Storage usage: {{ formattedSize }}MB (may affect persistence)
+            </span>
+            <button class="clear-button" @click="clearOldChats">
+              Clear Old Chats
+            </button>
+            <button class="close-button" @click="showStorageWarning = false">
+              ✕
+            </button>
+          </div>
         </div>
-      </div>
 
-      <router-view />
+        <router-view />
       </div>
     </div>
-
+  </ErrorBoundary>
+  
+  <!-- Error Dashboard (Development Only) -->
+  <!-- <ErrorDashboard v-if="import.meta.env.DEV" /> -->
 </template>
+
 
 <style>
 .app-container {

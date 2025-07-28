@@ -122,7 +122,7 @@ const deleteAttribute = (id: number) => {
       if (response.success && response.data) {
         const deleteData = response.data
 
-        if (deleteData.success) {
+        if (deleteData.status === "success" || deleteData.success) {
           localAttributes.value = localAttributes.value.filter(attr => attr.id !== id)
           emit('update', localAttributes.value)
 

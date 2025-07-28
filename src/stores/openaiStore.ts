@@ -222,7 +222,7 @@ export const useOpenAIStore = defineStore('openai', () => {
     return responseMessage.trim();
   }
 
-  async function streamChat(messages: ChatMessage[]): Promise<Response>  {
+  async function streamChat(messages: ChatMessage[]): Promise<{ success: boolean; data?: string; error?: string }>  {
 
     try {
       console.log('🚀 Preparing to stream chat with messages:', messages);
@@ -560,25 +560,62 @@ Botsify MCP Server: Operations & API Tooling Guide
             payload: payload
           })
         });
-        if (!stream.ok) throw new Error('No response for streaming');
-        return stream;
+        
+        if (!stream.ok) {
+          throw new Error('No response for streaming');
+        }
+
+        // Process the streaming response
+        const reader = stream.body?.getReader();
+        if (!reader) {
+          throw new Error('No reader available for streaming response');
+        }
+
+        let responseText = '';
+        const decoder = new TextDecoder();
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value, { stream: true });
+            responseText += chunk;
+          }
+        } finally {
+          reader.releaseLock();
+        }
+
+        return {
+          success: true,
+          data: responseText
+        };
 
       } catch (apiError: unknown) {
         const streamError = apiError as ApiError;
-        throw new Error(handleApiError(streamError, 'get-ai-response API'));
+        return {
+          success: false,
+          error: handleApiError(streamError, 'get-ai-response API')
+        };
       }
     } catch (e: unknown) {
       const streamChatError = e as ApiError;
       
       if (streamChatError.status === 429) {
         rateLimited.value = true;
-        throw new Error('Rate limit exceeded. Please try again later.');
+        return {
+          success: false,
+          error: 'Rate limit exceeded. Please try again later.'
+        };
       }
       
       // Use standardized error handling
       const errorMessage = handleApiError(streamChatError, 'streamChat');
       error.value = errorMessage;
-      throw new Error(errorMessage);
+      return {
+        success: false,
+        error: errorMessage
+      };
     }
   }
 

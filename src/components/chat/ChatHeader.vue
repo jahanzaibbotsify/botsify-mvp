@@ -56,8 +56,8 @@ import { ref, watch, onBeforeUnmount } from 'vue';
 import { useThemeStore } from '@/stores/themeStore';
 import { botsifyApi } from '@/services/botsifyApi';
 import { BOTSIFY_WEB_URL } from '@/utils/config';
-import { useChatStore } from '@/stores/chatStore';
-import { useWhitelabelStore } from '@/stores/whitelabelStore';
+import { useChatStore } from '@/stores/modules';
+import { useUserStore } from '@/stores/modules';
 
 interface Props {
   title: string;
@@ -76,7 +76,7 @@ const emit = defineEmits<{
 }>();
 
 const isDeployingAI = ref(false);
-const whitelabelStore = useWhitelabelStore();
+  const userStore = useUserStore();
 
 function toggleDropdown() {
   showDropdown.value = !showDropdown.value;
@@ -99,8 +99,8 @@ async function testAI() {
   }
   const apiKey = (await import('@/stores/apiKeyStore')).useApiKeyStore().apiKey;
   let url = `${BOTSIFY_WEB_URL}/web-bot/agent/${apiKey}`;
-  if (whitelabelStore.isWhitelabelClient && whitelabelStore.maskUrl) {
-    url = `https://${whitelabelStore.maskUrl}/web-bot/agent/${apiKey}`;
+  if (userStore.isWhitelabelClient && userStore.maskUrl) {
+    url = `https://${userStore.maskUrl}/web-bot/agent/${apiKey}`;
   }
   window.open(url, '_blank');
 }
@@ -142,7 +142,7 @@ function handleReset() {
     confirmButtonText: "Yes, Reset it!",
     text: "This will clear your current agent flow and start a new one. This action is irreversible."
   }, async() => {
-    chatStore.clearChatMessages()
+    chatStore.clearMessages(chatStore.activeChat?.id || '')
   });
 }
 

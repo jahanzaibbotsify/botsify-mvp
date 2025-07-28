@@ -5,8 +5,10 @@ import UserFilters from '@/components/user/Filters.vue'
 import UserTable from '@/components/user/Table.vue'
 import ImportPanel from '@/components/user/ImportPanel.vue'
 import { ActionType, User } from '@/types/user'
-import { useUserStore } from '@/stores/userStore'
+import { useUserStore } from '@/stores/modules'
 import { useRoleStore } from '@/stores/roleStore'
+import { useErrorHandler } from '@/composables'
+import ErrorBoundary from '@/components/ErrorBoundary.vue'
 
 // Use the router
 const router = useRouter()
@@ -14,6 +16,9 @@ const router = useRouter()
 // Use the user store
 const userStore = useUserStore()
 const roleStore = useRoleStore()
+
+// Setup error handling
+const errorHandler = useErrorHandler()
 
 // Local state
 const showImportPanel = ref<boolean>(false)
@@ -107,7 +112,7 @@ onMounted(() => {
     return;
   }
   
-  userStore.fetchUsers()
+  userStore.fetchUsersWithFilters()
   
   // Listen for import panel events
   window.addEventListener('show-import-panel', handleImportEvent)
@@ -120,28 +125,30 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="user-view">
-    <div class="page-header">
-      <h1>User Management</h1>
-      <p>Manage your bot users, view attributes, and perform bulk actions.</p>
+  <ErrorBoundary @error="errorHandler.handleComponentError">
+    <div class="user-view">
+      <div class="page-header">
+        <h1>User Management</h1>
+        <p>Manage your bot users, view attributes, and perform bulk actions.</p>
+      </div>
+
+      <!-- Main User Management View --> 
+      <div class="user-content"> 
+        <!-- Filters and Controls -->
+        <UserFilters />
+
+        <!-- Import Panel -->
+        <ImportPanel 
+          v-if="showImportPanel"
+          @close="() => handleImportActions('close')"
+          @import="(users: User[]) => handleImportActions('import', users)"
+        />
+
+        <!-- Users Table -->
+        <UserTable />
+      </div>
     </div>
-
-    <!-- Main User Management View --> 
-    <div class="user-content"> 
-      <!-- Filters and Controls -->
-      <UserFilters />
-
-      <!-- Import Panel -->
-      <ImportPanel 
-        v-if="showImportPanel"
-        @close="() => handleImportActions('close')"
-        @import="(users: User[]) => handleImportActions('import', users)"
-      />
-
-      <!-- Users Table -->
-      <UserTable />
-    </div>
-  </div>
+  </ErrorBoundary>
 </template>
 
 <style scoped>

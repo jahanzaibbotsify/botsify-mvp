@@ -164,7 +164,7 @@ const sendMessage = async () => {
   }
   
   // Send the final message with uploaded file URLs
-  chatStore.addMessage(props.chatId, finalMessageText, 'user', processedAttachments);
+  await chatStore.addMessage(props.chatId, finalMessageText, 'user', processedAttachments);
   
   // Clear the input
   messageText.value = '';

@@ -44,7 +44,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { useUserStore } from '@/stores/userStore'
+import { useUserStore } from '@/stores/modules'
 import type { UserAttribute } from '@/types/user'
 import type { ExtendedChat } from '@/types'
 
