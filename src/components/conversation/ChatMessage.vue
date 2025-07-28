@@ -113,7 +113,9 @@ const parsedContent = computed(() => {
 
 // Render attachment content
 const renderAttachment = (attachment: any): string => {
-  const { type, payload } = attachment;
+  const { type } = attachment;
+  // Normalize payload
+  const payload = attachment.payload || attachment;
   
   switch (type) {
     case 'template':
