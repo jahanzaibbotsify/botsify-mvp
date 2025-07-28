@@ -1026,6 +1026,10 @@ export class BotsifyApiService {
       const supportedTypes = [
         // Images
         'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+        //audio
+        'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/aac', 'audio/ogg', 'audio/opus',
+        'audio/webm', 'audio/flac', 'audio/alac', 'audio/x-ms-wma', 'audio/aiff', 'audio/x-aiff',
+        'audio/wavpack', 'audio/ape', 'audio/3gpp', 'audio/3gpp2', 'audio/amr', 'audio/L16', 'audio/pcm',
         // Videos
         'video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm',
         // Documents
@@ -1046,7 +1050,7 @@ export class BotsifyApiService {
       let maxSize: number;
       if (file.type.startsWith('video/')) {
         maxSize = 50 * 1024 * 1024; // 50MB for videos
-      } else if (file.type.startsWith('image/')) {
+      } else if (file.type.startsWith('image/') || file.type.startsWith('audio/')) {
         maxSize = 20 * 1024 * 1024; // 20MB for images
       } else {
         maxSize = 10 * 1024 * 1024; // 10MB for documents

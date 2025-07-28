@@ -636,10 +636,9 @@ const hideLoading = () => {
         :enablePreview="true"
         :emitRawFile="false"
         @upload="handleFileUpload"
-        text="For AI prompt analysis • Max 20MB images, 50MB videos"
+        text="Max 20MB images/audios, 50MB videos"
       />
     </div>
-
     <!-- Attachments preview -->
     <div v-if="attachments.length > 0" class="attachments-preview">
       <div v-for="file in attachments" :key="file.id" class="attachment-item">
@@ -654,7 +653,7 @@ const hideLoading = () => {
           <span class="attachment-name">{{ file.name }}</span>
           <span class="attachment-size">{{ (file.size / 1024).toFixed(1) }}KB</span>
           <span v-if="file.isUploaded" class="attachment-status uploaded">✅ Ready for AI</span>
-          <span v-else-if="file.type.startsWith('image/') || file.type.startsWith('video/')" class="attachment-status pending"></span>
+          <span v-else-if="file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/')" class="attachment-status pending"></span>
           <span v-else class="attachment-status unsupported">⚠️ Not supported</span>
         </div>
         <button class="remove-attachment" @click.stop="removeAttachment(file.id)">
