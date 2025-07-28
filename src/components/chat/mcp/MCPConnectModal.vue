@@ -258,7 +258,8 @@ const addServer = async (allowedTools: string[]) => {
       headers: buildMCPHeaders(),
       allowed_tools: allowedTools.map((tool: any) => tool.name),
       require_approval: "never",
-      is_custom: props.isCustom
+      is_custom: props.isCustom,
+      auth_method: authType.value,
     },
     apikey: useBotStore().apiKey
   };
