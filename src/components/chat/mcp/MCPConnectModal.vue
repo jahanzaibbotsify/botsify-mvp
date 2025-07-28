@@ -2,9 +2,9 @@
 import {PropType, ref, watch, onMounted, computed} from 'vue'
 import axios from "axios";
 import ToolsList from "./ToolsList.vue";
-import {useApiKeyStore} from "@/stores/apiKeyStore.ts";
 import {botsifyApi} from "@/services/botsifyApi.ts";
 import {useMCPStore} from "@/stores/mcpStore.ts";
+import {useBotStore} from "@/stores/botStore.ts";
 
 const props = defineProps({
   server: {
@@ -260,7 +260,7 @@ const addServer = async (allowedTools: string[]) => {
       require_approval: "never",
       is_custom: props.isCustom
     },
-    apikey: useApiKeyStore().apiKey
+    apikey: useBotStore().apiKey
   };
 
   if (alreadyConnected.value && connectedServerId.value) {
