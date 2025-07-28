@@ -42,6 +42,11 @@ const parsedContent = computed(() => {
       return `<p class="error-text">${contentToRender}</p>`;
     }
     
+    // don't show file urls
+    if (props.message.sender === 'user' && contentToRender.includes('Attached files:')) {
+      contentToRender = contentToRender.split('Attached files:')[0] + 'Attached files:\n';
+    }
+
     // Ensure we have a string to render
     if (typeof contentToRender !== 'string') {
       contentToRender = JSON.stringify(contentToRender);
