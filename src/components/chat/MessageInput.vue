@@ -4,8 +4,8 @@ import { useChatStore } from '@/stores/chatStore';
 import { useMCPStore } from '@/stores/mcpStore';
 import type { Attachment } from '@/types';
 import FileUpload from '@/components/ui/FileUpload.vue';
-import MCPConnectionModal from './MCPConnectionModal.vue';
 import { botsifyApi } from '@/services/botsifyApi';
+import McpConnectionModal from "@/components/chat/mcp/MCPConnectionModal.vue";
 
 const props = defineProps<{
   chatId: string;
@@ -783,13 +783,10 @@ const hideLoading = () => {
         </button>
       </div>
     </div>
-    
-    <!-- MCP Connection Modal -->
-    <MCPConnectionModal 
-      :isOpen="showMCPModal" 
-      :showCustomServer="showCustomServerOnOpen"
-      @close="closeMCPModal"
-      @connected="handleMCPConnection"
+
+    <McpConnectionModal
+        :is-open="showMCPModal"
+        @close="closeMCPModal"
     />
 
     <!-- File Search Modal -->
