@@ -26,7 +26,7 @@
       <button 
         class="action-button deploy-button"
         @click="deployAI"
-        :disabled="isDeployingAI || !hasPromptContent"
+        :disabled="isDeployingAI || !hasPromptContent || chatStore.isAIPromptGenerating"
         :title="!hasPromptContent ? 'Generate prompt content first' : 'Deploy your AI agent'"
       >
         <div class="button-content">
@@ -38,7 +38,7 @@
       <button 
         class="action-button test-button"
         @click="testAI"
-        :disabled="!hasPromptContent"
+        :disabled="isDeployingAI || !hasPromptContent || chatStore.isAIPromptGenerating"
         :title="!hasPromptContent ? 'Generate prompt content first' : 'Test your AI agent'"
       >
         <div class="button-content">
