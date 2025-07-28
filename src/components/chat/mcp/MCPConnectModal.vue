@@ -284,6 +284,8 @@ const addServer = async (allowedTools: string[]) => {
           id: connectedServer.id,
           name: connectedServer.setting.server_label,
           description: connectedServer.setting.server_description,
+          allowed_tools: connectedServer.setting.allowed_tools,
+          server_url: connectedServer.setting.server_url,
           icon: 'custom.svg',
           isCustom: connectedServer.setting.is_custom,
           connectionId: connectedServer.id,
