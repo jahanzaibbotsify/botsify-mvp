@@ -269,7 +269,7 @@ const getPageNumbers = computed(() => {
                   @click="handleDeleteUser(user.id)"
                   title="Delete User"
                 >
-                  <i class="pi pi-database"></i>
+                  <i class="pi pi-trash"></i>
                 </button>
               </div>
             </td>
