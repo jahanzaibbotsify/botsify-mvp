@@ -555,7 +555,10 @@ Botsify MCP Server: Operations & API Tooling Guide
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
           },
-          body: JSON.stringify({payload: payload})
+          body: JSON.stringify({
+            apikey : botApiKey,
+            payload: payload
+          })
         });
         if (!stream.ok) throw new Error('No response for streaming');
         return stream;
