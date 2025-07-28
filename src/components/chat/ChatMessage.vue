@@ -86,7 +86,7 @@ onMounted(() => {
     :class="{ 'user-message': props.message.sender === 'user', '': props.message.sender === 'assistant' }"
   >
     <div class="message">
-      <div v-if="props.message.content" class="content" v-html="parsedContent"></div>
+      <div v-if="props.message.content" class="content" :class="props.message.sender == 'assistant' ? 'assistent-message' : ''" v-html="parsedContent"></div>
       <div v-else class="empty-content">
         <!-- <em>Empty message</em> -->
       </div>
@@ -178,7 +178,14 @@ onMounted(() => {
 
 .content {
   margin-bottom: 0;
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 300;
 }
+
+.assistent-message {
+  color: var(--color-message-text);
+}
+
 
 .empty-content {
   color: var(--color-text-tertiary);

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { ConfigurationTask, ConfigurationResponse, ConfigurationResponseData, ApiRequestData, ChatMessage, ApiError } from '../types/openai'
-import { useApiKeyStore } from './apiKeyStore';
+import { useBotStore } from './botStore';
 import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from '@/utils/config';
 import { handleApiError } from '@/utils/errorHandler';
 
@@ -9,7 +9,7 @@ import { handleApiError } from '@/utils/errorHandler';
 export const useOpenAIStore = defineStore('openai', () => {
   // Try to get API key from environment variables first, then fallback to localStorage
   const authToken = BOTSIFY_AUTH_TOKEN;
-  const botApiKey = useApiKeyStore().apiKey;
+  const botApiKey = useBotStore().apiKey;
   console.log('Environment API key available:', botApiKey);
   
   // Reactive state - no OpenAI client here to avoid private member issues

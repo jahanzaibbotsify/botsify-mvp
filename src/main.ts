@@ -10,7 +10,7 @@ import '@fontsource/ubuntu/700.css'
 import axios from 'axios';
 import ToastPlugin, { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-bootstrap.css';
-import { useApiKeyStore } from './stores/apiKeyStore';
+import { useBotStore } from './stores/botStore';
 import { useConversationStore } from './stores/conversationStore';
 import { useChatStore } from './stores/chatStore';
 
@@ -101,9 +101,11 @@ function getBotDetails(apikey: string) {
   .then(response => {
     console.log('ressssss ', response.data);
     
-    const apiKeyStore = useApiKeyStore();
-    apiKeyStore.setApiKeyConfirmed(true);
-    apiKeyStore.setUserId(response.data.data.user_id);
+    const botStore = useBotStore();
+    botStore.setApiKeyConfirmed(true);
+    botStore.setBotId(response.data.data.bot.id);
+    botStore.setUserId(response.data.data.bot.user_id);
+    botStore.setBotName(response.data.data.bot.name);
 
     return response.data.data;
   })
@@ -125,11 +127,12 @@ router.beforeEach(async (to, from, next) => {
   if (to.name === 'agent' || to.name === 'conversation') {
     let apikey = localStorage.getItem('bot_api_key') ?? '';
     if (apikey) {
-      const bot = await getBotDetails(apikey);    
-      if (bot) {
+      const data = await getBotDetails(apikey);    
+      if (data) {
         // loading stored chats and ai prompts
         const chatStore= useChatStore();
-        chatStore.loadFromStorage(bot.chat_flow, bot.bot_flow);
+        chatStore.loadFromStorage(data.bot.chat_flow, data.versions);
+        
         // Initialize Firebase after API key is set
         console.log('🔥 Initializing Firebase in main.ts...');
         try {

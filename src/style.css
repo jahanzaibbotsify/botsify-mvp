@@ -11,6 +11,7 @@
   --color-text-tertiary: #868E96;
   --color-text-danger: #e7515a;
   
+  --color-message-text: #202123;
   
   --color-border: #E9ECEF;
   
@@ -84,6 +85,9 @@
   --color-text-primary: rgba(255, 255, 255, 0.87);
   --color-text-secondary: rgba(255, 255, 255, 0.60);
   --color-text-tertiary: rgba(255, 255, 255, 0.38);
+
+  --color-message-text: #d1d5db;
+
   
   --color-border: #383838;
 }
