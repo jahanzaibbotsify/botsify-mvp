@@ -16,40 +16,6 @@ export const useOpenAIStore = defineStore('openai', () => {
   const error = ref<string | null>(null);
   const rateLimited = ref(false);
 
-  // Configuration tool function definition for Responses API
-  const configureChatbotTool = {
-    type: "function" as const,
-    name: "configure_chatbot",
-    description: "Handles configuration updates for the chatbot, such as language, logo, and color scheme.",
-    strict: true,
-    parameters: {
-      type: "object",
-      required: ["tasks"],
-      properties: {
-        tasks: {
-          type: "array",
-          description: "Array of tasks to be performed for configuration updates",
-          items: {
-            type: "object",
-            properties: {
-              key: {
-                type: "string",
-                description: "Configuration property to be updated, e.g., language, logo, color scheme"
-              },
-              value: {
-                type: "string",
-                description: "New value for the specified configuration property"
-              }
-            },
-            additionalProperties: false,
-            required: ["key", "value"]
-          }
-        }
-      },
-      additionalProperties: false
-    }
-  };
-
   const mcpConfiguration = {
     type: "mcp" as const,
     server_label: "botsify_mcp_server",
@@ -229,11 +195,13 @@ export const useOpenAIStore = defineStore('openai', () => {
       
       // Convert messages to Responses API format - use simple string input
       const nonSystemMessages = messages.filter(msg => msg.role !== 'system');      
-      //const inputText = nonSystemMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
-     const latestMessage = nonSystemMessages[nonSystemMessages.length - 1];
-     const inputText = `${latestMessage.role}: ${latestMessage.content}`;
+      const inputText = nonSystemMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+      // const latestMessage = nonSystemMessages[nonSystemMessages.length - 1];
+      // const inputText = `${latestMessage.role}: ${latestMessage.content}`;
 
       // Extract system message for instructions
+     // const systemMessage = messages.find(msg => msg.role === 'system');
+
       const instructions = `You are an AI prompt designer and chatbot configuration assistant. 
 
 **IMPORTANT: You must provide DUAL RESPONSES in the following structured format:**
@@ -258,27 +226,6 @@ step-by-step. The flow should support all types of messages, including:
 - Typing indicators (e.g., "show typing...")
 - Location requests
 - API calls and custom attributes
-
-2. **Configuration Management**: When users request configuration changes for their chatbot (language, logo, colors, 
-status, welcome message, name, etc.), use the configure_chatbot tool to process these requests.
-
-**Configuration Tool Usage:**
-Use the configure_chatbot tool when users request any of the following:
-- Change language (e.g., "change language to Arabic", "set language to French")
-- Update logo (e.g., "change logo to [URL]", "update chatbot logo")
-- Modify color scheme/theme (e.g., "change colors to blue", "update theme")
-- Toggle chatbot status (e.g., "turn off chatbot", "disable bot", "enable chatbot")
-- Update welcome message (e.g., "change welcome message to...", "update greeting")
-- Change chatbot name (e.g., "rename chatbot to...", "change bot name")
-
-**Tool Call Format:**
-When detecting configuration requests, call the configure_chatbot tool with appropriate key-value pairs:
-- For language: key="change_language", value="[language]"
-- For logo: key="change_logo", value="[logo_url]"
-- For colors: key="change_color", value="[color_scheme]"
-- For status: key="toggle_chatbot", value="on/off"
-- For welcome message: key="update_welcome_message", value="[message]"
-- For name: key="change_name", value="[name]"
 
 **Prompt Design Format (for AI_PROMPT section):**
 For prompt design, show the **entire chatbot flow** in a clean, numbered format like this:
@@ -546,7 +493,7 @@ Botsify MCP Server: Operations & API Tooling Guide
         const payload = {
             input: inputText,
             instructions: instructions,
-            tools: [configureChatbotTool, mcpConfiguration]
+            tools: [mcpConfiguration]
           };
 
         const stream = await fetch(`${BOTSIFY_BASE_URL}/v1/get-ai-response`, {
@@ -587,7 +534,6 @@ Botsify MCP Server: Operations & API Tooling Guide
     error,
     rateLimited,
     streamChat,
-    processConfigurationTool,
-    configureChatbotTool
+    processConfigurationTool
   };
 });

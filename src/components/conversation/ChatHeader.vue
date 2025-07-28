@@ -121,7 +121,7 @@ const handleLanguageSelect = (lang: string) => {
   gap: var(--space-3);
 }
 
-.status-dropdown.status-active ::v-deep(.clear-button){
+.status-dropdown ::v-deep(.clear-button){
   display: none;
 }
 /* Active status styling */

@@ -58,15 +58,18 @@ const sendMessage = async () => {
           // Extract file URLs from upload response
           fileUrls = uploadResult.data.uploadedFiles.map((file: any) => file.url);
           
-          // Append file URLs to the message text
-          const fileUrlsText = uploadResult.data.uploadedFiles.map((file: any) => {
-            const fileType = file.fileType.startsWith('image/') ? 'Image' : 
-                            file.fileType.startsWith('video/') ? 'Video' : 'Document';
-            return `${fileType}: ${file.url}`;
-          }).join('\n');
+          if(finalMessageText === ''){
+            finalMessageText = 'Attachment';
+          }
+          // // Append file URLs to the message text
+          // const fileUrlsText = uploadResult.data.uploadedFiles.map((file: any) => {
+          //   const fileType = file.fileType.startsWith('image/') ? 'Image' : 
+          //                   file.fileType.startsWith('video/') ? 'Video' : 'Document';
+          //   return `${fileType}: ${file.url}`;
+          // }).join('\n');
           
-          finalMessageText = finalMessageText + (finalMessageText ? '\n\n' : '') + 
-            'Attached files:\n' + fileUrlsText;
+          // finalMessageText = finalMessageText + (finalMessageText ? '\n\n' : '') + 
+          //   'Attached files:\n' + fileUrlsText;
           
           console.log('Files uploaded successfully, URLs:', fileUrls);
         } else {
@@ -139,7 +142,7 @@ const removeAttachment = (id: string) => {
         :enablePreview="true"
         :emitRawFile="false"
         @upload="handleFileUpload"
-        text="For AI prompt analysis • Max 20MB images, 50MB videos"
+        text="Upload file"
       />
     </div>
 
@@ -157,7 +160,7 @@ const removeAttachment = (id: string) => {
           <span class="attachment-name">{{ file.name }}</span>
           <span class="attachment-size">{{ (file.size / 1024).toFixed(1) }}KB</span>
           <span v-if="file.isUploaded" class="attachment-status uploaded">✅ Ready for AI</span>
-          <span v-else-if="file.type.startsWith('image/') || file.type.startsWith('video/')" class="attachment-status pending">📤 Will upload</span>
+          <span v-else-if="file?.type?.startsWith('image/') || file?.type?.startsWith('video/')" class="attachment-status pending">📤 Will upload</span>
           <span v-else class="attachment-status unsupported">⚠️ Not supported</span>
         </div>
         <button class="remove-attachment" @click.stop="removeAttachment(file.id)">
