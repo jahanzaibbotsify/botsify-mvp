@@ -135,7 +135,7 @@ export const useMCPStore = defineStore('mcp', () => {
           description: connectedServer.setting.server_description,
           allowed_tools: connectedServer.setting.allowed_tools,
           server_url: connectedServer.setting.server_url,
-          icon: 'github.svg',
+          icon: 'custom.svg',
           isCustom: connectedServer.setting.is_custom,
           connectionId: connectedServer.id,
         })

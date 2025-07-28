@@ -1204,7 +1204,7 @@ Use the above connected services information to understand what tools and data s
 
       // Get MCP servers information
       if (mcpStore.connectedServers.length > 0) {
-        connectedServices.services.mcp_servers = mcpStore.connectedServers.map(serverConfig => ({
+        connectedServices.services.mcp_servers = mcpStore.connectedServers.map((serverConfig: any) => ({
           id: serverConfig.id,
           name: serverConfig.name,
           category: serverConfig.category,

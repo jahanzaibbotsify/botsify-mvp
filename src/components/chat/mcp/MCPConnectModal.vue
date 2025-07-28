@@ -77,7 +77,7 @@ const checkAndPreFillConnectedServer = () => {
 
     // Show a message that this server is already connected
     console.log(`Server ${props.server.name} is already connected`);
-    checkConnection();
+    // checkConnection();
   }
 };
 
@@ -258,7 +258,8 @@ const addServer = async (allowedTools: string[]) => {
       headers: buildMCPHeaders(),
       allowed_tools: allowedTools.map((tool: any) => tool.name),
       require_approval: "never",
-      is_custom: props.isCustom
+      is_custom: props.isCustom,
+      auth_method: authType.value,
     },
     apikey: useBotStore().apiKey
   };
@@ -283,6 +284,8 @@ const addServer = async (allowedTools: string[]) => {
           id: connectedServer.id,
           name: connectedServer.setting.server_label,
           description: connectedServer.setting.server_description,
+          allowed_tools: connectedServer.setting.allowed_tools,
+          server_url: connectedServer.setting.server_url,
           icon: 'custom.svg',
           isCustom: connectedServer.setting.is_custom,
           connectionId: connectedServer.id,
@@ -308,7 +311,7 @@ onMounted(() => {
   <section @click.self="handleBack" tabindex="0" style="position:relative;">
     <div class="text-center">
       <img
-          v-if="server"
+          v-if="server && !server.isCustom"
           class="server-icon"
           :src="`/mcp/${server.icon}`"
           :alt="server.name"
