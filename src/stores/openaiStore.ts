@@ -229,11 +229,13 @@ export const useOpenAIStore = defineStore('openai', () => {
       
       // Convert messages to Responses API format - use simple string input
       const nonSystemMessages = messages.filter(msg => msg.role !== 'system');      
-      //const inputText = nonSystemMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
-     const latestMessage = nonSystemMessages[nonSystemMessages.length - 1];
-     const inputText = `${latestMessage.role}: ${latestMessage.content}`;
+      const inputText = nonSystemMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+      // const latestMessage = nonSystemMessages[nonSystemMessages.length - 1];
+      // const inputText = `${latestMessage.role}: ${latestMessage.content}`;
 
       // Extract system message for instructions
+     // const systemMessage = messages.find(msg => msg.role === 'system');
+
       const instructions = `You are an AI prompt designer and chatbot configuration assistant. 
 
 **IMPORTANT: You must provide DUAL RESPONSES in the following structured format:**
