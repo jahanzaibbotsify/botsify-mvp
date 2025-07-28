@@ -27,7 +27,7 @@
         </div>
       </button>
 
-      <!-- Dropdown Menu Trigger -->
+      <!-- More Actions Dropdown -->
       <div class="dropdown" ref="dropdownRef">
         <button class="icon-button" @click="toggleDropdown" title="More actions">
           <i class="pi pi-ellipsis-v" style="font-size: 22px;"></i>
@@ -47,16 +47,54 @@
           </button>
         </div>
       </div>
+      <!-- Profile Dropdown -->
+      <div class="dropdown" ref="profileDropdownRef">
+        <button class="icon-button profile-button" @click="toggleProfileDropdown" title="Profile">
+          <div class="profile-avatar">
+            <img 
+              v-if="authStore.user?.avatar" 
+              :src="authStore.user.avatar" 
+              :alt="authStore.fullName"
+              class="avatar-image"
+            />
+            <i v-else class="pi pi-user"></i>
+          </div>
+        </button>
+        <div v-if="showProfileDropdown" class="dropdown-content">
+          <div class="user-info-section">
+            <div class="user-name">{{ authStore.fullName || 'User' }}</div>
+            <div class="user-email">{{ authStore.user?.email || '' }}</div>
+          </div>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item" @click="openEditProfile">
+            <i class="pi pi-user-edit" style="font-size: 18px;"></i>
+            <span>Edit Profile</span>
+          </button>
+          <button class="dropdown-item danger" @click="handleLogout">
+            <i class="pi pi-sign-out" style="font-size: 18px;"></i>
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
+
+  <!-- Edit Profile Modal -->
+  <EditProfileModal 
+    :isVisible="showEditProfileModal" 
+    @close="showEditProfileModal = false"
+    @updated="() => showEditProfileModal = false"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, watch, onBeforeUnmount } from 'vue';
 import { useThemeStore } from '@/stores/themeStore';
+import { useAuthStore } from '@/stores/authStore';
 import { botsifyApi } from '@/services/botsifyApi';
 import { BOTSIFY_WEB_URL } from '@/utils/config';
 import { useChatStore } from '@/stores/chatStore';
+import EditProfileModal from '@/components/auth/EditProfileModal.vue';
 
 interface Props {
   title: string;
@@ -67,8 +105,12 @@ interface Props {
 const props = defineProps<Props>();
 const chatStore = useChatStore();
 const themeStore = useThemeStore();
+const authStore = useAuthStore();
 const showDropdown = ref(false);
+const showProfileDropdown = ref(false);
+const showEditProfileModal = ref(false);
 const dropdownRef = ref<HTMLDivElement | null>(null);
+const profileDropdownRef = ref<HTMLDivElement | null>(null);
 
 const emit = defineEmits<{
   toggleStorySidebar: [];
@@ -142,16 +184,41 @@ function handleReset() {
   });
 }
 
+function toggleProfileDropdown() {
+  showProfileDropdown.value = !showProfileDropdown.value;
+  if (showProfileDropdown.value) {
+    showDropdown.value = false; // Close other dropdown
+  }
+}
+
+function openEditProfile() {
+  showEditProfileModal.value = true;
+  showProfileDropdown.value = false;
+}
+
+function handleLogout() {
+  showProfileDropdown.value = false;
+  window.$confirm({
+    confirmButtonText: "Yes, Logout!",
+    text: "Are you sure you want to logout?"
+  }, async() => {
+    authStore.logout();
+  });
+}
+
 function handleClickOutside(event: Event) {
   const target = event.target as Node;
   if (showDropdown.value && dropdownRef.value && !dropdownRef.value.contains(target)) {
     showDropdown.value = false;
   }
+  if (showProfileDropdown.value && profileDropdownRef.value && !profileDropdownRef.value.contains(target)) {
+    showProfileDropdown.value = false;
+  }
 }
 
 // Add/remove event listener when dropdown is toggled
-watch(showDropdown, (newVal) => {
-  if (newVal) {
+watch([showDropdown, showProfileDropdown], ([newDropdownVal, newProfileDropdownVal]) => {
+  if (newDropdownVal || newProfileDropdownVal) {
     document.addEventListener('click', handleClickOutside);
   } else {
     document.removeEventListener('click', handleClickOutside);
@@ -328,5 +395,60 @@ onBeforeUnmount(() => {
 
 .dropdown-item.danger:hover {
   background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Profile Button and Dropdown Styles */
+.profile-button {
+  padding: var(--space-1);
+}
+
+.profile-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 2px solid var(--color-border);
+}
+
+.profile-avatar .avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-full);
+}
+
+.profile-avatar i {
+  font-size: 16px;
+  color: var(--color-text-secondary);
+}
+
+.profile-button:hover .profile-avatar {
+  border-color: var(--color-primary);
+}
+
+.user-info-section {
+  padding: var(--space-3) var(--space-4);
+}
+
+.user-name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  margin-bottom: var(--space-1);
+}
+
+.user-email {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: var(--color-border);
+  margin: var(--space-2) 0;
 }
 </style> 
