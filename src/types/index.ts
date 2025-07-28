@@ -17,6 +17,8 @@ export interface Message {
 
 export interface PromptVersion {
   id: string;
+  version_id: number;
+  name: string;
   content: string;
   updatedAt: Date;
   version: number;

@@ -4,8 +4,8 @@ import { useChatStore } from '@/stores/chatStore';
 import { useMCPStore } from '@/stores/mcpStore';
 import type { Attachment } from '@/types';
 import FileUpload from '@/components/ui/FileUpload.vue';
-import MCPConnectionModal from './MCPConnectionModal.vue';
 import { botsifyApi } from '@/services/botsifyApi';
+import McpConnectionModal from "@/components/chat/mcp/MCPConnectionModal.vue";
 
 const props = defineProps<{
   chatId: string;
@@ -138,7 +138,7 @@ const sendMessage = async () => {
           }).join('\n');
 
           finalMessageText = originalText + (originalText ? '\n\n' : '') +
-            'Attached files:\n';
+            'Attached files:\n' + fileUrls;
 
           console.log('Files uploaded successfully, URLs added to prompt:', fileUrls);
         } else {
@@ -222,30 +222,8 @@ const closeMCPDropdown = () => {
   showMCPDropdown.value = false;
 };
 
-// Load existing Web Search data for this bot assistant
-const loadMCPsData = async () => {
-  try {
-    console.log('Loading already connected MCP servers:', props.chatId);
-    const response = await mcpStore.getConnectedMCPs();
-    
-    if (response.success) {
-      console.log('Fetched MCP data result:', response);
-      
-    } else {
-      console.log('No existing Web Search data found or failed to load:', response.message);
-    }
-  } catch (error: any) {
-    console.error('Error loading Web Search data:', error);
-  }
-};
-
 // New methods for dropdown actions
 const openMCPServers = async() => {
-  if(mcpStore.connectedServers.length === 0) {
-    loadingData.value = true;
-    await loadMCPsData();
-    loadingData.value = false;
-  }
   showMCPModal.value = true;
   closeMCPDropdown();
 };
@@ -421,22 +399,6 @@ const connectWebSearch = async () => {
 //   showWebSearchConfig.value = !showWebSearchConfig.value;
 // };
 
-const handleMCPConnection = (serverId: string) => {
-  // Update the system prompt with MCP capabilities
-  const combinedPrompt = mcpStore.getCombinedSystemPrompt();
-  if (combinedPrompt) {
-    // Log the system prompt for debugging
-    console.log('MCP System Prompt Updated:', combinedPrompt);
-    
-    // Show a success message to the user
-    const connectedServer = mcpStore.connectedServers.find(config => config.id === serverId);
-    if (connectedServer) {
-      // You could add a toast notification here or update the UI
-      console.log(`Successfully connected to ${connectedServer.name}`);
-    }
-  }
-  closeMCPModal();
-};
 
 // Load existing File Search data for this bot assistant
 const loadFileSearchData = async () => {
@@ -669,7 +631,7 @@ const hideLoading = () => {
       <span class="loading-spinner "></span>
     </div>
     <!-- input area -->
-    <div class="input-area">
+    <div class="input-area" :class="chatStore.doInputDisable ?'disabled': ''" >
       <textarea
         ref="textareaRef"
         v-model="messageText"
@@ -783,13 +745,10 @@ const hideLoading = () => {
         </button>
       </div>
     </div>
-    
-    <!-- MCP Connection Modal -->
-    <MCPConnectionModal 
-      :isOpen="showMCPModal" 
-      :showCustomServer="showCustomServerOnOpen"
-      @close="closeMCPModal"
-      @connected="handleMCPConnection"
+
+    <McpConnectionModal
+        :is-open="showMCPModal"
+        @close="closeMCPModal"
     />
 
     <!-- File Search Modal -->
@@ -1055,6 +1014,12 @@ const hideLoading = () => {
   padding: var(--space-3);
   transition: all var(--transition-normal);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.input-area.disabled {
+  pointer-events: none;
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 [data-theme="dark"] .input-area {

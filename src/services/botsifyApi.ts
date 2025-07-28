@@ -1,7 +1,7 @@
 import axios from 'axios';
-import type { MCPConfigurationFile, MCPServer } from '../types/mcp';
+import type { MCPConfigurationFile } from '../types/mcp';
 import { BOTSIFY_BASE_URL, BOTSIFY_AUTH_TOKEN, APP_URL } from '../utils/config';
-import { useApiKeyStore } from '@/stores/apiKeyStore';
+import { useBotStore } from '@/stores/botStore';
 
 export interface BotsifyResponse {
   success: boolean;
@@ -40,22 +40,18 @@ export class BotsifyApiService {
   /**
    * Deploy AI Agent with the latest generated story
    */
-  async deployAiAgent(storyContent: string): Promise<BotsifyResponse> {
+  async deployAiAgent(activeAiPromptVersionId: number, newAiPromptVersionName: string): Promise<BotsifyResponse> {
     try {
-      console.log('Deploying AI Agent with story content:', storyContent.substring(0, 100) + '...');
-      
       const response = await axios.post(`${BOTSIFY_BASE_URL}/deploy-ai-agent`, {
-        apikey: useApiKeyStore().apiKey,
-        story: storyContent,
-        timestamp: new Date().toISOString(),
-        action: 'deploy'
+        'version_id': activeAiPromptVersionId,
+        'new_version_name': newAiPromptVersionName,
       }, {
         headers: this.getBotsifyHeaders(),
         timeout: 60000 // 60 seconds timeout for deployment
       });
 
       console.log('Deploy AI Agent response:', response.data);
-      
+
       return {
         success: true,
         message: 'AI Agent deployed successfully',
@@ -63,7 +59,7 @@ export class BotsifyApiService {
       };
     } catch (error: any) {
       console.error('Error deploying AI Agent:', error);
-      
+
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to deploy AI Agent',
@@ -78,7 +74,7 @@ export class BotsifyApiService {
   async saveMCPConfiguration(botId: string, configuration: MCPConfigurationFile): Promise<BotsifyResponse> {
     try {
       console.log('Saving MCP configuration for bot:', botId);
-      
+
       const response = await axios.post(`${BOTSIFY_BASE_URL}/bots/${botId}/mcp-configuration`, {
         botId,
         configuration,
@@ -89,7 +85,7 @@ export class BotsifyApiService {
       });
 
       console.log('Save MCP configuration response:', response.data);
-      
+
       return {
         success: true,
         message: 'MCP configuration saved successfully',
@@ -97,7 +93,7 @@ export class BotsifyApiService {
       };
     } catch (error: any) {
       console.error('Error saving MCP configuration:', error);
-      
+
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to save MCP configuration',
@@ -112,14 +108,14 @@ export class BotsifyApiService {
   async getMCPConfiguration(botId: string): Promise<BotsifyResponse> {
     try {
       console.log('Getting MCP configuration for bot:', botId);
-      
+
       const response = await axios.get(`${BOTSIFY_BASE_URL}/bots/${botId}/mcp-configuration`, {
         headers: this.getBotsifyHeaders(),
         timeout: 30000 // 30 seconds timeout
       });
 
       console.log('Get MCP configuration response:', response.data);
-      
+
       return {
         success: true,
         message: 'MCP configuration retrieved successfully',
@@ -127,7 +123,7 @@ export class BotsifyApiService {
       };
     } catch (error: any) {
       console.error('Error getting MCP configuration:', error);
-      
+
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to get MCP configuration',
@@ -142,14 +138,14 @@ export class BotsifyApiService {
   async deleteMCPConfiguration(botId: string): Promise<BotsifyResponse> {
     try {
       console.log('Deleting MCP configuration for bot:', botId);
-      
+
       const response = await axios.delete(`${BOTSIFY_BASE_URL}/bots/${botId}/mcp-configuration`, {
         headers: this.getBotsifyHeaders(),
         timeout: 30000 // 30 seconds timeout
       });
 
       console.log('Delete MCP configuration response:', response.data);
-      
+
       return {
         success: true,
         message: 'MCP configuration deleted successfully',
@@ -157,7 +153,7 @@ export class BotsifyApiService {
       };
     } catch (error: any) {
       console.error('Error deleting MCP configuration:', error);
-      
+
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to delete MCP configuration',
@@ -165,18 +161,18 @@ export class BotsifyApiService {
       };
     }
   }
-  
+
   /**
    * Get all connected MCP servers
   */
-  
+
     async getAllConnectedMCPs() {
       try {
         const response = await axios.get(
           `${BOTSIFY_BASE_URL}/ai-tools/mcp`,
           {
             headers: this.getBotsifyHeaders(),
-             params: { apikey: useApiKeyStore().apiKey }
+             params: { apikey: useBotStore().apiKey }
           }
         );
         return {
@@ -196,29 +192,8 @@ export class BotsifyApiService {
   /**
    * Update an MCP server configuration
    */
-  async updateMCPConfiguration(id: string, mcpData: MCPServer): Promise<BotsifyResponse> {
+  async updateMCPConfiguration(id: string, mcpPayload: any): Promise<BotsifyResponse> {
     try {
-      // Create the new payload structure
-      let serverUrl = this.getDefaultServerUrl(mcpData.id);
-      
-      // For Shopify, use the custom domain if provided
-      if (mcpData.id === 'shopify' && mcpData?.domain) {
-        serverUrl = `https://${mcpData.domain}/api/mcp`;
-      }
-      // Create the new payload structure
-      const mcpPayload = {
-        settings: {
-          apikey : mcpData.connection.apiKey,
-          type: "mcp",
-          server_label: mcpData.id || mcpData.name?.toLowerCase().replace(/\s+/g, '_'),
-          server_url: serverUrl,
-          headers: this.buildMCPHeaders(mcpData.id, mcpData.connection?.apiKey || '', mcpData.authMethod || 'api_key'),
-          allowed_tools: mcpData.features,
-          require_approval: "never",
-        },
-        apikey: useApiKeyStore().apiKey
-      };
-      
       const response = await axios.put(`${BOTSIFY_BASE_URL}/mcp/${id}`, mcpPayload, {
         headers: this.getBotsifyHeaders(),
         timeout: 30000
@@ -231,7 +206,7 @@ export class BotsifyApiService {
       };
     } catch (error: any) {
       console.error('Error updating MCP server:', error);
-      
+
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to update MCP server',
@@ -249,7 +224,7 @@ export class BotsifyApiService {
         `${BOTSIFY_BASE_URL}/mcp/${id}`,
         {
           headers: this.getBotsifyHeaders(),
-          data: { apikey: useApiKeyStore().apiKey }
+          data: { apikey: useBotStore().apiKey }
         }
       );
 
@@ -260,7 +235,7 @@ export class BotsifyApiService {
       };
     } catch (error: any) {
       console.error('Error disconnecting MCP server:', error);
-      
+
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to delete MCP server',
@@ -279,10 +254,10 @@ export class BotsifyApiService {
 
     try {
       console.log('🔍 Validating MCP connection for server:', serverName);
-      
+
       // For built-in servers, we have predefined validation endpoints
       let validationEndpoint = this.getMCPValidationEndpoint(serverId, connectionUrl);
-      
+
       if (!validationEndpoint) {
         // Handle special servers that don't have HTTP endpoints
         if (['postgres', 'filesystem', 'email'].includes(serverId)) {
@@ -364,7 +339,7 @@ export class BotsifyApiService {
 
     } catch (error: any) {
       console.error('❌ Error validating MCP connection:', error);
-      
+
       // Handle specific error types
       if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
         return {
@@ -416,13 +391,13 @@ export class BotsifyApiService {
           data: { errorType: 'not_found' }
         };
       }
-      
+
       // Special fallback for weather APIs - if any other error occurs, try format validation
       if (serverId === 'weather' && apiKey) {
         console.log('🌤️ Weather API validation failed, falling back to format validation');
         return await this.validateSpecialMCPServer('weather', apiKey);
       }
-      
+
       return {
         success: false,
         message: error.message || 'Failed to validate MCP connection',
@@ -437,7 +412,7 @@ export class BotsifyApiService {
   async validateShopifyConnection(serverName: string, apiKey?: string, connectionUrl?: string, authMethod?: string): Promise<BotsifyResponse> {
     try {
       console.log('🛒 Validating Shopify connection through backend:', serverName);
-      
+
       // Extract domain from connection URL
       let domain = '';
       if (connectionUrl) {
@@ -492,7 +467,7 @@ export class BotsifyApiService {
 
     } catch (error: any) {
       console.error('❌ Error validating Shopify connection:', error);
-      
+
       if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
         return {
           success: false,
@@ -524,7 +499,7 @@ export class BotsifyApiService {
           data: { errorType: 'access_denied' }
         };
       }
-      
+
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to validate Shopify connection',
@@ -607,7 +582,7 @@ export class BotsifyApiService {
       case 'weather':
         // Weather API validation with fallback for CORS issues
         console.log('🌤️ Weather API validation - providing guidance for API key format');
-        
+
         if (!apiKey || !apiKey.trim()) {
           return {
             success: false,
@@ -629,9 +604,9 @@ export class BotsifyApiService {
         return {
           success: true,
           message: 'Weather API key format validated. Note: Full API validation requires server-side testing due to CORS restrictions.',
-          data: { 
-            serverStatus: 'format_validated', 
-            note: 'API key format is correct. Test it at: https://api.openweathermap.org/data/2.5/weather?q=London&appid=' + trimmedKey 
+          data: {
+            serverStatus: 'format_validated',
+            note: 'API key format is correct. Test it at: https://api.openweathermap.org/data/2.5/weather?q=London&appid=' + trimmedKey
           }
         };
 
@@ -668,47 +643,24 @@ export class BotsifyApiService {
       url.searchParams.set('appid', apiKey); // OpenWeatherMap uses 'appid'
       return url.toString();
     }
-    
+
     return baseUrl;
   }
 
   /**
    * Send MCP configuration JSON to API after successful connection
    */
-  async sendMCPConfigurationJSON(mcpData: MCPServer): Promise<BotsifyResponse> {
+  async sendMCPConfigurationJSON(mcpPayload: any): Promise<BotsifyResponse> {
     try {
-      console.log('Sending MCP configuration JSON to API:', mcpData);
-      
-      // Create the new payload structure
-      let serverUrl = this.getDefaultServerUrl(mcpData.id);
-      
-      // For Shopify, use the custom domain if provided
-      if (mcpData.id === 'shopify' && mcpData?.domain) {
-        serverUrl = `https://${mcpData.domain}/api/mcp`;
-      }
-      
-      const mcpPayload = {
-        settings: {
-          apikey : mcpData.connection.apiKey,
-          type: "mcp",
-          server_label: mcpData.id || mcpData.name?.toLowerCase().replace(/\s+/g, '_'),
-          server_url: serverUrl,
-          headers: this.buildMCPHeaders(mcpData.id, mcpData.connection?.apiKey || '', mcpData.authMethod || 'api_key'),
-          allowed_tools: mcpData.features,
-          require_approval: "never",
-        },
-        apikey: useApiKeyStore().apiKey
-      };
-      
       console.log('MCP payload structure:', mcpPayload);
-      
+
       const response = await axios.post(`${BOTSIFY_BASE_URL}/mcp/configuration`, mcpPayload, {
         headers: this.getBotsifyHeaders(),
         timeout: 30000 // 30 seconds timeout
       });
 
       console.log('MCP configuration JSON sent successfully:', response.data);
-      
+
       return {
         success: true,
         message: 'MCP configuration sent to API successfully',
@@ -716,7 +668,7 @@ export class BotsifyApiService {
       };
     } catch (error: any) {
       console.error('Error sending MCP configuration JSON:', error);
-      
+
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to send MCP configuration to API',
@@ -726,89 +678,20 @@ export class BotsifyApiService {
   }
 
   /**
-   * Build headers object for MCP configuration based on authentication method
-   */
-  private buildMCPHeaders(serverId: string, apiKey: string, authMethod: string): Record<string, string> {
-    const headers: Record<string, string> = {};
-    
-    if (apiKey && apiKey.trim()) {
-      switch (authMethod) {
-        case 'bearer_token':
-          if (serverId === 'shopify'){
-            headers['X-Shopify-Access-Token'] = apiKey.trim();
-          } else{
-            headers['Authorization'] = `Bearer ${apiKey.trim()}`;
-          }
-          break;
-        case 'api_key':
-          // For API key, we might use different header names based on the service
-          if (serverId === 'stripe') {
-            headers['Authorization'] = `Bearer ${apiKey.trim()}`;
-          } else if (serverId === 'github') {
-            headers['Authorization'] = `token ${apiKey.trim()}`;
-          } else if (serverId === 'notion') {
-            headers['Authorization'] = `Bearer ${apiKey.trim()}`;
-            headers['Notion-Version'] = '2022-06-28';
-          } else if (serverId === 'slack') {
-            headers['Authorization'] = `Bearer ${apiKey.trim()}`;
-          } else if (serverId === 'shopify') {
-            headers['X-Shopify-Access-Token'] = apiKey.trim();
-            headers['Content-Type'] = 'application/json';
-          } else {
-            headers['X-API-Key'] = apiKey.trim();
-          }
-          break;
-        case 'basic_auth':
-          // For basic auth, apiKey should contain "username:password"
-          const encoded = btoa(apiKey.trim());
-          headers['Authorization'] = `Basic ${encoded}`;
-          break;
-        case 'oauth':
-          headers['Authorization'] = `Bearer ${apiKey.trim()}`;
-          break;
-        default:
-          headers['X-API-Key'] = apiKey.trim();
-      }
-    }
-    
-    return headers;
-  }
-
-  /**
    * Get default server URL for known services
    */
-  private getDefaultServerUrl(serverId: string): string {
-    const defaultUrls: Record<string, string> = {
-      github: 'https://api.github.com',
-      stripe: 'https://mcp.stripe.com',
-      shopify: 'https://api.shopify.com',
-      notion: 'https://api.notion.com/v1',
-      slack: 'https://slack.com/api',
-      'google-drive': 'https://www.googleapis.com/drive/v3',
-      postgres: 'postgresql://localhost:5432',
-      zapier: 'https://zapier.com/api/v1',
-      paypal: 'https://api.paypal.com',
-      square: 'https://connect.squareup.com',
-      plaid: 'https://production.plaid.com',
-      'web-search': 'https://api.openweathermap.org/data/2.5', // Weather API as fallback
-      weather: 'https://api.openweathermap.org/data/2.5'
-    };
-    
-    return defaultUrls[serverId] || 'https://localhost:3000';
-  }
 
   /**
    * Get File Search data for a specific bot assistant
    */
   async getFileSearch(): Promise<BotsifyResponse> {
     try {
-      console.log('Getting file search files for bot assistant:', useApiKeyStore().apiKey);
-      
+      console.log('Getting file search files for bot assistant:', useBotStore().apiKey);
       const response = await axios.get(
         `${BOTSIFY_BASE_URL}/file-search`,
         {
             headers: this.getBotsifyHeaders(),
-             params: { apikey: useApiKeyStore().apiKey }
+             params: { apikey: useBotStore().apiKey }
           }
       );
 
@@ -836,18 +719,18 @@ export class BotsifyApiService {
       // formData.append('file', file);
       // formData.append('bot_assistant_id', botAssistantId);
       formData.append('file', file)
-      
+
       const response = await axios.post(
-        `${BOTSIFY_BASE_URL}/file-search?apikey=${useApiKeyStore().apiKey}`,
+        `${BOTSIFY_BASE_URL}/file-search?apikey=${useBotStore().apiKey}`,
         formData,
-        { 
+        {
           headers: {
             ...this.getBotsifyHeaders(),
             'Content-Type': 'multipart/form-data'
           }
         }
       );
-      
+
       console.log('File uploaded for search successfully:', response.data);
       return {
         success: true,
@@ -869,12 +752,12 @@ export class BotsifyApiService {
   async deleteFileSearch(id: string): Promise<BotsifyResponse> {
     try {
       console.log('Deleting file from search:', id);
-      
+
       const response = await axios.delete(
-        `${BOTSIFY_BASE_URL}/file-search/${id}?apikey=${useApiKeyStore().apiKey}`,
+        `${BOTSIFY_BASE_URL}/file-search/${id}?apikey=${useBotStore().apiKey}`,
         { headers: this.getBotsifyHeaders() }
       );
-      
+
       console.log('File deleted from search successfully:', response.data);
       return {
         success: true,
@@ -896,18 +779,18 @@ export class BotsifyApiService {
   async deleteAllFileSearch(ids: string[]): Promise<BotsifyResponse> {
     try {
       console.log('Deleting file from search:', ids);
-      
+
       const response = await axios.delete(
         `${BOTSIFY_BASE_URL}/file-search`,
-        { 
+        {
           headers: this.getBotsifyHeaders(),
           data: {
-            "apikey": useApiKeyStore().apiKey,
+            "apikey": useBotStore().apiKey,
             "ids": ids
           }
         }
       );
-      
+
       console.log('File deleted from search successfully:', response.data);
       return {
         success: true,
@@ -928,18 +811,17 @@ export class BotsifyApiService {
    */
   async getWebSearch(): Promise<BotsifyResponse> {
     try {
-      console.log('Getting web search URLs for bot assistant:', useApiKeyStore().apiKey);
-      
+      console.log('Getting web search URLs for bot assistant:', useBotStore().apiKey);
       // const response = await axios.get(
       //   `${BOTSIFY_BASE_URL}/web-search/${botAssistantId}`,
       //   { headers: this.getBotsifyHeaders() }
       // );
 
       const response = await axios.get(
-        `${BOTSIFY_BASE_URL}/web-search?apikey=${useApiKeyStore().apiKey}`,
+        `${BOTSIFY_BASE_URL}/web-search?apikey=${useBotStore().apiKey}`,
         { headers: this.getBotsifyHeaders() }
       );
-      
+
       console.log('Web search URLs retrieved successfully:', response.data);
       return {
         success: true,
@@ -964,13 +846,13 @@ export class BotsifyApiService {
         `${BOTSIFY_BASE_URL}/web-search`,
         {
           // bot_assistant_id: botAssistantId,
-          apikey: useApiKeyStore().apiKey,
+          apikey: useBotStore().apiKey,
           url: url,
           title: title
         },
         { headers: this.getBotsifyHeaders() }
       );
-      
+
       console.log('Web URL added successfully:', response.data);
       return {
         success: true,
@@ -992,13 +874,13 @@ export class BotsifyApiService {
   async deleteAllWebSearch(ids: string[]): Promise<BotsifyResponse> {
     try {
      console.log("passed ids:", ids);
-     
+
       const response = await axios.delete(
-        `${BOTSIFY_BASE_URL}/web-search`, 
-        { 
+        `${BOTSIFY_BASE_URL}/web-search`,
+        {
           headers: this.getBotsifyHeaders(),
           data: {
-            apikey: useApiKeyStore().apiKey,
+            apikey: useBotStore().apiKey,
             ids: ids,
           },
       });
@@ -1024,7 +906,7 @@ export class BotsifyApiService {
   async uploadFileNew(file: File): Promise<BotsifyResponse> {
     try {
       console.log('Uploading file using TemplatesController endpoint:', file.name, file.type, file.size);
-      
+
       // Validate file type (images, videos, and documents)
       const supportedTypes = [
         // Images
@@ -1037,14 +919,14 @@ export class BotsifyApiService {
         'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
       ];
-      
+
       if (!supportedTypes.includes(file.type)) {
         return {
           success: false,
           message: 'Unsupported file type. Please upload images, videos, or documents (PDF, Word, Excel, PowerPoint, TXT, CSV).'
         };
       }
-      
+
       // Validate file size based on type
       let maxSize: number;
       if (file.type.startsWith('video/')) {
@@ -1054,7 +936,7 @@ export class BotsifyApiService {
       } else {
         maxSize = 10 * 1024 * 1024; // 10MB for documents
       }
-      
+
       if (file.size > maxSize) {
         const maxSizeMB = maxSize / (1024 * 1024);
         return {
@@ -1062,14 +944,14 @@ export class BotsifyApiService {
           message: `File size too large. Maximum size is ${maxSizeMB}MB for ${file.type.split('/')[0]}s.`
         };
       }
-      
+
       const formData = new FormData();
       formData.append('file', file);
-      
+
       const response = await axios.post(
         `${BOTSIFY_BASE_URL}/v1/upload-file`,
         formData,
-        { 
+        {
           headers: {
             ...this.getBotsifyHeaders(),
             'Content-Type': 'multipart/form-data'
@@ -1077,7 +959,7 @@ export class BotsifyApiService {
           }
         }
       );
-      
+
       console.log('File uploaded successfully using TemplatesController:', response.data);
       return {
         success: true,
@@ -1099,10 +981,10 @@ export class BotsifyApiService {
   async uploadMultipleFilesNew(files: File[]): Promise<BotsifyResponse> {
     try {
       console.log('Uploading multiple files using new endpoint:', files.length);
-      
+
       const uploadResults: any[] = [];
       const errors: string[] = [];
-      
+
       // Upload files in parallel for better performance
       const uploadPromises = files.map(async (file) => {
         try {
@@ -1116,9 +998,9 @@ export class BotsifyApiService {
           errors.push(`${file.name}: ${error.message}`);
         }
       });
-      
+
       await Promise.all(uploadPromises);
-      
+
       if (uploadResults.length === 0 && errors.length > 0) {
         return {
           success: false,
@@ -1126,7 +1008,7 @@ export class BotsifyApiService {
           data: { errors }
         };
       }
-      
+
       return {
         success: true,
         message: `Successfully uploaded ${uploadResults.length} of ${files.length} files`,
@@ -1139,7 +1021,7 @@ export class BotsifyApiService {
       };
     } catch (error: any) {
       console.error('Error uploading multiple files (new endpoint):', error);
-      
+
       return {
         success: false,
         message: error.message || 'Failed to upload files',
@@ -1149,20 +1031,15 @@ export class BotsifyApiService {
   }
 
 
-  async saveBotTemplates(chatsJson: string, templatesJson: string): Promise<BotsifyResponse> {
+  async saveBotTemplates(payload: object): Promise<BotsifyResponse> {
     try {
-      const response = await axios.post(`${BOTSIFY_BASE_URL}/v1/bot-update`, {
-        'apikey': useApiKeyStore().apiKey,
-        'data' : {
-          chat_flow: chatsJson,
-          bot_flow: templatesJson
-        }
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
-        }
-      });
+    const response = await axios.post(`${BOTSIFY_BASE_URL}/v1/update-agent`, payload,
+      {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
+      }
+    });
 
       if (response.data.status === 'success') {
         console.log('Message stored: ', response.data.bot);
@@ -1189,9 +1066,79 @@ export class BotsifyApiService {
     }
   }
 
+  async clearAgentConversion(payload: object): Promise<BotsifyResponse> {
+    try {
+    const response = await axios.post(`${BOTSIFY_BASE_URL}/v1/clear-conversation`, payload,
+      {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
+      }
+    });
+
+      if (response.data.status === 'success') {
+        console.log('Message stored: ', response.data.bot);
+        return {
+          success: true,
+          message: 'Agent chat cleared successfully',
+          data: response.data
+        };
+      } else {
+        console.error('Agent chat clear failed:', response.data);
+        return {
+          success: false,
+          message: 'Internal Server Error, Please Contact team@botsify.com',
+          data: response.data
+        };
+      }
+    } catch (error: any) {
+      console.error('Agent update error:', error);
+      return {
+        success: false,
+        message: 'Internal Server Error, Please Contact team@botsify.com',
+        data: error
+      };
+    }
+  }
+
+  async deleteAiPromptVersion(version_ids: number[]): Promise<BotsifyResponse> {
+    try {
+      const response = await axios.delete(`${BOTSIFY_BASE_URL}/v1/delete-version`,{ 
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
+        },
+        data:{
+          version_ids: version_ids
+        },
+      });
+
+      if (response.data.status === 'success') {
+        console.log('AI Prompt version deleted: ', response.data);
+        return {
+          success: true,
+          message: response.data.message,
+        };
+      } else {
+        console.error('AI Prompt version deletion failed:', response.data);
+        return {
+          success: false,
+          message: response.data.message ?? 'Internal Server Error, Please Contact team@botsify.com',
+        };
+      }
+    } catch (error: any) {
+      console.error('AI prompt version deletion error:', error);
+      return {
+        success: false,
+        message: 'Internal Server Error, Please Contact team@botsify.com',
+        data: error
+      };
+    }
+  }
+
   async manageBilling() {
     try {
-      const {apiKey, userId} = useApiKeyStore();
+      const {apiKey, userId} = useBotStore();
       const response = await axios.get(
         `${BOTSIFY_BASE_URL}/v1/billing/portal`,
         {

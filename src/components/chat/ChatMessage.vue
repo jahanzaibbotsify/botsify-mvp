@@ -42,6 +42,11 @@ const parsedContent = computed(() => {
       return `<p class="error-text">${contentToRender}</p>`;
     }
     
+    // don't show file urls
+    if (props.message.sender === 'user' && contentToRender.includes('Attached files:')) {
+      contentToRender = contentToRender.split('Attached files:')[0] + 'Attached files:\n';
+    }
+
     // Ensure we have a string to render
     if (typeof contentToRender !== 'string') {
       contentToRender = JSON.stringify(contentToRender);
@@ -86,7 +91,7 @@ onMounted(() => {
     :class="{ 'user-message': props.message.sender === 'user', '': props.message.sender === 'assistant' }"
   >
     <div class="message">
-      <div v-if="props.message.content" class="content" v-html="parsedContent"></div>
+      <div v-if="props.message.content" class="content" :class="props.message.sender == 'assistant' ? 'assistent-message' : ''" v-html="parsedContent"></div>
       <div v-else class="empty-content">
         <!-- <em>Empty message</em> -->
       </div>
@@ -178,7 +183,14 @@ onMounted(() => {
 
 .content {
   margin-bottom: 0;
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 300;
 }
+
+.assistent-message {
+  color: var(--color-message-text);
+}
+
 
 .empty-content {
   color: var(--color-text-tertiary);

@@ -1,13 +1,18 @@
 import { defineStore } from 'pinia';
 
 
-export const useApiKeyStore = defineStore('apiKey', {
+export const useBotStore = defineStore('bot', {
   state: () => ({
     apiKey: localStorage.getItem('bot_api_key') ?? '',
     apiKeyConfirmed: false,
-    userId: ''
+    userId: '',
+    botId: '',
+    botName: '',
   }),
   actions: {
+    setBotId(id: string) {
+      this.botId = id;
+    },
     setApiKey(key: string) {
       this.apiKey = key;
     },
@@ -16,6 +21,9 @@ export const useApiKeyStore = defineStore('apiKey', {
     },
     setUserId(id: string) {
       this.userId = id;
+    },
+    setBotName(name: string) {
+      this.botName = name;
     }
   }
 })
