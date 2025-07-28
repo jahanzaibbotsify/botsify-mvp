@@ -374,12 +374,13 @@ onMounted(() => {
     }"
   >
     <!-- Avatar for assistant messages -->
+    <!--
     <div v-if="showAvatar && message.sender === 'assistant'" class="message-avatar">
       <div class="avatar-container">
         <i class="pi pi-desktop avatar-icon"></i>
       </div>
     </div>
-
+ -->
     <!-- Message bubble -->
     <div class="message-bubble">
       <!-- Message header (for assistant messages with timestamp) -->
@@ -439,11 +440,13 @@ onMounted(() => {
     </div>
 
     <!-- Avatar for user messages -->
+    <!--
     <div v-if="showAvatar && message.sender === 'user'" class="message-avatar">
       <div class="avatar-container user-avatar">
         <i class="pi pi-user avatar-icon"></i>
       </div>
     </div>
+     -->
   </div>
 </template>
 
