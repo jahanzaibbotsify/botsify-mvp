@@ -38,7 +38,7 @@
       <button 
         class="action-button test-button"
         @click="testAI"
-        :disabled="isDeployingAI || !hasPromptContent"
+        :disabled="isDeployingAI || !hasPromptContent || chatStore.isAIPromptGenerating"
         :title="!hasPromptContent ? 'Generate prompt content first' : 'Test your AI agent'"
       >
         <div class="button-content">
