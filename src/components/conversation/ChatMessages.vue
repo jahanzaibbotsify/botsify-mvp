@@ -45,17 +45,18 @@ const shouldSkipMessage = (content: string): boolean => {
 
 // Group messages by date
 const groupedMessages = computed(() => {
-  const groups: { date: Date; messages: Message[] }[] = []
-  let currentDate = new Date();
+  const groups: { date: string; messages: Message[] }[] = []
+  let currentDate = ''
   let currentGroup: Message[] = []
 
   props.messages.forEach(message => {
-    const messageDate = message.timestamp
-    
     // Skip messages that should be filtered out
     if (shouldSkipMessage(message.content)) {
       return
     }
+    
+    // Get formatted date for this message
+    const messageDate = formatTime(message.timestamp)
     
     if (messageDate !== currentDate) {
       if (currentGroup.length > 0) {
@@ -209,7 +210,7 @@ onMounted(() => {
           >
             <!-- Date Header -->
             <div class="date-header">
-              <span class="date-text">{{ formatTime(group.date) }}</span>
+              <span class="date-text">{{ group.date }}</span>
             </div>
             <!-- Messages in Group -->
             <div class="group-messages">
