@@ -157,7 +157,7 @@ onMounted(() => {
   background-color: var(--color-primary);
   color: white;
   box-shadow: 0 4px 12px rgba(0, 163, 255, 0.15);
-  background-image: linear-gradient(to right, rgba(0, 100, 255, 0.9), var(--color-primary));
+  background-color: var(--color-primary);
   border-radius: 16px;
 }
 
@@ -302,7 +302,8 @@ onMounted(() => {
 .attachment-size {
   display: block;
   font-size: 0.75rem;
-  color: var(--color-text-tertiary);
+  color: white;
+  opacity: 0.8;
 }
 
 /* Mobile styles */

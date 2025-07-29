@@ -3,6 +3,8 @@ import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
+import { useRoleStore } from '@/stores/roleStore';
+import { useWhitelabelStore } from '@/stores/whitelabelStore';
 // import { useWindowSize } from '@vueuse/core';
 // import ChatListItem from '@/components/chat/ChatListItem.vue';
 import BookMeeting from '@/components/ui/BookMeeting.vue';
@@ -12,15 +14,17 @@ import { BOTSIFY_WEB_URL } from '@/utils/config';
 
 const chatStore = useChatStore();
 const sidebarStore = useSidebarStore();
+const roleStore = useRoleStore();
 const router = useRouter();
 const route = useRoute();
+const whitelabelStore = useWhitelabelStore();
 // const { width } = useWindowSize();
 
 const emit = defineEmits(['select-button']);
 const selectedNavigationButton = computed(() => {
   const currentPath = route.path.toLowerCase();
 
-  const match = navigationButtons.find((btn) =>
+  const match = navigationButtons.value.find((btn) =>
     currentPath.includes(btn.id.toLowerCase())
   );
 
@@ -33,62 +37,87 @@ const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
 // Close dropdown when clicking outside
 const dropdownRef = ref<HTMLElement | null>(null);
 
-const navigationButtons = [
-  {
-    id: `agent/${chatStore.activeChat}`,
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24"><path d="M11 7.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM14.5 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"></path><path fill-rule="evenodd" d="M12 1a1 1 0 0 1 1 1v.5h4a3 3 0 0 1 3 3V9a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V5.5a3 3 0 0 1 3-3h4V2a1 1 0 0 1 1-1ZM7 4.5h10a1 1 0 0 1 1 1V9a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V5.5a1 1 0 0 1 1-1Z" clip-rule="evenodd"></path><path d="M6 21c0-.974.551-1.95 1.632-2.722C8.71 17.508 10.252 17 12 17c1.749 0 3.29.508 4.369 1.278C17.449 19.05 18 20.026 18 21a1 1 0 1 0 2 0c0-1.788-1.016-3.311-2.469-4.35-1.455-1.038-3.414-1.65-5.53-1.65-2.118 0-4.077.611-5.532 1.65C5.016 17.69 4 19.214 4 21a1 1 0 1 0 2 0Z"></path></svg>',
-    name: 'Agent'
-  },
-  // {
-  //   id: 'analytics',
-  //   icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 5a1 1 0 0 1 1 1v12a1 1 0 1 1-2 0V6a1 1 0 0 1 1-1Zm4 5a1 1 0 0 1 1 1v2a1 1 0 1 1-2 0v-2a1 1 0 0 1 1-1Zm5-1a1 1 0 1 0-2 0v6a1 1 0 1 0 2 0V9ZM8 8a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0V9a1 1 0 0 1 1-1Zm-3 3a1 1 0 1 0-2 0v2a1 1 0 1 0 2 0v-2Z" clip-rule="evenodd"></path></svg>',
-  //   name: 'Reports & Analytics'
-  // },
-  {
-    id: `conversation`,
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 4a8 8 0 0 0-5.687 13.627 1 1 0 0 1 .147 1.217L5.766 20H12a8 8 0 1 0 0-16ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10H4a1 1 0 0 1-.857-1.515l1.218-2.03A9.964 9.964 0 0 1 2 12Z" clip-rule="evenodd"></path><path d="M9.25 12a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Zm4 0a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Zm4 0a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Z"></path></svg>',
-    name: 'Chat'
-  },
-  {
-    id: 'users',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M10.5 8.5a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM12 5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM3 9.5a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm1-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm16 2a1 1 0 1 0 0 2 1 1 0 0 0 0-2Zm-3 1a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM8 18c0-.974.438-1.684 1.142-2.185C9.876 15.293 10.911 15 12 15c1.09 0 2.124.293 2.858.815.704.5 1.142 1.21 1.142 2.185a1 1 0 1 0 2 0c0-1.692-.812-2.982-1.983-3.815C14.876 13.373 13.411 13 12 13c-1.41 0-2.876.373-4.017 1.185C6.812 15.018 6 16.308 6 18a1 1 0 1 0 2 0Zm-3.016-3.675a1 1 0 0 1-.809 1.16C2.79 15.732 2 16.486 2 17.5a1 1 0 1 1-2 0c0-2.41 1.978-3.655 3.825-3.985a1 1 0 0 1 1.16.81Zm14.84 1.16a1 1 0 1 1 .351-1.97C22.022 13.845 24 15.09 24 17.5a1 1 0 1 1-2 0c0-1.014-.79-1.768-2.175-2.015Z" clip-rule="evenodd"></path></svg>',
-    name: 'Audience'
-  }
-];
+
+const navigationButtons = computed(() => {
+  const buttons = [
+    {
+      id: `agent/${chatStore.activeChat}`,
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24"><path d="M11 7.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM14.5 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"></path><path fill-rule="evenodd" d="M12 1a1 1 0 0 1 1 1v.5h4a3 3 0 0 1 3 3V9a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V5.5a3 3 0 0 1 3-3h4V2a1 1 0 0 1 1-1ZM7 4.5h10a1 1 0 0 1 1 1V9a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V5.5a1 1 0 0 1 1-1Z" clip-rule="evenodd"></path><path d="M6 21c0-.974.551-1.95 1.632-2.722C8.71 17.508 10.252 17 12 17c1.749 0 3.29.508 4.369 1.278C17.449 19.05 18 20.026 18 21a1 1 0 1 0 2 0c0-1.788-1.016-3.311-2.469-4.35-1.455-1.038-3.414-1.65-5.53-1.65-2.118 0-4.077.611-5.532 1.65C5.016 17.69 4 19.214 4 21a1 1 0 1 0 2 0Z"></path></svg>',
+      name: 'Agent',
+      permission: 'access_agent_page' as const
+    },
+    {
+      id: `conversation`,
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 4a8 8 0 0 0-5.687 13.627 1 1 0 0 1 .147 1.217L5.766 20H12a8 8 0 1 0 0-16ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10H4a1 1 0 0 1-.857-1.515l1.218-2.03A9.964 9.964 0 0 1 2 12Z" clip-rule="evenodd"></path><path d="M9.25 12a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Zm4 0a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Zm4 0a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Z"></path></svg>',
+      name: 'Chat',
+      permission: 'view_chats_page' as const
+    },
+    {
+      id: 'users',
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M10.5 8.5a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM12 5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM3 9.5a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm1-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm16 2a1 1 0 1 0 0 2 1 1 0 0 1-2 0Zm-3 1a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM8 18c0-.974.438-1.684 1.142-2.185C9.876 15.293 10.911 15 12 15c1.09 0 2.124.293 2.858.815.704.5 1.142 1.21 1.142 2.185a1 1 0 1 0 2 0c0-1.692-.812-2.982-1.983-3.815C14.876 13.373 13.411 13 12 13c-1.41 0-2.876.373-4.017 1.185C6.812 15.018 6 16.308 6 18a1 1 0 1 0 2 0Zm-3.016-3.675a1 1 0 0 1-.809 1.16C2.79 15.732 2 16.486 2 17.5a1 1 0 1 1-2 0c0-2.41 1.978-3.655 3.825-3.985a1 1 0 0 1 1.16.81Zm14.84 1.16a1 1 0 1 1 .351-1.97C22.022 13.845 24 15.09 24 17.5a1 1 0 1 1-2 0c0-1.014-.79-1.768-2.175-2.015Z" clip-rule="evenodd"></path></svg>',
+      name: 'Audience',
+      permission: 'view_user_attributes' as const
+    }
+  ];
+
+  // Filter buttons based on user permissions
+  return buttons.filter(button => roleStore.hasPermission(button.permission));
+});
 
 // Help links for the help dropdown
-const navLinks = [
-  {
-    name: 'Legacy Platform',
-    url: `${BOTSIFY_WEB_URL}/bot`,
-    icon:  'pi pi-history'
-  },
-  {
-    name: 'Tutorials',
-    url: `https://www.youtube.com/@Botsify`,
-    icon: 'pi pi-play-circle'
-  },
-  {
-    name: 'API Documentation',
-    url: 'https://documenter.getpostman.com/view/13814537/TVmTdF7W#d1e2a194-6d34-4d64-8dff-9628a2dc1077',
-    icon: 'pi pi-code'
-  },
-  {
-    name: 'Documentation',
-    url: 'https://botsify.zendesk.com/hc/en-us',
-    icon: 'pi pi-book'
-  },
-  {
-    name: 'Book a Meeting',
-    action: 'bookMeeting',
-    icon: 'pi pi-calendar'
-  },
-  {
-    name: 'Support',
-    action: 'showZen',
-    icon: 'pi pi-question-circle'
+const navLinks = computed(() => {
+  if (whitelabelStore.isWhitelabelClient) {
+    // For whitelabel clients, show only Legacy Platform and Support
+    return [
+      {
+        name: 'Legacy Platform',
+        url: whitelabelStore.whitelabelData?.mask_url 
+          ? `https://${whitelabelStore.whitelabelData.mask_url}/bot`
+          : `${BOTSIFY_WEB_URL}/bot`,
+        icon: 'pi pi-check-circle'
+      },
+      {
+        name: 'Support',
+        action: 'showZen',
+        icon: 'pi pi-question-circle'
+      }
+    ];
+  } else {
+    // For regular Botsify clients, show all links
+    return [
+      {
+        name: 'Legacy Platform',
+        url: `${BOTSIFY_WEB_URL}/bot`,
+        icon: 'pi pi-history'
+      },
+      {
+        name: 'Tutorials',
+        url: `https://www.youtube.com/@Botsify`,
+        icon: 'pi pi-play-circle'
+      },
+      {
+        name: 'API Documentation',
+        url: 'https://documenter.getpostman.com/view/13814537/TVmTdF7W#d1e2a194-6d34-4d64-8dff-9628a2dc1077',
+        icon: 'pi pi-code'
+      },
+      {
+        name: 'Documentation',
+        url: 'https://botsify.zendesk.com/hc/en-us',
+        icon: 'pi pi-book'
+      },
+      {
+        name: 'Book a Meeting',
+        action: 'bookMeeting',
+        icon: 'pi pi-calendar'
+      },
+      {
+        name: 'Support',
+        action: 'showZen',
+        icon: 'pi pi-question-circle'
+      }
+    ];
   }
-];
+});
 
 const filteredChats = computed(() => {
   return [chatStore.chats[0]];
@@ -107,6 +136,16 @@ const filteredChats = computed(() => {
 // };
 
 const navigateToPage = (pageId: string) => {
+  // Role-based navigation logic
+  if (roleStore.isLiveChatAgent) {
+    // Live chat agents can only access conversation page
+    if (pageId.startsWith('agent/') || pageId === 'users' || pageId === 'agent') {
+      console.log('🔄 Live chat agent redirected to conversation page');
+      router.push('/conversation');
+      return;
+    }
+  }
+  
   router.push(`/${pageId}`);
 }
 
@@ -128,6 +167,7 @@ const openBookMeetingModal = () => {
   if (bookMeetingRef.value) {
     console.log('📦 bookMeetingRef exists')
     bookMeetingRef.value.openModal()
+    closeDropdown();
   } else {
     console.warn('❌ bookMeetingRef is null')
   }
@@ -194,10 +234,21 @@ onUnmounted(() => {
     <div class="sidebar-header">
       <div class="header-content">
         <div class="app-title-container">
-          <!-- Botsify Logo with link to botsify.com -->
-          <!-- <a href="https://botsify.com" target="_blank" class="logo-link"> -->
-            <img src="/botsify-logo.png" alt="Botsify" class="logo-icon" />
-          <!-- </a> -->
+          <!-- Whitelabel or Botsify Logo with link -->
+          <a :href="whitelabelStore.isWhitelabelClient && whitelabelStore.whitelabelData?.domain ? `https://${whitelabelStore.whitelabelData.domain}` : 'https://botsify.com'" target="_blank" class="logo-link">
+            <img
+              v-if="whitelabelStore.isWhitelabelClient && whitelabelStore.whitelabelData?.logo"
+              :src="whitelabelStore.whitelabelData.logo"
+              :alt="whitelabelStore.whitelabelData.company_name || 'Logo'"
+              class="logo-icon"
+            />
+            <img
+              v-else
+              src="/botsify-logo.png"
+              alt="Botsify"
+              class="logo-icon"
+            />
+          </a>
         </div>
 
         <div class="sidebar-actions">
@@ -256,7 +307,7 @@ onUnmounted(() => {
       </div> -->
     </div>
 
-    <div class="sidebar-pricing">
+    <div v-if="roleStore.canManageBilling" class="sidebar-pricing">
         <button class="pricing-button" @click="handleManageBilling" :disabled="billingLoading">
           <div class="button-content">
             <span class="pricing-text">
@@ -561,7 +612,8 @@ onUnmounted(() => {
 }
 
 .nav-item:hover {
-  background-color: var(--color-bg-hover);
+  background-color: rgba(98, 0, 255, 0.05);
+  background-image: linear-gradient(to right, rgba(153, 0, 255, 0.08), transparent 80%);
 }
 
 .nav-item.active {

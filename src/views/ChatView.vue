@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
+import { useRoleStore } from '@/stores/roleStore';
 import StorySidebar from '@/components/sidebar/StorySidebar.vue';
 import ChatMessage from '@/components/chat/ChatMessage.vue';
 import MessageInput from '@/components/chat/MessageInput.vue';
 import TypingIndicator from '@/components/chat/TypingIndicator.vue';
 import SystemMessageSender from '@/components/chat/SystemMessageSender.vue';
 import ChatHeader from '@/components/chat/ChatHeader.vue';
+
+const router = useRouter();
+const roleStore = useRoleStore();
 
 
 const route = useRoute();
@@ -83,6 +87,13 @@ function sendSuggestion(suggestion: string) {
 }
 
 onMounted(() => {
+  // Prevent live chat agents from accessing this page
+  if (roleStore.isLiveChatAgent) {
+    console.log('🔄 Live chat agent redirected from ChatView to conversation page');
+    router.push('/conversation');
+    return;
+  }
+  
   // Set active chat when component mounts
   chatStore.setActiveChat(chatId.value);
   scrollToBottom();

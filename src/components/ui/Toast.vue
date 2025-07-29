@@ -140,8 +140,7 @@ const close = () => {
 }
 
 .toast-info {
-  background-color: rgba(59, 130, 246, 0.95);
-  background-image: linear-gradient(to right, rgba(0, 163, 255, 1), rgba(59, 130, 246, 0.8));
+  background-color: var(--color-primary);
   color: white;
   border: 1px solid rgba(59, 130, 246, 0.3);
 }

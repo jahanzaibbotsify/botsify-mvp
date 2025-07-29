@@ -22,9 +22,9 @@
         <div class="user-email">{{ user?.email || 'user@example.com' }}</div>
         </template>
       </div>
-      <!-- Notification button - only show when not loading -->
+      <!-- Notification button - only show when not loading and user has permission -->
       <button 
-        v-if="!loading"
+        v-if="!loading && roleStore.canChangeNotifications"
         class="notification-button icon-button" 
         :class="{ enabled: notificationsEnabled, disabled: !notificationsEnabled }"
         @click="toggleNotifications"
@@ -45,6 +45,7 @@
         <i class="pi pi-user"></i>
       </button>
       <button 
+        v-if="roleStore.canViewUserAttributes"
         class="user-tab" 
         :class="{ active: activeTab === 'data', disabled: !user?.fbid }"
         @click="setActiveTab('data')"
@@ -66,7 +67,7 @@
       <!-- Content when loaded -->
       <template v-else>
         <UserProfile v-if="activeTab === 'profile' && user?.fbid" :user="user" />
-        <UserAttributes v-else-if="activeTab === 'data' && user?.fbid" :user="user" />
+        <UserAttributes v-else-if="activeTab === 'data' && user?.fbid && roleStore.canViewUserAttributes" :user="user" />
         <div v-else-if="!user?.fbid" class="no-user-selected">
           <i class="pi pi-user"></i>
           <p>Select a user to view details</p>
@@ -86,8 +87,8 @@
       </div>
     </div>
 
-    <!-- Action Buttons - only show when not loading -->
-    <div v-if="!loading" class="user-actions">
+    <!-- Action Buttons - only show when not loading and user has permissions -->
+    <div v-if="!loading && (roleStore.canDownloadChats || roleStore.canDeleteUserChats)" class="user-actions">
       <div class="export-dropdown">
         <button class="user-action-button icon-button" @click="toggleExportDropdown">
         <i class="pi pi-file-export"></i>
@@ -113,6 +114,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import UserProfile from './UserProfile.vue'
 import UserAttributes from './UserAttributes.vue'
 import { useConversationStore } from '@/stores/conversationStore'
+import { useRoleStore } from '@/stores/roleStore'
 
 interface Props {
   loading?: boolean
@@ -127,6 +129,7 @@ const activeTab = ref('profile')
 const notificationsEnabled = ref(true)
 const showExportDropdown = ref(false)
 const conversationStore = useConversationStore()
+const roleStore = useRoleStore()
 
 const user = computed(() => conversationStore.selectedConversation);
 

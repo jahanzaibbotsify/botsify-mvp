@@ -1,6 +1,6 @@
-import axios from 'axios';
+import { axiosInstance, uploadInstance } from '@/utils/axiosInstance';
 import type { MCPConfigurationFile } from '../types/mcp';
-import { BOTSIFY_BASE_URL, BOTSIFY_AUTH_TOKEN, APP_URL } from '../utils/config';
+import { APP_URL } from '../utils/config';
 import { useBotStore } from '@/stores/botStore';
 
 export interface BotsifyResponse {
@@ -21,32 +21,17 @@ export class BotsifyApiService {
     return BotsifyApiService.instance;
   }
 
-  /**
-   * Get Botsify authorization headers for API requests
-   */
-  private getBotsifyHeaders(additionalHeaders: Record<string, string> = {}): Record<string, string> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...additionalHeaders
-    };
 
-    // Add Botsify authorization header if token is available
-    if (BOTSIFY_AUTH_TOKEN && BOTSIFY_AUTH_TOKEN.trim()) {
-      headers['Authorization'] = `Bearer ${BOTSIFY_AUTH_TOKEN}`;
-    }
-    return headers;
-  }
 
   /**
    * Deploy AI Agent with the latest generated story
    */
   async deployAiAgent(activeAiPromptVersionId: number, newAiPromptVersionName: string): Promise<BotsifyResponse> {
     try {
-      const response = await axios.post(`${BOTSIFY_BASE_URL}/deploy-ai-agent`, {
+      const response = await axiosInstance.post('/deploy-ai-agent', {
         'version_id': activeAiPromptVersionId,
         'new_version_name': newAiPromptVersionName,
       }, {
-        headers: this.getBotsifyHeaders(),
         timeout: 60000 // 60 seconds timeout for deployment
       });
 
@@ -74,13 +59,12 @@ export class BotsifyApiService {
   async saveMCPConfiguration(botId: string, configuration: MCPConfigurationFile): Promise<BotsifyResponse> {
     try {
       console.log('Saving MCP configuration for bot:', botId);
-
-      const response = await axios.post(`${BOTSIFY_BASE_URL}/bots/${botId}/mcp-configuration`, {
+      
+      const response = await axiosInstance.post(`/bots/${botId}/mcp-configuration`, {
         botId,
         configuration,
         timestamp: new Date().toISOString()
       }, {
-        headers: this.getBotsifyHeaders(),
         timeout: 30000 // 30 seconds timeout
       });
 
@@ -108,9 +92,8 @@ export class BotsifyApiService {
   async getMCPConfiguration(botId: string): Promise<BotsifyResponse> {
     try {
       console.log('Getting MCP configuration for bot:', botId);
-
-      const response = await axios.get(`${BOTSIFY_BASE_URL}/bots/${botId}/mcp-configuration`, {
-        headers: this.getBotsifyHeaders(),
+      
+      const response = await axiosInstance.get(`/bots/${botId}/mcp-configuration`, {
         timeout: 30000 // 30 seconds timeout
       });
 
@@ -138,9 +121,8 @@ export class BotsifyApiService {
   async deleteMCPConfiguration(botId: string): Promise<BotsifyResponse> {
     try {
       console.log('Deleting MCP configuration for bot:', botId);
-
-      const response = await axios.delete(`${BOTSIFY_BASE_URL}/bots/${botId}/mcp-configuration`, {
-        headers: this.getBotsifyHeaders(),
+      
+      const response = await axiosInstance.delete(`/bots/${botId}/mcp-configuration`, {
         timeout: 30000 // 30 seconds timeout
       });
 
@@ -168,10 +150,9 @@ export class BotsifyApiService {
 
     async getAllConnectedMCPs() {
       try {
-        const response = await axios.get(
-          `${BOTSIFY_BASE_URL}/ai-tools/mcp`,
+        const response = await axiosInstance.get(
+          '/ai-tools/mcp',
           {
-            headers: this.getBotsifyHeaders(),
              params: { apikey: useBotStore().apiKey }
           }
         );
@@ -194,8 +175,7 @@ export class BotsifyApiService {
    */
   async updateMCPConfiguration(id: string, mcpPayload: any): Promise<BotsifyResponse> {
     try {
-      const response = await axios.put(`${BOTSIFY_BASE_URL}/mcp/${id}`, mcpPayload, {
-        headers: this.getBotsifyHeaders(),
+      const response = await axiosInstance.put(`/mcp/${id}`, mcpPayload, {
         timeout: 30000
       });
 
@@ -220,10 +200,9 @@ export class BotsifyApiService {
    */
   async disconnectMCP(id: string): Promise<BotsifyResponse> {
     try {
-      const response = await axios.delete(
-        `${BOTSIFY_BASE_URL}/mcp/${id}`,
+      const response = await axiosInstance.delete(
+        `/mcp/${id}`,
         {
-          headers: this.getBotsifyHeaders(),
           data: { apikey: useBotStore().apiKey }
         }
       );
@@ -293,10 +272,10 @@ export class BotsifyApiService {
       console.log('🔑 Headers:', headers);
 
       // For other servers, use GET method
-      const response = await axios.get(finalValidationUrl, {
+      const response = await axiosInstance.get(finalValidationUrl, {
         headers,
         timeout: 10000, // 10 seconds timeout for real server ping
-        validateStatus: (status) => status < 500 // Accept all responses except server errors
+        validateStatus: (status: any) => status < 500 // Accept all responses except server errors
       });
 
       console.log('✅ MCP server responded with status:', response.status);
@@ -435,13 +414,12 @@ export class BotsifyApiService {
       }
 
       // Send validation request to backend
-      const response = await axios.post(`${BOTSIFY_BASE_URL}/shopify-connection`, {
+      const response = await axiosInstance.post('/shopify-connection', {
         domain: domain,
         apikey: apiKey?.trim() || null,
         authMethod: authMethod || 'none',
         timestamp: new Date().toISOString()
       }, {
-        headers: this.getBotsifyHeaders(),
         timeout: 30000 // 30 seconds timeout
       });
 
@@ -653,9 +631,8 @@ export class BotsifyApiService {
   async sendMCPConfigurationJSON(mcpPayload: any): Promise<BotsifyResponse> {
     try {
       console.log('MCP payload structure:', mcpPayload);
-
-      const response = await axios.post(`${BOTSIFY_BASE_URL}/mcp/configuration`, mcpPayload, {
-        headers: this.getBotsifyHeaders(),
+      
+      const response = await axiosInstance.post('/mcp/configuration', mcpPayload, {
         timeout: 30000 // 30 seconds timeout
       });
 
@@ -686,11 +663,9 @@ export class BotsifyApiService {
    */
   async getFileSearch(): Promise<BotsifyResponse> {
     try {
-      console.log('Getting file search files for bot assistant:', useBotStore().apiKey);
-      const response = await axios.get(
-        `${BOTSIFY_BASE_URL}/file-search`,
+      const response = await axiosInstance.get(
+        '/file-search',
         {
-            headers: this.getBotsifyHeaders(),
              params: { apikey: useBotStore().apiKey }
           }
       );
@@ -719,16 +694,10 @@ export class BotsifyApiService {
       // formData.append('file', file);
       // formData.append('bot_assistant_id', botAssistantId);
       formData.append('file', file)
-
-      const response = await axios.post(
-        `${BOTSIFY_BASE_URL}/file-search?apikey=${useBotStore().apiKey}`,
-        formData,
-        {
-          headers: {
-            ...this.getBotsifyHeaders(),
-            'Content-Type': 'multipart/form-data'
-          }
-        }
+      
+      const response = await uploadInstance.post(
+        `/file-search?apikey=${useBotStore().apiKey}`,
+        formData
       );
 
       console.log('File uploaded for search successfully:', response.data);
@@ -752,10 +721,9 @@ export class BotsifyApiService {
   async deleteFileSearch(id: string): Promise<BotsifyResponse> {
     try {
       console.log('Deleting file from search:', id);
-
-      const response = await axios.delete(
-        `${BOTSIFY_BASE_URL}/file-search/${id}?apikey=${useBotStore().apiKey}`,
-        { headers: this.getBotsifyHeaders() }
+      
+      const response = await axiosInstance.delete(
+        `/file-search/${id}?apikey=${useBotStore().apiKey}`
       );
 
       console.log('File deleted from search successfully:', response.data);
@@ -779,11 +747,10 @@ export class BotsifyApiService {
   async deleteAllFileSearch(ids: string[]): Promise<BotsifyResponse> {
     try {
       console.log('Deleting file from search:', ids);
-
-      const response = await axios.delete(
-        `${BOTSIFY_BASE_URL}/file-search`,
-        {
-          headers: this.getBotsifyHeaders(),
+      
+      const response = await axiosInstance.delete(
+        `/file-search`,
+        { 
           data: {
             "apikey": useBotStore().apiKey,
             "ids": ids
@@ -817,9 +784,8 @@ export class BotsifyApiService {
       //   { headers: this.getBotsifyHeaders() }
       // );
 
-      const response = await axios.get(
-        `${BOTSIFY_BASE_URL}/web-search?apikey=${useBotStore().apiKey}`,
-        { headers: this.getBotsifyHeaders() }
+      const response = await axiosInstance.get(
+        `/web-search?apikey=${useBotStore().apiKey}`
       );
 
       console.log('Web search URLs retrieved successfully:', response.data);
@@ -842,15 +808,14 @@ export class BotsifyApiService {
    */
   async createWebSearch(url: string, title?: string): Promise<BotsifyResponse> {
     try {
-      const response = await axios.post(
-        `${BOTSIFY_BASE_URL}/web-search`,
+      const response = await axiosInstance.post(
+        '/web-search',
         {
           // bot_assistant_id: botAssistantId,
           apikey: useBotStore().apiKey,
           url: url,
           title: title
-        },
-        { headers: this.getBotsifyHeaders() }
+        }
       );
 
       console.log('Web URL added successfully:', response.data);
@@ -874,11 +839,10 @@ export class BotsifyApiService {
   async deleteAllWebSearch(ids: string[]): Promise<BotsifyResponse> {
     try {
      console.log("passed ids:", ids);
-
-      const response = await axios.delete(
-        `${BOTSIFY_BASE_URL}/web-search`,
-        {
-          headers: this.getBotsifyHeaders(),
+     
+      const response = await axiosInstance.delete(
+        `/web-search`, 
+        { 
           data: {
             apikey: useBotStore().apiKey,
             ids: ids,
@@ -951,17 +915,10 @@ export class BotsifyApiService {
 
       const formData = new FormData();
       formData.append('file', file);
-
-      const response = await axios.post(
-        `${BOTSIFY_BASE_URL}/v1/upload-file`,
-        formData,
-        {
-          headers: {
-            ...this.getBotsifyHeaders(),
-            'Content-Type': 'multipart/form-data'
-            // Note: Don't set Content-Type for FormData, let axios handle it
-          }
-        }
+      
+      const response = await uploadInstance.post(
+        `/v1/upload-file`,
+        formData
       );
 
       console.log('File uploaded successfully using TemplatesController:', response.data);
@@ -1037,14 +994,7 @@ export class BotsifyApiService {
 
   async saveBotTemplates(payload: object): Promise<BotsifyResponse> {
     try {
-    const response = await axios.post(`${BOTSIFY_BASE_URL}/v1/update-agent`, payload,
-      {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
-      }
-    });
-
+      const response = await axiosInstance.post(`/v1/update-agent`, payload);
       if (response.data.status === 'success') {
         console.log('Message stored: ', response.data.bot);
         return {
@@ -1056,7 +1006,7 @@ export class BotsifyApiService {
         console.error('Bot update failed:', response.data);
         return {
           success: false,
-          message: 'Internal Server Error, Please Contact team@botsify.com',
+          message: 'Error: Something went wrong on our end. Please try again later or contact us at team@botsify.com for support.',
           data: response.data
         };
       }
@@ -1064,7 +1014,7 @@ export class BotsifyApiService {
       console.error('Bot update error:', error);
       return {
         success: false,
-        message: 'Internal Server Error, Please Contact team@botsify.com',
+        message: 'Error: Something went wrong on our end. Please try again later or contact us at team@botsify.com for support.',
         data: error
       };
     }
@@ -1072,14 +1022,7 @@ export class BotsifyApiService {
 
   async clearAgentConversion(payload: object): Promise<BotsifyResponse> {
     try {
-    const response = await axios.post(`${BOTSIFY_BASE_URL}/v1/clear-conversation`, payload,
-      {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
-      }
-    });
-
+      const response = await axiosInstance.post(`/v1/clear-conversation`, payload);
       if (response.data.status === 'success') {
         console.log('Message stored: ', response.data.bot);
         return {
@@ -1107,14 +1050,8 @@ export class BotsifyApiService {
 
   async deleteAiPromptVersion(version_ids: number[]): Promise<BotsifyResponse> {
     try {
-      const response = await axios.delete(`${BOTSIFY_BASE_URL}/v1/delete-version`,{ 
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
-        },
-        data:{
-          version_ids: version_ids
-        },
+      const response = await axiosInstance.post(`/v1/delete-version`, {
+        version_ids: version_ids
       });
 
       if (response.data.status === 'success') {
@@ -1142,14 +1079,19 @@ export class BotsifyApiService {
 
   async manageBilling() {
     try {
-      const {apiKey, userId} = useBotStore();
-      const response = await axios.get(
-        `${BOTSIFY_BASE_URL}/v1/billing/portal`,
+      const {apiKey, user} = useBotStore();
+      if(!user?.id){
+        return {
+          success: false,
+          message: 'User not found',
+        };
+      }
+      const response = await axiosInstance.get(
+        `/v1/billing/portal`,
         {
-          headers: this.getBotsifyHeaders(),
           params: {
-            user_id: userId || undefined,
-            redirect_url: `${APP_URL}/agent/${userId || apiKey}`
+            user_id: user.id,
+            redirect_url: `${APP_URL}/agent/${apiKey}`
           }
         }
       );

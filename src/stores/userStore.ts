@@ -448,7 +448,6 @@ export const useUserStore = defineStore('user', () => {
         id: '1',
         name: 'Demo User',
         email,
-        plan: 'free',
         avatar: 'https://images.pexels.com/photos/2269872/pexels-photo-2269872.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'
       };
     } catch (e) {
