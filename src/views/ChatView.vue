@@ -150,7 +150,12 @@ function toggleStorySidebar() {
       <MessageInput v-if="!showCenteredInput" :chatId="chatId" />
     
      <!-- Story Sidebar - Only show when enabled -->
-     <StorySidebar v-if="showStorySidebar" ref="storySidebar" :chatId="chatId" />
+     <StorySidebar 
+      v-if="showStorySidebar" 
+      ref="storySidebar" 
+      :chatId="chatId"
+      @toggle-story-sidebar="toggleStorySidebar" 
+    />
 
     <!-- System Message Modal -->
     <div v-if="showSystemMessageModal" class="modal-overlay" @click.self="toggleSystemMessageModal">
@@ -181,7 +186,7 @@ function toggleStorySidebar() {
   overflow: hidden;
   transition: padding-right 0.3s ease;
   position: relative;
-  z-index: 1;
+  /* z-index: 1; */
 }
 
 .chat-view.with-sidebar {

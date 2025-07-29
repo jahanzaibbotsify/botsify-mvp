@@ -4,6 +4,7 @@ import { ConfigurationTask, ConfigurationResponse, ConfigurationResponseData, Ap
 import { useBotStore } from './botStore';
 import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from '@/utils/config';
 import { handleApiError } from '@/utils/errorHandler';
+import { useChatStore } from './chatStore';
 
 
 export const useOpenAIStore = defineStore('openai', () => {
@@ -11,6 +12,8 @@ export const useOpenAIStore = defineStore('openai', () => {
   const authToken = BOTSIFY_AUTH_TOKEN;
   const botApiKey = useBotStore().apiKey;
   console.log('Environment API key available:', botApiKey);
+
+  const chatStore = useChatStore();
   
   // Reactive state - no OpenAI client here to avoid private member issues
   const error = ref<string | null>(null);
@@ -194,10 +197,14 @@ export const useOpenAIStore = defineStore('openai', () => {
       console.log('🚀 Preparing to stream chat with messages:', messages);
       
       // Convert messages to Responses API format - use simple string input
-      const nonSystemMessages = messages.filter(msg => msg.role !== 'system');      
-      const inputText = nonSystemMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+      const nonSystemMessages = messages.filter(msg => msg.role !== 'system');
+      let inputText = nonSystemMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
       // const latestMessage = nonSystemMessages[nonSystemMessages.length - 1];
       // const inputText = `${latestMessage.role}: ${latestMessage.content}`;
+
+      if (nonSystemMessages.length === 1 || nonSystemMessages.length === 2) {
+        inputText += '\n\n--AI-PROMPT--\n' + chatStore.activeAiPromptVersion?.content;
+      }
 
       // Extract system message for instructions
      // const systemMessage = messages.find(msg => msg.role === 'system');
