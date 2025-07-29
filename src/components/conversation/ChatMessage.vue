@@ -326,11 +326,6 @@ const initializeSlider = () => {
 // Watch for content changes
 watch(() => props.message.content, (newContent, oldContent) => {
   if (newContent !== oldContent) {
-    console.log('Message content updated:', {
-      id: props.message.id,
-      hasContent: !!newContent,
-      length: newContent?.length || 0
-    });
     // Re-initialize slider after content update
     nextTick(() => {
       initializeSlider();
@@ -339,13 +334,6 @@ watch(() => props.message.content, (newContent, oldContent) => {
 });
 
 onMounted(() => {
-  console.log('ChatMessage mounted:', {
-    id: props.message.id,
-    sender: props.message.sender,
-    hasContent: !!props.message.content,
-    hasAttachments: !!props.message.attachments?.length
-  });
-  
   // Initialize slider after mount
   nextTick(() => {
     initializeSlider();

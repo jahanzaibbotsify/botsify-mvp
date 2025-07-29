@@ -3,6 +3,7 @@ import { getDatabase, ref, onChildAdded, onValue } from 'firebase/database'
 import { BOTSIFY_FIREBASE_CONFIG } from '@/utils/config'
 import { useBotStore } from '@/stores/botStore'
 import type { Message } from '@/types'
+import { currentTime } from '@/utils'
 
 // Initialize Firebase
 const app = initializeApp(BOTSIFY_FIREBASE_CONFIG)
@@ -131,7 +132,7 @@ export class FirebaseService {
             id: Date.now().toString(),
             content: data.message.text || '',
             sender: 'user',
-            timestamp: new Date(),
+            timestamp: currentTime(),
             status: 'sent'
           }
           console.log('💬 Created message object:', message)

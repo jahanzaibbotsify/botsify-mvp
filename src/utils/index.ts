@@ -1,12 +1,13 @@
-import moment from 'moment';
-export const formatTime = (utcDate: Date | string) => {
-  var stillUtc = moment.utc(utcDate).toDate();
-      var local = moment(stillUtc)
-        .local()
-        .format("YYYY-MM-DD HH:mm:ss");
-      return moment(local).fromNow();
-}
+import moment from 'moment-timezone';
 
+export const currentTime = () => {
+  return moment.utc().format('YYYY-MM-DD HH:mm:ss');
+};
+
+export const formatTime = (timestamp: string) => {
+  // Parse the timestamp in UTC and return relative time from now (also in UTC)
+  return moment.utc(timestamp).fromNow(); // e.g. "2 hours ago"
+};
 
 export const getPlatformClass = (platform: string = '') => {
     switch (platform.toLowerCase()) {
