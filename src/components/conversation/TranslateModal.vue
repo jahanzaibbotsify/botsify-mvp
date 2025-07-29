@@ -15,7 +15,6 @@ const languages = [
   { code: 'ru', name: 'Russian' },
   { code: 'pt', name: 'Portuguese' },
   { code: 'ja', name: 'Japanese' },
-  // Add more as needed
 ]
 
 const isTranslating = ref(false)
@@ -26,103 +25,71 @@ const openModal = () => {
 
 defineExpose({ openModal })
 
-// Google Translate script loader
-const scriptLoaded = ref(false)
-const scriptId = 'google-translate-script'
+// Load Google Translate script
 
-const loadGoogleTranslateScript = () => {
-  if (document.getElementById(scriptId)) {
-    scriptLoaded.value = true
-    return
-  }
-  const script = document.createElement('script')
-  script.id = scriptId
-  script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit'
-  script.onload = () => { scriptLoaded.value = true }
-  document.head.appendChild(script)
-}
-
-// TypeScript: declare google on window
-declare global {
-  interface Window {
-    google?: any
-    googleTranslateElementInit?: () => void
-  }
-}
-
-// Google Translate widget init
-function googleTranslateElementInit() {
-  if (
-    (window as any).google &&
-    (window as any).google.translate &&
-    (window as any).google.translate.TranslateElement
-  ) {
-    new (window as any).google.translate.TranslateElement({
-      pageLanguage: 'en',
-      autoDisplay: false,
-      includedLanguages: languages.map(l => l.code).join(','),
-      layout: (window as any).google.translate.TranslateElement.InlineLayout.SIMPLE
-    }, 'google_translate_element')
-  }
-}
-
-onMounted(() => {
-  window.googleTranslateElementInit = googleTranslateElementInit
-  loadGoogleTranslateScript()
-})
-
-// Helper: Poll for the Google Translate iframe and trigger language change
-const triggerLanguageChange = (lang: string) => {
+const triggerLanguageChange = (lang: string): Promise<void> => {
   return new Promise<void>((resolve, reject) => {
-    let attempts = 0
-    const maxAttempts = 10 // 10 * 200ms = 2s
-    const poll = () => {
-      const iframe = document.querySelector('iframe.goog-te-menu-frame') as HTMLIFrameElement | null
+    const maxAttempts = 20;
+    const interval = 300;
+    let attempts = 0;
+
+    // Step 1: Click the Google Translate dropdown
+    const openDropdown = () => {
+      const el = document.querySelector('.goog-te-combo') as HTMLSelectElement;
+      if (el) {
+        el.value = lang;
+        el.dispatchEvent(new Event('change'));
+        return true;
+      }
+      return false;
+    };
+
+    // Step 2: Wait for iframe and select the language
+    const waitForIframe = () => {
+      const iframe = document.querySelector('iframe.goog-te-menu-frame') as HTMLIFrameElement | null;
       if (iframe) {
-        setTimeout(() => {
-          const innerDoc = iframe.contentDocument || (iframe as any).contentWindow?.document
-          if (!innerDoc) return reject('No innerDoc')
-          const langItems = innerDoc.querySelectorAll('.goog-te-menu2-item span.text')
-          let found = false
+        try {
+          const innerDoc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (!innerDoc) return reject(new Error('No inner document in iframe'));
+
+          const langItems = innerDoc.querySelectorAll('.goog-te-menu2-item span.text');
+          const langName = languages.find(l => l.code === lang)?.name.toLowerCase() || '';
+
           for (let i = 0; i < langItems.length; i++) {
-            const langName = languages.find(l => l.code === lang)?.name.toLowerCase() || ''
-            if (lang === 'en' && langItems[i].innerText.toLowerCase().includes('show original')) {
-              (langItems[i].parentElement as HTMLElement).click()
-              found = true
-              break
-            } else if (lang !== 'en' && langItems[i].innerText.toLowerCase().includes(langName)) {
-              (langItems[i].parentElement as HTMLElement).click()
-              found = true
-              break
+            const text = langItems[i].textContent?.toLowerCase() || '';
+            if ((lang === 'en' && text.includes('show original')) || text.includes(langName)) {
+              (langItems[i].parentElement as HTMLElement).click();
+              return resolve();
             }
           }
-          if (found) {
-            resolve()
-          } else {
-            reject('Language not found in menu')
-          }
-        }, 200)
-      } else if (attempts < maxAttempts) {
-        attempts++
-        setTimeout(poll, 200)
+          return reject(new Error('Language not found in menu'));
+        } catch (e) {
+          return reject(e);
+        }
+      } else if (attempts++ < maxAttempts) {
+        setTimeout(waitForIframe, interval);
       } else {
-        reject('Google Translate iframe not found')
+        reject(new Error('Google Translate iframe not found'));
       }
-    }
-    poll()
-  })
-}
+    };
 
+    // Run dropdown click first
+    if (openDropdown()) {
+      setTimeout(waitForIframe, 500); // Let iframe load
+    } else {
+      reject(new Error('Google Translate dropdown not found'));
+    }
+  });
+};
+
+// Translate on button click
 const handleSelect = async () => {
   isTranslating.value = true
   try {
-    await nextTick()
     await triggerLanguageChange(selectedLanguage.value)
-    // Keep selectedLanguage as is
     modalRef.value?.closeModal()
   } catch (e) {
-    // Optionally show error
-    // window.$toast?.error('Could not translate page')
+    console.error('Translation error:', e)
   } finally {
     isTranslating.value = false
   }
@@ -142,10 +109,6 @@ const handleSelect = async () => {
         <span v-if="isTranslating">Translating...</span>
         <span v-else>Translate</span>
       </button>
-      <div v-if="!scriptLoaded" class="mt-4 text-center" style="font-size: 0.9rem; color: var(--color-text-tertiary);">
-        Loading Google Translate...
-      </div>
-      <div id="google_translate_element" style="display:none;"></div>
     </div>
   </ModalLayout>
 </template>

@@ -67,8 +67,8 @@ class ConversationApiService {
 
   async sendMessage(
     to: string,
-    message: string | { attachment: { type: string; payload: { url: string } } },
-    type: 'text' | 'image' | 'whatsapp' = 'text',
+    message: string,
+    type: 'text' | 'link' = 'text',
     format?: 'json'
   ): Promise<ApiResponse<SendMessageResponse>> {
     try {
@@ -94,29 +94,6 @@ class ConversationApiService {
         }
       }
     }
-  }
-
-  // Helper method for sending text messages
-  async sendTextMessage(to: string, text: string): Promise<ApiResponse<SendMessageResponse>> {
-    return this.sendMessage(to, text, 'text')
-  }
-
-  // Helper method for sending image messages
-  async sendImageMessage(to: string, imageUrl: string): Promise<ApiResponse<SendMessageResponse>> {
-    const message = {
-      attachment: {
-        type: 'image',
-        payload: {
-          url: imageUrl
-        }
-      }
-    }
-    return this.sendMessage(to, message, 'image', 'json')
-  }
-
-  // Helper method for sending WhatsApp messages
-  async sendWhatsAppMessage(to: string, text: string): Promise<ApiResponse<SendMessageResponse>> {
-    return this.sendMessage(to, text, 'whatsapp')
   }
 
   // Export chat conversation

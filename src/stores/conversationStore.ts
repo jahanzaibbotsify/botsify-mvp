@@ -101,14 +101,33 @@ export const useConversationStore = defineStore('conversation', () => {
   // Helper function to convert API message to Message
   const convertConversationMessageToMessage = (msg: ConversationMessage): Message => {
     // Handle different message content types
-    let content = msg.message;
+    let content: string;
+    let attachments: any[] = [];
     
-    // If message is an object, extract the text
+    // If message is an object, extract the text and check for attachments
     if (typeof msg.message === 'object') {
       console.log('Converting object message:', msg.message);
       const messageObj = msg.message as any;
       
-      if (messageObj.text) {
+      // Check for attachment
+      if (messageObj.attachment) {
+        const attachment = messageObj.attachment;
+        console.log('📎 Processing API attachment:', attachment);
+        
+        // Create JSON string for attachment data
+        const attachmentData = {
+          attachment: {
+            type: attachment.type,
+            payload: {
+              url: attachment.url,
+              buttons: []
+            }
+          }
+        };
+        
+        content = JSON.stringify(attachmentData);
+        attachments = []; // No separate attachment objects
+      } else if (messageObj.text) {
         if (typeof messageObj.text === 'object') {
           // Handle double-nested text object
           content = messageObj.text.text || JSON.stringify(messageObj.text);
@@ -119,6 +138,9 @@ export const useConversationStore = defineStore('conversation', () => {
         // Try to find any text property or stringify the object
         content = JSON.stringify(msg.message);
       }
+    } else {
+      // If message is a string, use it directly
+      content = msg.message as string;
     }
     
     return {
@@ -126,7 +148,7 @@ export const useConversationStore = defineStore('conversation', () => {
       content: content,
       sender: msg.direction === 'to' ? 'assistant' : 'user',
       timestamp: msg.created_at,
-      attachments: []
+      attachments: attachments
     }
   }
 
@@ -199,7 +221,7 @@ export const useConversationStore = defineStore('conversation', () => {
           id: fbId,
           title: data.user.name,
           timestamp: currentTime(),
-          lastMessage: data.message?.text || '',
+          lastMessage: data.message?.text || (data.message?.attachment ? 'Media message' : ''),
           unread: true,
           messages: [],
           email: data.user.email,
@@ -215,7 +237,8 @@ export const useConversationStore = defineStore('conversation', () => {
       }
     } else {
       // Update existing conversation
-      conversation.lastMessage = data.message?.text || 'Media message'
+      const lastMessageText = data.message?.text || (data.message?.attachment ? 'Media message' : '')
+      conversation.lastMessage = lastMessageText
       conversation.timestamp = currentTime()
       
       // Mark as unread if not currently selected
@@ -236,21 +259,27 @@ export const useConversationStore = defineStore('conversation', () => {
     // If this conversation is currently selected, add message to chat
     if (selectedConversation.value?.fbid === fbId) {
       // Handle different message content types from Firebase
-      let content = data.message?.text || '';
+      let content = '';
       
-      if (typeof data.message?.text === 'object') {
-        console.log('Firebase message text is an object:', data.message.text);
-        const textObj = data.message.text as any;
+      // Check if message has attachment
+      if (data.message?.attachment) {
+        const attachment = data.message.attachment;
+        console.log('📎 Processing attachment:', attachment);
         
-        if (textObj.text) {
-          if (typeof textObj.text === 'object') {
-            // Handle double-nested text object
-            content = textObj.text.text || JSON.stringify(textObj.text);
-          } else {
-            content = textObj.text;
+        // Create JSON string for attachment data
+        const attachmentData = {
+          attachment: {
+            type: attachment.type,
+            payload: attachment.payload
           }
-        } else {
+        };
+        content = JSON.stringify(attachmentData);
+      } else if (data.message?.text) {
+        // Handle text message
+        if (typeof data.message.text === 'object') {
           content = JSON.stringify(data.message.text);
+        } else {
+          content = data.message.text as string;
         }
       }
       
@@ -269,6 +298,7 @@ export const useConversationStore = defineStore('conversation', () => {
       
       // Duplicate check: Only add if not already present (by content and timestamp)
       const isDuplicate = messages.value.some(m => {
+        console.log('💬 Checking for duplicate message:', m.content, content)
         // Check if content matches
         const contentMatches = m.content === content;
       
@@ -283,14 +313,13 @@ export const useConversationStore = defineStore('conversation', () => {
         return contentMatches && timeMatches && senderMatches;
       });
       
-      
       if (!isDuplicate) {
         const newMessage: Message = {
           id: Date.now().toString(),
           content: content,
           timestamp: currentTime(),
           sender: sender,
-          status: 'sent'
+          status: 'sent',
         }
         messages.value.push(newMessage)
         console.log('💬 Added message to current conversation:', newMessage)
@@ -481,43 +510,12 @@ export const useConversationStore = defineStore('conversation', () => {
     }
   }
 
-  const sendMessageToUser = async (content: string, to: string, type: 'text' | 'image' | 'whatsapp' = 'text') => {
+  const sendMessageToUser = async (content: string, to: string, type: 'text' | 'link') => {
     if (!content.trim()) return
     
     try {
-      // Add the message immediately for better UX with a temporary ID
-      const tempMessageId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      console.log('💬 Sending message to user:', currentTime())
-      if (type !== 'image') {
-        const message: Message = {
-          id: tempMessageId,
-          content: content,
-          sender: 'assistant',
-          timestamp: currentTime(),
-          status: 'sending',
-          attachments: []
-        }
-        messages.value.push(message)
-      }
-
-      let response
-      if (type === 'text') {
-        response = await conversationApi.sendTextMessage(to, content)
-      } else if (type === 'whatsapp') {
-        response = await conversationApi.sendWhatsAppMessage(to, content)
-      } else {
-        // For image type, content should be the image URL
-        response = await conversationApi.sendImageMessage(to, content)
-      }
-      
+      const response = await conversationApi.sendMessage(to, content, type)
       if (response.success) {
-        // Update the message status to sent
-        const sentMessage = messages.value.find(m => m.id === tempMessageId)
-        if (sentMessage) {
-          sentMessage.status = 'sent'
-        }
-        
-        // Update the last message in the selected conversation
         if (selectedConversation.value) {
           selectedConversation.value.lastMessage = content
           selectedConversation.value.timestamp = currentTime()
@@ -525,19 +523,9 @@ export const useConversationStore = defineStore('conversation', () => {
         
         console.log('✅ Message sent successfully')
       } else {
-        // Remove the message if sending failed
-        const messageIndex = messages.value.findIndex(m => m.id === tempMessageId)
-        if (messageIndex > -1) {
-          messages.value.splice(messageIndex, 1)
-        }
         error.value = response.message || 'Failed to send message'
       }
     } catch (err) {
-      // Remove the message if there was an error
-      const messageIndex = messages.value.findIndex(m => m.id.startsWith('temp_'))
-      if (messageIndex > -1) {
-        messages.value.splice(messageIndex, 1)
-      }
       error.value = 'An error occurred while sending message'
       console.error('Error sending message:', err)
     }
@@ -611,7 +599,7 @@ export const useConversationStore = defineStore('conversation', () => {
       // If there are file URLs, send them as image messages
       if (fileUrls && fileUrls.length > 0) {
         for (const fileUrl of fileUrls) {
-          await sendMessageToUser(fileUrl, selectedConversation.value.fbid, 'image')
+          await sendMessageToUser(fileUrl, selectedConversation.value.fbid, 'link')
         }
 
         if(content.trim() == 'Attachment'){

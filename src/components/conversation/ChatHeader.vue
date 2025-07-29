@@ -25,12 +25,12 @@
             :multiple="false"
           />
         </div>
-        <!-- <button class="translate-button" @click="openTranslateModal">
+        <button class="translate-button" @click="openTranslateModal">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.01-4.65.83-6.67l2.16-2.16c-.56-.56-1.47-.56-2.03 0L9.5 5.5c-.56.56-.56 1.47 0 2.03l.03.03c-2.02 1.18-4.73.91-6.67-.83l-.03-.03c-.56-.56-1.47-.56-2.03 0L.5 5.5c-.56.56-.56 1.47 0 2.03l2.16 2.16c1.74 1.94 2.01 4.65.83 6.67l-.03.03c-.56-.56-.56 1.47 0 2.03l2.16 2.16c.56.56 1.47.56 2.03 0l2.16-2.16c.56-.56.56-1.47 0-2.03l-.03-.03z"/>
           </svg>
           G Translate
-        </button> -->
+        </button>
       </template>
     </div>
     <TranslateModal ref="translateModalRef" @select-language="handleLanguageSelect" />
@@ -88,9 +88,9 @@ const handleStatusChange = async (value: number | (number | undefined)[] | undef
 
 const translateModalRef = ref<InstanceType<typeof TranslateModal> | null>(null)
 
-// const openTranslateModal = () => {
-//   translateModalRef.value?.openModal()
-// }
+const openTranslateModal = () => {
+  translateModalRef.value?.openModal()
+}
 
 const emit = defineEmits(['translate-language'])
 

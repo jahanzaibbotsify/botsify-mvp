@@ -72,7 +72,17 @@ export interface ConversationsResponse {
 // Message Types
 export interface ConversationMessage {
   id: number
-  message: string
+  message: string | {
+    text?: string
+    attachment?: {
+      type: 'image' | 'video' | 'audio' | 'file'
+      url: string
+      payload?: {
+        name?: string
+        size?: number
+      }
+    }
+  }
   created_at: string
   messenger_user_id: string
   direction: string
@@ -91,7 +101,7 @@ export interface UserConversationResponse {
 export interface SendMessagePayload {
   apikey: string
   to: string
-  type: 'text' | 'image' | 'whatsapp'
+  type: 'text' | 'link'
   message: string | {
     attachment: {
       type: string
