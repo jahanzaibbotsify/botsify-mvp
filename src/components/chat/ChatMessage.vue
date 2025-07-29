@@ -299,7 +299,7 @@ onMounted(() => {
 .attachment-size {
   display: block;
   font-size: 0.75rem;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
 }
 
 /* Mobile styles */
