@@ -163,7 +163,7 @@ function handleReset(type: string) {
   }
   window.$confirm({
     confirmButtonText: confirmButtonText,
-    text: "This will clear your current agent flow and start a new one. This action is irreversible."
+    text: "Clearing the conversation is irreversible!"
   }, async() => {
     chatStore.clearChatMessages()
   });
