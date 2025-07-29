@@ -154,24 +154,50 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   if (to.name === 'agent' || to.name === 'conversation') {
     const botStore = useBotStore();
+    const roleStore = useRoleStore();
     const storeApiKey = botStore.getApiKey;
     const localApiKey = getCurrentApiKey();
+    
+    console.log('🔍 API Key Debug:', {
+      storeApiKey,
+      localApiKey,
+      routeName: to.name,
+      routeParams: to.params
+    });
+    
     let apikey = storeApiKey || localApiKey || '';
     
-    // If no API key found, try to extract from URL
-    if (!apikey) {
-      apikey = botStore.extractApiKeyFromUrl();
-    }
+    // If no API key found, try to extract from URL or route params
+    if (!apikey || apikey === 'undefined' || apikey === 'null') {
+      console.log('🔍 No valid API key found, extracting from URL/route params...');
+      
+      // For /agent/:id route, extract API key from route params
+      if (to.name === 'agent' && to.params.id) {
+        apikey = to.params.id as string;
+        botStore.setApiKey(apikey);
+        console.log('🔑 API key extracted from route params:', apikey);
+      } else {
+        // Try to extract from URL path
+        apikey = botStore.extractApiKeyFromUrl();
+      }
+    }    
     
-    if (apikey) {
+    console.log('🔑 Final API key:', apikey);
+    
+    if (apikey && apikey !== 'undefined' && apikey !== 'null') {
       try {
         const data = await getBotDetails(apikey);
         if (data) {
-          const roleStore = useRoleStore();
           roleStore.setCurrentUser(data.user);
 
           const chatStore = useChatStore();
           const conversationStore = useConversationStore();
+
+          // Check subscription requirements for restricted pages
+          if (to.name === 'conversation' && !roleStore.hasSubscription) {
+            console.log('🔒 Conversation page requires subscription, redirecting to agent');
+            return next({ name: 'agent', params: { id: apikey } });
+          }
 
           // Role-based restriction for live chat agents
           if (roleStore.isLiveChatAgent) {
@@ -209,6 +235,15 @@ router.beforeEach(async (to, from, next) => {
     } else {
       console.error('❌ No API key found');
       return next({ name: 'Unauthenticated' });
+    }
+  }
+
+  // Handle users page - redirect if no subscription
+  if (to.name === 'users') {
+    const roleStore = useRoleStore();
+    if (!roleStore.hasSubscription) {
+      console.log('🔒 Users page requires subscription, redirecting to agent');
+      return next({ name: 'agent', params: { id: 'default' } });
     }
   }
 

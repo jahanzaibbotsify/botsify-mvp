@@ -40,6 +40,11 @@ export interface BotUser {
   trial_started: string
   bot_role: number // 0 = editor, 2 = live chat agent, else = admin
   is_whitelabel_client: boolean
+  subs?: {
+    status: string
+    [key: string]: any
+  }
+  appsumo?: any[]
   whitelabel?: {
     company_name: string
     primary_color: string
