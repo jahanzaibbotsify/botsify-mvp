@@ -3,11 +3,11 @@
     <div class="chat-header-left">
       <!-- <h2>{{ title }}</h2> -->
       <!-- Dropdown Menu Trigger -->
-      <div class="dropdown bot-name-dropdown dropdown-container" id="botNameDropdown" ref="dropdownRef">
-        <button class="icon-button" title="More actions">
+      <div class=" bot-name-dropdown dropdown-container" id="botNameDropdown" ref="dropdownRef">
+        <div class="" title="More actions">
           {{botStore.botName}} 
-          <i class="pi pi-angle-down" style="font-size: 10px; margin-left: 3px;"></i>
-        </button>
+          <!-- <i class="pi pi-angle-down" style="font-size: 10px; margin-left: 3px;"></i> -->
+        </div>
         <div v-if="showBotNameDropdown" class="dropdown-content">
           <button class="dropdown-item" @click="toggleTheme">
             <i :class="themeStore.theme === 'light' ? 'pi pi-moon' : 'pi pi-sun'" style="font-size: 18px;"></i>
@@ -15,11 +15,11 @@
           </button>
         </div>
       </div>
-      <div @click="handleReset('new')">
+      <!-- <div @click="handleReset('new')">
          <button class="btn icon-button" :disabled="chatStore.chats[0].messages.length < 2" title="New Chat">
           <i class="pi pi-plus" style="font-size: 15px; "></i>
         </button>
-      </div>
+      </div> -->
     </div>
     <div class="chat-actions" >  
       <!-- Deploy/Test AI Buttons -->
