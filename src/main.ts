@@ -24,7 +24,6 @@ import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from './utils/config'
 // set api key to localStorage
 localStorage.setItem('bot_api_key', window.location.pathname.split('/')[2]);
 
-
 // Import OpenAI debug utility in development
 if (import.meta.env.DEV) {
   import('./utils/openai-debug').then(({ OpenAIDebugger }) => {

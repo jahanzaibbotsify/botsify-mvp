@@ -45,6 +45,9 @@ const shouldSkipMessage = (content: string): boolean => {
 
 // Group messages by date
 const groupedMessages = computed(() => {
+  // Skip computation if no messages
+  if (!props.messages.length) return []
+  
   const groups: { date: string; messages: Message[] }[] = []
   let currentDate = ''
   let currentGroup: Message[] = []
@@ -99,10 +102,22 @@ const shouldShowTimestamp = (message: Message, index: number, messages: Message[
 const scrollToBottom = async (smooth = true) => {
   await nextTick()
   if (messagesContainer.value) {
-    messagesContainer.value.scrollTo({
-      top: messagesContainer.value.scrollHeight,
+    const container = messagesContainer.value
+    const scrollHeight = container.scrollHeight
+    const clientHeight = container.clientHeight
+    const maxScrollTop = scrollHeight - clientHeight
+    
+    container.scrollTo({
+      top: maxScrollTop,
       behavior: smooth ? 'smooth' : 'auto'
     })
+    
+    // Double-check scroll position after a brief delay
+    setTimeout(() => {
+      if (container.scrollTop < maxScrollTop) {
+        container.scrollTop = maxScrollTop
+      }
+    }, 100)
   }
 }
 
@@ -127,9 +142,10 @@ const handleAttachmentDownload = (attachment: any) => {
 // Watch for messages changes to auto-scroll
 watch(() => props.messages.length, (newLength, oldLength) => {
   if (newLength > oldLength) {
+    // Only scroll if new messages were added
     scrollToBottom()
   }
-})
+}, { flush: 'post' })
 
 watch(() => props.selectedLanguage, (lang) => {
   if (lang) {
@@ -221,6 +237,7 @@ onMounted(() => {
                 :show-avatar="shouldShowAvatar(message, index, group.messages)"
                 :show-timestamp="shouldShowTimestamp(message, index, group.messages)"
                 :compact="!shouldShowAvatar(message, index, group.messages)"
+                v-memo="[message.id, message.content, message.sender, shouldShowAvatar(message, index, group.messages), shouldShowTimestamp(message, index, group.messages)]"
                 @image-click="handleImageClick"
                 @attachment-download="handleAttachmentDownload"
               />

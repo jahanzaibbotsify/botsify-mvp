@@ -10,6 +10,7 @@ import type {
 } from '@/types/conversation'
 import type { ExtendedChat, Message } from '@/types'
 import moment from 'moment'
+import { currentTime } from '@/utils'
 
 export const useConversationStore = defineStore('conversation', () => {
   // State
@@ -197,7 +198,7 @@ export const useConversationStore = defineStore('conversation', () => {
         const newConversation: ExtendedChat = {
           id: fbId,
           title: data.user.name,
-          timestamp: moment().format('YYYY-MM-DD HH:mm:ss'),
+          timestamp: currentTime(),
           lastMessage: data.message?.text || '',
           unread: true,
           messages: [],
@@ -215,7 +216,7 @@ export const useConversationStore = defineStore('conversation', () => {
     } else {
       // Update existing conversation
       conversation.lastMessage = data.message?.text || 'Media message'
-      conversation.timestamp = moment().format('YYYY-MM-DD HH:mm:ss')
+      conversation.timestamp = currentTime()
       
       // Mark as unread if not currently selected
       if (selectedConversation.value?.fbid !== fbId) {
@@ -267,35 +268,35 @@ export const useConversationStore = defineStore('conversation', () => {
       }
       
       // Duplicate check: Only add if not already present (by content and timestamp)
-      const isDuplicate = messages.value.some(m => {
-        // Check if content matches
-        const contentMatches = m.content === content;
+      // const isDuplicate = messages.value.some(m => {
+      //   // Check if content matches
+      //   const contentMatches = m.content === content;
         
-        // Check if timestamp is within 5 seconds using moment
-        const messageTime = moment(m.timestamp);
-        const currentTime = moment();
-        const timeDiff = Math.abs(currentTime.diff(messageTime));
-        const timeMatches = timeDiff < 5000; // 5 seconds
+      //   // Check if timestamp is within 5 seconds using moment
+      //   const messageTime = moment(m.timestamp);
+      //   const currentTime = moment();
+      //   const timeDiff = Math.abs(currentTime.diff(messageTime));
+      //   const timeMatches = timeDiff < 5000; // 5 seconds
         
-        // Check if sender matches
-        const senderMatches = m.sender === sender;
+      //   // Check if sender matches
+      //   const senderMatches = m.sender === sender;
         
-        return contentMatches && timeMatches && senderMatches;
-      });
+      //   return contentMatches && timeMatches && senderMatches;
+      // });
       
-      if (!isDuplicate) {
-        const newMessage: Message = {
-          id: Date.now().toString(),
-          content: content,
-          timestamp: moment().format('YYYY-MM-DD HH:mm:ss'),
-          sender: sender,
-          status: 'sent'
-        }
-        messages.value.push(newMessage)
-        console.log('💬 Added message to current conversation:', newMessage)
-      } else {
-        console.log('⚠️ Duplicate message ignored:', { content, sender, timestamp: new Date() })
-      }
+      // if (!isDuplicate) {
+      //   const newMessage: Message = {
+      //     id: Date.now().toString(),
+      //     content: content,
+      //     timestamp: currentTime(),
+      //     sender: sender,
+      //     status: 'sent'
+      //   }
+      //   messages.value.push(newMessage)
+      //   console.log('💬 Added message to current conversation:', newMessage)
+      // } else {
+      //   console.log('⚠️ Duplicate message ignored:', { content, sender, timestamp: new Date() })
+      // }
     }
   }
 
@@ -486,12 +487,13 @@ export const useConversationStore = defineStore('conversation', () => {
     try {
       // Add the message immediately for better UX with a temporary ID
       const tempMessageId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      console.log('💬 Sending message to user:', currentTime())
       if (type !== 'image') {
         const message: Message = {
           id: tempMessageId,
           content: content,
           sender: 'assistant',
-          timestamp: moment().format('YYYY-MM-DD HH:mm:ss'),
+          timestamp: currentTime(),
           status: 'sending',
           attachments: []
         }
@@ -518,7 +520,7 @@ export const useConversationStore = defineStore('conversation', () => {
         // Update the last message in the selected conversation
         if (selectedConversation.value) {
           selectedConversation.value.lastMessage = content
-          selectedConversation.value.timestamp = moment().format('YYYY-MM-DD HH:mm:ss')
+          selectedConversation.value.timestamp = currentTime()
         }
         
         console.log('✅ Message sent successfully')
