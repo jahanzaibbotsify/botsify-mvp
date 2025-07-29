@@ -109,6 +109,27 @@ export const useRoleStore = defineStore('role', () => {
   const isEditor = computed(() => currentRole.value === 'editor')
   const isLiveChatAgent = computed(() => currentRole.value === 'live_chat_agent')
 
+  // Subscription-related computed properties
+  const hasSubscription = computed(() => {
+    // Check if user has regular subscription
+    const hasRegularSubs = !!currentUser.value?.subs;
+    
+    // Check if user has AppSumo subscription (even if subs is empty)
+    const hasAppSumoSubs = currentUser.value?.appsumo && currentUser.value.appsumo.length > 0;
+    
+    return hasRegularSubs || hasAppSumoSubs;
+  })
+
+  const hasActiveSubscription = computed(() => {
+    // Check for active regular subscription
+    const hasActiveRegularSubs = currentUser.value?.subs && currentUser.value.subs.status === 'active';
+    
+    // Check for AppSumo subscription (AppSumo users are considered active)
+    const hasAppSumoSubs = currentUser.value?.appsumo && currentUser.value.appsumo.length > 0;
+    
+    return hasActiveRegularSubs || hasAppSumoSubs;
+  })
+
   // Permission computed properties
   const canSendMessages = computed(() => hasPermission('send_messages'))
   const canDeleteUserChats = computed(() => hasPermission('delete_user_chats'))
@@ -126,6 +147,11 @@ export const useRoleStore = defineStore('role', () => {
   const canEditUserAttributes = computed(() => hasPermission('edit_user_attributes'))
   const canDeleteUsers = computed(() => hasPermission('delete_users'))
   const canAccessAgentPage = computed(() => hasPermission('access_agent_page'))
+
+  // Subscription-based permission computed properties
+  const canViewUsers = computed(() => hasPermission('view_user_attributes') && hasSubscription.value)
+  const canViewConversation = computed(() => hasPermission('view_chats_page') && hasSubscription.value)
+  const canManageBillingWithSubscription = computed(() => hasPermission('manage_billing') && hasSubscription.value)
 
   // Clear user data
   const clearUser = () => {
@@ -170,6 +196,11 @@ export const useRoleStore = defineStore('role', () => {
     canManageBilling,
     canEditUserAttributes,
     canDeleteUsers,
-    canAccessAgentPage
+    canAccessAgentPage,
+    hasSubscription,
+    hasActiveSubscription,
+    canViewUsers,
+    canViewConversation,
+    canManageBillingWithSubscription
   }
 }) 
