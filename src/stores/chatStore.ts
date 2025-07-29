@@ -5,6 +5,7 @@ import { useMCPStore } from './mcpStore';
 import type { Chat, Message, Attachment, PromptVersion, GlobalPromptTemplate } from '../types';
 import { botsifyApi } from '../services/botsifyApi';
 import { useBotStore } from './botStore';
+import { currentTime } from '@/utils';
 
 export const useChatStore = defineStore('chat', () => {
   const openAIStore = useOpenAIStore();
@@ -39,7 +40,7 @@ export const useChatStore = defineStore('chat', () => {
     });
     return {
       'content': activeVersionContent,
-      'updatedAt': new Date(),
+      'updatedAt': currentTime(),
       'versions': StoredVersions,
       'activeVersionId': activeAiPromptVersion.value?.id ?? activeVersionId
     };
@@ -233,14 +234,14 @@ console.log(defaultPromptTemplate, "defaultPromptTemplate");
     const newMessage: Message = {
       id: Date.now().toString(),
       content,
-      timestamp: new Date(),
+      timestamp: currentTime(),
       sender,
       attachments
     };
 
     chat.messages.push(newMessage);
     chat.lastMessage = content;
-    chat.timestamp = new Date();
+    chat.timestamp = currentTime();
 
     // Only trigger AI response for user messages when connected
     if (sender === 'user') {
@@ -265,13 +266,13 @@ console.log(defaultPromptTemplate, "defaultPromptTemplate");
     const message = chat.messages.find(m => m.id === messageId);
     if (message) {
       message.content = content;
-      message.timestamp = new Date();
+      message.timestamp = currentTime();
 
       // Update the chat's last message if this was the latest message
       const isLastMessage = chat.messages[chat.messages.length - 1].id === messageId;
       if (isLastMessage) {
         chat.lastMessage = content;
-        chat.timestamp = new Date();
+        chat.timestamp = currentTime();
       }
     }
   }
@@ -290,7 +291,7 @@ console.log(defaultPromptTemplate, "defaultPromptTemplate");
       chat.timestamp = lastMessage.timestamp;
     } else {
       chat.lastMessage = undefined;
-      chat.timestamp = new Date();
+      chat.timestamp = currentTime();
     }
   }
 
@@ -705,7 +706,7 @@ Use the above connected services information to understand what tools and data s
       aiMessage = {
         id: Date.now().toString(),
         content: eachStreamContent,
-        timestamp: new Date(),
+        timestamp: currentTime(),
         sender: 'assistant'
       };
       chat.messages.push(aiMessage);
@@ -771,7 +772,7 @@ Use the above connected services information to understand what tools and data s
       //   aiMessage = {
       //     id: Date.now().toString(),
       //     content: parsedResponse.chatResponse,
-      //     timestamp: new Date(),
+      //     timestamp: currentTime(),
       //     sender: 'assistant'
       //   };
       //   chat.messages.push(aiMessage);
@@ -786,7 +787,7 @@ Use the above connected services information to understand what tools and data s
       //   aiMessage = {
       //     id: Date.now().toString(),
       //     content: parsedResponse.chatResponse,
-      //     timestamp: new Date(),
+      //     timestamp: currentTime(),
       //     sender: 'assistant'
       //   };
       //   chat.messages.push(aiMessage);
@@ -798,7 +799,7 @@ Use the above connected services information to understand what tools and data s
       //   aiMessage = {
       //     id: Date.now().toString(),
       //     content: 'I\'ve updated your AI prompt. You can see the details in the sidebar.',
-      //     timestamp: new Date(),
+      //     timestamp: currentTime(),
       //     sender: 'assistant'
       //   };
       //   chat.messages.push(aiMessage);
@@ -815,7 +816,7 @@ Use the above connected services information to understand what tools and data s
       //     aiMessage = {
       //       id: Date.now().toString(),
       //       content: streamedContent,
-      //       timestamp: new Date(),
+      //       timestamp: currentTime(),
       //       sender: 'assistant'
       //     };
       //     chat.messages.push(aiMessage);
@@ -859,7 +860,7 @@ Use the above connected services information to understand what tools and data s
                     const errorMessage: Message = {
                       id: Date.now().toString() + '_config_error',
                       content: 'Internal Server Error, Please Contact team@botsify.com',
-                      timestamp: new Date(),
+                      timestamp: currentTime(),
                       sender: 'assistant'
                     };
                     chat.messages.push(errorMessage);
@@ -876,7 +877,7 @@ Use the above connected services information to understand what tools and data s
                   const configMessage: Message = {
                     id: Date.now().toString() + '_config',
                     content: configResult,
-                    timestamp: new Date(),
+                    timestamp: currentTime(),
                     sender: 'assistant'
                   };
                   chat.messages.push(configMessage);
@@ -889,7 +890,7 @@ Use the above connected services information to understand what tools and data s
                   const errorMessage: Message = {
                     id: Date.now().toString() + '_config_error',
                     content: 'Internal Server Error, Please Contact team@botsify.com',
-                    timestamp: new Date(),
+                    timestamp: currentTime(),
                     sender: 'assistant'
                   };
                   chat.messages.push(errorMessage);
@@ -906,7 +907,7 @@ Use the above connected services information to understand what tools and data s
                 const errorMessage: Message = {
                   id: Date.now().toString() + '_error',
                   content: 'Internal Server Error, Please Contact team@botsify.com',
-                  timestamp: new Date(),
+                  timestamp: currentTime(),
                   sender: 'assistant'
                 };
                 chat.messages.push(errorMessage);
@@ -923,7 +924,7 @@ Use the above connected services information to understand what tools and data s
               const errorMessage: Message = {
                 id: Date.now().toString() + '_parse_error',
                 content: 'Internal Server Error, Please Contact team@botsify.com',
-                timestamp: new Date(),
+                timestamp: currentTime(),
                 sender: 'assistant'
               };
               chat.messages.push(errorMessage);
@@ -946,7 +947,7 @@ Use the above connected services information to understand what tools and data s
           aiMessage = {
             id: Date.now().toString(),
             content: 'I received your message but had no response to provide.',
-            timestamp: new Date(),
+            timestamp: currentTime(),
             sender: 'assistant'
           };
           chat.messages.push(aiMessage);
@@ -1196,7 +1197,7 @@ Use the above connected services information to understand what tools and data s
     try {
       const connectedServices: any = {
         chatId: chatId,
-        timestamp: new Date().toISOString(),
+        timestamp: currentTime(),
         services: {}
       };
 
@@ -1232,7 +1233,7 @@ Use the above connected services information to understand what tools and data s
       //         uploadedAt: file.uploadedAt || file.createdAt
       //       })),
       //       totalFiles: fileSearchResponse.data.files.length,
-      //       lastUpdated: new Date().toISOString()
+      //       lastUpdated: currentTime().toISOString()
       //     };
       //     hasServices = true;
       //   }
@@ -1250,7 +1251,7 @@ Use the above connected services information to understand what tools and data s
       //       title: webSearchResponse.data.title,
       //       domain: webSearchResponse.data.domain,
       //       connectedAt: webSearchResponse.data.connectedAt,
-      //       lastUpdated: new Date().toISOString()
+      //       lastUpdated: currentTime().toISOString()
       //     };
       //     hasServices = true;
       //   }
@@ -1288,13 +1289,13 @@ Use the above connected services information to understand what tools and data s
     const newChat: Chat = {
       id: botStore.apiKey,
       title: '',
-      timestamp: new Date(),
+      timestamp: currentTime(),
       messages: [
         {
           id: '1',
           // content: 'Hello! Start creating your AI prompt here.',
           content: '',
-          timestamp: new Date(),
+          timestamp: currentTime(),
           sender: 'assistant'
         }
       ],

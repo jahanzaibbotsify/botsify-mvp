@@ -1,5 +1,9 @@
 import moment from 'moment';
 
+export const currentTime = () => {
+  return moment().format('YYYY-MM-DD HH:mm:ss');
+}
+
 export const formatTime = (timestamp: string) => {
   var stillUtc = moment.utc(timestamp).toDate();
   var local = moment(stillUtc)
