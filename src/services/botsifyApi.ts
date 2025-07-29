@@ -1079,13 +1079,19 @@ export class BotsifyApiService {
 
   async manageBilling() {
     try {
-      const {apiKey, userId} = useBotStore();
+      const {apiKey, user} = useBotStore();
+      if(!user?.id){
+        return {
+          success: false,
+          message: 'User not found',
+        };
+      }
       const response = await axiosInstance.get(
         `/v1/billing/portal`,
         {
           params: {
-            user_id: userId || undefined,
-            redirect_url: `${APP_URL}/agent/${userId || apiKey}`
+            user_id: user.id,
+            redirect_url: `${APP_URL}/agent/${apiKey}`
           }
         }
       );

@@ -166,6 +166,7 @@ const openBookMeetingModal = () => {
   if (bookMeetingRef.value) {
     console.log('📦 bookMeetingRef exists')
     bookMeetingRef.value.openModal()
+    closeDropdown();
   } else {
     console.warn('❌ bookMeetingRef is null')
   }

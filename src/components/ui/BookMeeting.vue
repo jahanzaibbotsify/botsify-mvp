@@ -1,6 +1,11 @@
-  <script setup lang="ts">
+<script setup lang="ts">
 import { ref } from 'vue'
 import ModalLayout from '@/components/ui/ModalLayout.vue'
+
+// Accept a boolean prop named `demoOnly`
+const props = defineProps<{
+  demoOnly?: boolean
+}>()
 
 const modalRef = ref<InstanceType<typeof ModalLayout> | null>(null)
 
@@ -24,25 +29,36 @@ defineExpose({ openModal })
     title="BOOK A MEETING"
     max-width="500px"
   >
-    <p>What do you need help with? Please choose one of the following options</p>
-    <a class="btn" @click="() => openCalendar('https://calendly.com/samuel-nixon/botsify-customer-success')">
-      📞 Platform demo
-    </a>
-    <a class="btn" @click="() => openCalendar('', true)">
-      🛠️ Bug or feature help
-    </a>
-    <a class="btn" @click="() => openCalendar('https://calendly.com/samuel-nixon/botsify-customer-success')">
-      🤖 Agent discussion
-    </a>
+    <template v-if="props.demoOnly">
+      <p>We’d love to show you around! Click below to book your personalized demo.</p>
+      <a class="btn" @click="() => openCalendar('https://calendly.com/samuel-nixon/agentic-ai-consultation-session')">
+        📞 Book a demo
+      </a>
+    </template>
+
+    <template v-else>
+      <p>What do you need help with? Please choose one of the following options</p>
+      <a class="btn" @click="() => openCalendar('https://calendly.com/samuel-nixon/agentic-ai-consultation-session')">
+        📞 Platform demo
+      </a>
+      <a class="btn" @click="() => openCalendar('', true)">
+        🛠️ Bug or feature help
+      </a>
+      <a class="btn" @click="() => openCalendar('https://calendly.com/samuel-nixon/agentic-ai-consultation-session')">
+        🤖 Agent discussion
+      </a>
+    </template>
   </ModalLayout>
 </template>
+
 
 <style scoped>
 .btn {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
-  padding: 12px 16px;
+  padding: 8px 16px;
   background-color: var(--color-primary);
   border: none;
   border-radius: 6px;
@@ -55,6 +71,6 @@ defineExpose({ openModal })
 }
 
 .btn:hover {
-  background-color: #0056b3;
+  background-color: var(--color-primary-hover);
 }
 </style>

@@ -16,6 +16,7 @@ import { useChatStore } from './stores/chatStore';
 import { useRoleStore } from './stores/roleStore';
 import { useWhitelabelStore } from './stores/whitelabelStore';
 import { installPermissions } from './utils/permissions';
+import { extractApiKey, getCurrentApiKey } from './utils/apiKeyUtils';
 
 import Swal from 'sweetalert2';
 
@@ -24,8 +25,11 @@ import routes from '@/router'
 import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from './utils/config'
 (window as any).Swal = Swal;
 
-// set api key to localStorage
-localStorage.setItem('bot_api_key', window.location.pathname.split('/')[2]);
+// Extract and store API key
+const apiKey = extractApiKey();
+if (apiKey) {
+  localStorage.setItem('bot_api_key', apiKey);
+}
 
 // Import OpenAI debug utility in development
 if (import.meta.env.DEV) {
@@ -129,7 +133,7 @@ function getBotDetails(apikey: string) {
     const botStore = useBotStore();
     botStore.setApiKeyConfirmed(true);
     botStore.setBotId(response.data.data.bot.id);
-    botStore.setUserId(response.data.data.bot.user_id);
+    botStore.setUser(response.data.data.user);  
     botStore.setBotName(response.data.data.bot.name);
 
     return response.data.data;
@@ -149,7 +153,16 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   if (to.name === 'agent' || to.name === 'conversation') {
-    const apikey = localStorage.getItem('bot_api_key') ?? '';
+    const botStore = useBotStore();
+    const storeApiKey = botStore.getApiKey;
+    const localApiKey = getCurrentApiKey();
+    let apikey = storeApiKey || localApiKey || '';
+    
+    // If no API key found, try to extract from URL
+    if (!apikey) {
+      apikey = botStore.extractApiKeyFromUrl();
+    }
+    
     if (apikey) {
       try {
         const data = await getBotDetails(apikey);
@@ -185,10 +198,17 @@ router.beforeEach(async (to, from, next) => {
           }
 
           return next();
+        } else {
+          console.error('❌ Failed to get bot details');
+          return next({ name: 'Unauthenticated' });
         }
       } catch (error) {
         console.error('❌ Error fetching bot details:', error);
+        return next({ name: 'Unauthenticated' });
       }
+    } else {
+      console.error('❌ No API key found');
+      return next({ name: 'Unauthenticated' });
     }
   }
 
