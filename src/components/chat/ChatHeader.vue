@@ -68,6 +68,7 @@
         </div>
       </div>
     </div>
+    <CalendlyModal ref="bookMeetingRef"></CalendlyModal>
   </div>
 </template>
 
@@ -79,6 +80,7 @@ import { BOTSIFY_WEB_URL } from '@/utils/config';
 import { useChatStore } from '@/stores/chatStore';
 import { useWhitelabelStore } from '@/stores/whitelabelStore';
 import { useBotStore } from '@/stores/botStore';
+import CalendlyModal from '@/components/ui/CalendlyModal.vue';
 
 interface Props {
   chatId: string,
@@ -95,6 +97,7 @@ const showDropdown = ref(false);
 const showBotNameDropdown = ref(false);
 const dropdownRef = ref<HTMLDivElement | null>(null);
 const lastOpenedDropdownId = ref<string | undefined>('');
+const bookMeetingRef = ref<InstanceType<typeof CalendlyModal> | null>(null)
 
 const emit = defineEmits<{
   toggleStorySidebar: [];
@@ -126,6 +129,11 @@ async function testAI() {
 }
 
 function deployAI() {
+  // if (!botStore.user?.subs || botStore.user.subs.status !== 'active') {
+    bookMeetingRef.value?.openModal();
+    return;
+  // }
+
   if (!props.hasPromptContent) {
     window.$toast.error('No prompt content available to deploy. Please generate some content first.');
     return;
@@ -343,7 +351,6 @@ onBeforeUnmount(() => {
   right: 0;
   top: 110%;
   background-color: var(--color-bg-primary);
-  background-image: radial-gradient(circle at right top, rgba(0, 163, 255, 0.08), transparent 70%);
   min-width: 210px;
   box-shadow: var(--shadow-md), 0 4px 15px rgba(0, 163, 255, 0.08);
   border-radius: var(--radius-md);
@@ -381,8 +388,8 @@ onBeforeUnmount(() => {
 }
 
 .dropdown-item:hover {
-  background-color: rgba(0, 163, 255, 0.05);
-  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.08), transparent 80%);
+  background-color: rgba(98, 0, 255, 0.05);
+  background-image: linear-gradient(to right, rgba(153, 0, 255, 0.08), transparent 80%);
 }
 
 .dropdown-item.danger {

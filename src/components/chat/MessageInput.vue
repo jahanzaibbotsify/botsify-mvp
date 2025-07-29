@@ -1138,7 +1138,7 @@ const hideLoading = () => {
   justify-content: space-between;
   padding: var(--space-3);
   border-bottom: 1px solid var(--color-border);
-  background: linear-gradient(to right, rgba(0, 163, 255, 0.05), transparent);
+  background: var(--color-primary);
 }
 
 .dropdown-header h3 {

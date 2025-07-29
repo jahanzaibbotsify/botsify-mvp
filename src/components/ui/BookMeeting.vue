@@ -24,16 +24,16 @@ defineExpose({ openModal })
     title="BOOK A MEETING"
     max-width="500px"
   >
-      <p>What do you need help with? Please choose one of the following options</p>
-      <a class="btn" @click="() => openCalendar('https://calendly.com/samuel-nixon/agentic-ai-consultation-session')">
-        📞 Platform demo
-      </a>
-      <a class="btn" @click="() => openCalendar('', true)">
-        🛠️ Bug or feature help
-      </a>
-      <a class="btn" @click="() => openCalendar('https://calendly.com/samuel-nixon/agentic-ai-consultation-session')">
-        🤖 Agent discussion
-      </a>
+  <p>What do you need help with? Please choose one of the following options</p>
+    <a class="btn" @click="() => openCalendar('https://calendly.com/samuel-nixon/botsify-customer-success')">
+      📞 Platform demo
+    </a>
+    <a class="btn" @click="() => openCalendar('', true)">
+      🛠️ Bug or feature help
+    </a>
+    <a class="btn" @click="() => openCalendar('https://calendly.com/samuel-nixon/botsify-customer-success')">
+      🤖 Agent discussion
+    </a>
   </ModalLayout>
 </template>
 
