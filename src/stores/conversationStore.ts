@@ -9,7 +9,7 @@ import type {
   ConversationData 
 } from '@/types/conversation'
 import type { ExtendedChat, Message } from '@/types'
-import moment from 'moment'
+import moment from 'moment-timezone'
 import { currentTime } from '@/utils'
 
 export const useConversationStore = defineStore('conversation', () => {
@@ -268,35 +268,35 @@ export const useConversationStore = defineStore('conversation', () => {
       }
       
       // Duplicate check: Only add if not already present (by content and timestamp)
-      // const isDuplicate = messages.value.some(m => {
-      //   // Check if content matches
-      //   const contentMatches = m.content === content;
-        
-      //   // Check if timestamp is within 5 seconds using moment
-      //   const messageTime = moment(m.timestamp);
-      //   const currentTime = moment();
-      //   const timeDiff = Math.abs(currentTime.diff(messageTime));
-      //   const timeMatches = timeDiff < 5000; // 5 seconds
-        
-      //   // Check if sender matches
-      //   const senderMatches = m.sender === sender;
-        
-      //   return contentMatches && timeMatches && senderMatches;
-      // });
+      const isDuplicate = messages.value.some(m => {
+        // Check if content matches
+        const contentMatches = m.content === content;
       
-      // if (!isDuplicate) {
-      //   const newMessage: Message = {
-      //     id: Date.now().toString(),
-      //     content: content,
-      //     timestamp: currentTime(),
-      //     sender: sender,
-      //     status: 'sent'
-      //   }
-      //   messages.value.push(newMessage)
-      //   console.log('💬 Added message to current conversation:', newMessage)
-      // } else {
-      //   console.log('⚠️ Duplicate message ignored:', { content, sender, timestamp: new Date() })
-      // }
+        // Check if timestamp is within 5 seconds using UTC
+        const messageTime = moment.utc(m.timestamp); // parse as UTC
+        const currentTime = moment.utc(); // current UTC time
+        const timeDiff = Math.abs(currentTime.diff(messageTime));
+      
+        const timeMatches = timeDiff < 5000; // 5 seconds
+        const senderMatches = m.sender === sender;
+      
+        return contentMatches && timeMatches && senderMatches;
+      });
+      
+      
+      if (!isDuplicate) {
+        const newMessage: Message = {
+          id: Date.now().toString(),
+          content: content,
+          timestamp: currentTime(),
+          sender: sender,
+          status: 'sent'
+        }
+        messages.value.push(newMessage)
+        console.log('💬 Added message to current conversation:', newMessage)
+      } else {
+        console.log('⚠️ Duplicate message ignored:', { content, sender, timestamp: new Date() })
+      }
     }
   }
 
