@@ -170,7 +170,7 @@ function toggleStorySidebar() {
   overflow: hidden;
   transition: padding-right 0.3s ease;
   position: relative;
-  z-index: 1;
+  /* z-index: 1; */
 }
 
 .chat-view.with-sidebar {
