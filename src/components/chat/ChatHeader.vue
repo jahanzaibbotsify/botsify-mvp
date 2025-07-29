@@ -80,6 +80,7 @@ import { BOTSIFY_WEB_URL } from '@/utils/config';
 import { useChatStore } from '@/stores/chatStore';
 import { useWhitelabelStore } from '@/stores/whitelabelStore';
 import { useBotStore } from '@/stores/botStore';
+import { useRoleStore } from '@/stores/roleStore';
 import CalendlyModal from '@/components/ui/CalendlyModal.vue';
 
 interface Props {
@@ -105,6 +106,7 @@ const emit = defineEmits<{
 
 const isDeployingAI = ref(false);
 const whitelabelStore = useWhitelabelStore();
+const roleStore = useRoleStore();
 
 
 function toggleTheme() {
@@ -129,10 +131,10 @@ async function testAI() {
 }
 
 function deployAI() {
-  // if (!botStore.user?.subs || botStore.user.subs.status !== 'active') {
+  if (!roleStore.hasActiveSubscription) {
     bookMeetingRef.value?.openModal();
     return;
-  // }
+  }
 
   if (!props.hasPromptContent) {
     window.$toast.error('No prompt content available to deploy. Please generate some content first.');
