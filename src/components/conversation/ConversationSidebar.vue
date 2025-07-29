@@ -60,7 +60,7 @@ const platformOptions = [
   { value: 'all', label: 'All', icon: 'pi pi-globe' },
   { value: 'facebook', label: 'Facebook', icon: 'pi pi-facebook' },
   { value: 'whatsapp', label: 'WhatsApp', icon: 'pi pi-whatsapp' },
-  { value: 'web', label: 'Website', icon: 'pi pi-globe' },
+  { value: 'website', label: 'Website', icon: 'pi pi-globe' },
   { value: 'instagram', label: 'Instagram', icon: 'pi pi-instagram' },
   { value: 'telegram', label: 'Telegram', icon: 'pi pi-telegram' }
 ];
@@ -717,7 +717,12 @@ const getUnreadCount = (conversation: ExtendedChat) => {
 }
 
 .conversation-item.unread {
-  background-color: var(--color-bg-secondary);
+  background-color: rgba(0, 163, 255, 0.08);
+  border-left: 3px solid var(--color-primary);
+}
+
+.conversation-item.unread:hover {
+  background-color: rgba(0, 163, 255, 0.1);
 }
 
 .conversation-item.unread::before {
@@ -773,7 +778,7 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   min-width: 20px;
   height: 20px;
   border-radius: var(--radius-full);
-  background-color: var(--color-error);
+  background-color: var(--color-primary);
   color: white;
   font-size: 0.75rem;
   font-weight: 600;
@@ -781,6 +786,8 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   align-items: center;
   justify-content: center;
   padding: 0 var(--space-1);
+  box-shadow: 0 2px 4px rgba(0, 163, 255, 0.3);
+  border: 2px solid var(--color-bg-primary);
 }
 
 .avatar-platform-icon {
@@ -841,6 +848,22 @@ const getUnreadCount = (conversation: ExtendedChat) => {
 
 .conversation-item.active .conversation-preview {
   color: rgba(255, 255, 255, 0.8);
+}
+
+/* Unread conversation text styling */
+.conversation-item.unread .conversation-title {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.conversation-item.unread .conversation-preview {
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+.conversation-item.unread .conversation-time {
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
 /* Loading More Skeletons */

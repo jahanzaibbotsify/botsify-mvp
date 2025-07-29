@@ -1,16 +1,13 @@
+import moment from 'moment-timezone';
 
-export const formatTime = (date: Date) => {
-  const now = new Date()
-  const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-  
-  if (diffInHours < 1) {
-    return 'Just now'
-  } else if (diffInHours < 24) {
-    return `${Math.floor(diffInHours)}h ago`
-  } else {
-    return date.toLocaleDateString()
-  }
-}
+export const currentTime = () => {
+  return moment.utc().format('YYYY-MM-DD HH:mm:ss');
+};
+
+export const formatTime = (timestamp: string) => {
+  // Parse the timestamp in UTC and return relative time from now (also in UTC)
+  return moment.utc(timestamp).fromNow(); // e.g. "2 hours ago"
+};
 
 export const getPlatformClass = (platform: string = '') => {
     switch (platform.toLowerCase()) {

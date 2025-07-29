@@ -33,7 +33,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useConversationStore } from '@/stores/conversationStore'
-import { useApiKeyStore } from '@/stores/apiKeyStore'
+import { useBotStore } from '@/stores/botStore'
 
 const conversationStore = useConversationStore()
 const showDebug = ref(false)
@@ -42,7 +42,7 @@ const showDebug = ref(false)
 const isConnected = computed(() => conversationStore.isFirebaseConnected)
 const hasError = computed(() => !!conversationStore.firebaseError)
 const errorMessage = computed(() => conversationStore.firebaseError)
-const botApiKey = useApiKeyStore().apiKey
+const botApiKey = useBotStore().apiKey
 
 const statusText = computed(() => {
   if (hasError.value) return 'Error'

@@ -36,8 +36,6 @@ const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
 
 // Close dropdown when clicking outside
 const dropdownRef = ref<HTMLElement | null>(null);
-const navButtonRef = ref<HTMLElement | null>(null);
-
 
 const navigationButtons = computed(() => {
   const buttons = [
@@ -213,9 +211,7 @@ const handleClickOutside = (event: MouseEvent) => {
     
   // Check if click is outside dropdown
   const isOutsideDropdown = dropdownRef.value && 
-    !dropdownRef.value.contains(target) && 
-    navButtonRef.value && 
-    !navButtonRef.value.contains(target);
+    !dropdownRef.value.contains(target);
   
   if (isOutsideDropdown) {
     showDropdown.value = false;
@@ -246,7 +242,7 @@ onUnmounted(() => {
             />
             <img
               v-else
-              src="https://botsify.com/assets/img/logos/logo/logo-color-600w.webp"
+              src="/botsify-logo.png"
               alt="Botsify"
               class="logo-icon"
             />

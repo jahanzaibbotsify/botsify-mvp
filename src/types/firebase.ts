@@ -11,6 +11,14 @@ export interface FirebaseMessage {
     text?: string
     human_help?: boolean
     stop_bot?: boolean
+    attachment?: {
+      url: string
+      type: 'image' | 'video' | 'audio' | 'file'
+      payload?: {
+        name?: string
+        size?: number
+      }
+    }
   }
   timestamp?: number
 }

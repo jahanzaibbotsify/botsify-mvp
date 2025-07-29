@@ -1,8 +1,9 @@
 import { initializeApp } from 'firebase/app'
 import { getDatabase, ref, onChildAdded, onValue } from 'firebase/database'
 import { BOTSIFY_FIREBASE_CONFIG } from '@/utils/config'
-import { useApiKeyStore } from '@/stores/apiKeyStore'
+import { useBotStore } from '@/stores/botStore'
 import type { Message } from '@/types'
+import { currentTime } from '@/utils'
 
 // Initialize Firebase
 const app = initializeApp(BOTSIFY_FIREBASE_CONFIG)
@@ -32,7 +33,7 @@ export class FirebaseService {
     onMessageReceived: (fbId: string, data: any) => void,
     onError?: (error: Error) => void
   ) {
-    const apiKeyStore = useApiKeyStore()
+    const apiKeyStore = useBotStore()
     const botApiKey = apiKeyStore.apiKey
     
     console.log('🔥 Initializing Firebase live chat listener...')
@@ -106,7 +107,7 @@ export class FirebaseService {
     onMessageReceived: (message: Message) => void,
     onError?: (error: Error) => void
   ) {
-    const apiKeyStore = useApiKeyStore()
+    const apiKeyStore = useBotStore()
     const botApiKey = apiKeyStore.apiKey
     
     if (!botApiKey) {
@@ -131,7 +132,7 @@ export class FirebaseService {
             id: Date.now().toString(),
             content: data.message.text || '',
             sender: 'user',
-            timestamp: new Date(),
+            timestamp: currentTime(),
             status: 'sent'
           }
           console.log('💬 Created message object:', message)
@@ -190,7 +191,7 @@ export class FirebaseService {
    * Get connection status
    */
   getConnectionStatus() {
-    const apiKeyStore = useApiKeyStore()
+    const apiKeyStore = useBotStore()
     return {
       hasListeners: this.listeners.size > 0,
       listenerKeys: Array.from(this.listeners.keys()),

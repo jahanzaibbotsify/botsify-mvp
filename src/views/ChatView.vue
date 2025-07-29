@@ -37,7 +37,7 @@ const chat = computed(() => {
   return foundChat;
 });
 
-const latestPromptContent = computed(() => (chat.value?.messages && chat.value.messages.length > 1) ? chat.value?.story?.content || '' : '');
+const latestPromptContent = computed(() => chat.value?.story?.content || '');
 const hasPromptContent = computed(() => latestPromptContent.value.trim().length > 0);
 
 const scrollToBottom = async () => {
@@ -115,6 +115,7 @@ function toggleStorySidebar() {
     <!-- API Error Notification -->
     <ChatHeader 
       v-if="chat"
+      :chatId="chat.id"
       :title="chat.title"
       :has-prompt-content="hasPromptContent"
       :latest-prompt-content="latestPromptContent"
