@@ -90,7 +90,7 @@ onMounted(() => {
     class="message-container" 
     :class="{ 'user-message': props.message.sender === 'user', '': props.message.sender === 'assistant' }"
   >
-    <div class="message">
+    <div class="message" :class="props.message.sender === 'user' ? 'user' : ''">
       <div v-if="props.message.content" class="content" :class="props.message.sender == 'assistant' ? 'assistent-message' : ''" v-html="parsedContent"></div>
       <div v-else class="empty-content">
         <!-- <em>Empty message</em> -->
@@ -142,12 +142,15 @@ onMounted(() => {
 
 .message {
   border-radius: 16px;
-  padding: var(--space-3) var(--space-3);
   position: relative;
   word-break: break-word;
   overflow-wrap: break-word;
   transition: all var(--transition-normal);
   border: 1px solid transparent;
+}
+
+.message.user {
+    padding: var(--space-3) var(--space-3);
 }
 
 .user-message .message {
