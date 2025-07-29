@@ -216,7 +216,7 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  /* border-radius: var(--radius-lg) var(--radius-lg) 0 0; */
   box-shadow: 0 4px 15px rgba(0, 163, 255, 0.08);
   border: 1px solid rgba(0, 163, 255, 0.1);
 }
