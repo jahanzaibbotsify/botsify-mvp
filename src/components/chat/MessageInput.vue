@@ -592,7 +592,7 @@ const hideLoading = () => {
     <!-- File upload area -->
     <div v-if="showFileUpload" class="file-upload-container">
       <FileUpload
-        :accept="'image/*,video/*,audio/*,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation'"
+        :accept="'image/*,video/*,audio/*,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/msword'"
         :multiple="true"
         :maxSizeMB="20"
         :enablePreview="true"
@@ -615,7 +615,14 @@ const hideLoading = () => {
           <span class="attachment-name">{{ file.name }}</span>
           <span class="attachment-size">{{ (file.size / 1024).toFixed(1) }}KB</span>
           <span v-if="file.isUploaded" class="attachment-status uploaded">✅ Ready for AI</span>
-          <span v-else-if="file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/')" class="attachment-status pending"></span>
+          <span v-else-if="
+            file.type.startsWith('image/') 
+            || file.type.startsWith('video/') 
+            || file.type.startsWith('audio/')
+            || file.type.startsWith('application/')
+            || file.type.startsWith('text/')" 
+            class="attachment-status pending">
+          </span>
           <span v-else class="attachment-status unsupported">⚠️ Not supported</span>
         </div>
         <button class="remove-attachment" @click.stop="removeAttachment(file.id)">
@@ -1089,6 +1096,7 @@ const hideLoading = () => {
 
 .icon-button:disabled{
   opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .mcp-icon-button {

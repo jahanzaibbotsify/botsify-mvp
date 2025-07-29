@@ -756,7 +756,7 @@ defineExpose({
 
 .btn-revert:hover {
   background-color: transparent;
-  color: var(--color-primary);
+  color: #6D3ADB;
 }
 
 /* Template Manager */
