@@ -19,6 +19,7 @@ const messageText = ref(props.message || '');
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const showFileUpload = ref(false);
 const attachments = ref<Attachment[]>([]);
+const isUploading = ref(false);
 
 const resizeTextarea = () => {
   if (!textareaRef.value) return;
@@ -34,6 +35,7 @@ const sendMessage = async () => {
   
   // If there are attachments (images/videos), upload them first
   if (attachments.value.length > 0) {
+    isUploading.value = true;
     try {
       console.log('Uploading media files for conversation message...');
       
@@ -58,15 +60,9 @@ const sendMessage = async () => {
           // Extract file URLs from upload response
           fileUrls = uploadResult.data.uploadedFiles.map((file: any) => file.url);
           
-          // Append file URLs to the message text
-          const fileUrlsText = uploadResult.data.uploadedFiles.map((file: any) => {
-            const fileType = file.fileType.startsWith('image/') ? 'Image' : 
-                            file.fileType.startsWith('video/') ? 'Video' : 'Document';
-            return `${fileType}: ${file.url}`;
-          }).join('\n');
-          
-          finalMessageText = finalMessageText + (finalMessageText ? '\n\n' : '') + 
-            'Attached files:\n' + fileUrlsText;
+          if(finalMessageText === ''){
+            finalMessageText = 'Attachment';
+          }
           
           console.log('Files uploaded successfully, URLs:', fileUrls);
         } else {
@@ -79,6 +75,8 @@ const sendMessage = async () => {
       console.error('Error uploading files:', error);
       finalMessageText = finalMessageText + (finalMessageText ? '\n\n' : '') + 
         '❌ File upload error: ' + error.message;
+    } finally {
+      isUploading.value = false;
     }
   }
   
@@ -139,7 +137,7 @@ const removeAttachment = (id: string) => {
         :enablePreview="true"
         :emitRawFile="false"
         @upload="handleFileUpload"
-        text="For AI prompt analysis • Max 20MB images, 50MB videos"
+        text="Upload file"
       />
     </div>
 
@@ -157,7 +155,7 @@ const removeAttachment = (id: string) => {
           <span class="attachment-name">{{ file.name }}</span>
           <span class="attachment-size">{{ (file.size / 1024).toFixed(1) }}KB</span>
           <span v-if="file.isUploaded" class="attachment-status uploaded">✅ Ready for AI</span>
-          <span v-else-if="file.type.startsWith('image/') || file.type.startsWith('video/')" class="attachment-status pending">📤 Will upload</span>
+          <span v-else-if="file?.type?.startsWith('image/') || file?.type?.startsWith('video/')" class="attachment-status pending">📤 Will upload</span>
           <span v-else class="attachment-status unsupported">⚠️ Not supported</span>
         </div>
         <button class="remove-attachment" @click.stop="removeAttachment(file.id)">
@@ -175,6 +173,8 @@ const removeAttachment = (id: string) => {
         placeholder="Type a message..."
         rows="1"
         class="message-textarea"
+        :disabled="isUploading"
+        :class="{ 'disabled': isUploading }"
       ></textarea>
       
       <div class="input-actions">
@@ -190,9 +190,9 @@ const removeAttachment = (id: string) => {
         <button 
           class="icon-button send-button" 
           @click="sendMessage"
-          :disabled="(!messageText.trim() && attachments.length === 0) || loading"
+          :disabled="(!messageText.trim() && attachments.length === 0) || loading || isUploading"
         >
-          <svg v-if="!loading" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg v-if="!loading && !isUploading" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="22" y1="2" x2="11" y2="13"></line>
             <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
           </svg>
@@ -266,6 +266,12 @@ const removeAttachment = (id: string) => {
 
 .message-textarea:focus {
   outline: none;
+}
+
+.message-textarea.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--color-bg-tertiary);
 }
 
 .input-actions {
@@ -641,9 +647,17 @@ const removeAttachment = (id: string) => {
   transform: none;
 }
 
+.send-button:disabled .loading-spinner {
+  color: #9ca3af;
+}
+
 [data-theme="dark"] .send-button:disabled {
   color: var(--color-text-tertiary);
   background-color: var(--color-bg-tertiary);
+}
+
+[data-theme="dark"] .send-button:disabled .loading-spinner {
+  color: var(--color-text-tertiary);
 }
 
 /* Modal Styles */

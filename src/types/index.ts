@@ -3,13 +3,17 @@ export interface User {
   name: string;
   avatar?: string;
   email: string;
-  plan: 'free' | 'pro' | 'enterprise';
+  subs?: {
+    id: string;
+    status: string;
+    stripe_plan: string;
+  }
 }
 
 export interface Message {
   id: string;
   content: string;
-  timestamp: Date;
+  timestamp: string;
   sender: 'user' | 'assistant';
   status?: 'sending' | 'sent' | 'error';
   attachments?: Attachment[];
@@ -17,6 +21,8 @@ export interface Message {
 
 export interface PromptVersion {
   id: string;
+  version_id: number;
+  name: string;
   content: string;
   updatedAt: Date;
   version: number;
@@ -43,7 +49,7 @@ export interface Chat {
   id: string;
   title: string;
   lastMessage?: string;
-  timestamp: Date;
+  timestamp: string;
   messages: Message[];
   unread?: boolean;
   story?: Story;

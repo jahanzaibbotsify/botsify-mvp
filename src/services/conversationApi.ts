@@ -1,5 +1,5 @@
 import { axiosInstance } from '@/utils/axiosInstance'
-import { useApiKeyStore } from '@/stores/apiKeyStore'
+import { useBotStore } from '@/stores/botStore'
 import type { 
   GetConversationsParams,
   GetUserConversationParams,
@@ -13,7 +13,7 @@ import type {
 class ConversationApiService {
   async getConversations(queryParams?: Record<string, string>): Promise<ApiResponse<ConversationsResponse>> {
     try {
-      const API_KEY = useApiKeyStore().apiKey
+      const API_KEY = useBotStore().apiKey
       const payload: GetConversationsParams = { apikey: API_KEY }
       
       // Merge query parameters with the base payload
@@ -35,7 +35,7 @@ class ConversationApiService {
 
   async getUserConversation(messengerUserId: string, markAsRead: boolean = false): Promise<ApiResponse<UserConversationResponse>> {
     try {
-      const API_KEY = useApiKeyStore().apiKey
+      const API_KEY = useBotStore().apiKey
       const payload: GetUserConversationParams = { 
         apikey: API_KEY, 
         fbId: messengerUserId,
@@ -67,12 +67,12 @@ class ConversationApiService {
 
   async sendMessage(
     to: string,
-    message: string | { attachment: { type: string; payload: { url: string } } },
-    type: 'text' | 'image' | 'whatsapp' = 'text',
+    message: string,
+    type: 'text' | 'link' = 'text',
     format?: 'json'
   ): Promise<ApiResponse<SendMessageResponse>> {
     try {
-      const API_KEY = useApiKeyStore().apiKey
+      const API_KEY = useBotStore().apiKey
       const payload: SendMessagePayload = {
         apikey: API_KEY,
         to,
@@ -96,33 +96,10 @@ class ConversationApiService {
     }
   }
 
-  // Helper method for sending text messages
-  async sendTextMessage(to: string, text: string): Promise<ApiResponse<SendMessageResponse>> {
-    return this.sendMessage(to, text, 'text')
-  }
-
-  // Helper method for sending image messages
-  async sendImageMessage(to: string, imageUrl: string): Promise<ApiResponse<SendMessageResponse>> {
-    const message = {
-      attachment: {
-        type: 'image',
-        payload: {
-          url: imageUrl
-        }
-      }
-    }
-    return this.sendMessage(to, message, 'image', 'json')
-  }
-
-  // Helper method for sending WhatsApp messages
-  async sendWhatsAppMessage(to: string, text: string): Promise<ApiResponse<SendMessageResponse>> {
-    return this.sendMessage(to, text, 'whatsapp')
-  }
-
   // Export chat conversation
   async exportChat(fbId: string, extension: 'csv' | 'txt'): Promise<ApiResponse<{ file: string }>> {
     try {
-      const API_KEY = useApiKeyStore().apiKey
+      const API_KEY = useBotStore().apiKey
       const response = await axiosInstance.get(`v1/live-chat/export-chat/${fbId}/${extension}`, {
         params: { apikey: API_KEY },
         responseType: 'blob'
@@ -155,7 +132,7 @@ class ConversationApiService {
   // Delete conversation
   async deleteConversation(fbId: string): Promise<ApiResponse<{ message: string }>> {
     try {
-      const API_KEY = useApiKeyStore().apiKey
+      const API_KEY = useBotStore().apiKey
       const response = await axiosInstance.post('v1/live-chat/delete-conversation', {
         apikey: API_KEY,
         fbId: fbId
@@ -175,7 +152,7 @@ class ConversationApiService {
   // Change bot activation status
   async changeBotActivation(userId: string, status: number): Promise<ApiResponse<{ message: string }>> {
     try {
-      const API_KEY = useApiKeyStore().apiKey
+      const API_KEY = useBotStore().apiKey
       const response = await axiosInstance.post('v1/live-chat/change-status', {
         apikey: API_KEY,
         status: status,
@@ -196,7 +173,7 @@ class ConversationApiService {
   // Save push subscription
   async saveSubscription(subscription: PushSubscription, userId: string): Promise<ApiResponse<{ message: string }>> {
     try {
-      const API_KEY = useApiKeyStore().apiKey
+      const API_KEY = useBotStore().apiKey
       const response = await axiosInstance.post(`v1/save-subscription/${userId}`, {
         apikey: API_KEY,
         subscription: subscription.toJSON()
@@ -216,7 +193,7 @@ class ConversationApiService {
   // Delete push subscription
   async deleteSubscription(subscription: PushSubscription, userId: string): Promise<ApiResponse<{ message: string }>> {
     try {
-      const API_KEY = useApiKeyStore().apiKey
+      const API_KEY = useBotStore().apiKey
       const response = await axiosInstance.post(`v1/delete-subscription/${userId}`, {
         apikey: API_KEY,
         subscription: subscription.toJSON()

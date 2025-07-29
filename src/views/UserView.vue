@@ -62,13 +62,19 @@ watch(() => userStore.selectedAction, (newAction) => {
       const actionText = getActionText(newAction)
       const userCount = userStore.selectedUsersCount
       const userText = userCount === 1 ? 'user' : 'users'
+      const actionCap = actionText.charAt(0).toUpperCase() + actionText.slice(1);
       window.$confirm({
         text: `Are you sure you want to ${actionText} ${userCount} ${userText}?`,
+        confirmButtonText: `Yes, ${actionCap} it!`
       }, async() => {
         const selectedUserIds = userStore.users
           .filter(user => user.selected)
           .map(user => user.id)
         await userStore.executeUserAction(newAction, selectedUserIds)
+        window.$toast({
+          message: '${actionCap} successfully.',
+          type: 'success',
+        });
       });
       userStore.selectedAction = ''
     } else {

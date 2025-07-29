@@ -2,11 +2,11 @@
 import { onMounted, ref, computed } from 'vue';
 // import { useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
-import { useApiKeyStore } from "@/stores/apiKeyStore";
+import { useBotStore } from "@/stores/botStore";
 import BotsifyLoader from './components/ui/BotsifyLoader.vue';
 
 // const router = useRouter();
-const isAuthenticated = computed(() => useApiKeyStore().apiKeyConfirmed);
+const isAuthenticated = computed(() => useBotStore().apiKeyConfirmed);
 const chatStore = useChatStore();
 
 const showStorageWarning = ref(false);

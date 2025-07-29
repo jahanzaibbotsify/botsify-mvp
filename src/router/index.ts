@@ -12,8 +12,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: '',
         name: 'default',
-        redirect: (to) => {
-          console.log(to);
+        redirect: () => {
           // Default route based on user role
           const roleStore = useRoleStore();
           if (roleStore.isLiveChatAgent) {
