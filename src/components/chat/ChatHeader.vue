@@ -77,6 +77,7 @@ import { useThemeStore } from '@/stores/themeStore';
 import { botsifyApi } from '@/services/botsifyApi';
 import { BOTSIFY_WEB_URL } from '@/utils/config';
 import { useChatStore } from '@/stores/chatStore';
+import { useWhitelabelStore } from '@/stores/whitelabelStore';
 import { useBotStore } from '@/stores/botStore';
 
 interface Props {
@@ -100,6 +101,7 @@ const emit = defineEmits<{
 }>();
 
 const isDeployingAI = ref(false);
+const whitelabelStore = useWhitelabelStore();
 
 
 function toggleTheme() {
@@ -116,7 +118,10 @@ async function testAI() {
     return;
   }
   const apiKey = botStore.apiKey;
-  const url = `${BOTSIFY_WEB_URL}/web-bot/agent/${apiKey}?testagent=true`;
+  let url = `https://${whitelabelStore.maskUrl}/web-bot/agent/${apiKey}?testagent=true`;
+  if (whitelabelStore.isWhitelabelClient && whitelabelStore.maskUrl) {
+    url = `${BOTSIFY_WEB_URL}/web-bot/agent/${botStore.apiKey}?testagent=true`;
+  }
   window.open(url, '_blank');
 }
 

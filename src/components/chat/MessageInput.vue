@@ -1000,7 +1000,7 @@ const hideLoading = () => {
   background-color: var(--color-bg-primary);
   position: sticky;
   bottom: 0;
-  z-index: var(--z-sticky);
+  /* z-index: var(--z-sticky); */
 }
 
 .input-area {

@@ -3,7 +3,11 @@ export interface User {
   name: string;
   avatar?: string;
   email: string;
-  plan: 'free' | 'pro' | 'enterprise';
+  subs?: {
+    id: string;
+    status: string;
+    stripe_plan: string;
+  }
 }
 
 export interface Message {
