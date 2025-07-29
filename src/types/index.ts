@@ -45,7 +45,7 @@ export interface Chat {
   id: string;
   title: string;
   lastMessage?: string;
-  timestamp: Date;
+  timestamp: any;
   messages: Message[];
   unread?: boolean;
   story?: Story;

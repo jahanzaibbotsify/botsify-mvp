@@ -203,8 +203,8 @@ onMounted(() => {
         <!-- Message Groups -->
         <div v-else class="messages-list">
           <div 
-            v-for="group in groupedMessages" 
-            :key="group.date.getTime()"
+            v-for="(group, index) in groupedMessages" 
+            :key="index"
             class="message-group"
           >
             <!-- Date Header -->

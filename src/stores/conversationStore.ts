@@ -390,7 +390,7 @@ export const useConversationStore = defineStore('conversation', () => {
       if (isLoadMore) {
         queryParams.offset = conversations.value.length.toString()
       }
-      
+      queryParams.sort = 'desc'
       const response = await conversationApi.getConversations(queryParams)
       if (response.success && response.data) {
         const conversationsList: ExtendedChat[] = []
