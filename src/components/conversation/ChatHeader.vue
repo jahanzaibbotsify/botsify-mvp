@@ -88,9 +88,9 @@ const handleStatusChange = async (value: number | (number | undefined)[] | undef
 
 const translateModalRef = ref<InstanceType<typeof TranslateModal> | null>(null)
 
-const openTranslateModal = () => {
-  translateModalRef.value?.openModal()
-}
+// const openTranslateModal = () => {
+//   translateModalRef.value?.openModal()
+// }
 
 const emit = defineEmits(['translate-language'])
 
