@@ -73,12 +73,11 @@ const showCenteredInput = computed(() => {
 });
 
 const suggestions = [
-  'Create an Agent for hotel management',
-  'Fetch data from my API',
-  'Collect user email and name at start',
-  'Add Carousel for products',
-  'Add welcome message with Quick Replies',
-  'Update agent logo'
+  'Create an AI agent that helps manage a resort like room availability, booking info, amenities, and contact details',
+  'Create an agent that searches uploaded files and answers user questions from it',
+  'Add Lead Collection Form that asks for user name, email, and message, then sends a summary email to sales@company.com',
+  'Create an agent that fetches data from a REST API and returns a formatted result to the user',
+  'Create an agent that can search my website for answers',
 ];
 
 function sendSuggestion(suggestion: string) {
