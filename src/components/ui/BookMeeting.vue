@@ -2,11 +2,6 @@
 import { ref } from 'vue'
 import ModalLayout from '@/components/ui/ModalLayout.vue'
 
-// Accept a boolean prop named `demoOnly`
-const props = defineProps<{
-  demoOnly?: boolean
-}>()
-
 const modalRef = ref<InstanceType<typeof ModalLayout> | null>(null)
 
 const openModal = () => {
@@ -29,14 +24,6 @@ defineExpose({ openModal })
     title="BOOK A MEETING"
     max-width="500px"
   >
-    <template v-if="props.demoOnly">
-      <p>We’d love to show you around! Click below to book your personalized demo.</p>
-      <a class="btn" @click="() => openCalendar('https://calendly.com/samuel-nixon/agentic-ai-consultation-session')">
-        📞 Book a demo
-      </a>
-    </template>
-
-    <template v-else>
       <p>What do you need help with? Please choose one of the following options</p>
       <a class="btn" @click="() => openCalendar('https://calendly.com/samuel-nixon/agentic-ai-consultation-session')">
         📞 Platform demo
@@ -47,7 +34,6 @@ defineExpose({ openModal })
       <a class="btn" @click="() => openCalendar('https://calendly.com/samuel-nixon/agentic-ai-consultation-session')">
         🤖 Agent discussion
       </a>
-    </template>
   </ModalLayout>
 </template>
 

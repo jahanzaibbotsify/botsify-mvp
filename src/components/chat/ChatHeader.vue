@@ -68,7 +68,6 @@
         </div>
       </div>
     </div>
-    <BookMeeting ref="bookMeetingRef" :demo-only="true"></BookMeeting>
   </div>
 </template>
 
@@ -80,7 +79,6 @@ import { BOTSIFY_WEB_URL } from '@/utils/config';
 import { useChatStore } from '@/stores/chatStore';
 import { useWhitelabelStore } from '@/stores/whitelabelStore';
 import { useBotStore } from '@/stores/botStore';
-import BookMeeting from '@/components/ui/BookMeeting.vue';
 
 interface Props {
   chatId: string,
@@ -97,7 +95,6 @@ const showDropdown = ref(false);
 const showBotNameDropdown = ref(false);
 const dropdownRef = ref<HTMLDivElement | null>(null);
 const lastOpenedDropdownId = ref<string | undefined>('');
-const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
 
 const emit = defineEmits<{
   toggleStorySidebar: [];
@@ -129,11 +126,6 @@ async function testAI() {
 }
 
 function deployAI() {
-  if (!botStore.user?.subs || botStore.user.subs.status !== 'active') {
-    bookMeetingRef.value?.openModal();
-    return;
-  }
-
   if (!props.hasPromptContent) {
     window.$toast.error('No prompt content available to deploy. Please generate some content first.');
     return;
