@@ -1,11 +1,12 @@
-import moment from 'moment-timezone';
+import moment from 'moment';
 
-export const formatTime = (utcDate: Date | string) => {
-  // Assume you have a datetime in Berlin timezone
-  const utcDiff = moment.parseZone(utcDate).tz("Europe/Berlin");
-  return utcDiff.fromNow();
+export const formatTime = (timestamp: string) => {
+  var stillUtc = moment.utc(timestamp).toDate();
+  var local = moment(stillUtc)
+    .local()
+    .format("YYYY-MM-DD HH:mm:ss");
+  return moment(local).fromNow();
 }
-
 
 export const getPlatformClass = (platform: string = '') => {
     switch (platform.toLowerCase()) {

@@ -9,6 +9,7 @@ import type {
   ConversationData 
 } from '@/types/conversation'
 import type { ExtendedChat, Message } from '@/types'
+import moment from 'moment'
 
 export const useConversationStore = defineStore('conversation', () => {
   // State
@@ -196,7 +197,7 @@ export const useConversationStore = defineStore('conversation', () => {
         const newConversation: ExtendedChat = {
           id: fbId,
           title: data.user.name,
-          timestamp: new Date(),
+          timestamp: moment().format('YYYY-MM-DD HH:mm:ss'),
           lastMessage: data.message?.text || '',
           unread: true,
           messages: [],
@@ -214,7 +215,7 @@ export const useConversationStore = defineStore('conversation', () => {
     } else {
       // Update existing conversation
       conversation.lastMessage = data.message?.text || 'Media message'
-      conversation.timestamp = new Date()
+      conversation.timestamp = moment().format('YYYY-MM-DD HH:mm:ss')
       
       // Mark as unread if not currently selected
       if (selectedConversation.value?.fbid !== fbId) {
@@ -270,9 +271,11 @@ export const useConversationStore = defineStore('conversation', () => {
         // Check if content matches
         const contentMatches = m.content === content;
         
-        // Check if timestamp is within 5 seconds (more generous than 2 seconds)
-        const timeDiff = Math.abs(m.timestamp.getTime() - Date.now());
-        const timeMatches = timeDiff < 5000;
+        // Check if timestamp is within 5 seconds using moment
+        const messageTime = moment(m.timestamp);
+        const currentTime = moment();
+        const timeDiff = Math.abs(currentTime.diff(messageTime));
+        const timeMatches = timeDiff < 5000; // 5 seconds
         
         // Check if sender matches
         const senderMatches = m.sender === sender;
@@ -284,7 +287,7 @@ export const useConversationStore = defineStore('conversation', () => {
         const newMessage: Message = {
           id: Date.now().toString(),
           content: content,
-          timestamp: new Date(),
+          timestamp: moment().format('YYYY-MM-DD HH:mm:ss'),
           sender: sender,
           status: 'sent'
         }
@@ -488,7 +491,7 @@ export const useConversationStore = defineStore('conversation', () => {
           id: tempMessageId,
           content: content,
           sender: 'assistant',
-          timestamp: new Date(),
+          timestamp: moment().format('YYYY-MM-DD HH:mm:ss'),
           status: 'sending',
           attachments: []
         }
@@ -515,7 +518,7 @@ export const useConversationStore = defineStore('conversation', () => {
         // Update the last message in the selected conversation
         if (selectedConversation.value) {
           selectedConversation.value.lastMessage = content
-          selectedConversation.value.timestamp = new Date()
+          selectedConversation.value.timestamp = moment().format('YYYY-MM-DD HH:mm:ss')
         }
         
         console.log('✅ Message sent successfully')
