@@ -126,8 +126,7 @@ const renderAttachment = (attachment: any): string => {
       </div>`;
     default:
       return `<div class="attachment-unknown">
-        <div class="attachment-icon">📎</div>
-        <span>Attachment type: ${type}</span>
+        <span>Download &nbsp;<a href="${payload.url}" target="_blank"><i class="pi pi-download"></i></a></span>
       </div>`;
   }
 };
@@ -481,6 +480,19 @@ onMounted(() => {
 
 .user-avatar .avatar-icon {
   color: white;
+}
+
+.attachment-unknown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-transform: capitalize;
 }
 
 .message-bubble {
