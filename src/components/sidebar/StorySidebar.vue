@@ -118,7 +118,9 @@ function saveEdit() {
 }
 
 function revertToVersion(versionId: string) {
-  chatStore.revertToPromptVersion(props.chatId, versionId);
+  window.$confirm({}, () => {
+    chatStore.revertToPromptVersion(props.chatId, versionId);
+  });
   showVersionHistory.value = false;
 
   // Force save to ensure persistence
@@ -294,11 +296,16 @@ defineExpose({
             <div class="version-actions">
               <button v-if="!version.isActive" @click="revertToVersion(version.id)" class="btn-revert"
                 title="Revert to this version">
-                Revert
+                <i class="pi pi-undo"></i>
               </button>
               <button v-if="!version.isActive && sortedVersions.length > 1" @click="deleteVersion(version.id)"
                 class="btn-delete" title="Delete this version">
-                Delete
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+              </svg>
               </button>
             </div>
           </div>
@@ -711,7 +718,7 @@ defineExpose({
   color: white;
 }
 
-.btn-revert:hover,
+
 .btn-load:hover {
   background-color: var(--color-primary-hover);
 }
@@ -733,6 +740,11 @@ defineExpose({
 .btn-delete:hover {
   background-color: var(--color-error-hover);
   color: var(--color-text-danger);
+}
+
+.btn-revert:hover {
+  background-color: transparent;
+  color: var(--color-primary);
 }
 
 /* Template Manager */
