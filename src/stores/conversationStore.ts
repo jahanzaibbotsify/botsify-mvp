@@ -411,7 +411,7 @@ export const useConversationStore = defineStore('conversation', () => {
       
       // Read status filter
       if (readFilter.value !== 'all') {
-        queryParams.unread = readFilter.value === 'read' ? 'false' : 'true'
+        queryParams.read_status = readFilter.value
       }
       
       // Platform filter
