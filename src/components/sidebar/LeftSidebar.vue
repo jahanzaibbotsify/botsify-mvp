@@ -61,7 +61,7 @@ const navLinks = [
   {
     name: 'Legacy Platform',
     url: `${BOTSIFY_WEB_URL}/bot`,
-    icon:  'pi pi-check-circle'
+    icon:  'pi pi-history'
   },
   {
     name: 'Tutorials',
