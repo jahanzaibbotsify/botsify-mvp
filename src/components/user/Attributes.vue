@@ -387,7 +387,7 @@ watch(() => props.attributes, (newAttributes) => {
 .table-header {
   display: grid;
   grid-template-columns: 1fr 1fr 120px;
-  background: linear-gradient(to right, var(--color-primary), var(--color-primary-hover));
+  background-color: var(--color-primary);
   color: white;
 }
 

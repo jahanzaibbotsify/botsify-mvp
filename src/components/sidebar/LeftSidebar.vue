@@ -95,7 +95,7 @@ const navLinks = computed(() => {
         icon: 'pi pi-play-circle'
       },
       {
-        name: 'Developer Hub',
+        name: 'API Documentation',
         url: 'https://documenter.getpostman.com/view/13814537/TVmTdF7W#d1e2a194-6d34-4d64-8dff-9628a2dc1077',
         icon: 'pi pi-code'
       },
@@ -611,7 +611,8 @@ onUnmounted(() => {
 }
 
 .nav-item:hover {
-  background-color: var(--color-bg-hover);
+  background-color: rgba(98, 0, 255, 0.05);
+  background-image: linear-gradient(to right, rgba(153, 0, 255, 0.08), transparent 80%);
 }
 
 .nav-item.active {

@@ -495,7 +495,7 @@ onMounted(() => {
 }
 
 .user-message .message-bubble {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  background-color: var(--color-primary);
   color: white;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
 }
