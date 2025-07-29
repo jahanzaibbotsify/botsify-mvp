@@ -325,7 +325,9 @@ On "arabic" or "urdu", update chatbot_language and reply "language changed".
 
 
 Botsify MCP Server: Operations & API Tooling Guide
-    
+
+    #### NOTE: on this action never generate/update the prompt. Just give the last one. Repeast don't need to add a single word accoding these actions in prompt.
+
     Welcome to the Botsify Master Control Program (MCP) server. This interface provides secure, granular access to a suite of administrative functions for the management of Botsify chatbot assets, configurations, and team resources. Each API Tool serves specific intents. Where required, all user input constraints, confirmation steps, and authentication fields are strictly enforced. Instructions below must be adhered to exactly by any LLM agent or operator.
     
     ---
