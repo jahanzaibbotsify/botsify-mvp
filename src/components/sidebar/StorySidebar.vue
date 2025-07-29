@@ -9,6 +9,10 @@ const props = defineProps<{
   chatId: string;
 }>();
 
+const emit = defineEmits<{
+  toggleStorySidebar: [];
+}>();
+
 const chatStore = useChatStore();
 const isCollapsed = ref(false);
 const isEditing = ref(false);
@@ -187,6 +191,10 @@ const scrollToBottom = async () => {
   }
 };
 
+function handleAIPrompt() {
+  emit('toggleStorySidebar');
+}
+
 // Expose the toggleSidebar function to parent components
 defineExpose({
   toggleSidebar
@@ -235,6 +243,10 @@ defineExpose({
                 <rect x="7" y="7" width="10" height="3"></rect>
                 <rect x="7" y="14" width="10" height="3"></rect>
               </svg>
+            </button>
+            <button @click="handleAIPrompt" class="icon-btn template-btn"
+              title="Manage templates">
+              <i style="" class="pi pi-chevron-right"></i>
             </button>
           </div>
         </div>

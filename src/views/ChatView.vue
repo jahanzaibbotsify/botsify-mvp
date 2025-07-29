@@ -139,7 +139,12 @@ function toggleStorySidebar() {
       <MessageInput v-if="!showCenteredInput" :chatId="chatId" />
     
      <!-- Story Sidebar - Only show when enabled -->
-     <StorySidebar v-if="showStorySidebar" ref="storySidebar" :chatId="chatId" />
+     <StorySidebar 
+      v-if="showStorySidebar" 
+      ref="storySidebar" 
+      :chatId="chatId"
+      @toggle-story-sidebar="toggleStorySidebar" 
+    />
 
     <!-- System Message Modal -->
     <div v-if="showSystemMessageModal" class="modal-overlay" @click.self="toggleSystemMessageModal">
