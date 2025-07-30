@@ -226,11 +226,10 @@ async function deploying(content: string){
 function handleReset(type: string) {
   let confirmButtonText = 'Yes';
   if (type === 'reset') {
-    confirmButtonText += ' clear it!';
+    confirmButtonText += ' Clear it!';
   }
   window.$confirm({
-    confirmButtonText: confirmButtonText,
-    text: "Clearing the conversation is irreversible!"
+    confirmButtonText: confirmButtonText
   }, async() => {
     chatStore.clearChatMessages()
   });

@@ -49,6 +49,9 @@ const swalOption = {
   cancelButtonColor: "#e7515a",
   confirmButtonText: "Yes, Delete it!",
   cancelButtonText: "No, Keep it",
+  // customClass: {
+  //   cancelButton: 'custom-cancel-btn',
+  // },
   animation: false,
 };
 

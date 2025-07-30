@@ -12,6 +12,7 @@
   --color-text-danger: #e7515a;
   --color-heading: #384348;
   
+  --color-error-hover: #d04951;
   --color-message-text: #202123;
   
   --color-border: #E9ECEF;
@@ -199,7 +200,7 @@ button {
 }
 
 button:hover {
-  border-color: var(--color-primary);
+  /* border-color: #b4b4b4; */
   background-color: var(--color-bg-hover);
 }
 
@@ -393,9 +394,14 @@ code {
 }
 
 .vue-toast.error {
-  background-color: #e53e3e !important; /* deep red */
+  background-color: var(--color-error) !important; /* deep red */
   color: #fff;
 }
+
+/* .swal2-popup .custom-cancel-btn:hover {
+  background-color: var(--color-error) !important;
+  opacity: 0.95;
+} */
 
 /* Responsive font sizes */
 @media (max-width: 767px) {
