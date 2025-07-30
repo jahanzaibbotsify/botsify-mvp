@@ -637,9 +637,8 @@ const hideLoading = () => {
       <span class="loading-spinner "></span>
     </div>
     <!-- input area -->
-    <div class="input-area" :class="chatStore.doInputDisable ?'disabled': ''" >
+    <div class="input-area">
       <textarea
-        :disabled="chatStore.doInputDisable"
         ref="textareaRef"
         v-model="messageText"
         @input="resizeTextarea"
@@ -655,19 +654,19 @@ const hideLoading = () => {
             class="icon-button attachment-button" 
             @click.stop="toggleFileUpload" 
             :class="{ active: showFileUpload }"
-            :disabled="loadingFor === 'fileUploadingFromPin'">
+            :disabled="loadingFor === 'fileUploadingFromPin' || chatStore.doInputDisable">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
             </svg>
           </button>
-          
+
           <!-- Chain Icon with New Dropdown -->
           <div class="mcp-dropdown-container" @click.stop>
             <button 
               class="icon-button mcp-icon-button" 
               @click="toggleMCPDropdown" 
               title="Connect to external services"
-              :disabled="loadingFor === 'fileUploadingFromPin'"
+              :disabled="loadingFor === 'fileUploadingFromPin' || chatStore.doInputDisable"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
@@ -733,7 +732,10 @@ const hideLoading = () => {
               </div>
             </div>
           </div>
-          <button class="icon-button mcp-icon-button" @click="openMCPServers" title="MCP Servers" :disabled="loadingFor === 'fileUploadingFromPin'">           
+          <button 
+            class="icon-button mcp-icon-button" 
+            @click="openMCPServers" title="MCP Servers" 
+            :disabled="loadingFor === 'fileUploadingFromPin' || chatStore.doInputDisable">           
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" color="#000000" fill="none">
                   <path d="M3.49994 11.7501L11.6717 3.57855C12.7762 2.47398 14.5672 2.47398 15.6717 3.57855C16.7762 4.68312 16.7762 6.47398 15.6717 7.57855M15.6717 7.57855L9.49994 13.7501M15.6717 7.57855C16.7762 6.47398 18.5672 6.47398 19.6717 7.57855C20.7762 8.68312 20.7762 10.474 19.6717 11.5785L12.7072 18.543C12.3167 18.9335 12.3167 19.5667 12.7072 19.9572L13.9999 21.2499" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
                   <path d="M17.4999 9.74921L11.3282 15.921C10.2237 17.0255 8.43272 17.0255 7.32823 15.921C6.22373 14.8164 6.22373 13.0255 7.32823 11.921L13.4999 5.74939" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -747,7 +749,7 @@ const hideLoading = () => {
         <button 
           class="icon-button send-button" 
           @click="sendMessage"
-          :disabled="(!messageText.trim() && attachments.length === 0) || loadingFor === 'fileUploadingFromPin'"
+          :disabled="(!messageText.trim() && attachments.length === 0) || loadingFor === 'fileUploadingFromPin' || chatStore.doInputDisable"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="22" y1="2" x2="11" y2="13"></line>
