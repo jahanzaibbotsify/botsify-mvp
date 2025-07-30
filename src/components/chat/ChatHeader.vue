@@ -123,15 +123,15 @@ async function testAI() {
     return;
   }
   const apiKey = botStore.apiKey;
-  let url = `https://${whitelabelStore.maskUrl}/web-bot/agent/${apiKey}?testagent=true`;
+  let url = `https://${BOTSIFY_WEB_URL}/web-bot/agent/${apiKey}?testagent=true`;
   if (whitelabelStore.isWhitelabelClient && whitelabelStore.maskUrl) {
-    url = `${BOTSIFY_WEB_URL}/web-bot/agent/${botStore.apiKey}?testagent=true`;
+    url = `${whitelabelStore.maskUrl}/web-bot/agent/${botStore.apiKey}?testagent=true`;
   }
   window.open(url, '_blank');
 }
 
 function deployAI() {
-  if (!roleStore.hasActiveSubscription) {
+  if (!roleStore.hasSubscription) {
     bookMeetingRef.value?.openModal();
     return;
   }
@@ -141,7 +141,7 @@ function deployAI() {
     return;
   }
   window.$confirm({
-    text: "Do you really want to deploy your AI agent? This will make it available for use.",
+    // text: "Do you really want to deploy your AI agent? This will make it available for use.",
     confirmButtonText: "Yes, Deploy it!",
     cancelButtonText: "No, Cancel",
     animation: false,
@@ -162,10 +162,10 @@ async function deploying(content: string){
       chatStore.updateStory(props.chatId, content, true);
       chatStore.updateActivePromptVersionId(result.data.version.id);
     } else {
-      window.$toast.error(`❌ Deployment failed: ${result.message}`);
+      window.$toast.error(`Deployment failed: ${result.message}`);
     }
   } catch (error) {
-    window.$toast.error('❌ An unexpected error occurred during deployment.');
+    window.$toast.error('An unexpected error occurred during deployment.');
   } finally {
     isDeployingAI.value = false;
   }
@@ -227,7 +227,7 @@ onBeforeUnmount(() => {
 .chat-header {
   padding: var(--space-3) var(--space-4);
   background-color: var(--color-bg-secondary);
-  z-index: var(--z-sticky);
+  /* z-index: var(--z-sticky); */
   display: flex;
   justify-content: space-between;
   align-items: center;

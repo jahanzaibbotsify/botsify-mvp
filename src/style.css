@@ -358,6 +358,11 @@ code {
   opacity: 0;
 }
 
+.vue-toast.error {
+  background-color: #e53e3e !important; /* deep red */
+  color: #fff;
+}
+
 /* Responsive font sizes */
 @media (max-width: 767px) {
   h1 {

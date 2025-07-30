@@ -761,7 +761,7 @@ input {
 .error-message {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
-  color: var(--color-error, #ef4444);
+  color: var(--color-error);
   padding: var(--space-3);
   border-radius: var(--radius-md);
   font-size: 0.875rem;

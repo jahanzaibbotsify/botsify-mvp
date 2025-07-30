@@ -866,10 +866,7 @@ const hideLoading = () => {
                   title="Delete this file search entry"
                 >
                   <span v-if="fileSearchAllDeleteLoading" class="loading-spinner"></span>
-                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                  </svg>
+                  <i class="pi pi-trash" v-else></i>
                 </button>
               </div>
               <div class="file-list">
@@ -894,10 +891,7 @@ const hideLoading = () => {
                     title="Delete this file search entry"
                   >
                     <span v-if="fileSearchDeleteLoading && fileSearchSelectedId ==  file.id" class="loading-spinner"></span>
-                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    </svg>
+                    <i class="pi pi-trash" v-else></i>
                   </button>
                 </div>
               </div>
@@ -963,10 +957,7 @@ const hideLoading = () => {
                   title="Delete all web search entries"
                 >
                   <span v-if="webSearchDeleteAllLoading" class="loading-spinner"></span>
-                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                  </svg>
+                  <i class="pi pi-trash" v-else></i>
                 </button>
               </div>
               <template v-for="webSearchResult of webSearchResults">
@@ -990,10 +981,7 @@ const hideLoading = () => {
                       title="Delete this web search entry"
                     >
                       <span v-if="webSearchDeleteLoading && webSearchSelectedUrlId ==  webSearchResult.id" class="loading-spinner"></span>
-                      <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                      </svg>
+                      <i class="pi pi-trash" v-else></i>
                     </button>
                   </div>
                 </div>

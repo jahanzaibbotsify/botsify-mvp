@@ -60,11 +60,11 @@ watch(() => userStore.selectedAction, (newAction) => {
     if (userStore.selectedUsersCount > 0) {
       // Show confirmation dialog with SweetAlert2
       const actionText = getActionText(newAction)
-      const userCount = userStore.selectedUsersCount
-      const userText = userCount === 1 ? 'user' : 'users'
+      // const userCount = userStore.selectedUsersCount
+      // const userText = userCount === 1 ? 'user' : 'users'
       const actionCap = actionText.charAt(0).toUpperCase() + actionText.slice(1);
       window.$confirm({
-        text: `Are you sure you want to ${actionText} ${userCount} ${userText}?`,
+        // text: `Are you sure you want to ${actionText} ${userCount} ${userText}?`,
         confirmButtonText: `Yes, ${actionCap} it!`
       }, async() => {
         const selectedUserIds = userStore.users
