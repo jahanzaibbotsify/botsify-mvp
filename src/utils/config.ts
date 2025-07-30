@@ -13,18 +13,13 @@ export const BOTSIFY_FIREBASE_CONFIG = {
 
 // VAPID public key for push notifications
 export const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
-export const BOTSIFY_AUTH_TOKEN = getCookieValue('botsify_auth_token') || import.meta.env.VITE_BOTSIFY_AUTH_TOKEN || '';
+export const BOTSIFY_AUTH_TOKEN = getCookieValue('botsify_auth_token');
 
 export function getCookieValue(name: string): string {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
   const cookie = parts.pop();
   if (cookie) return cookie.split(';')[0];
-
-  // Redirect if cookie is missing
-  if (typeof window !== 'undefined') {
-    window.location.href = import.meta.env.VITE_BOTSIFY_URL || 'https://botsify.com';
-  }
 
   return ''; // Fallback return (unreachable in browser)
 }

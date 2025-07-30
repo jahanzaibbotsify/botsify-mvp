@@ -149,6 +149,18 @@ const router = createRouter({
 
 
 router.beforeEach(async (to, from, next) => {
+  // Handle Unauthenticated route - allow it to render without any checks
+  if (to.name === 'Unauthenticated') {
+    console.log('🔓 Rendering Unauthenticated page');
+    return next();
+  }
+
+  // Handle NotFound route - allow it to render without any checks
+  if (to.name === 'NotFound') {
+    console.log('❌ Rendering NotFound page');
+    return next();
+  }
+
   if (to.name === 'agent' || to.name === 'conversation') {
     const botStore = useBotStore();
     const roleStore = useRoleStore();
