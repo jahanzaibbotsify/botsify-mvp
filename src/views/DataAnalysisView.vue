@@ -95,7 +95,7 @@ const sendSuggestion = (suggestion: string) => {
       <!-- Main Content Area -->
       <div class="main-content">
         <!-- Centered Input for New Analysis -->
-        <div v-if="!hasResults" class="centered-message-input">
+        <div class="centered-message-input">
           <div class="centered-heading">
             <h1>What would you like to analyze?</h1>
             <p>Use natural language to query your Botsify data. Apply filters to refine your analysis.</p>
@@ -173,33 +173,6 @@ const sendSuggestion = (suggestion: string) => {
           />
         </div>
       </div>
-
-      <!-- Bottom Input (when results exist) -->
-      <!-- <div v-if="hasResults && !dataAnalysisStore.loading" class="message-input-container">
-        <div class="input-area">
-          <textarea
-            v-model="prompt"
-            @keydown="handleKeydown"
-            placeholder="Ask a follow-up question or start a new analysis..."
-            rows="1"
-            class="message-textarea"
-          ></textarea>
-          
-          <div class="input-actions">
-            <div class="left-actions"></div>
-            <button 
-              class="send-button" 
-              @click="handleAnalyze"
-              :disabled="!prompt.trim()"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div> -->
     </div>
   </div>
 </template>
