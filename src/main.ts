@@ -23,6 +23,7 @@ import Swal from 'sweetalert2';
 // Import routes
 import routes from '@/router'
 import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from './utils/config'
+import { axiosInstance } from './utils/axiosInstance'
 (window as any).Swal = Swal;
 
 // Extract and store API key
@@ -98,15 +99,7 @@ function checkLocalStorage() {
 
 // Reusable function to make an authenticated GET request with axios
 function getBotDetails(apikey: string) {
-  return axios.get(
-    BOTSIFY_BASE_URL + `/v1/bot/get-data?apikey=${apikey}`,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${BOTSIFY_AUTH_TOKEN}`
-      }
-    }
-  )
+  return axiosInstance.get(`/v1/bot/get-data?apikey=${apikey}`)
   .then(response => {
     console.log('ressssss ', response.data);
     
