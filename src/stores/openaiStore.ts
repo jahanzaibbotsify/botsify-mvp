@@ -4,16 +4,13 @@ import { ConfigurationTask, ConfigurationResponse, ConfigurationResponseData, Ap
 import { useBotStore } from './botStore';
 import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from '@/utils/config';
 import { handleApiError } from '@/utils/errorHandler';
-import { useChatStore } from './chatStore';
 
 
 export const useOpenAIStore = defineStore('openai', () => {
   // Try to get API key from environment variables first, then fallback to localStorage
   const authToken = BOTSIFY_AUTH_TOKEN;
   const botApiKey = useBotStore().apiKey;
-  console.log('Environment API key available:', botApiKey);
 
-  const chatStore = useChatStore();
   
   // Reactive state - no OpenAI client here to avoid private member issues
   const error = ref<string | null>(null);
@@ -23,7 +20,7 @@ export const useOpenAIStore = defineStore('openai', () => {
     type: "mcp" as const,
     server_label: "botsify_mcp_server",
     server_url: "https://mcp.botsify.com/mcp",
-    server_description: `Botsify MCP server for managing chatbot configurations. Use this Botsify chatbot api key every time: ${botApiKey}`,
+    server_description: `The server is designed to work seamlessly with Botsify’s infrastructure, supporting easy integration, rapid deployment, and centralized configuration management for all Botsify-powered chatbots and virtual agents. Use this Botsify chatbot api key every time: ${botApiKey}`,
     allowed_tools: [
       "updateBotSettings",
       "updateBotGeneralSettings",
@@ -202,18 +199,18 @@ export const useOpenAIStore = defineStore('openai', () => {
       // const latestMessage = nonSystemMessages[nonSystemMessages.length - 1];
       // const inputText = `${latestMessage.role}: ${latestMessage.content}`;
 
-      if (nonSystemMessages.length === 1 || nonSystemMessages.length === 2) {
-        inputText += '\n\n--AI-PROMPT--\n' + chatStore.activeAiPromptVersion?.content;
-      }
+      // if (nonSystemMessages.length === 1 || nonSystemMessages.length === 2) {
+      //   inputText += '\n\n--AI-PROMPT--\n' + chatStore.activeAiPromptVersion?.content;
+      // }
 
       // Extract system message for instructions
      // const systemMessage = messages.find(msg => msg.role === 'system');
 
-      const instructions = `🔧 SYSTEM PROMPT FOR CHAT COMPLETION API
+
+      const instructions = `
+      🔧 SYSTEM PROMPT FOR CHAT COMPLETION API
 You are an AI Prompt Designer and Chatbot Configuration Assistant for Botsify.
-
 Your task is to convert user instructions into chatbot flows using Botsify's message types, while following strict UX and API compliance rules.
-
 🧠 CORE INSTRUCTIONS
 You must always respond in this exact DUAL format:
 
@@ -226,85 +223,49 @@ You must always respond in this exact DUAL format:
 Always provide clear, concise, and human-friendly responses with emojis in ---CHAT_RESPONSE---.
 
 Avoid over-explaining in user responses.
-
 Do not include emojis or casual text in the ---AI_PROMPT--- section.
-
 Never say “sidebar” or reference UI-specific placements.
-
 🤖 CHATBOT FLOW FORMAT (---AI_PROMPT---)
 Each chatbot flow should:
-
 Be numbered step-by-step.
-
 Support:
-
 Text replies
-
 Buttons (title + payload)
-
 Quick replies
-
 Carousels (title, subtitle, image, buttons)
-
 Typing indicators ("show typing...")
-
 Delay blocks ("wait 2 seconds")
-
 Input fields (text, email, number, etc.)
-
 Location requests
-
 API calls
-
 File attachments
-
 Attribute updates
-
 Use clean, readable formatting. No JSON or raw object data.
-
 Never create imaginary flows — only use what the user specifies.
-
 🧷 BUTTON & QUICK REPLY RULES
 If the user asks for quick replies, always use the quick reply format — not buttons.
-
 If the user asks for buttons, check Meta's platform policy:
-
 Max: 3 buttons per message
-
 If the request exceeds this limit:
-
 Respond in ---CHAT_RESPONSE--- with an explanation:
-
 “🚫 Meta allows only 3 buttons per message. Would you like to convert the extras into quick replies?”
-
 Wait for user confirmation before updating the flow.
-
 🛠 MCP TOOL POLICY (IMPORTANT)
 If a message involves MCP Tool functionality (as defined by Botsify), follow these rules:
-
 Perform the MCP tool action only (e.g., update bot name, settings, team access).
-
-Do not update or modify the chatbot AI_PROMPT.
-
+Do not update or modify the chatbot's AI_PROMPT.
 Do not insert MCP responses into the chatbot flow.
-
-Return the last AI_PROMPT unchanged.
-
+Always follow confirmation policies (e.g., confirm: true, explicit API keys, DELETE text, etc.)
+Return the last AI_PROMPT unchanged if the user asks for it.
 💬 CHAT_RESPONSE STYLE EXAMPLES
 “All set! ✅ Your chatbot flow is now updated. Want to add anything else? 😊”
-
 “Awesome! 🎉 I've generated the prompt as requested. Let me know if you want edits.”
-
 “Got it! 🔧 I've applied your instructions. Would you like to preview another section?”
-
 ⚠️ KEY RESTRICTIONS & GUIDELINES
-Never insert your own ideas into the flow.
-
 Avoid unnecessary repetition or bloated instructions.
-
 Never return JSON or raw object formats.
-
-If unsure about structure or limits, ask the user in the ---CHAT_RESPONSE--- section before proceeding.`;
+If unsure about structure or limits, ask the user in the ---CHAT_RESPONSE--- section before proceeding.
+`;
 
       console.log('📤 Sending request to OpenAI Responses API with input text:', inputText.substring(0, 100) + '...');
       

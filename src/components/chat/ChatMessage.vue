@@ -76,12 +76,12 @@ const formatFileSize = (bytes: number) => {
 };
 
 onMounted(() => {
-  console.log('ChatMessage mounted:', {
-    id: props.message.id,
-    sender: props.message.sender,
-    contentLength: props.message.content?.length || 0,
-    hasAttachments: !!props.message.attachments?.length
-  });
+  // console.log('ChatMessage mounted:', {
+  //   id: props.message.id,
+  //   sender: props.message.sender,
+  //   contentLength: props.message.content?.length || 0,
+  //   hasAttachments: !!props.message.attachments?.length
+  // });
 });
 </script>
 

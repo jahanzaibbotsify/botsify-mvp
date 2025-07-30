@@ -24,6 +24,7 @@ import Swal from 'sweetalert2';
 // Import routes
 import routes from '@/router'
 import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from './utils/config'
+import { axiosInstance } from './utils/axiosInstance'
 (window as any).Swal = Swal;
 
 // Extract and store API key
@@ -67,7 +68,7 @@ function checkLocalStorage() {
     localStorage.removeItem(testKey);
     
     const isAvailable = testValue === 'test';
-    console.log('📦 localStorage availability check:', isAvailable ? 'Available' : 'Not available');
+    // console.log('📦 localStorage availability check:', isAvailable ? 'Available' : 'Not available');
     
     if (!isAvailable) {
       console.error('⚠️ localStorage is not working properly. Chat history may not be saved.');
@@ -78,7 +79,7 @@ function checkLocalStorage() {
     try {
       localStorage.setItem(testKey, testData);
       localStorage.removeItem(testKey);
-      console.log('✅ localStorage has sufficient space');
+      // console.log('✅ localStorage has sufficient space');
     } catch (e) {
       if (e instanceof Error && e.name === 'QuotaExceededError') {
         console.warn('⚠️ localStorage quota exceeded - may be in private browsing mode or has limited space');
@@ -99,17 +100,9 @@ function checkLocalStorage() {
 
 // Reusable function to make an authenticated GET request with axios
 function getBotDetails(apikey: string) {
-  return axios.get(
-    BOTSIFY_BASE_URL + `/v1/bot/get-data?apikey=${apikey}`,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${BOTSIFY_AUTH_TOKEN}`
-      }
-    }
-  )
+  return axiosInstance.get(`/v1/bot/get-data?apikey=${apikey}`)
   .then(response => {
-    console.log('ressssss ', response.data);
+    // console.log('ressssss ', response.data);
     
     const roleStore = useRoleStore();
     const whitelabelStore = useWhitelabelStore();
@@ -120,7 +113,7 @@ function getBotDetails(apikey: string) {
       
       // Set whitelabel data if user is a whitelabel client
       if (response.data.data.user.is_whitelabel_client) {
-        console.log('🎨 Setting whitelabel data:', response.data.data.user.whitelabel);
+        // console.log('🎨 Setting whitelabel data:', response.data.data.user.whitelabel);
         whitelabelStore.setWhitelabelData(response.data.data.user);
         // Set favicon if present
         if (response.data.data.user.whitelabel && response.data.data.user.whitelabel.favicon) {
@@ -156,6 +149,18 @@ const router = createRouter({
 
 
 router.beforeEach(async (to, from, next) => {
+  // Handle Unauthenticated route - allow it to render without any checks
+  if (to.name === 'Unauthenticated') {
+    console.log('🔓 Rendering Unauthenticated page');
+    return next();
+  }
+
+  // Handle NotFound route - allow it to render without any checks
+  if (to.name === 'NotFound') {
+    console.log('❌ Rendering NotFound page');
+    return next();
+  }
+
   if (to.name === 'agent' || to.name === 'conversation') {
     const botStore = useBotStore();
     const roleStore = useRoleStore();
@@ -196,21 +201,21 @@ router.beforeEach(async (to, from, next) => {
     }
     
     // If no API key found, try to extract from URL or route params
-    if (!apikey || apikey === 'undefined' || apikey === 'null') {
-      console.log('🔍 No valid API key found, extracting from URL/route params...');
+    // if (!apikey || apikey === 'undefined' || apikey === 'null') {
+    //   // console.log('🔍 No valid API key found, extracting from URL/route params...');
       
       // For /agent/:id route, extract API key from route params
       if (to.name === 'agent' && to.params.id) {
         apikey = to.params.id as string;
         botStore.setApiKey(apikey);
-        console.log('🔑 API key extracted from route params:', apikey);
+        // console.log('🔑 API key extracted from route params:', apikey);
       } else {
         // Try to extract from URL path
         apikey = botStore.extractApiKeyFromUrl();
       }
-    }    
+    // }    
     
-    console.log('🔑 Final API key:', apikey);
+    // console.log('🔑 Final API key:', apikey);
     
     if (apikey && apikey !== 'undefined' && apikey !== 'null') {
       try {
@@ -223,14 +228,14 @@ router.beforeEach(async (to, from, next) => {
 
           // Check subscription requirements for restricted pages
           if (to.name === 'conversation' && !roleStore.hasSubscription) {
-            console.log('🔒 Conversation page requires subscription, redirecting to agent');
+            // console.log('🔒 Conversation page requires subscription, redirecting to agent');
             return next({ name: 'agent', params: { id: apikey } });
           }
 
           // Role-based restriction for live chat agents
           if (roleStore.isLiveChatAgent) {
             if (to.name !== 'conversation') {
-              console.log('🔄 Live chat agent redirected to conversation page');
+              // console.log('🔄 Live chat agent redirected to conversation page');
               return next({ name: 'conversation' });
             }
           }
@@ -270,7 +275,7 @@ router.beforeEach(async (to, from, next) => {
   if (to.name === 'users') {
     const roleStore = useRoleStore();
     if (!roleStore.hasSubscription) {
-      console.log('🔒 Users page requires subscription, redirecting to agent');
+      // console.log('🔒 Users page requires subscription, redirecting to agent');
       return next({ name: 'agent', params: { id: 'default' } });
     }
   }
