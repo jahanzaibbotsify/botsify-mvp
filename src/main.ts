@@ -9,9 +9,13 @@ import '@fontsource/ubuntu/700.css'
 import axios from 'axios';
 import ToastPlugin, { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-bootstrap.css';
-import { useApiKeyStore } from './stores/apiKeyStore';
+import { useBotStore } from './stores/botStore';
 import { useConversationStore } from './stores/conversationStore';
 import { useChatStore } from './stores/chatStore';
+import { useRoleStore } from './stores/roleStore';
+import { useWhitelabelStore } from './stores/whitelabelStore';
+import { installPermissions } from './utils/permissions';
+import { extractApiKey, getCurrentApiKey } from './utils/apiKeyUtils';
 
 import Swal from 'sweetalert2';
 
@@ -19,6 +23,12 @@ import Swal from 'sweetalert2';
 import router from '@/router'
 import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from './utils/config'
 (window as any).Swal = Swal;
+
+// Extract and store API key
+const apiKey = extractApiKey();
+if (apiKey) {
+  localStorage.setItem('bot_api_key', apiKey);
+}
 
 // Import OpenAI debug utility in development
 if (import.meta.env.DEV) {
@@ -96,9 +106,34 @@ function getBotDetails(apikey: string) {
   .then(response => {
     console.log('ressssss ', response.data);
     
-    const apiKeyStore = useApiKeyStore();
-    apiKeyStore.setUserId(response.data.data.user_id);
-    apiKeyStore.setApiKey(response.data.data.apikey);
+    const roleStore = useRoleStore();
+    const whitelabelStore = useWhitelabelStore();
+    
+    // Set user role and permissions
+    if (response.data.data.user) {
+      roleStore.setCurrentUser(response.data.data.user);
+      
+      // Set whitelabel data if user is a whitelabel client
+      if (response.data.data.user.is_whitelabel_client) {
+        console.log('🎨 Setting whitelabel data:', response.data.data.user.whitelabel);
+        whitelabelStore.setWhitelabelData(response.data.data.user);
+        // Set favicon if present
+        if (response.data.data.user.whitelabel && response.data.data.user.whitelabel.favicon) {
+          let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            document.head.appendChild(link);
+          }
+          link.href = response.data.data.user.whitelabel.favicon;
+        }
+      }
+    }
+    const botStore = useBotStore();
+    botStore.setApiKeyConfirmed(true);
+    botStore.setBotId(response.data.data.bot.id);
+    botStore.setUser(response.data.data.user);  
+    botStore.setBotName(response.data.data.bot.name);
 
     return response.data.data;
   })
@@ -107,6 +142,117 @@ function getBotDetails(apikey: string) {
     return false;
   });
 }
+
+// Create router instance
+const router = createRouter({
+  history: createWebHistory(),
+  routes
+})
+
+
+router.beforeEach(async (to, from, next) => {
+  if (to.name === 'agent' || to.name === 'conversation') {
+    const botStore = useBotStore();
+    const roleStore = useRoleStore();
+    const storeApiKey = botStore.getApiKey;
+    const localApiKey = getCurrentApiKey();
+    
+    console.log('🔍 API Key Debug:', {
+      storeApiKey,
+      localApiKey,
+      routeName: to.name,
+      routeParams: to.params
+    });
+    
+    let apikey = storeApiKey || localApiKey || '';
+    
+    // If no API key found, try to extract from URL or route params
+    if (!apikey || apikey === 'undefined' || apikey === 'null') {
+      console.log('🔍 No valid API key found, extracting from URL/route params...');
+      
+      // For /agent/:id route, extract API key from route params
+      if (to.name === 'agent' && to.params.id) {
+        apikey = to.params.id as string;
+        botStore.setApiKey(apikey);
+        console.log('🔑 API key extracted from route params:', apikey);
+      } else {
+        // Try to extract from URL path
+        apikey = botStore.extractApiKeyFromUrl();
+      }
+    }    
+    
+    console.log('🔑 Final API key:', apikey);
+    
+    if (apikey && apikey !== 'undefined' && apikey !== 'null') {
+      try {
+        const data = await getBotDetails(apikey);
+        if (data) {
+          roleStore.setCurrentUser(data.user);
+
+          const chatStore = useChatStore();
+          const conversationStore = useConversationStore();
+
+          // Check subscription requirements for restricted pages
+          if (to.name === 'conversation' && !roleStore.hasSubscription) {
+            console.log('🔒 Conversation page requires subscription, redirecting to agent');
+            return next({ name: 'agent', params: { id: apikey } });
+          }
+
+          // Role-based restriction for live chat agents
+          if (roleStore.isLiveChatAgent) {
+            if (to.name !== 'conversation') {
+              console.log('🔄 Live chat agent redirected to conversation page');
+              return next({ name: 'conversation' });
+            }
+          }
+
+          // Load chat data if not already loaded or if navigating to a different page
+          if (!chatStore.chats.length || from.name !== to.name) {
+            chatStore.loadFromStorage(data.bot.chat_flow, data.versions);
+          }
+
+          // Initialize Firebase if not already connected
+          if (!conversationStore.isFirebaseConnected) {
+            try {
+              console.log('🔥 Initializing Firebase...');
+              conversationStore.initializeFirebase();
+              console.log('✅ Firebase initialized successfully');
+            } catch (error) {
+              console.error('❌ Error initializing Firebase:', error);
+            }
+          }
+
+          return next();
+        } else {
+          console.error('❌ Failed to get bot details');
+          return next({ name: 'Unauthenticated' });
+        }
+      } catch (error) {
+        console.error('❌ Error fetching bot details:', error);
+        return next({ name: 'Unauthenticated' });
+      }
+    } else {
+      console.error('❌ No API key found');
+      return next({ name: 'Unauthenticated' });
+    }
+  }
+
+  // Handle users page - redirect if no subscription
+  if (to.name === 'users') {
+    const roleStore = useRoleStore();
+    if (!roleStore.hasSubscription) {
+      console.log('🔒 Users page requires subscription, redirecting to agent');
+      return next({ name: 'agent', params: { id: 'default' } });
+    }
+  }
+
+  // Redirect to 404 if route name is undefined
+  if (typeof to.name === 'undefined') {
+    return next({ name: 'NotFound' });
+  }
+
+  return next();
+});
 
 // Create pinia store
 const pinia = createPinia()
@@ -118,6 +264,7 @@ const app = createApp(App)
 app.use(router)
 app.use(pinia)
 app.use(ToastPlugin);
+installPermissions(app);
 
 window.$toast = useToast({position:'top-right'});
 window.$confirm = function (overrideOpt = {}, callback = () => {}) {
@@ -153,39 +300,5 @@ if (!localStorageAvailable) {
 
 
 
-async function confirmApiKey() { 
-  const params = window.location.pathname.split('/');
-  if (['agent', 'conversation'].includes(params[1])) {
-    let apikey = params[2];
-    if (apikey) {
-      const bot = await getBotDetails(apikey);    
-      if (bot) {
-        // loading stored chats and ai prompts
-        const chatStore= useChatStore();
-        chatStore.loadFromStorage(bot.chat_flow, bot.bot_flow);
-        // Initialize Firebase after API key is set
-        console.log('🔥 Initializing Firebase in main.ts...');
-        try {
-          const conversationStore = useConversationStore();
-          conversationStore.initializeFirebase();
-          console.log('✅ Firebase initialized successfully in main.ts');
-        } catch (error) {
-          console.error('❌ Error initializing Firebase in main.ts:', error);
-        }
-        
-        return true;
-      }
-    }
-    // window.location.href = 'https://app.botsify.com/login';  
-    throw new Error('unauthenticated');
-  }
-  return true;
-}
-
-
 // mount app
-confirmApiKey().then(() => {
-  app.mount('#app');
-}).catch((error) => {
-  console.error('Error during app initialization:', error);
-}); 
+app.mount('#app'); 

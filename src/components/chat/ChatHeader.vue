@@ -1,12 +1,32 @@
 <template>
   <div class="chat-header">
-    <h2>{{ title }}</h2>
-    <div class="chat-actions">
+    <div class="chat-header-left">
+      <!-- <h2>{{ title }}</h2> -->
+      <!-- Dropdown Menu Trigger -->
+      <div class=" bot-name-dropdown dropdown-container" id="botNameDropdown" ref="dropdownRef">
+        <div class="" title="More actions">
+          {{botStore.botName}} 
+          <!-- <i class="pi pi-angle-down" style="font-size: 10px; margin-left: 3px;"></i> -->
+        </div>
+        <div v-if="showBotNameDropdown" class="dropdown-content">
+          <button class="dropdown-item" @click="toggleTheme">
+            <i :class="themeStore.theme === 'light' ? 'pi pi-moon' : 'pi pi-sun'" style="font-size: 18px;"></i>
+            <span>{{ themeStore.theme === 'light' ? 'Night Theme' : 'Light Theme' }}</span>
+          </button>
+        </div>
+      </div>
+      <!-- <div @click="handleReset('new')">
+         <button class="btn icon-button" :disabled="chatStore.chats[0].messages.length < 2" title="New Chat">
+          <i class="pi pi-plus" style="font-size: 15px; "></i>
+        </button>
+      </div> -->
+    </div>
+    <div class="chat-actions" >  
       <!-- Deploy/Test AI Buttons -->
       <button 
         class="action-button deploy-button"
         @click="deployAI"
-        :disabled="isDeployingAI || !hasPromptContent"
+        :disabled="isDeployingAI || !hasPromptContent || chatStore.isAIPromptGenerating"
         :title="!hasPromptContent ? 'Generate prompt content first' : 'Deploy your AI agent'"
       >
         <div class="button-content">
@@ -18,7 +38,7 @@
       <button 
         class="action-button test-button"
         @click="testAI"
-        :disabled="!hasPromptContent"
+        :disabled="isDeployingAI || !hasPromptContent || chatStore.isAIPromptGenerating"
         :title="!hasPromptContent ? 'Generate prompt content first' : 'Test your AI agent'"
       >
         <div class="button-content">
@@ -27,9 +47,10 @@
         </div>
       </button>
 
-      <!-- More Actions Dropdown -->
-      <div class="dropdown" ref="dropdownRef">
-        <button class="icon-button" @click="toggleDropdown" title="More actions">
+
+      <!-- Dropdown Menu Trigger -->
+      <div class="dropdown dropdown-container" id="moreActionsDropdown" ref="dropdownRef">
+        <button class="icon-button" title="More actions">
           <i class="pi pi-ellipsis-v" style="font-size: 22px;"></i>
         </button>
         <div v-if="showDropdown" class="dropdown-content">
@@ -41,9 +62,9 @@
             <i class="pi pi-bolt" style="font-size: 18px;"></i>
             <span>AI Prompt</span>
           </button>
-          <button class="dropdown-item" @click="handleReset">
+          <button :disabled="chatStore.chats[0].messages.length < 2"  class="btn dropdown-item" @click="handleReset('reset')">
             <i class="pi pi-replay" style="font-size: 18px;"></i>
-            <span>Reset Conversation</span>
+            <span>Clear Conversation</span>
           </button>
         </div>
       </div>
@@ -77,6 +98,7 @@
         </div>
       </div>
     </div>
+    <CalendlyModal ref="bookMeetingRef"></CalendlyModal>
   </div>
 
   <!-- Edit Profile Modal -->
@@ -88,15 +110,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useThemeStore } from '@/stores/themeStore';
 import { useAuthStore } from '@/stores/authStore';
 import { botsifyApi } from '@/services/botsifyApi';
 import { BOTSIFY_WEB_URL } from '@/utils/config';
 import { useChatStore } from '@/stores/chatStore';
 import EditProfileModal from '@/components/auth/EditProfileModal.vue';
+import { useWhitelabelStore } from '@/stores/whitelabelStore';
+import { useBotStore } from '@/stores/botStore';
+import { useRoleStore } from '@/stores/roleStore';
+import CalendlyModal from '@/components/ui/CalendlyModal.vue';
 
 interface Props {
+  chatId: string,
   title: string;
   hasPromptContent: boolean;
   latestPromptContent: string;
@@ -104,32 +131,33 @@ interface Props {
 
 const props = defineProps<Props>();
 const chatStore = useChatStore();
+const botStore = useBotStore();
 const themeStore = useThemeStore();
 const authStore = useAuthStore();
 const showDropdown = ref(false);
 const showProfileDropdown = ref(false);
 const showEditProfileModal = ref(false);
-const dropdownRef = ref<HTMLDivElement | null>(null);
 const profileDropdownRef = ref<HTMLDivElement | null>(null);
+const showBotNameDropdown = ref(false);
+const dropdownRef = ref<HTMLDivElement | null>(null);
+const lastOpenedDropdownId = ref<string | undefined>('');
+const bookMeetingRef = ref<InstanceType<typeof CalendlyModal> | null>(null)
 
 const emit = defineEmits<{
   toggleStorySidebar: [];
 }>();
 
 const isDeployingAI = ref(false);
+const whitelabelStore = useWhitelabelStore();
+const roleStore = useRoleStore();
 
-function toggleDropdown() {
-  showDropdown.value = !showDropdown.value;
-}
 
 function toggleTheme() {
   themeStore.setTheme(themeStore.theme === 'light' ? 'dark' : 'light');
-  showDropdown.value = false;
 }
 
 function handleAIPrompt() {
   emit('toggleStorySidebar');
-  showDropdown.value = false;
 }
 
 async function testAI() {
@@ -137,19 +165,26 @@ async function testAI() {
     window.$toast.error('No prompt content available to deploy. Please generate some content first.');
     return;
   }
-  const apiKey = (await import('@/stores/apiKeyStore')).useApiKeyStore().apiKey;
-  const url = `${BOTSIFY_WEB_URL}/web-bot/agent/${apiKey}`;
+  const apiKey = botStore.apiKey;
+  let url = `https://${whitelabelStore.maskUrl}/web-bot/agent/${apiKey}?testagent=true`;
+  if (whitelabelStore.isWhitelabelClient && whitelabelStore.maskUrl) {
+    url = `${BOTSIFY_WEB_URL}/web-bot/agent/${botStore.apiKey}?testagent=true`;
+  }
   window.open(url, '_blank');
 }
 
 function deployAI() {
+  if (!roleStore.hasActiveSubscription) {
+    bookMeetingRef.value?.openModal();
+    return;
+  }
+
   if (!props.hasPromptContent) {
     window.$toast.error('No prompt content available to deploy. Please generate some content first.');
     return;
   }
   window.$confirm({
     text: "Do you really want to deploy your AI agent? This will make it available for use.",
-    confirmButtonColor: "#00A3FF",
     confirmButtonText: "Yes, Deploy it!",
     cancelButtonText: "No, Cancel",
     animation: false,
@@ -161,9 +196,14 @@ function deployAI() {
 async function deploying(content: string){
   isDeployingAI.value = true;
   try {
-    const result = await botsifyApi.deployAiAgent(content);
+    const result = await botsifyApi.deployAiAgent(
+      chatStore.activeAiPromptVersion?.version_id ?? 0,
+      chatStore.createAiPromptVersionName()
+    );
     if (result.success) {
       window.$toast.success(`🚀 ${result.message}`);
+      chatStore.updateStory(props.chatId, content, true);
+      chatStore.updateActivePromptVersionId(result.data.version.id);
     } else {
       window.$toast.error(`❌ Deployment failed: ${result.message}`);
     }
@@ -174,11 +214,14 @@ async function deploying(content: string){
   }
 }
 
-function handleReset() {
-  showDropdown.value = false;
+function handleReset(type: string) {
+  let confirmButtonText = 'Yes';
+  if (type === 'reset') {
+    confirmButtonText += ' clear it!';
+  }
   window.$confirm({
-    confirmButtonText: "Yes, Reset it!",
-    text: "This will clear your current agent flow and start a new one. This action is irreversible."
+    confirmButtonText: confirmButtonText,
+    text: "Clearing the conversation is irreversible!"
   }, async() => {
     chatStore.clearChatMessages()
   });
@@ -207,14 +250,26 @@ function handleLogout() {
 }
 
 function handleClickOutside(event: Event) {
-  const target = event.target as Node;
-  if (showDropdown.value && dropdownRef.value && !dropdownRef.value.contains(target)) {
-    showDropdown.value = false;
+  closeAllDropdowns();
+
+  const target = event.target as HTMLElement;
+  const currentSelectedDropdownId = target.closest('.dropdown-container')?.id;
+
+  if (lastOpenedDropdownId.value !== currentSelectedDropdownId) {
+    if (target.closest('#botNameDropdown')) {
+      showBotNameDropdown.value = !showBotNameDropdown.value;
+    }else if (target.closest('#moreActionsDropdown')) {
+      showDropdown.value = !showDropdown.value;
+    }
+    lastOpenedDropdownId.value = currentSelectedDropdownId;
+  }else{
+    lastOpenedDropdownId.value = '';
   }
   if (showProfileDropdown.value && profileDropdownRef.value && !profileDropdownRef.value.contains(target)) {
     showProfileDropdown.value = false;
   }
 }
+
 
 // Add/remove event listener when dropdown is toggled
 watch([showDropdown, showProfileDropdown], ([newDropdownVal, newProfileDropdownVal]) => {
@@ -223,6 +278,13 @@ watch([showDropdown, showProfileDropdown], ([newDropdownVal, newProfileDropdownV
   } else {
     document.removeEventListener('click', handleClickOutside);
   }
+function closeAllDropdowns() {
+  showBotNameDropdown.value = false;
+  showDropdown.value = false;
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
 });
 
 // Clean up on component unmount
@@ -245,7 +307,7 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  /* border-radius: var(--radius-lg) var(--radius-lg) 0 0; */
   box-shadow: 0 4px 15px rgba(0, 163, 255, 0.08);
   border: 1px solid rgba(0, 163, 255, 0.1);
 }
@@ -265,6 +327,11 @@ onBeforeUnmount(() => {
   align-items: center;
 }
 
+.chat-header-left {
+  display: flex;
+  gap: 5px;
+}
+
 .icon-button {
   background: transparent;
   border: none;
@@ -280,6 +347,10 @@ onBeforeUnmount(() => {
 .icon-button:hover {
   background-color: var(--color-bg-tertiary);
   color: var(--color-text-primary);
+}
+
+.bot-name-dropdown .icon-button {
+  width: max-content;
 }
 
 .action-button {
@@ -358,14 +429,18 @@ onBeforeUnmount(() => {
   right: 0;
   top: 110%;
   background-color: var(--color-bg-primary);
-  background-image: radial-gradient(circle at right top, rgba(0, 163, 255, 0.08), transparent 70%);
-  min-width: 200px;
+  min-width: 210px;
   box-shadow: var(--shadow-md), 0 4px 15px rgba(0, 163, 255, 0.08);
   border-radius: var(--radius-md);
   border: 1px solid rgba(0, 163, 255, 0.1);
   z-index: var(--z-dropdown);
   overflow: hidden;
   padding: var(--space-2) 0;
+  padding: 5px;
+}
+
+#botNameDropdown .dropdown-content {
+  left: 0%
 }
 
 .dropdown-item {
@@ -384,9 +459,15 @@ onBeforeUnmount(() => {
   transition: background-color var(--transition-fast);
 }
 
+
+.btn:disabled {
+  color: gray;
+  cursor: not-allowed;
+}
+
 .dropdown-item:hover {
-  background-color: rgba(0, 163, 255, 0.05);
-  background-image: linear-gradient(to right, rgba(0, 163, 255, 0.08), transparent 80%);
+  background-color: rgba(98, 0, 255, 0.05);
+  background-image: linear-gradient(to right, rgba(153, 0, 255, 0.08), transparent 80%);
 }
 
 .dropdown-item.danger {
