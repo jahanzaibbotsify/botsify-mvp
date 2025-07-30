@@ -2,8 +2,11 @@
 import { onMounted, ref, computed } from 'vue';
 // import { useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
+import { useBotStore } from "@/stores/botStore";
+import BotsifyLoader from './components/ui/BotsifyLoader.vue';
 
 // const router = useRouter();
+const isAuthenticated = computed(() => useBotStore().apiKeyConfirmed);
 const chatStore = useChatStore();
 
 const showStorageWarning = ref(false);
@@ -35,16 +38,8 @@ const formattedSize = computed(() => {
 
 // Clear old chats (keep only the 5 most recent)
 function clearOldChats() {
-  window.Swal.fire({
-    title: 'Are you sure?',
-    text: 'This will delete all but your 5 most recent chats. Continue?',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes, clear old chats',
-    cancelButtonText: 'Cancel'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      const sortedChats = [...chatStore.chats].sort((a, b) =>
+  window.$confirm({}, () => {
+    const sortedChats = [...chatStore.chats].sort((a, b) =>
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
       const recentChats = sortedChats.slice(0, 5);
@@ -58,9 +53,11 @@ function clearOldChats() {
       if (storageSizeMB.value < 3) {
         showStorageWarning.value = false;
       }
-      window.Swal.fire('Success!', 'Old chats cleared successfully!', 'success');
-    }
-  });
+      window.$toast({
+        message: 'Old chats cleared successfully.',
+        type: 'success',
+      });
+  })
 }
 
 onMounted(() => {
@@ -79,6 +76,10 @@ onMounted(() => {
 
 <template>
   <div class="app-container">
+    <div v-if="!isAuthenticated" class="main-loading">
+      <botsify-loader />
+    </div>
+    <div v-else>  
       <div v-if="showStorageWarning" class="storage-warning">
         <div class="warning-content">
           <span class="warning-icon">⚠️</span>
@@ -95,7 +96,7 @@ onMounted(() => {
       </div>
 
       <router-view />
-      <!-- <ChatLayout /> -->
+      </div>
     </div>
 
 </template>

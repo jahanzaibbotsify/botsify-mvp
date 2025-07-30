@@ -61,7 +61,7 @@ const handleFiles = async (files: File[]) => {
       .some(type => {
         const t = type.trim()
         return t.endsWith('/*')
-          ? file.type.startsWith(t.slice(0, -1)) // e.g. image/ from image/*
+          ? file?.type?.startsWith(t.slice(0, -1)) // e.g. image/ from image/*
           : file.type === t || file.name.endsWith(t)
       })
     if (!isAccepted) {

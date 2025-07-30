@@ -6,6 +6,108 @@ export type SortBy = 'id' | 'name' | 'type' | 'active_for_bot' | 'created_at' | 
 export type SortOrder = 'asc' | 'desc'
 export type PerPage = 20 | 50 | 100
 
+// Role-based access control types
+export type UserRole = 'admin' | 'editor' | 'live_chat_agent'
+export type Permission = 
+  | 'send_messages'
+  | 'delete_user_chats'
+  | 'download_chats'
+  | 'change_notifications'
+  | 'change_user_status'
+  | 'view_user_attributes'
+  | 'view_editor_billing'
+  | 'view_chats_page'
+  | 'manage_bot_settings'
+  | 'manage_mcp_connections'
+  | 'manage_team_members'
+  | 'view_analytics'
+  | 'manage_billing'
+  | 'edit_user_attributes'
+  | 'delete_users'
+  | 'access_agent_page'
+
+export interface RolePermissions {
+  role: UserRole
+  permissions: Permission[]
+  description: string
+}
+
+export interface BotUser {
+  id: number
+  name: string
+  email: string
+  status: number
+  trial_started: string
+  bot_role: number // 0 = editor, 2 = live chat agent, else = admin
+  is_whitelabel_client: boolean
+  subs?: {
+    status: string
+    [key: string]: any
+  }
+  appsumoUser?: any[]
+  botAdmin?: any[]
+  whitelabel?: {
+    company_name: string,
+    primary_color: string,
+    secondary_color: string,
+    logo: string,
+    favicon: string | null,
+    domain: string,
+    mask_url: string
+  }
+}
+
+export interface BotData {
+  id: number
+  description: string
+  application_key: string
+  application_secret: string
+  access_token: string
+  secret_key: string
+  token: string
+  status: number
+  name: string
+  user_id: number
+  bot_flow: any
+  chat_flow: any
+  created_at: string
+  updated_at: string
+  type: string
+  page_id: string
+  page_name: string
+  auto_optin: number
+  deleteOnDefault: number
+  deleteOnTime: number
+  apikey: string
+  d360apikey: string | null
+  limit: number
+  limitDate: string
+  active: number
+  connection_type: string
+  platform: number
+  demo_token: string | null
+  code_embeded: number
+  website: string
+  language: string | null
+  disable_reason: string | null
+  cloning: number
+  first_time_use: number
+  embed_last_used: string | null
+  instagram_id: string | null
+  instagram_username: string | null
+  exporting: number
+  instagram_access_token: string | null
+  deleted_at: string | null
+}
+
+export interface BotApiResponse {
+  status: string
+  data: {
+    bot: BotData
+    user: BotUser
+  }
+}
+
 export interface PaginationData {
   currentPage: number
   totalPages: number

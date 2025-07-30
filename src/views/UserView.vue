@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import UserFilters from '@/components/user/Filters.vue'
 import UserTable from '@/components/user/Table.vue'
 import ImportPanel from '@/components/user/ImportPanel.vue'
 import { ActionType, User } from '@/types/user'
 import { useUserStore } from '@/stores/userStore'
+import { useRoleStore } from '@/stores/roleStore'
+
+// Use the router
+const router = useRouter()
 
 // Use the user store
 const userStore = useUserStore()
+const roleStore = useRoleStore()
 
 // Local state
 const showImportPanel = ref<boolean>(false)
@@ -40,18 +46,35 @@ const handleImportActions = (action: 'toggle' | 'close' | 'import', data?: User[
 // Watch for action changes
 watch(() => userStore.selectedAction, (newAction) => {
   if (newAction) {
+    // Check permissions for editor role
+    if (roleStore.isEditor) {
+      // Editors cannot perform certain actions
+      const restrictedActions: ActionType[] = ['delete', 'delete_conversation', 'activate', 'deactivate'];
+      if (restrictedActions.includes(newAction)) {
+        window.$toast.error('You do not have permission to perform this action.');
+        userStore.selectedAction = ''
+        return;
+      }
+    }
+    
     if (userStore.selectedUsersCount > 0) {
       // Show confirmation dialog with SweetAlert2
       const actionText = getActionText(newAction)
-      const userCount = userStore.selectedUsersCount
-      const userText = userCount === 1 ? 'user' : 'users'
+      // const userCount = userStore.selectedUsersCount
+      // const userText = userCount === 1 ? 'user' : 'users'
+      const actionCap = actionText.charAt(0).toUpperCase() + actionText.slice(1);
       window.$confirm({
-        text: `Are you sure you want to ${actionText} ${userCount} ${userText}?`,
+        // text: `Are you sure you want to ${actionText} ${userCount} ${userText}?`,
+        confirmButtonText: `Yes, ${actionCap} it!`
       }, async() => {
         const selectedUserIds = userStore.users
           .filter(user => user.selected)
           .map(user => user.id)
         await userStore.executeUserAction(newAction, selectedUserIds)
+        window.$toast({
+          message: '${actionCap} successfully.',
+          type: 'success',
+        });
       });
       userStore.selectedAction = ''
     } else {
@@ -83,6 +106,13 @@ const getActionText = (action: ActionType): string => {
 
 // Load data when component mounts
 onMounted(() => {
+  // Prevent live chat agents from accessing this page
+  if (roleStore.isLiveChatAgent) {
+    console.log('🔄 Live chat agent redirected from UserView to conversation page');
+    router.push('/conversation');
+    return;
+  }
+  
   userStore.fetchUsers()
   
   // Listen for import panel events

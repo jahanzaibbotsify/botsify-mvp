@@ -9,6 +9,8 @@ import type {
   ConversationData 
 } from '@/types/conversation'
 import type { ExtendedChat, Message } from '@/types'
+import moment from 'moment-timezone'
+import { currentTime } from '@/utils'
 
 export const useConversationStore = defineStore('conversation', () => {
   // State
@@ -79,7 +81,7 @@ export const useConversationStore = defineStore('conversation', () => {
     return {
       id: fbId,
       title: user.name,
-      timestamp: new Date(user.last_converse),
+      timestamp: user.last_converse,
       lastMessage: data.last_msg || '',
       unread: data.unread > 0,
       messages: [],
@@ -99,14 +101,33 @@ export const useConversationStore = defineStore('conversation', () => {
   // Helper function to convert API message to Message
   const convertConversationMessageToMessage = (msg: ConversationMessage): Message => {
     // Handle different message content types
-    let content = msg.message;
+    let content: string;
+    let attachments: any[] = [];
     
-    // If message is an object, extract the text
+    // If message is an object, extract the text and check for attachments
     if (typeof msg.message === 'object') {
       console.log('Converting object message:', msg.message);
       const messageObj = msg.message as any;
       
-      if (messageObj.text) {
+      // Check for attachment
+      if (messageObj.attachment) {
+        const attachment = messageObj.attachment;
+        console.log('📎 Processing API attachment:', attachment);
+        
+        // Create JSON string for attachment data
+        const attachmentData = {
+          attachment: {
+            type: attachment.type,
+            payload: {
+              url: attachment.url,
+              buttons: []
+            }
+          }
+        };
+        
+        content = JSON.stringify(attachmentData);
+        attachments = []; // No separate attachment objects
+      } else if (messageObj.text) {
         if (typeof messageObj.text === 'object') {
           // Handle double-nested text object
           content = messageObj.text.text || JSON.stringify(messageObj.text);
@@ -117,14 +138,17 @@ export const useConversationStore = defineStore('conversation', () => {
         // Try to find any text property or stringify the object
         content = JSON.stringify(msg.message);
       }
+    } else {
+      // If message is a string, use it directly
+      content = msg.message as string;
     }
     
     return {
       id: msg.id.toString(),
       content: content,
       sender: msg.direction === 'to' ? 'assistant' : 'user',
-      timestamp: new Date(msg.created_at),
-      attachments: []
+      timestamp: msg.created_at,
+      attachments: attachments
     }
   }
 
@@ -196,8 +220,8 @@ export const useConversationStore = defineStore('conversation', () => {
         const newConversation: ExtendedChat = {
           id: fbId,
           title: data.user.name,
-          timestamp: new Date(),
-          lastMessage: data.message?.text || '',
+          timestamp: currentTime(),
+          lastMessage: data.message?.text || (data.message?.attachment ? 'Media message' : ''),
           unread: true,
           messages: [],
           email: data.user.email,
@@ -213,8 +237,9 @@ export const useConversationStore = defineStore('conversation', () => {
       }
     } else {
       // Update existing conversation
-      conversation.lastMessage = data.message?.text || 'Media message'
-      conversation.timestamp = new Date()
+      const lastMessageText = data.message?.text || (data.message?.attachment ? 'Media message' : '')
+      conversation.lastMessage = lastMessageText
+      conversation.timestamp = currentTime()
       
       // Mark as unread if not currently selected
       if (selectedConversation.value?.fbid !== fbId) {
@@ -234,21 +259,27 @@ export const useConversationStore = defineStore('conversation', () => {
     // If this conversation is currently selected, add message to chat
     if (selectedConversation.value?.fbid === fbId) {
       // Handle different message content types from Firebase
-      let content = data.message?.text || '';
+      let content = '';
       
-      if (typeof data.message?.text === 'object') {
-        console.log('Firebase message text is an object:', data.message.text);
-        const textObj = data.message.text as any;
+      // Check if message has attachment
+      if (data.message?.attachment) {
+        const attachment = data.message.attachment;
+        console.log('📎 Processing attachment:', attachment);
         
-        if (textObj.text) {
-          if (typeof textObj.text === 'object') {
-            // Handle double-nested text object
-            content = textObj.text.text || JSON.stringify(textObj.text);
-          } else {
-            content = textObj.text;
+        // Create JSON string for attachment data
+        const attachmentData = {
+          attachment: {
+            type: attachment.type,
+            payload: attachment.payload
           }
-        } else {
+        };
+        content = JSON.stringify(attachmentData);
+      } else if (data.message?.text) {
+        // Handle text message
+        if (typeof data.message.text === 'object') {
           content = JSON.stringify(data.message.text);
+        } else {
+          content = data.message.text as string;
         }
       }
       
@@ -267,16 +298,18 @@ export const useConversationStore = defineStore('conversation', () => {
       
       // Duplicate check: Only add if not already present (by content and timestamp)
       const isDuplicate = messages.value.some(m => {
+        console.log('💬 Checking for duplicate message:', m.content, content)
         // Check if content matches
         const contentMatches = m.content === content;
-        
-        // Check if timestamp is within 5 seconds (more generous than 2 seconds)
-        const timeDiff = Math.abs(m.timestamp.getTime() - Date.now());
-        const timeMatches = timeDiff < 5000;
-        
-        // Check if sender matches
+      
+        // Check if timestamp is within 5 seconds using UTC
+        const messageTime = moment.utc(m.timestamp); // parse as UTC
+        const currentTime = moment.utc(); // current UTC time
+        const timeDiff = Math.abs(currentTime.diff(messageTime));
+      
+        const timeMatches = timeDiff < 5000; // 5 seconds
         const senderMatches = m.sender === sender;
-        
+      
         return contentMatches && timeMatches && senderMatches;
       });
       
@@ -284,9 +317,9 @@ export const useConversationStore = defineStore('conversation', () => {
         const newMessage: Message = {
           id: Date.now().toString(),
           content: content,
-          timestamp: new Date(),
+          timestamp: currentTime(),
           sender: sender,
-          status: 'sent'
+          status: 'sent',
         }
         messages.value.push(newMessage)
         console.log('💬 Added message to current conversation:', newMessage)
@@ -378,7 +411,7 @@ export const useConversationStore = defineStore('conversation', () => {
       
       // Read status filter
       if (readFilter.value !== 'all') {
-        queryParams.status = readFilter.value
+        queryParams.read_status = readFilter.value
       }
       
       // Platform filter
@@ -390,7 +423,7 @@ export const useConversationStore = defineStore('conversation', () => {
       if (isLoadMore) {
         queryParams.offset = conversations.value.length.toString()
       }
-      
+      queryParams.sort = 'desc'
       const response = await conversationApi.getConversations(queryParams)
       if (response.success && response.data) {
         const conversationsList: ExtendedChat[] = []
@@ -477,60 +510,22 @@ export const useConversationStore = defineStore('conversation', () => {
     }
   }
 
-  const sendMessageToUser = async (content: string, to: string, type: 'text' | 'image' | 'whatsapp' = 'text') => {
+  const sendMessageToUser = async (content: string, to: string, type: 'text' | 'link') => {
     if (!content.trim()) return
     
     try {
-      // Add the message immediately for better UX with a temporary ID
-      const tempMessageId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      const message: Message = {
-        id: tempMessageId,
-        content: content,
-        sender: 'assistant',
-        timestamp: new Date(),
-        status: 'sending',
-        attachments: []
-      }
-      messages.value.push(message)
-      
-      let response
-      if (type === 'text') {
-        response = await conversationApi.sendTextMessage(to, content)
-      } else if (type === 'whatsapp') {
-        response = await conversationApi.sendWhatsAppMessage(to, content)
-      } else {
-        // For image type, content should be the image URL
-        response = await conversationApi.sendImageMessage(to, content)
-      }
-      
+      const response = await conversationApi.sendMessage(to, content, type)
       if (response.success) {
-        // Update the message status to sent
-        const sentMessage = messages.value.find(m => m.id === tempMessageId)
-        if (sentMessage) {
-          sentMessage.status = 'sent'
-        }
-        
-        // Update the last message in the selected conversation
         if (selectedConversation.value) {
           selectedConversation.value.lastMessage = content
-          selectedConversation.value.timestamp = new Date()
+          selectedConversation.value.timestamp = currentTime()
         }
         
         console.log('✅ Message sent successfully')
       } else {
-        // Remove the message if sending failed
-        const messageIndex = messages.value.findIndex(m => m.id === tempMessageId)
-        if (messageIndex > -1) {
-          messages.value.splice(messageIndex, 1)
-        }
         error.value = response.message || 'Failed to send message'
       }
     } catch (err) {
-      // Remove the message if there was an error
-      const messageIndex = messages.value.findIndex(m => m.id.startsWith('temp_'))
-      if (messageIndex > -1) {
-        messages.value.splice(messageIndex, 1)
-      }
       error.value = 'An error occurred while sending message'
       console.error('Error sending message:', err)
     }
@@ -604,7 +599,12 @@ export const useConversationStore = defineStore('conversation', () => {
       // If there are file URLs, send them as image messages
       if (fileUrls && fileUrls.length > 0) {
         for (const fileUrl of fileUrls) {
-          await sendMessageToUser(fileUrl, selectedConversation.value.fbid, 'image')
+          await sendMessageToUser(fileUrl, selectedConversation.value.fbid, 'link')
+        }
+
+        if(content.trim() == 'Attachment'){
+          clearConversationCache(selectedConversation.value.fbid)
+          return;
         }
       }
       
@@ -710,11 +710,11 @@ export const useConversationStore = defineStore('conversation', () => {
       if (response.success) {
         return { success: true, message: response.data.message }
       } else {
-        return { success: false, message: response.message || 'Failed to change bot activation' }
+        return { success: false, message: 'Internal Server Error, Please Contact team@botsify.com' }
       }
     } catch (err) {
       console.error('Error changing bot activation:', err)
-      return { success: false, message: 'An error occurred while changing bot activation' }
+      return { success: false, message: 'Internal Server Error, Please Contact team@botsify.com' }
     }
   }
 

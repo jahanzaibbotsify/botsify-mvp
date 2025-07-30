@@ -42,7 +42,7 @@ const handleLogout = () => {
         <router-link to="/profile" class="dropdown-item">Profile</router-link>
         <router-link to="/pricing" class="dropdown-item">
           Subscription
-          <span class="plan-badge">{{ userStore.user?.plan }}</span>
+          <span class="plan-badge">{{ userStore.user?.subs?.stripe_plan }}</span>
         </router-link>
         <router-link to="/settings" class="dropdown-item">Settings</router-link>
         

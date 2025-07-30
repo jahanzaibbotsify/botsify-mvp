@@ -23,17 +23,44 @@ const messagesContainer = ref<HTMLDivElement>()
 const selectedImage = ref<string | null>(null)
 const showImageModal = ref(false)
 
+// Helper function to check if message should be skipped
+const shouldSkipMessage = (content: string): boolean => {
+  if (!content || content === 'null' || content.trim() === '') {
+    return true // Skip empty messages
+  }
+  
+  // Check for typing indicator
+  try {
+    const parsed = JSON.parse(content)
+    if (parsed.typing_indicator === true) {
+      return true // Skip typing indicator messages
+    }
+  } catch (error) {
+    // If parsing fails, it's not a JSON message, so don't skip
+    return false
+  }
+  
+  return false
+}
+
 // Group messages by date
 const groupedMessages = computed(() => {
-  const groups: { date: Date; messages: Message[] }[] = []
-  let currentDate = new Date();
+  // Skip computation if no messages
+  if (!props.messages.length) return []
+  
+  const groups: { date: string; messages: Message[] }[] = []
+  let currentDate = ''
   let currentGroup: Message[] = []
 
   props.messages.forEach(message => {
-    const messageDate = message.timestamp
-    if(message.content && (message.content === 'null' || message.content.trim() === '')) {
-      return // Skip empty messages
+    // Skip messages that should be filtered out
+    if (shouldSkipMessage(message.content)) {
+      return
     }
+    
+    // Get formatted date for this message
+    const messageDate = formatTime(message.timestamp)
+    
     if (messageDate !== currentDate) {
       if (currentGroup.length > 0) {
         groups.push({ date: currentDate, messages: currentGroup })
@@ -75,10 +102,22 @@ const shouldShowTimestamp = (message: Message, index: number, messages: Message[
 const scrollToBottom = async (smooth = true) => {
   await nextTick()
   if (messagesContainer.value) {
-    messagesContainer.value.scrollTo({
-      top: messagesContainer.value.scrollHeight,
+    const container = messagesContainer.value
+    const scrollHeight = container.scrollHeight
+    const clientHeight = container.clientHeight
+    const maxScrollTop = scrollHeight - clientHeight
+    
+    container.scrollTo({
+      top: maxScrollTop,
       behavior: smooth ? 'smooth' : 'auto'
     })
+    
+    // Double-check scroll position after a brief delay
+    setTimeout(() => {
+      if (container.scrollTop < maxScrollTop) {
+        container.scrollTop = maxScrollTop
+      }
+    }, 100)
   }
 }
 
@@ -103,9 +142,10 @@ const handleAttachmentDownload = (attachment: any) => {
 // Watch for messages changes to auto-scroll
 watch(() => props.messages.length, (newLength, oldLength) => {
   if (newLength > oldLength) {
+    // Only scroll if new messages were added
     scrollToBottom()
   }
-})
+}, { flush: 'post' })
 
 watch(() => props.selectedLanguage, (lang) => {
   if (lang) {
@@ -180,13 +220,13 @@ onMounted(() => {
         <!-- Message Groups -->
         <div v-else class="messages-list">
           <div 
-            v-for="group in groupedMessages" 
-            :key="group.date.getTime()"
+            v-for="(group, index) in groupedMessages" 
+            :key="index"
             class="message-group"
           >
             <!-- Date Header -->
             <div class="date-header">
-              <span class="date-text">{{ formatTime(group.date) }}</span>
+              <span class="date-text">{{ group.date }}</span>
             </div>
             <!-- Messages in Group -->
             <div class="group-messages">
@@ -197,6 +237,7 @@ onMounted(() => {
                 :show-avatar="shouldShowAvatar(message, index, group.messages)"
                 :show-timestamp="shouldShowTimestamp(message, index, group.messages)"
                 :compact="!shouldShowAvatar(message, index, group.messages)"
+                v-memo="[message.id, message.content, message.sender, shouldShowAvatar(message, index, group.messages), shouldShowTimestamp(message, index, group.messages)]"
                 @image-click="handleImageClick"
                 @attachment-download="handleAttachmentDownload"
               />

@@ -1,53 +1,23 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { ConfigurationTask, ConfigurationResponse, ConfigurationResponseData, ApiRequestData, ChatMessage, ApiError } from '../types/openai'
-import { useApiKeyStore } from './apiKeyStore';
-import { BOTSIFY_AUTH_TOKEN } from '../utils/config';
+import { useBotStore } from './botStore';
+import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from '@/utils/config';
+import { handleApiError } from '@/utils/errorHandler';
+import { useChatStore } from './chatStore';
 
 
 export const useOpenAIStore = defineStore('openai', () => {
   // Try to get API key from environment variables first, then fallback to localStorage
   const authToken = BOTSIFY_AUTH_TOKEN;
-  const botApiKey = useApiKeyStore().apiKey;
+  const botApiKey = useBotStore().apiKey;
   console.log('Environment API key available:', botApiKey);
+
+  const chatStore = useChatStore();
   
   // Reactive state - no OpenAI client here to avoid private member issues
   const error = ref<string | null>(null);
   const rateLimited = ref(false);
-
-  // Configuration tool function definition for Responses API
-  const configureChatbotTool = {
-    type: "function" as const,
-    name: "configure_chatbot",
-    description: "Handles configuration updates for the chatbot, such as language, logo, and color scheme.",
-    strict: true,
-    parameters: {
-      type: "object",
-      required: ["tasks"],
-      properties: {
-        tasks: {
-          type: "array",
-          description: "Array of tasks to be performed for configuration updates",
-          items: {
-            type: "object",
-            properties: {
-              key: {
-                type: "string",
-                description: "Configuration property to be updated, e.g., language, logo, color scheme"
-              },
-              value: {
-                type: "string",
-                description: "New value for the specified configuration property"
-              }
-            },
-            additionalProperties: false,
-            required: ["key", "value"]
-          }
-        }
-      },
-      additionalProperties: false
-    }
-  };
 
   const mcpConfiguration = {
     type: "mcp" as const,
@@ -178,10 +148,10 @@ export const useOpenAIStore = defineStore('openai', () => {
       
     } catch (error: unknown) {
       const apiError = error as ApiError;
-      console.error('Configuration API error:', apiError);
+      const errorMessage = handleApiError(apiError, 'Configuration API');
       return {
         success: false,
-        message: `Error updating ${task.key}: ${apiError.message || 'Network error'}`
+        message: errorMessage
       };
     }
   }
@@ -227,12 +197,18 @@ export const useOpenAIStore = defineStore('openai', () => {
       console.log('🚀 Preparing to stream chat with messages:', messages);
       
       // Convert messages to Responses API format - use simple string input
-      const nonSystemMessages = messages.filter(msg => msg.role !== 'system');      
-      //const inputText = nonSystemMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
-     const latestMessage = nonSystemMessages[nonSystemMessages.length - 1];
-     const inputText = `${latestMessage.role}: ${latestMessage.content}`;
+      const nonSystemMessages = messages.filter(msg => msg.role !== 'system');
+      let inputText = nonSystemMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+      // const latestMessage = nonSystemMessages[nonSystemMessages.length - 1];
+      // const inputText = `${latestMessage.role}: ${latestMessage.content}`;
+
+      if (nonSystemMessages.length === 1 || nonSystemMessages.length === 2) {
+        inputText += '\n\n--AI-PROMPT--\n' + chatStore.activeAiPromptVersion?.content;
+      }
 
       // Extract system message for instructions
+     // const systemMessage = messages.find(msg => msg.role === 'system');
+
       const instructions = `You are an AI prompt designer and chatbot configuration assistant. 
 
 **IMPORTANT: You must provide DUAL RESPONSES in the following structured format:**
@@ -257,27 +233,6 @@ step-by-step. The flow should support all types of messages, including:
 - Typing indicators (e.g., "show typing...")
 - Location requests
 - API calls and custom attributes
-
-2. **Configuration Management**: When users request configuration changes for their chatbot (language, logo, colors, 
-status, welcome message, name, etc.), use the configure_chatbot tool to process these requests.
-
-**Configuration Tool Usage:**
-Use the configure_chatbot tool when users request any of the following:
-- Change language (e.g., "change language to Arabic", "set language to French")
-- Update logo (e.g., "change logo to [URL]", "update chatbot logo")
-- Modify color scheme/theme (e.g., "change colors to blue", "update theme")
-- Toggle chatbot status (e.g., "turn off chatbot", "disable bot", "enable chatbot")
-- Update welcome message (e.g., "change welcome message to...", "update greeting")
-- Change chatbot name (e.g., "rename chatbot to...", "change bot name")
-
-**Tool Call Format:**
-When detecting configuration requests, call the configure_chatbot tool with appropriate key-value pairs:
-- For language: key="change_language", value="[language]"
-- For logo: key="change_logo", value="[logo_url]"
-- For colors: key="change_color", value="[color_scheme]"
-- For status: key="toggle_chatbot", value="on/off"
-- For welcome message: key="update_welcome_message", value="[message]"
-- For name: key="change_name", value="[name]"
 
 **Prompt Design Format (for AI_PROMPT section):**
 For prompt design, show the **entire chatbot flow** in a clean, numbered format like this:
@@ -377,7 +332,9 @@ On "arabic" or "urdu", update chatbot_language and reply "language changed".
 
 
 Botsify MCP Server: Operations & API Tooling Guide
-    
+
+    #### NOTE: on this action never generate/update the prompt. Just give the last one. Repeast don't need to add a single word accoding these actions in prompt.
+
     Welcome to the Botsify Master Control Program (MCP) server. This interface provides secure, granular access to a suite of administrative functions for the management of Botsify chatbot assets, configurations, and team resources. Each API Tool serves specific intents. Where required, all user input constraints, confirmation steps, and authentication fields are strictly enforced. Instructions below must be adhered to exactly by any LLM agent or operator.
     
     ---
@@ -545,38 +502,39 @@ Botsify MCP Server: Operations & API Tooling Guide
         const payload = {
             input: inputText,
             instructions: instructions,
-            tools: [configureChatbotTool, mcpConfiguration]
+            tools: [mcpConfiguration]
           };
 
-        const stream = await fetch(import.meta.env.VITE_BOTSIFY_BASE_URL + `/v1/get-ai-response?apikey=${botApiKey}`, {
+        const stream = await fetch(`${BOTSIFY_BASE_URL}/v1/get-ai-response`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_BOTSIFY_AUTH_TOKEN}`
+            'Authorization': `Bearer ${authToken}`
           },
-          body: JSON.stringify({payload: payload})
+          body: JSON.stringify({
+            apikey : botApiKey,
+            payload: payload
+          })
         });
         if (!stream.ok) throw new Error('No response for streaming');
         return stream;
 
       } catch (apiError: unknown) {
         const streamError = apiError as ApiError;
-        console.error('❌ API call error:', streamError);
-        console.error('API error details:', JSON.stringify(streamError, Object.getOwnPropertyNames(streamError)));
-        
-        throw streamError;
+        throw new Error(handleApiError(streamError, 'get-ai-response API'));
       }
     } catch (e: unknown) {
       const streamChatError = e as ApiError;
-      console.error('❌ Error in streamChat:', streamChatError);
       
       if (streamChatError.status === 429) {
         rateLimited.value = true;
         throw new Error('Rate limit exceeded. Please try again later.');
       }
       
-      error.value = streamChatError.message || 'Unknown error occurred';
-      throw streamChatError;
+      // Use standardized error handling
+      const errorMessage = handleApiError(streamChatError, 'streamChat');
+      error.value = errorMessage;
+      throw new Error(errorMessage);
     }
   }
 
@@ -585,7 +543,6 @@ Botsify MCP Server: Operations & API Tooling Guide
     error,
     rateLimited,
     streamChat,
-    processConfigurationTool,
-    configureChatbotTool
+    processConfigurationTool
   };
 });

@@ -116,6 +116,10 @@ import { useAuthStore } from '@/stores/authStore';
 import { botsifyApi } from '@/services/botsifyApi';
 import { BOTSIFY_WEB_URL } from '@/utils/config';
 import { useChatStore } from '@/stores/chatStore';
+import { useWhitelabelStore } from '@/stores/whitelabelStore';
+import { useBotStore } from '@/stores/botStore';
+import { useRoleStore } from '@/stores/roleStore';
+import CalendlyModal from '@/components/ui/CalendlyModal.vue';
 
 import EditProfileModal from '@/components/auth/EditProfileModal.vue';
 import { useWhitelabelStore } from '@/stores/whitelabelStore';
