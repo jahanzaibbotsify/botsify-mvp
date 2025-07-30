@@ -124,19 +124,6 @@ export const useRoleStore = defineStore('role', () => {
     return hasRegularSubs || isAppSumoUser || agentAdmin;
   })
 
-  const hasActiveSubscription = computed(() => {
-    // Check for active regular subscription
-    const hasActiveRegularSubs = currentUser.value?.subs && currentUser.value.subs.status === 'active';
-    
-    // Check for AppSumo subscription (AppSumo users are considered active)
-    const isAppSumoUser = currentUser.value?.appsumoUser;
-    
-    const agentAdmin = currentUser.value?.botAdmin;
-    
-    
-    return hasActiveRegularSubs || isAppSumoUser || agentAdmin;
-  })
-
   // Permission computed properties
   const canSendMessages = computed(() => hasPermission('send_messages'))
   const canDeleteUserChats = computed(() => hasPermission('delete_user_chats'))
@@ -205,7 +192,6 @@ export const useRoleStore = defineStore('role', () => {
     canDeleteUsers,
     canAccessAgentPage,
     hasSubscription,
-    hasActiveSubscription,
     canViewUsers,
     canViewConversation,
     canManageBillingWithSubscription

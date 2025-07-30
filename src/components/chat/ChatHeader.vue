@@ -131,7 +131,7 @@ async function testAI() {
 }
 
 function deployAI() {
-  if (!roleStore.hasActiveSubscription) {
+  if (!roleStore.hasSubscription) {
     bookMeetingRef.value?.openModal();
     return;
   }
