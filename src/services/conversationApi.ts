@@ -81,7 +81,7 @@ class ConversationApiService {
         ...(format && { format })
       }
       
-      const response = await axiosInstance.post('v1/send-message-to-user', payload)
+      const response = await axiosInstance.post('v1/send-message-to-user-livechat', payload)
       return { success: true, data: response.data }
     } catch (error: any) {
       console.error('Error sending message:', error)

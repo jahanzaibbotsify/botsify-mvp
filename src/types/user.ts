@@ -44,14 +44,15 @@ export interface BotUser {
     status: string
     [key: string]: any
   }
-  appsumo?: any[]
+  appsumoUser?: any[]
+  botAdmin?: any[]
   whitelabel?: {
-    company_name: string
-    primary_color: string
-    secondary_color: string
-    logo: string
-    favicon: string | null
-    domain: string
+    company_name: string,
+    primary_color: string,
+    secondary_color: string,
+    logo: string,
+    favicon: string | null,
+    domain: string,
     mask_url: string
   }
 }

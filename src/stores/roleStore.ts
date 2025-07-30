@@ -48,6 +48,7 @@ export const useRoleStore = defineStore('role', () => {
     {
       role: 'live_chat_agent',
       permissions: [
+        'send_messages',
         'view_chats_page'
         // Cannot: send_messages, delete_user_chats, download_chats, change_notifications, change_user_status, view_user_attributes, view_editor_billing, manage_bot_settings, manage_mcp_connections, manage_team_members, view_analytics, manage_billing, access_agent_page, edit_user_attributes, delete_users
       ],
@@ -115,19 +116,12 @@ export const useRoleStore = defineStore('role', () => {
     const hasRegularSubs = !!currentUser.value?.subs;
     
     // Check if user has AppSumo subscription (even if subs is empty)
-    const hasAppSumoSubs = currentUser.value?.appsumo && currentUser.value.appsumo.length > 0;
+    const isAppSumoUser = currentUser.value?.appsumoUser;
     
-    return hasRegularSubs || hasAppSumoSubs;
-  })
-
-  const hasActiveSubscription = computed(() => {
-    // Check for active regular subscription
-    const hasActiveRegularSubs = currentUser.value?.subs && currentUser.value.subs.status === 'active';
+    const agentAdmin = currentUser.value?.botAdmin;
     
-    // Check for AppSumo subscription (AppSumo users are considered active)
-    const hasAppSumoSubs = currentUser.value?.appsumo && currentUser.value.appsumo.length > 0;
     
-    return hasActiveRegularSubs || hasAppSumoSubs;
+    return hasRegularSubs || isAppSumoUser || agentAdmin;
   })
 
   // Permission computed properties
@@ -198,7 +192,6 @@ export const useRoleStore = defineStore('role', () => {
     canDeleteUsers,
     canAccessAgentPage,
     hasSubscription,
-    hasActiveSubscription,
     canViewUsers,
     canViewConversation,
     canManageBillingWithSubscription
