@@ -1143,7 +1143,7 @@ const hideLoading = () => {
   justify-content: space-between;
   padding: var(--space-3);
   border-bottom: 1px solid var(--color-border);
-  background: var(--color-primary);
+  background: var(--color-bg-secondary);
 }
 
 .dropdown-header h3 {
@@ -2182,8 +2182,7 @@ const hideLoading = () => {
 
 .delete-button:hover {
   color: var(--color-error);
-  background: rgba(239, 68, 68, 0.1);
-  opacity: 1;
+  background: var(--color-bg-secondary);
 }
 
 .delete-button:active {

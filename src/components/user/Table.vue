@@ -608,8 +608,8 @@ const getPageNumbers = computed(() => {
 }
 
 .action-btn:hover {
-  background-color: #f3f4f6;
-  transform: scale(1.1);
+  background-color: var(--color-bg-secondary);
+  /* transform: scale(1.1); */
 }
 
 .action-btn svg {
