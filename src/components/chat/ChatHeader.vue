@@ -141,7 +141,7 @@ function deployAI() {
     return;
   }
   window.$confirm({
-    text: "Do you really want to deploy your AI agent? This will make it available for use.",
+    // text: "Do you really want to deploy your AI agent? This will make it available for use.",
     confirmButtonText: "Yes, Deploy it!",
     cancelButtonText: "No, Cancel",
     animation: false,
@@ -162,10 +162,10 @@ async function deploying(content: string){
       chatStore.updateStory(props.chatId, content, true);
       chatStore.updateActivePromptVersionId(result.data.version.id);
     } else {
-      window.$toast.error(`❌ Deployment failed: ${result.message}`);
+      window.$toast.error(`Deployment failed: ${result.message}`);
     }
   } catch (error) {
-    window.$toast.error('❌ An unexpected error occurred during deployment.');
+    window.$toast.error('An unexpected error occurred during deployment.');
   } finally {
     isDeployingAI.value = false;
   }

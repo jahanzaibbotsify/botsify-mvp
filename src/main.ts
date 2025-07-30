@@ -43,7 +43,7 @@ if (import.meta.env.DEV) {
 
 const swalOption = {
   title: "Are you sure?",
-  text: "This action is irreversible. Are you sure you want to perform this action?",
+  // text: "Are you sure you want to perform this action?",
   icon: "warning", // updated from `type`
   showCloseButton: true,
   showCancelButton: true,
