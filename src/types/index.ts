@@ -93,3 +93,9 @@ export * from './conversation'
 
 // Export auth types
 export * from './auth'
+
+// Export data analysis types
+export * from './dataAnalysis'
+
+// Export tools types
+export * from './tools'

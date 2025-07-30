@@ -105,6 +105,16 @@ const routes: RouteRecordRaw[] = [
         path: '/settings',
         name: 'settings',
         component: () => import('../views/SettingsView.vue')
+      },
+      {
+        path: '/data-analysis',
+        name: 'data-analysis',
+        component: () => import('../views/DataAnalysisView.vue')
+      },
+      {
+        path: '/test-data-analysis',
+        name: 'test-data-analysis',
+        component: () => import('../views/TestDataAnalysis.vue')
       }
     ]
   },
