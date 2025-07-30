@@ -377,7 +377,7 @@ const contactSupport = () => {
             popular: plan.isPopular,
             free: plan.price === 0,
             enterprise: plan.id === 'enterprise',
-            selected: selectedPlanId === plan.id,
+            selected: selectedPlanId === plan.id || (!selectedPlanId && plan.isPopular),
             loading: authStore.isLoading && selectedPlanId === plan.id
           }"
           :style="{ '--card-delay': index * 0.1 + 's' }"
@@ -1049,6 +1049,92 @@ const contactSupport = () => {
 
 .plan-card.popular:hover {
   transform: translateY(-8px);
+}
+
+/* Selected Plan Card - Beautiful Gradient */
+.plan-card.selected {
+  background: linear-gradient(135deg, 
+    #667eea 0%, 
+    #764ba2 25%, 
+    #f093fb 50%, 
+    #f5576c 75%, 
+    #4facfe 100%
+  );
+  background-size: 300% 300%;
+  animation: gradientShift 6s ease infinite;
+  border: 2px solid transparent;
+  color: white;
+  box-shadow: 0 20px 40px rgba(102, 126, 234, 0.4), 
+              0 10px 20px rgba(245, 87, 108, 0.3);
+  transform: translateY(-5px);
+  position: relative;
+}
+
+.plan-card.selected::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    rgba(255, 255, 255, 0.05) 50%, 
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.plan-card.selected:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 25px 50px rgba(102, 126, 234, 0.5), 
+              0 15px 30px rgba(245, 87, 108, 0.4);
+}
+
+/* Selected Card Content Styling */
+.plan-card.selected .plan-title,
+.plan-card.selected .plan-subtitle,
+.plan-card.selected .feature-item,
+.plan-card.selected .price-main,
+.plan-card.selected .price-period,
+.plan-card.selected .question-text {
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.plan-card.selected .plan-pricing {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.plan-card.selected .feature-check {
+  background: var(--color-success);;
+  color: var(--color-primary);
+}
+
+.plan-card.selected .plan-button {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--color-primary);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.plan-card.selected .plan-button:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Selected Badge Enhancement */
+.plan-card.selected .plan-badge {
+  background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
+  background-size: 300% 300%;
+  animation: gradientShift 4s ease infinite;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transform: translateX(-50%) translateY(-2px);
 }
 
 /* Plan Badge */
