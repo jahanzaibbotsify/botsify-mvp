@@ -116,6 +116,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { botsifyApi } from '@/services/botsifyApi';
 import { BOTSIFY_WEB_URL } from '@/utils/config';
 import { useChatStore } from '@/stores/chatStore';
+
 import EditProfileModal from '@/components/auth/EditProfileModal.vue';
 import { useWhitelabelStore } from '@/stores/whitelabelStore';
 import { useBotStore } from '@/stores/botStore';
@@ -135,9 +136,11 @@ const botStore = useBotStore();
 const themeStore = useThemeStore();
 const authStore = useAuthStore();
 const showDropdown = ref(false);
+
 const showProfileDropdown = ref(false);
 const showEditProfileModal = ref(false);
 const profileDropdownRef = ref<HTMLDivElement | null>(null);
+
 const showBotNameDropdown = ref(false);
 const dropdownRef = ref<HTMLDivElement | null>(null);
 const lastOpenedDropdownId = ref<string | undefined>('');
@@ -166,15 +169,19 @@ async function testAI() {
     return;
   }
   const apiKey = botStore.apiKey;
-  let url = `https://${whitelabelStore.maskUrl}/web-bot/agent/${apiKey}?testagent=true`;
+
+  let url = `https://${BOTSIFY_WEB_URL}/web-bot/agent/${apiKey}?testagent=true`;
   if (whitelabelStore.isWhitelabelClient && whitelabelStore.maskUrl) {
-    url = `${BOTSIFY_WEB_URL}/web-bot/agent/${botStore.apiKey}?testagent=true`;
+    url = `${whitelabelStore.maskUrl}/web-bot/agent/${botStore.apiKey}?testagent=true`;
+
   }
   window.open(url, '_blank');
 }
 
 function deployAI() {
-  if (!roleStore.hasActiveSubscription) {
+
+  if (!roleStore.hasSubscription) {
+
     bookMeetingRef.value?.openModal();
     return;
   }
@@ -184,7 +191,9 @@ function deployAI() {
     return;
   }
   window.$confirm({
-    text: "Do you really want to deploy your AI agent? This will make it available for use.",
+
+    // text: "Do you really want to deploy your AI agent? This will make it available for use.",
+
     confirmButtonText: "Yes, Deploy it!",
     cancelButtonText: "No, Cancel",
     animation: false,
@@ -205,10 +214,10 @@ async function deploying(content: string){
       chatStore.updateStory(props.chatId, content, true);
       chatStore.updateActivePromptVersionId(result.data.version.id);
     } else {
-      window.$toast.error(`❌ Deployment failed: ${result.message}`);
+      window.$toast.error(`Deployment failed: ${result.message}`);
     }
   } catch (error) {
-    window.$toast.error('❌ An unexpected error occurred during deployment.');
+    window.$toast.error('An unexpected error occurred during deployment.');
   } finally {
     isDeployingAI.value = false;
   }
@@ -264,6 +273,7 @@ function handleClickOutside(event: Event) {
     lastOpenedDropdownId.value = currentSelectedDropdownId;
   }else{
     lastOpenedDropdownId.value = '';
+
   }
   if (showProfileDropdown.value && profileDropdownRef.value && !profileDropdownRef.value.contains(target)) {
     showProfileDropdown.value = false;
@@ -278,6 +288,7 @@ watch([showDropdown, showProfileDropdown], ([newDropdownVal, newProfileDropdownV
   } else {
     document.removeEventListener('click', handleClickOutside);
   }
+
 function closeAllDropdowns() {
   showBotNameDropdown.value = false;
   showDropdown.value = false;
@@ -303,7 +314,7 @@ onBeforeUnmount(() => {
 .chat-header {
   padding: var(--space-3) var(--space-4);
   background-color: var(--color-bg-secondary);
-  z-index: var(--z-sticky);
+  /* z-index: var(--z-sticky); */
   display: flex;
   justify-content: space-between;
   align-items: center;

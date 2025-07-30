@@ -16,11 +16,10 @@
   
   --color-border: #E9ECEF;
   
-
   --color-primary: #6D3ADB;
   --color-primary-hover: #6430d6;
   --color-primary-active: #713ce4;
- 
+  
   --color-secondary: #10B981;
   --color-accent: #8B5CF6;
   --color-error: #e7515a;
@@ -89,6 +88,7 @@
   --color-text-primary: rgba(255, 255, 255, 0.87);
   --color-text-secondary: rgba(255, 255, 255, 0.60);
   --color-text-tertiary: rgba(255, 255, 255, 0.38);
+
 
   --color-heading: rgba(255, 255, 255, 0.95);
   --color-message-text: #d1d5db;
@@ -390,6 +390,11 @@ code {
 .section-collapse-leave-to {
   max-height: 0;
   opacity: 0;
+}
+
+.vue-toast.error {
+  background-color: #e53e3e !important; /* deep red */
+  color: #fff;
 }
 
 /* Responsive font sizes */
