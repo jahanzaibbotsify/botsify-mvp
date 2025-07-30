@@ -347,9 +347,7 @@ Botsify MCP Server: Operations & API Tooling Guide
     - Confirm destructive actions with explicit user permission.
     
     ---    
-    
-    ## Tool Catalog & Usage Policies
-    
+        
     **Model Clarification:**
     -Treat "Chatbot", "Agent", and "Portable Agent" as the same entity.
     -If a user uses any of these terms (for example: "update my agent name"), check and update information accordingly, including looking into the MCP (Model Context Protocol) list for related actions.
