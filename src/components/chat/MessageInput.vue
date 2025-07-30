@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useChatStore } from '@/stores/chatStore';
 import { useMCPStore } from '@/stores/mcpStore';
 import type { Attachment } from '@/types';
@@ -61,6 +61,10 @@ const webSearchConfig = ref({
     timezone: ''
   },
   searchContextSize: 'medium'
+});
+
+onMounted(async () => {
+  await mcpStore.setIntialize();
 });
 
 const resizeTextarea = () => {
