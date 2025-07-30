@@ -2,9 +2,14 @@ import { RouteRecordRaw } from 'vue-router'
 import ChatLayout from '../layouts/ChatLayout.vue'
 import NotFound from '@/views/NotFound.vue';
 import Unauthenticated from '@/views/Unauthenticated.vue';
-import { useRoleStore } from '@/stores/roleStore';
+import { getDefaultRedirect } from '@/utils/apiKeyUtils';
+
 
 const routes: RouteRecordRaw[] = [
+  {
+    path: '/',
+    redirect: getDefaultRedirect
+  },
   {
     path: '',
     component: ChatLayout,
@@ -12,15 +17,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: '',
         name: 'default',
-        redirect: () => {
-          // Default route based on user role
-          const roleStore = useRoleStore();
-          if (roleStore.isLiveChatAgent) {
-            return { name: 'conversation' };
-          } else {
-            return { name: 'agent', params: { id: 'default' } };
-          }
-        }
+        redirect: getDefaultRedirect
       },
       {
         path: '/agent/:id',

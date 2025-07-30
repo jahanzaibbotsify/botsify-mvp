@@ -23,7 +23,7 @@ export const useOpenAIStore = defineStore('openai', () => {
     type: "mcp" as const,
     server_label: "botsify_mcp_server",
     server_url: "https://mcp.botsify.com/mcp",
-    server_description: `Botsify MCP server for managing chatbot configurations. Use this Botsify chatbot api key every time: ${botApiKey}`,
+    server_description: `The server is designed to work seamlessly with Botsify’s infrastructure, supporting easy integration, rapid deployment, and centralized configuration management for all Botsify-powered chatbots and virtual agents. Use this Botsify chatbot api key every time: ${botApiKey}`,
     allowed_tools: [
       "updateBotSettings",
       "updateBotGeneralSettings",
@@ -333,9 +333,9 @@ On "arabic" or "urdu", update chatbot_language and reply "language changed".
 
 Botsify MCP Server: Operations & API Tooling Guide
 
-    #### NOTE: on this action never generate/update the prompt. Just give the last one. Repeast don't need to add a single word accoding these actions in prompt.
+    #### NOTE: on this action never generate/update the prompt. Just give the last one. Repeat don't need to add a single word according these actions in prompt.
 
-    Welcome to the Botsify Master Control Program (MCP) server. This interface provides secure, granular access to a suite of administrative functions for the management of Botsify chatbot assets, configurations, and team resources. Each API Tool serves specific intents. Where required, all user input constraints, confirmation steps, and authentication fields are strictly enforced. Instructions below must be adhered to exactly by any LLM agent or operator.
+    Welcome to the Botsify Model Context Protocol (MCP) server. This interface provides secure, granular access to a suite of administrative functions for the management of Botsify chatbot or agent assets, configurations, and team resources. Each API Tool serves specific intents. Where required, all user input constraints, confirmation steps, and authentication fields are strictly enforced. Instructions below must be adhered to exactly by any LLM agent or operator.
     
     ---
     
@@ -346,6 +346,19 @@ Botsify MCP Server: Operations & API Tooling Guide
     - Never infer, autofill, or propagate unspecified field values.
     - Confirm destructive actions with explicit user permission.
     
+    ---    
+        
+    **Model Clarification:**
+    -Treat "Chatbot", "Agent", and "Portable Agent" as the same entity.
+    -If a user uses any of these terms (for example: "update my agent name"), check and update information accordingly, including looking into the MCP (Model Context Protocol) list for related actions.
+    
+    --- 
+    
+    ## Logo Update Handling
+    
+    **Logo Update Handling:**
+    -If the user requests to "update" or "change the logo", update the website-chatbot-bot-image.
+    -If the user specifically asks about the "login form logo" or any other logo, then update accordingly.
     ---
     
     ### 1. Tools Overview
@@ -356,7 +369,8 @@ Botsify MCP Server: Operations & API Tooling Guide
     ### 2. \`updateBotSettings\`
     - **Purpose:** Dynamically update configuration keys/values for a chatbot.
     - **Input:** Only accepted setting keys may be used; disregard unknown or empty keys.
-    
+    - **Priority:** When the user mentions updating or changing the logo, update the chatbot's website-chatbot-bot-image.
+        If the user specifically requests a change to the "login form logo," only update the logo using the login form logo key.
     ---
     
     ### 3. \`updateBotGeneralSettings\`
