@@ -123,7 +123,7 @@ async function testAI() {
     return;
   }
   const apiKey = botStore.apiKey;
-  let url = `https://${BOTSIFY_WEB_URL}/web-bot/agent/${apiKey}?testagent=true`;
+  let url = `${BOTSIFY_WEB_URL}/web-bot/agent/${apiKey}?testagent=true`;
   if (whitelabelStore.isWhitelabelClient && whitelabelStore.maskUrl) {
     url = `${whitelabelStore.maskUrl}/web-bot/agent/${botStore.apiKey}?testagent=true`;
   }

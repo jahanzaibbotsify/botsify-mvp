@@ -375,7 +375,7 @@ function toggleStorySidebar() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* height: 60vh; */
+  height: 80vh;
   width: 100%;
   padding: 0;
   background-color:var(--color-bg-primary);
@@ -388,7 +388,7 @@ function toggleStorySidebar() {
 .centered-heading {
   width: 100%;
   text-align: center;
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-2);
 }
 .centered-heading h1 {
   font-size: 1.875rem;
