@@ -178,11 +178,11 @@ function formatVersionDate(date: Date) {
   return new Date(date).toLocaleString();
 }
 
-function clearAllVersionHistory() {
-  window.$confirm({}, () => {
-    chatStore.clearVersionHistory(props.chatId);
-  });
-}
+// function clearAllVersionHistory() {
+//   window.$confirm({}, () => {
+//     chatStore.clearVersionHistory(props.chatId);
+//   });
+// }
 
 const scrollToBottom = async () => {
   await nextTick();
@@ -358,13 +358,13 @@ defineExpose({
               <div class="template-preview">{{ template.content.substring(0, 100) }}...</div>
             </div>
             <div class="template-actions">
-              <button @click="loadTemplate(template.id)" class="btn-load">Load</button>
+              <button @click="loadTemplate(template.id)" class="btn-load"><i class="pi pi-undo"></i></button>
               <button v-if="!template.isDefault" @click="setAsDefaultTemplate(template.id)" class="btn-default"
                 title="Set as default template for new chats">
                 Set Default
               </button>
               <button @click="deleteTemplate(template.id)" class="btn-delete" title="Delete template">
-                Delete
+                <i class="pi pi-trash"></i>
               </button>
             </div>
           </div>
