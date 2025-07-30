@@ -133,7 +133,7 @@ export const useMCPStore = defineStore('mcp', () => {
   ]);
   const connectedServers = ref([]);
 
-  onMounted(async () => {
+  const setIntialize = async () => {
     const response = await botsifyApi.getAllConnectedMCPs();
     connectedServers.value = response.data;
     connectedServers.value.forEach((connectedServer: any) => {
@@ -155,7 +155,7 @@ export const useMCPStore = defineStore('mcp', () => {
         }
       }
     })
-  })
+  }
 
   /**
    * Generate a default system prompt for a given MCP server
@@ -338,6 +338,7 @@ Remember: You have access to ${connectedServers.value.length} MCP server${connec
 
   return {
     servers,
+    setIntialize,
     connectedServers,
     getCombinedSystemPrompt,
     generateDefaultSystemPrompt,
