@@ -27,6 +27,7 @@ export interface MCPServer {
   connectionId?: number;
   authMethod?: 'api_key' | 'bearer_token' | 'basic_auth' | 'oauth' | 'none';
   authLabel?: string;
+  comingSoon?: boolean;
 }
 
 export interface CustomMCPServerForm {

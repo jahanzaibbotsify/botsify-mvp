@@ -48,9 +48,21 @@ const disconnectMCP = async (server: any) => {
           v-for="config in mcpServers"
           :key="config.id"
           class="server-card"
-          :class="{connected: !!config.connectionId}"
-          @click="$emit('selectServer', config)"
+          :class="{connected: !!config.connectionId, 'coming-soon': config.comingSoon}"
+          @click="config.comingSoon ? null : $emit('selectServer', config)"
       >
+        <!-- Blur overlay for coming soon cards -->
+        <div v-if="config.comingSoon" class="coming-soon-overlay">
+          <div class="coming-soon-content">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12,6 12,12 16,14"></polyline>
+            </svg>
+            <span>Coming Soon</span>
+          </div>
+        </div>
+        
         <div class="server-icon">
           <img v-if="!config.isCustom" :src="`/mcp/${config.icon}`" :alt="config.name" width="32" height="32"/>
           <svg
@@ -96,11 +108,7 @@ const disconnectMCP = async (server: any) => {
 <!--            </svg>-->
 <!--          </button>-->
           <button @click.stop="disconnectMCP(config)" class="delete-button" title="Delete Server">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
+            <i class="pi pi-trash"></i>
           </button>
         </div>
       </div>
@@ -143,6 +151,17 @@ const disconnectMCP = async (server: any) => {
 .server-card.connected {
   border-color: var(--color-success);
   background: rgba(34, 197, 94, 0.05);
+}
+
+.server-card.coming-soon {
+  cursor: not-allowed;
+  opacity: 0.7;
+  filter: blur(0.5px);
+}
+
+.server-card.coming-soon:hover {
+  transform: none;
+  border-color: var(--color-border);
 }
 
 .server-card.add-new-card .add-icon {
@@ -197,6 +216,44 @@ const disconnectMCP = async (server: any) => {
   align-items: center;
   gap: 2px;
   box-shadow: var(--shadow-sm);
+}
+
+.coming-soon-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.coming-soon-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  color: white;
+  text-align: center;
+}
+
+.coming-soon-content svg {
+  width: 32px;
+  height: 32px;
+  opacity: 0.9;
+  color: var(--color-primary);
+}
+
+.coming-soon-content span {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  color: white;
 }
 
 @media (max-width: 767px) {
