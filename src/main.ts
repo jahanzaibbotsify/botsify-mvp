@@ -143,11 +143,7 @@ function getBotDetails(apikey: string) {
   });
 }
 
-// Create router instance
-const router = createRouter({
-  history: createWebHistory(),
-  routes
-})
+// Router is imported from '@/router'
 
 
 router.beforeEach(async (to, from, next) => {

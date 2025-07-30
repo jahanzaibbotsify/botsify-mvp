@@ -110,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useThemeStore } from '@/stores/themeStore';
 import { useAuthStore } from '@/stores/authStore';
 import { botsifyApi } from '@/services/botsifyApi';
@@ -122,10 +122,6 @@ import { useRoleStore } from '@/stores/roleStore';
 import CalendlyModal from '@/components/ui/CalendlyModal.vue';
 
 import EditProfileModal from '@/components/auth/EditProfileModal.vue';
-import { useWhitelabelStore } from '@/stores/whitelabelStore';
-import { useBotStore } from '@/stores/botStore';
-import { useRoleStore } from '@/stores/roleStore';
-import CalendlyModal from '@/components/ui/CalendlyModal.vue';
 
 interface Props {
   chatId: string,
@@ -285,6 +281,11 @@ function handleClickOutside(event: Event) {
 }
 
 
+function closeAllDropdowns() {
+  showBotNameDropdown.value = false;
+  showDropdown.value = false;
+}
+
 // Add/remove event listener when dropdown is toggled
 watch([showDropdown, showProfileDropdown], ([newDropdownVal, newProfileDropdownVal]) => {
   if (newDropdownVal || newProfileDropdownVal) {
@@ -292,11 +293,7 @@ watch([showDropdown, showProfileDropdown], ([newDropdownVal, newProfileDropdownV
   } else {
     document.removeEventListener('click', handleClickOutside);
   }
-
-function closeAllDropdowns() {
-  showBotNameDropdown.value = false;
-  showDropdown.value = false;
-}
+});
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside);
