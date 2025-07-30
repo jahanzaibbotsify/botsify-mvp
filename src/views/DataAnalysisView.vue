@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useDataAnalysisStore } from '@/stores/dataAnalysisStore'
 import DataTable from '@/components/data-analysis/DataTable.vue'
+import DataAnalysisFilters from '@/components/data-analysis/DataAnalysisFilters.vue'
 
 const dataAnalysisStore = useDataAnalysisStore()
 
@@ -10,7 +11,6 @@ const prompt = ref('')
 
 // Computed
 const hasResults = computed(() => dataAnalysisStore.hasData)
-const showCenteredInput = computed(() => !hasResults.value && !dataAnalysisStore.loading)
 
 // No filters needed anymore
 
@@ -18,7 +18,7 @@ const showCenteredInput = computed(() => !hasResults.value && !dataAnalysisStore
 const handleAnalyze = async () => {
   if (!prompt.value.trim()) return
   
-  await dataAnalysisStore.analyzeData(prompt.value, {})
+  await dataAnalysisStore.analyzeData(prompt.value)
 }
 
 const handleKeydown = (event: KeyboardEvent) => {
@@ -95,7 +95,7 @@ const sendSuggestion = (suggestion: string) => {
       <!-- Main Content Area -->
       <div class="main-content">
         <!-- Centered Input for New Analysis -->
-        <div class="centered-message-input">
+        <div v-if="!hasResults" class="centered-message-input">
           <div class="centered-heading">
             <h1>What would you like to analyze?</h1>
             <p>Use natural language to query your Botsify data. Apply filters to refine your analysis.</p>
@@ -147,7 +147,10 @@ const sendSuggestion = (suggestion: string) => {
               <span class="query-text">{{ dataAnalysisStore.currentRequest.prompt }}</span>
             </div>
           </div>
-
+        <!-- Filters Section - Positioned between query and results -->
+        <div v-if="hasResults || dataAnalysisStore.loading" class="filters-section">
+          <DataAnalysisFilters />
+        </div>
           <!-- Error Display -->
           <div v-if="dataAnalysisStore.hasError" class="error-message">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -167,8 +170,6 @@ const sendSuggestion = (suggestion: string) => {
             :data="dataAnalysisStore.data"
             :columns="dataAnalysisStore.columns"
             :loading="dataAnalysisStore.loading"
-            @sort="(column, direction) => console.log('Sort:', column, direction)"
-            @filter="(column, value) => console.log('Filter:', column, value)"
           />
         </div>
       </div>
@@ -281,7 +282,9 @@ const sendSuggestion = (suggestion: string) => {
   padding-top: 50px;
 }
 
-/* Removed filters section */
+.filters-section {
+  margin-bottom: var(--space-4);
+}
 
 .main-content {
   margin: 0 auto;

@@ -2,6 +2,9 @@
 export const createDummyLLMResponse = (prompt: string, filters: Record<string, any>) => {
   console.log('🤖 [DUMMY LLM] Processing prompt:', prompt)
   console.log('🔧 [DUMMY LLM] Available filters:', filters)
+  console.log('🔍 [DUMMY LLM] Search term:', filters.search || 'none')
+  console.log('📱 [DUMMY LLM] Platform filter:', filters.platform || 'all')
+  console.log('✅ [DUMMY LLM] Status filter:', filters.status || 'all')
   
   // Simulate LLM decision making based on prompt keywords
   let toolCall: any = null
@@ -12,6 +15,7 @@ export const createDummyLLMResponse = (prompt: string, filters: Record<string, a
       parameters: {
         status: filters.status || 'all',
         platform: filters.platform || 'all',
+        search: filters.search || '',
         dateFrom: filters.dateFrom || null,
         dateTo: filters.dateTo || null,
         limit: 100

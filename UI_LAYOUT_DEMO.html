@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Analysis UI Layout - Fixed</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #00A3FF;
+            padding-bottom: 10px;
+        }
+        .layout-demo {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        .layout-section {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #00A3FF;
+        }
+        .layout-section h3 {
+            margin: 0 0 15px 0;
+            color: #374151;
+        }
+        .layout-before, .layout-after {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 20px 0;
+        }
+        .layout-preview {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .layout-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding: 8px 12px;
+            border-radius: 4px;
+        }
+        .layout-title.before { background: #fef2f2; color: #dc2626; }
+        .layout-title.after { background: #f0fdf4; color: #16a34a; }
+        .section-box {
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 6px;
+            border: 2px dashed #d1d5db;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .query-section { background: #e0f2fe; border-color: #0ea5e9; color: #0369a1; }
+        .filters-section { background: #f3e8ff; border-color: #a855f7; color: #7c3aed; }
+        .table-section { background: #ecfdf5; border-color: #10b981; color: #059669; }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        .status.fixed { background: #dcfce7; color: #166534; }
+        .status.issue { background: #fef2f2; color: #dc2626; }
+        .flow-arrow {
+            text-align: center;
+            font-size: 24px;
+            color: #00A3FF;
+            margin: 10px 0;
+        }
+        .code-block {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Data Analysis UI Layout - Fixed</h1>
+        
+        <div class="layout-demo">
+            <div class="layout-section">
+                <h2>🔧 Layout Issue Fixed</h2>
+                <p><span class="status fixed">✅ FIXED</span> Filters now positioned correctly between query and table</p>
+                
+                <div class="layout-before">
+                    <div class="layout-preview">
+                        <div class="layout-title before">❌ Before (Incorrect)</div>
+                        <div class="section-box filters-section">🔍 FILTERS SECTION</div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="section-box query-section">💭 QUERY SECTION</div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="section-box table-section">📊 TABLE SECTION</div>
+                        
+                        <p style="color: #dc2626; font-size: 14px; margin-top: 15px;">
+                            <strong>Issue:</strong> Filters appeared above query input
+                        </p>
+                    </div>
+                    
+                    <div class="layout-preview">
+                        <div class="layout-title after">✅ After (Correct)</div>
+                        <div class="section-box query-section">💭 QUERY SECTION</div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="section-box filters-section">🔍 FILTERS SECTION</div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="section-box table-section">📊 TABLE SECTION</div>
+                        
+                        <p style="color: #16a34a; font-size: 14px; margin-top: 15px;">
+                            <strong>Fixed:</strong> Filters between query and table
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layout-section">
+                <h3>🎯 Updated Layout Logic</h3>
+                <div class="code-block">
+<!-- Query Section (Always Visible) -->
+&lt;div v-if="!hasResults" class="centered-message-input"&gt;
+  &lt;!-- Prompt input and suggestions --&gt;
+&lt;/div&gt;
+
+<!-- Filters Section (Only when results exist) -->
+&lt;div v-if="hasResults || dataAnalysisStore.loading" class="filters-section"&gt;
+  &lt;DataAnalysisFilters /&gt;
+&lt;/div&gt;
+
+<!-- Results Section (Only when results exist) -->
+&lt;div v-if="hasResults || dataAnalysisStore.loading" class="results-section"&gt;
+  &lt;!-- Current query display --&gt;
+  &lt;!-- Error handling --&gt;
+  &lt;!-- Data table --&gt;
+&lt;/div&gt;
+                </div>
+            </div>
+
+            <div class="layout-section">
+                <h3>📋 User Experience Flow</h3>
+                <ol style="margin: 0; padding-left: 20px;">
+                    <li><strong>Step 1:</strong> User sees centered query input</li>
+                    <li><strong>Step 2:</strong> User enters prompt and clicks analyze</li>
+                    <li><strong>Step 3:</strong> Filters appear above the results area</li>
+                    <li><strong>Step 4:</strong> User can adjust filters to refine results</li>
+                    <li><strong>Step 5:</strong> Table updates with filtered data</li>
+                    <li><strong>Step 6:</strong> User can export filtered results</li>
+                </ol>
+            </div>
+
+            <div class="layout-section">
+                <h3>💡 Key Improvements</h3>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li>✅ <strong>Logical Flow:</strong> Query → Filter → Results</li>
+                    <li>✅ <strong>Progressive Disclosure:</strong> Filters only appear when needed</li>
+                    <li>✅ <strong>Clean Interface:</strong> No filter clutter during initial input</li>
+                    <li>✅ <strong>Contextual:</strong> Filters appear with results they affect</li>
+                    <li>✅ <strong>Consistent:</strong> Matches expected data analysis workflow</li>
+                </ul>
+            </div>
+
+            <div class="layout-section">
+                <h3>🧪 Testing the Layout</h3>
+                <div style="background: #f0f9ff; padding: 15px; border-radius: 6px; border: 1px solid #0ea5e9;">
+                    <strong>Test Steps:</strong>
+                    <ol style="margin: 10px 0 0 0; padding-left: 20px;">
+                        <li>Navigate to <code>/data-analysis</code></li>
+                        <li>Verify: Only query input is visible initially</li>
+                        <li>Enter prompt: "Show me active users"</li>
+                        <li>Click analyze button</li>
+                        <li>Verify: Filters appear above the table</li>
+                        <li>Test: Apply different filter combinations</li>
+                        <li>Verify: Table updates with filtered data</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; padding: 20px; background: #f0fdf4; border-radius: 8px;">
+            <h3>🎉 Layout Fixed!</h3>
+            <p>The filters are now correctly positioned between the query section and the table, providing a logical and intuitive user experience.</p>
+        </div>
+    </div>
+</body>
+</html>

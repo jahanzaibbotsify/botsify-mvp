@@ -19,7 +19,18 @@ export const useDataAnalysisStore = defineStore('dataAnalysis', () => {
   const columns = ref<TableColumn[]>([])
   const currentRequest = ref<DataAnalysisRequest | null>(null)
   
-  // No filters needed - removed filter UI completely
+  // Filter state - matching user table structure exactly
+  const filterState = ref<DataAnalysisFilterState>({
+    search: '',
+    filter: 'all',
+    segment: 'all',
+    dateRange: {
+      startDate: null,
+      endDate: null
+    }
+  })
+  
+  // Available filters for backward compatibility
   const availableFilters = ref<DataAnalysisFilter[]>([])
 
   // Computed
@@ -28,11 +39,14 @@ export const useDataAnalysisStore = defineStore('dataAnalysis', () => {
   const hasError = computed(() => !!error.value)
 
   // Actions
-  const analyzeData = async (prompt: string, filters: Record<string, any>) => {
+  const analyzeData = async (prompt: string, customFilters?: Record<string, any>) => {
     loading.value = true
     error.value = null
     
     try {
+      // Use current filter state if no custom filters provided
+      const filters = customFilters || convertFilterStateToFilters(filterState.value)
+      
       // Store current request
       currentRequest.value = { prompt, filters }
       
@@ -80,6 +94,53 @@ export const useDataAnalysisStore = defineStore('dataAnalysis', () => {
   const refreshData = async () => {
     if (currentRequest.value) {
       await analyzeData(currentRequest.value.prompt, currentRequest.value.filters)
+    }
+  }
+
+  const clearError = () => {
+    error.value = null
+  }
+  
+  // Filter management functions - matching user store
+  const updateFilter = (updates: Partial<DataAnalysisFilterState>) => {
+    Object.assign(filterState.value, updates)
+  }
+  
+  const updateSearch = (searchValue: string) => {
+    filterState.value.search = searchValue
+  }
+  
+  const exportData = () => {
+    if (data.value.length === 0) return
+    
+    // Convert data to CSV format
+    const headers = columns.value.map(col => col.label).join(',')
+    const rows = data.value.map(row => 
+      columns.value.map(col => row[col.key] || '').join(',')
+    ).join('\n')
+    
+    const csvContent = `${headers}\n${rows}`
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `data-analysis-${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+  
+  // Helper function to convert filter state to filters object
+  const convertFilterStateToFilters = (state: DataAnalysisFilterState): Record<string, any> => {
+    return {
+      search: state.search,
+      status: state.filter === 'all' ? '' : state.filter,
+      platform: state.segment === 'all' ? '' : state.segment,
+      dateFrom: state.dateRange.startDate ? state.dateRange.startDate.toISOString().split('T')[0] : '',
+      dateTo: state.dateRange.endDate ? state.dateRange.endDate.toISOString().split('T')[0] : ''
     }
   }
 
@@ -652,6 +713,7 @@ export const useDataAnalysisStore = defineStore('dataAnalysis', () => {
     columns,
     currentRequest,
     availableFilters,
+    filterState,
     
     // Computed
     hasData,
@@ -661,6 +723,10 @@ export const useDataAnalysisStore = defineStore('dataAnalysis', () => {
     // Actions
     analyzeData,
     clearData,
-    refreshData
+    refreshData,
+    clearError,
+    updateFilter,
+    updateSearch,
+    exportData
   }
 })
