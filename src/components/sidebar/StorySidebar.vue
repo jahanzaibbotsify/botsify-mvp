@@ -276,7 +276,7 @@ defineExpose({
         <div class="section-header">
           <h4>Version History</h4>
           <div class="header-actions">
-            <button v-if="story?.versions && story.versions.length > 1" @click="clearAllVersionHistory"
+            <!-- <button v-if="story?.versions && story.versions.length > 1" @click="clearAllVersionHistory"
               class="icon-btn clear-btn" title="Clear version history">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -284,7 +284,7 @@ defineExpose({
                 <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
                 <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
               </svg>
-            </button>
+            </button> -->
             <button @click="showVersionHistory = false" class="close-btn">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -312,12 +312,7 @@ defineExpose({
               </button>
               <button v-if="!version.isActive && sortedVersions.length > 1" @click="deleteVersion(version.id)"
                 class="btn-delete" title="Delete this version">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 6h18"></path>
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-              </svg>
+                <i class="pi pi-trash"></i>
               </button>
             </div>
           </div>
@@ -726,37 +721,39 @@ defineExpose({
 
 .btn-revert,
 .btn-load {
-  background-color: var(--color-primary);
-  color: white;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
 }
 
 
 .btn-load:hover {
-  background-color: var(--color-primary-hover);
+  background-color: var(--color-primary);
+  color: white;
 }
 
 .btn-default {
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning);
+}
+
+.btn-default:hover {
   background-color: var(--color-warning);
   color: white;
 }
 
-.btn-default:hover {
-  background-color: var(--color-warning-hover);
+.btn-delete {
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
 }
 
-.btn-delete {
+.btn-delete:hover {
   background-color: var(--color-error);
   color: white;
 }
 
-.btn-delete:hover {
-  background-color: var(--color-error-hover);
-  color: var(--color-text-danger);
-}
-
 .btn-revert:hover {
-  background-color: transparent;
-  color: #6D3ADB;
+  background-color: var(--color-primary);
+  color: white;
 }
 
 /* Template Manager */

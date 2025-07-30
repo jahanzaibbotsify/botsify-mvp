@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useChatStore } from '@/stores/chatStore';
 import { useMCPStore } from '@/stores/mcpStore';
 import type { Attachment } from '@/types';
@@ -61,6 +61,10 @@ const webSearchConfig = ref({
     timezone: ''
   },
   searchContextSize: 'medium'
+});
+
+onMounted(async () => {
+  await mcpStore.setIntialize();
 });
 
 const resizeTextarea = () => {
@@ -757,10 +761,12 @@ const hideLoading = () => {
       </div>
     </div>
 
-    <McpConnectionModal
-        :is-open="showMCPModal"
-        @close="closeMCPModal"
-    />
+    <Teleport to="body">
+      <McpConnectionModal
+          :is-open="showMCPModal"
+          @close="closeMCPModal"
+      />
+    </Teleport>
 
     <!-- File Search Modal -->
     <div v-if="showFileSearchModal" class="modal-overlay" @click="closeFileSearchModal">
@@ -1143,7 +1149,7 @@ const hideLoading = () => {
   justify-content: space-between;
   padding: var(--space-3);
   border-bottom: 1px solid var(--color-border);
-  background: var(--color-primary);
+  background: var(--color-bg-secondary);
 }
 
 .dropdown-header h3 {
@@ -2182,8 +2188,7 @@ const hideLoading = () => {
 
 .delete-button:hover {
   color: var(--color-error);
-  background: rgba(239, 68, 68, 0.1);
-  opacity: 1;
+  background: var(--color-bg-secondary);
 }
 
 .delete-button:active {
