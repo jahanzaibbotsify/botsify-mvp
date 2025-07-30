@@ -115,9 +115,12 @@ export const useRoleStore = defineStore('role', () => {
     const hasRegularSubs = !!currentUser.value?.subs;
     
     // Check if user has AppSumo subscription (even if subs is empty)
-    const hasAppSumoSubs = currentUser.value?.appsumo && currentUser.value.appsumo.length > 0;
+    const isAppSumoUser = currentUser.value?.appsumoUser;
     
-    return hasRegularSubs || hasAppSumoSubs;
+    const agentAdmin = currentUser.value?.botAdmin;
+    
+    
+    return hasRegularSubs || isAppSumoUser || agentAdmin;
   })
 
   const hasActiveSubscription = computed(() => {
@@ -125,9 +128,12 @@ export const useRoleStore = defineStore('role', () => {
     const hasActiveRegularSubs = currentUser.value?.subs && currentUser.value.subs.status === 'active';
     
     // Check for AppSumo subscription (AppSumo users are considered active)
-    const hasAppSumoSubs = currentUser.value?.appsumo && currentUser.value.appsumo.length > 0;
+    const isAppSumoUser = currentUser.value?.appsumoUser;
     
-    return hasActiveRegularSubs || hasAppSumoSubs;
+    const agentAdmin = currentUser.value?.botAdmin;
+    
+    
+    return hasActiveRegularSubs || isAppSumoUser || agentAdmin;
   })
 
   // Permission computed properties
