@@ -4,16 +4,13 @@ import { ConfigurationTask, ConfigurationResponse, ConfigurationResponseData, Ap
 import { useBotStore } from './botStore';
 import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from '@/utils/config';
 import { handleApiError } from '@/utils/errorHandler';
-import { useChatStore } from './chatStore';
 
 
 export const useOpenAIStore = defineStore('openai', () => {
   // Try to get API key from environment variables first, then fallback to localStorage
   const authToken = BOTSIFY_AUTH_TOKEN;
   const botApiKey = useBotStore().apiKey;
-  console.log('Environment API key available:', botApiKey);
 
-  const chatStore = useChatStore();
   
   // Reactive state - no OpenAI client here to avoid private member issues
   const error = ref<string | null>(null);

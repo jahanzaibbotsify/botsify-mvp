@@ -44,7 +44,7 @@ export const useChatStore = defineStore('chat', () => {
       'content': activeVersionContent,
       'updatedAt': currentTime(),
       'versions': StoredVersions,
-      'activeVersionId': versionId
+      'activeVersionId': activeVersionId
     };
   }
 
