@@ -123,9 +123,9 @@ async function testAI() {
     return;
   }
   const apiKey = botStore.apiKey;
-  let url = `https://${whitelabelStore.maskUrl}/web-bot/agent/${apiKey}?testagent=true`;
+  let url = `https://${BOTSIFY_WEB_URL}/web-bot/agent/${apiKey}?testagent=true`;
   if (whitelabelStore.isWhitelabelClient && whitelabelStore.maskUrl) {
-    url = `${BOTSIFY_WEB_URL}/web-bot/agent/${botStore.apiKey}?testagent=true`;
+    url = `${whitelabelStore.maskUrl}/web-bot/agent/${botStore.apiKey}?testagent=true`;
   }
   window.open(url, '_blank');
 }
@@ -227,7 +227,7 @@ onBeforeUnmount(() => {
 .chat-header {
   padding: var(--space-3) var(--space-4);
   background-color: var(--color-bg-secondary);
-  z-index: var(--z-sticky);
+  /* z-index: var(--z-sticky); */
   display: flex;
   justify-content: space-between;
   align-items: center;
