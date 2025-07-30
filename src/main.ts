@@ -39,7 +39,6 @@ if (import.meta.env.DEV) {
   });
 }
 
-
 const swalOption = {
   title: "Are you sure?",
   // text: "Are you sure you want to perform this action?",
@@ -91,7 +90,6 @@ function checkLocalStorage() {
   }
 }
 
-
 // Reusable function to make an authenticated GET request with axios
 function getBotDetails(apikey: string) {
   return axios.get(
@@ -142,8 +140,6 @@ function getBotDetails(apikey: string) {
     return false;
   });
 }
-
-// Router is imported from '@/router'
 
 
 router.beforeEach(async (to, from, next) => {
