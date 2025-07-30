@@ -13,7 +13,7 @@ export const BOTSIFY_FIREBASE_CONFIG = {
 
 // VAPID public key for push notifications
 export const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
-export const BOTSIFY_AUTH_TOKEN = getCookieValue('botsify_auth_token');
+export const BOTSIFY_AUTH_TOKEN = getCookieValue('botsify_token');
 
 export function getCookieValue(name: string): string {
   const value = `; ${document.cookie}`;
