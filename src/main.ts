@@ -67,7 +67,7 @@ function checkLocalStorage() {
     localStorage.removeItem(testKey);
     
     const isAvailable = testValue === 'test';
-    console.log('📦 localStorage availability check:', isAvailable ? 'Available' : 'Not available');
+    // console.log('📦 localStorage availability check:', isAvailable ? 'Available' : 'Not available');
     
     if (!isAvailable) {
       console.error('⚠️ localStorage is not working properly. Chat history may not be saved.');
@@ -78,7 +78,7 @@ function checkLocalStorage() {
     try {
       localStorage.setItem(testKey, testData);
       localStorage.removeItem(testKey);
-      console.log('✅ localStorage has sufficient space');
+      // console.log('✅ localStorage has sufficient space');
     } catch (e) {
       if (e instanceof Error && e.name === 'QuotaExceededError') {
         console.warn('⚠️ localStorage quota exceeded - may be in private browsing mode or has limited space');
@@ -109,7 +109,7 @@ function getBotDetails(apikey: string) {
     }
   )
   .then(response => {
-    console.log('ressssss ', response.data);
+    // console.log('ressssss ', response.data);
     
     const roleStore = useRoleStore();
     const whitelabelStore = useWhitelabelStore();
@@ -120,7 +120,7 @@ function getBotDetails(apikey: string) {
       
       // Set whitelabel data if user is a whitelabel client
       if (response.data.data.user.is_whitelabel_client) {
-        console.log('🎨 Setting whitelabel data:', response.data.data.user.whitelabel);
+        // console.log('🎨 Setting whitelabel data:', response.data.data.user.whitelabel);
         whitelabelStore.setWhitelabelData(response.data.data.user);
         // Set favicon if present
         if (response.data.data.user.whitelabel && response.data.data.user.whitelabel.favicon) {
@@ -197,20 +197,20 @@ router.beforeEach(async (to, from, next) => {
     
     // If no API key found, try to extract from URL or route params
     // if (!apikey || apikey === 'undefined' || apikey === 'null') {
-    //   console.log('🔍 No valid API key found, extracting from URL/route params...');
+    //   // console.log('🔍 No valid API key found, extracting from URL/route params...');
       
       // For /agent/:id route, extract API key from route params
       if (to.name === 'agent' && to.params.id) {
         apikey = to.params.id as string;
         botStore.setApiKey(apikey);
-        console.log('🔑 API key extracted from route params:', apikey);
+        // console.log('🔑 API key extracted from route params:', apikey);
       } else {
         // Try to extract from URL path
         apikey = botStore.extractApiKeyFromUrl();
       }
     // }    
     
-    console.log('🔑 Final API key:', apikey);
+    // console.log('🔑 Final API key:', apikey);
     
     if (apikey && apikey !== 'undefined' && apikey !== 'null') {
       try {
@@ -223,14 +223,14 @@ router.beforeEach(async (to, from, next) => {
 
           // Check subscription requirements for restricted pages
           if (to.name === 'conversation' && !roleStore.hasSubscription) {
-            console.log('🔒 Conversation page requires subscription, redirecting to agent');
+            // console.log('🔒 Conversation page requires subscription, redirecting to agent');
             return next({ name: 'agent', params: { id: apikey } });
           }
 
           // Role-based restriction for live chat agents
           if (roleStore.isLiveChatAgent) {
             if (to.name !== 'conversation') {
-              console.log('🔄 Live chat agent redirected to conversation page');
+              // console.log('🔄 Live chat agent redirected to conversation page');
               return next({ name: 'conversation' });
             }
           }
@@ -270,7 +270,7 @@ router.beforeEach(async (to, from, next) => {
   if (to.name === 'users') {
     const roleStore = useRoleStore();
     if (!roleStore.hasSubscription) {
-      console.log('🔒 Users page requires subscription, redirecting to agent');
+      // console.log('🔒 Users page requires subscription, redirecting to agent');
       return next({ name: 'agent', params: { id: 'default' } });
     }
   }

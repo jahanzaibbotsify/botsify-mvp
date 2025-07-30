@@ -51,16 +51,16 @@ export const useChatStore = defineStore('chat', () => {
   // Load data from localStorage on initialization
   function loadFromStorage(userChats: string, aiPromptVersions: object[]) {
     try {
-      console.log('🔍 Attempting to load data from localStorage');
+      // console.log('🔍 Attempting to load data from localStorage');
       const storedChats = userChats;
       const storedTemplates = convertStoredVersionsToStoryStructure(aiPromptVersions);
       const storedActiveChat = localStorage.getItem('botsify_active_chat');
       
-      console.log('📊 Storage check:', {
-        hasStoredChats: !!storedChats,
-        hasStoredTemplates: !!storedTemplates,
-        hasStoredActiveChat: !!storedActiveChat
-      });      
+      // console.log('📊 Storage check:', {
+      //  hasStoredChats: !!storedChats,
+      //  hasStoredTemplates: !!storedTemplates,
+      //  hasStoredActiveChat: !!storedActiveChat
+      //});      
       
       if (storedChats && storedChats.length > 4 && storedChats !== 'null' && storedChats !== 'undefined') {
       try {
@@ -89,7 +89,7 @@ export const useChatStore = defineStore('chat', () => {
                 })) || []
               } : undefined
             }));
-            console.log('✅ Loaded chats from storage:', chats.value.length);
+            // console.log('✅ Loaded chats from storage:', chats.value.length);
           } else {
             console.warn('⚠️ Stored chats is not an array, clearing storage');
             localStorage.removeItem('botsify_chats');
@@ -117,7 +117,7 @@ export const useChatStore = defineStore('chat', () => {
       //         createdAt: new Date(template.createdAt),
       //         updatedAt: new Date(template.updatedAt)
       //       }));
-      //       console.log('✅ Loaded prompt templates from storage:', globalPromptTemplates.value.length);
+      //       // console.log('✅ Loaded prompt templates from storage:', globalPromptTemplates.value.length);
       //     } else {
       //       console.warn('⚠️ Stored templates is not an array, clearing storage');
       //       localStorage.removeItem('botsify_prompt_templates');
@@ -133,7 +133,7 @@ export const useChatStore = defineStore('chat', () => {
 
       if (storedActiveChat && chats.value.some(c => c.id === storedActiveChat)) {
         activeChat.value = storedActiveChat;
-        console.log('✅ Restored active chat:', storedActiveChat);
+        // console.log('✅ Restored active chat:', storedActiveChat);
       } else if (storedActiveChat) {
         console.warn('⚠️ Stored active chat ID not found in loaded chats:', storedActiveChat);
       }
@@ -192,14 +192,14 @@ export const useChatStore = defineStore('chat', () => {
   // Add window event listeners to ensure data is saved before page unload
   // if (typeof window !== 'undefined') {
   //   window.addEventListener('beforeunload', () => {
-  //     console.log('📝 Page unloading, saving data');
+  //     // console.log('📝 Page unloading, saving data');
   //     // saveToTemplate();
   //   });
 
   //   // Also save when tab visibility changes (user switches tabs)
   //   window.addEventListener('visibilitychange', () => {
   //     if (document.visibilityState === 'hidden') {
-  //       console.log('📝 Tab hidden, saving data');
+  //       // console.log('📝 Tab hidden, saving data');
   //       // saveToTemplate();
   //     }
   //   });
@@ -212,9 +212,9 @@ export const useChatStore = defineStore('chat', () => {
   const defaultPromptTemplate = computed(() => {
     return globalPromptTemplates.value.find(t => t.isDefault) || null;
   });
-console.log(defaultPromptTemplate, "defaultPromptTemplate");
+// // console.log(defaultPromptTemplate, "defaultPromptTemplate");
   function setActiveChat(chatId: string) {
-    console.log('Setting active chat:', chatId);
+    // console.log('Setting active chat:', chatId);
     activeChat.value = chatId;
     const chat = chats.value.find(c => c.id === chatId);
     if (chat) {
@@ -225,7 +225,7 @@ console.log(defaultPromptTemplate, "defaultPromptTemplate");
   }
 
   async function addMessage(chatId: string, content: string, sender: 'user' | 'assistant', attachments?: Attachment[]) {
-    console.log(`Adding ${sender} message to chat ${chatId}:`, content);
+    // console.log(`Adding ${sender} message to chat ${chatId}:`, content);
     const chat = chats.value.find(c => c.id === chatId);
     if (!chat) {
       console.error('Chat not found with ID:', chatId);
@@ -246,7 +246,7 @@ console.log(defaultPromptTemplate, "defaultPromptTemplate");
 
     // Only trigger AI response for user messages when connected
     if (sender === 'user') {
-      console.log('Triggering AI response');
+      // console.log('Triggering AI response');
       try {
         await handleAIResponse(chat);
       } catch (error: any) {
@@ -320,7 +320,7 @@ console.log(defaultPromptTemplate, "defaultPromptTemplate");
   }
 
   function updateStory(chatId: string, content: string, createNewVersion: boolean = true) {
-    console.log(`Updating story for chat ${chatId}`);
+    // console.log(`Updating story for chat ${chatId}`);
     const chat = chats.value.find(c => c.id === chatId);
     if (!chat) {
       console.error('Chat not found with ID:', chatId);
@@ -367,7 +367,7 @@ console.log(defaultPromptTemplate, "defaultPromptTemplate");
   }
 
   function revertToPromptVersion(chatId: string, versionId: string) {
-    console.log(`Reverting to prompt version ${versionId} for chat ${chatId}`);
+    // console.log(`Reverting to prompt version ${versionId} for chat ${chatId}`);
     const chat = chats.value.find(c => c.id === chatId);
     if (!chat?.story) {
       console.error('Chat or story not found');
@@ -394,7 +394,7 @@ console.log(defaultPromptTemplate, "defaultPromptTemplate");
 
   async function deletePromptVersion(chatId: string, versionId: string) {
     try{
-      console.log(`Deleting prompt version ${versionId} for chat ${chatId}`);
+      // console.log(`Deleting prompt version ${versionId} for chat ${chatId}`);
       const chat = chats.value.find(c => c.id === chatId);
       if (!chat?.story) {
         console.error('Chat or story not found');
@@ -485,7 +485,7 @@ console.log(defaultPromptTemplate, "defaultPromptTemplate");
   }
 
   async function handleAIResponse(chat: Chat) {
-    console.log('Handling AI response for chat:', chat.id);
+    // console.log('Handling AI response for chat:', chat.id);
     doInputDisable.value = true;
     isTyping.value = true;
     let streamedContent = '';
@@ -693,7 +693,7 @@ Use the above connected services information to understand what tools and data s
       });
 
       const stream = await openAIStore.streamChat(messages);
-      // console.log('Stream object received:', stream);
+      // // console.log('Stream object received:', stream);
       if (!stream.body) throw new Error('No response body for streaming');
       const reader = stream.body?.getReader();
       const decoder = new TextDecoder('utf-8');
@@ -712,17 +712,17 @@ Use the above connected services information to understand what tools and data s
       };
       chat.messages.push(aiMessage);
 
-      console.log('Waiting for first content chunk to create AI message');
+      // console.log('Waiting for first content chunk to create AI message');
 
       console.log('Starting to process stream');
       // for await (const chunk of stream) {
-        // console.log('Received chunk:', chunk);
+        // // console.log('Received chunk:', chunk);
 
       while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           const chunk = decoder.decode(value, { stream: true });
-          console.log('chunk--->', chunk); // or yield chunk, or process as needed
+          // console.log('chunk--->', chunk); // or yield chunk, or process as needed
 
         // Handle Responses API streaming format
         // if (chunk.type === 'response.output_text.delta') {
@@ -754,7 +754,7 @@ Use the above connected services information to understand what tools and data s
           // Just collect content - don't create message bubble yet
         // } else if (chunk.type && chunk.type.includes('function_call')) {
           // Handle tool calls for Responses API
-          // console.log('Tool call delta received:', chunk);
+          // // console.log('Tool call delta received:', chunk);
           // Tool call handling for Responses API format
           // This will need to be implemented based on the actual tool call structure
         // }
@@ -782,7 +782,7 @@ Use the above connected services information to understand what tools and data s
 
       //   // Update the sidebar with the AI prompt
       //   updateStory(chat.id, parsedResponse.aiPrompt, true);
-      //   console.log('Updated sidebar with AI prompt');
+      //   // console.log('Updated sidebar with AI prompt');
       // } else if (parsedResponse.chatResponse && !parsedResponse.aiPrompt) {
       //   // Only chat response found, no AI prompt
       //   aiMessage = {
@@ -794,7 +794,7 @@ Use the above connected services information to understand what tools and data s
       //   chat.messages.push(aiMessage);
       //   chat.lastMessage = parsedResponse.chatResponse;
       //   await nextTick();
-      //   console.log('Only chat response found, no AI prompt to update sidebar');
+      //   // console.log('Only chat response found, no AI prompt to update sidebar');
       // } else if (!parsedResponse.chatResponse && parsedResponse.aiPrompt) {
       //   // Only AI prompt found, no chat response - this shouldn't happen but handle it
       //   aiMessage = {
@@ -809,7 +809,7 @@ Use the above connected services information to understand what tools and data s
 
       //   // Update the sidebar with the AI prompt
       //   updateStory(chat.id, parsedResponse.aiPrompt, true);
-      //   console.log('Only AI prompt found, updated sidebar and provided generic chat message');
+      //   // console.log('Only AI prompt found, updated sidebar and provided generic chat message');
       // } else {
       //   // No structured format found - treat as regular chat response only
       //   console.warn('No structured dual response format found, treating as regular chat response');
@@ -825,7 +825,7 @@ Use the above connected services information to understand what tools and data s
       //     await nextTick();
       //   }
       //   // Do NOT update sidebar when no structured format is found
-      //   console.log('No sidebar update - content treated as regular chat response only');
+      //   // console.log('No sidebar update - content treated as regular chat response only');
       // }
 
       if (parsedResponse.chatResponse) {
@@ -992,7 +992,7 @@ Use the above connected services information to understand what tools and data s
       isTyping.value = false;
       isAIPromptGenerating.value = false;
       doInputDisable.value = false;
-      console.log('Typing indicator turned off');
+      // console.log('Typing indicator turned off');
       
       // Note: saveToTemplate() is not called here to prevent additional API calls on error
       // The flow stops completely when an error occurs
@@ -1001,9 +1001,9 @@ Use the above connected services information to understand what tools and data s
 
   // Helper function to parse dual response format
   function parseDualResponse(content: string): { chatResponse: string | null; aiPrompt: string | null } {
-    console.log('=== PARSING DUAL RESPONSE ===');
-    console.log('Full content received:', content);
-    console.log('Content length:', content.length);
+    // console.log('=== PARSING DUAL RESPONSE ===');
+    // console.log('Full content received:', content);
+    // console.log('Content length:', content.length);
 
     // Handle case where content might contain the markers but not in expected order
     const chatResponseMatch = content.match(/---CHAT_RESPONSE---([\s\S]*?)(?=---AI_PROMPT---|---END---|$)/);
@@ -1029,7 +1029,7 @@ Use the above connected services information to understand what tools and data s
 
     // If we didn't find the structured format, try to detect patterns more aggressively
     if (!chatResponse && !aiPrompt && content.trim()) {
-      console.log('No structured format found, analyzing content patterns...');
+      // console.log('No structured format found, analyzing content patterns...');
 
       const lowerContent = content.toLowerCase().trim();
       const contentLines = content.trim().split('\n');
@@ -1084,20 +1084,20 @@ Use the above connected services information to understand what tools and data s
         chatIndicatorCount >= 1 && promptIndicatorCount === 0 && !hasNumberedList
       );
 
-      console.log('Classification:', { isLikelyAIPrompt, isLikelyChatResponse });
+      // console.log('Classification:', { isLikelyAIPrompt, isLikelyChatResponse });
 
       if (isLikelyAIPrompt && !isLikelyChatResponse) {
         // This looks like a structured AI prompt
         aiPrompt = content.trim();
         chatResponse = 'I\'ve created your AI prompt. You can see the details in the sidebar.';
-        console.log('✅ Content classified as AI prompt - separated into sidebar');
+        // console.log('✅ Content classified as AI prompt - separated into sidebar');
       } else if (isLikelyChatResponse && !isLikelyAIPrompt) {
         // This is clearly a chat response
         chatResponse = content.trim();
-        console.log('✅ Content classified as chat response only');
+        // console.log('✅ Content classified as chat response only');
       } else {
         // Ambiguous content - check for mixed content and try to separate
-        console.log('⚠️ Ambiguous content detected, attempting separation...');
+        // console.log('⚠️ Ambiguous content detected, attempting separation...');
 
         // Try to find where AI prompt might start within the content
         const lines = contentLines;
@@ -1143,12 +1143,12 @@ Use the above connected services information to understand what tools and data s
           } else {
             // Fallback to treating as chat response only
             chatResponse = content.trim();
-            console.log('⚠️ Separation failed, treating as chat response only');
+            // console.log('⚠️ Separation failed, treating as chat response only');
           }
         } else {
           // No clear separation found - default to chat response only to avoid contamination
           chatResponse = content.trim();
-          console.log('⚠️ No separation possible, defaulting to chat response only');
+          // console.log('⚠️ No separation possible, defaulting to chat response only');
         }
       }
     }
@@ -1166,7 +1166,7 @@ Use the above connected services information to understand what tools and data s
       const hasSuspiciousContent = suspiciousPatterns.some(pattern => pattern.test(chatResponse!));
 
       if (hasSuspiciousContent && !aiPrompt) {
-        console.log('🚨 Detected AI prompt content in chat response, moving to sidebar');
+        // console.log('🚨 Detected AI prompt content in chat response, moving to sidebar');
         aiPrompt = chatResponse;
         chatResponse = 'I\'ve created your AI prompt. You can see the details in the sidebar.';
       }
@@ -1239,7 +1239,7 @@ Use the above connected services information to understand what tools and data s
       //     hasServices = true;
       //   }
       // } catch (error) {
-      //   console.log('No file search data or error loading:', error);
+      //   // console.log('No file search data or error loading:', error);
       // }
 
       // Check for Web Search data
@@ -1257,7 +1257,7 @@ Use the above connected services information to understand what tools and data s
       //     hasServices = true;
       //   }
       // } catch (error) {
-      //   console.log('No web search data or error loading:', error);
+      //   // console.log('No web search data or error loading:', error);
       // }
 
       // Return JSON only if we have connected services
@@ -1273,7 +1273,7 @@ Use the above connected services information to understand what tools and data s
         return jsonString;
       }
 
-      console.log('No connected services found for chat:', chatId);
+      // console.log('No connected services found for chat:', chatId);
       return null;
     } catch (error) {
       console.error('Error generating connected services JSON:', error);
@@ -1282,7 +1282,7 @@ Use the above connected services information to understand what tools and data s
   }
 
   function createNewChat() {
-    console.log('Creating new chat');
+    // console.log('Creating new chat');
 
     // Use default template if available
     const initialPrompt = defaultPromptTemplate.value?.content || '';
@@ -1316,7 +1316,7 @@ Use the above connected services information to understand what tools and data s
 
     chats.value.unshift(newChat);
     setActiveChat(newChat.id);
-    console.log('New chat created with ID:', newChat.id);
+    // console.log('New chat created with ID:', newChat.id);
     return newChat;
   }
 
@@ -1328,7 +1328,7 @@ Use the above connected services information to understand what tools and data s
     const currentActiveChat = chats.value.find(c => c.id === activeChat.value);
     if (currentActiveChat) {
       chats.value = [currentActiveChat];
-      console.log('Cleared all chats except active one');
+      // console.log('Cleared all chats except active one');
       saveToTemplate();
       return true;
     }
@@ -1358,7 +1358,7 @@ Use the above connected services information to understand what tools and data s
       const activeVersion = chat.story.versions.find(v => v.isActive);
       if (activeVersion) {
         chat.story.versions = [activeVersion];
-        console.log(`Cleared version history for chat ${chatId}`);
+        // console.log(`Cleared version history for chat ${chatId}`);
         return true;
       }
       return false;
@@ -1397,13 +1397,13 @@ Use the above connected services information to understand what tools and data s
 
   // Initialize with a default chat if none exists
   if (chats.value.length === 0) {
-    console.log('No chats found, creating default chat');
+    // console.log('No chats found, creating default chat');
     createNewChat();
   }
 
   // Initialize default template if none exists
   if (globalPromptTemplates.value.length === 0) {
-    console.log('Creating default prompt template');
+    // console.log('Creating default prompt template');
     createGlobalPromptTemplate(
       'Default Bot Prompt',
       `You are an AI prompt designer. I will describe how the chatbot should behave, and you will build a structured chatbot flow step-by-step.
