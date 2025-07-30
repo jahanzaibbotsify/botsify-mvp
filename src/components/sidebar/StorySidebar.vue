@@ -721,35 +721,39 @@ defineExpose({
 
 .btn-revert,
 .btn-load {
-  background-color: var(--color-primary);
-  color: white;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
 }
 
 
 .btn-load:hover {
-  background-color: var(--color-primary-hover);
+  background-color: var(--color-primary);
+  color: white;
 }
 
 .btn-default {
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning);
+}
+
+.btn-default:hover {
   background-color: var(--color-warning);
   color: white;
 }
 
-.btn-default:hover {
-  background-color: var(--color-warning-hover);
+.btn-delete {
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
 }
 
-.btn-delete {
+.btn-delete:hover {
   background-color: var(--color-error);
   color: white;
 }
 
-.btn-delete:hover {
-  background-color: var(--color-error-hover);
-}
-
 .btn-revert:hover {
-  background-color: var(--color-primary-hover);
+  background-color: var(--color-primary);
+  color: white;
 }
 
 /* Template Manager */

@@ -216,11 +216,14 @@ const disconnectMCP = async (server: any) => {
   right: var(--space-2);
 }
 
-.edit-button, .delete-button {
-  background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border);
+.edit-button, .delete-button{
   border-radius: var(--radius-sm);
   padding: var(--space-1);
+}
+
+.edit-button {
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -242,7 +245,7 @@ const disconnectMCP = async (server: any) => {
 }
 
 .delete-button:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: var(--color-error);
+  background-color: var(--color-bg-secondary);
+  /* transform: scale(1.1); */
 }
 </style>

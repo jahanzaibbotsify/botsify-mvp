@@ -165,7 +165,7 @@ button {
 }
 
 button:hover {
-  border-color: var(--color-primary);
+  /* border-color: #b4b4b4; */
   background-color: var(--color-bg-hover);
 }
 
