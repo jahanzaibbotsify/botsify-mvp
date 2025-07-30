@@ -67,6 +67,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/auth/AgentSelectionView.vue'),
     meta: { requiresAuth: false }
   },
+  {
+    path: '/agent-landing',
+    name: 'agent-landing',
+    component: () => import('../views/AgentLandingView.vue'),
+    meta: { requiresAuth: false }
+  },
   // Main App Routes  
   {
     path: '',

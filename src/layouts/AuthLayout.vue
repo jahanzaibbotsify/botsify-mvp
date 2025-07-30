@@ -60,7 +60,7 @@ const pageContent = computed(() => {
         <div class="logo-section">
           <div class="logo-container">
                     <img 
-          src="/images/logos/logo-white-600w.webp" 
+          src="/logo.png" 
           alt="Botsify" 
           class="logo-image"
         />
@@ -207,7 +207,8 @@ const pageContent = computed(() => {
 .logo-image {
   height: 40px;
   width: auto;
-  filter: brightness(0) saturate(100%) invert(32%) sepia(88%) saturate(3151%) hue-rotate(227deg) brightness(95%) contrast(93%);
+  background: transparent;
+  object-fit: contain;
 }
 
 /* Main Content */

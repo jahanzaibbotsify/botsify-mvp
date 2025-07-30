@@ -200,7 +200,7 @@ onUnmounted(() => {
         <div class="app-title-container">
           <!-- Botsify Logo with link to botsify.com -->
           <a href="https://botsify.com" target="_blank" class="logo-link">
-            <img src="https://botsify.com/assets/img/logos/logo/logo-color-600w.webp" alt="Botsify" class="logo-icon" />
+            <img src="/logo.png" alt="Botsify" class="logo-icon" />
           </a>
         </div>
 
@@ -393,6 +393,8 @@ onUnmounted(() => {
 .logo-icon {
   height: 35px;
   width: auto;
+  background: transparent;
+  object-fit: contain;
 }
 
 .sidebar-actions {
