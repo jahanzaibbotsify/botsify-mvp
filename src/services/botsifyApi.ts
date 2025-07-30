@@ -996,7 +996,6 @@ export class BotsifyApiService {
     try {
       const response = await axiosInstance.post(`/v1/update-agent`, payload);
       if (response.data.status === 'success') {
-        console.log('Message stored: ', response.data.bot);
         return {
           success: true,
           message: 'Bot templates saved successfully',
@@ -1024,7 +1023,6 @@ export class BotsifyApiService {
     try {
       const response = await axiosInstance.post(`/v1/clear-conversation`, payload);
       if (response.data.status === 'success') {
-        console.log('Message stored: ', response.data.bot);
         return {
           success: true,
           message: 'Agent chat cleared successfully',

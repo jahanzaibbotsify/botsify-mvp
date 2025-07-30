@@ -55,7 +55,6 @@ watch(() => sidebarStore.isOpen, (isOpen) => {
 onMounted(() => {
    if (apiKey) {
     apiKeyStore.setApiKey(apiKey)
-    console.log('API Key set:', apiKey)
   } 
   if (isMobile.value) {
     sidebarStore.closeSidebar();
