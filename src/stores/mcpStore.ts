@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import {ref, onMounted} from 'vue';
+import {ref} from 'vue';
 import type { MCPServer } from '../types/mcp';
 import { botsifyApi } from '../services/botsifyApi';
 
