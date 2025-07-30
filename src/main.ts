@@ -255,8 +255,8 @@ const pinia = createPinia()
 const app = createApp(App)
 
 // Use plugins
-app.use(router)
 app.use(pinia)
+app.use(router)
 app.use(ToastPlugin);
 installPermissions(app);
 
