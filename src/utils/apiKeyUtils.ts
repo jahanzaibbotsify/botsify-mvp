@@ -12,28 +12,53 @@ export function extractApiKey(): string {
   
   // Try to get from localStorage first
   const storedApiKey = localStorage.getItem('bot_api_key');
-  if (storedApiKey) {
-    return storedApiKey;
-  }
   
   // Extract from URL path
   // For routes like /agent/123, the API key is the second segment
   if (segments.length >= 2 && segments[0] === 'agent') {
     const apiKey = segments[1];
-    localStorage.setItem('bot_api_key', apiKey);
-    return apiKey;
+    
+    // Check if URL API key is different from localStorage
+    if (apiKey && apiKey !== storedApiKey && apiKey !== 'undefined' && apiKey !== 'null') {
+      console.log('🔄 ApiKeyUtils: URL API key differs from localStorage, updating...', {
+        urlApiKey: apiKey,
+        storedApiKey
+      });
+      localStorage.setItem('bot_api_key', apiKey);
+      console.log('✅ ApiKeyUtils: API key updated from URL:', apiKey);
+      return apiKey;
+    } else if (apiKey && (!storedApiKey || storedApiKey === 'undefined' || storedApiKey === 'null')) {
+      localStorage.setItem('bot_api_key', apiKey);
+      console.log('🔑 ApiKeyUtils: API key set from URL:', apiKey);
+      return apiKey;
+    } else if (storedApiKey) {
+      return storedApiKey;
+    }
   }
   
   // For other routes, try to find a valid API key pattern
   // Look for segments that might be API keys (alphanumeric, reasonable length)
   for (const segment of segments) {
     if (segment.length >= 8 && /^[a-zA-Z0-9_-]+$/.test(segment)) {
-      localStorage.setItem('bot_api_key', segment);
-      return segment;
+      // Check if URL API key is different from localStorage
+      if (segment && segment !== storedApiKey && segment !== 'undefined' && segment !== 'null') {
+        console.log('🔄 ApiKeyUtils: URL API key differs from localStorage, updating...', {
+          urlApiKey: segment,
+          storedApiKey
+        });
+        localStorage.setItem('bot_api_key', segment);
+        console.log('✅ ApiKeyUtils: API key updated from URL:', segment);
+        return segment;
+      } else if (segment && (!storedApiKey || storedApiKey === 'undefined' || storedApiKey === 'null')) {
+        localStorage.setItem('bot_api_key', segment);
+        console.log('🔑 ApiKeyUtils: API key set from URL:', segment);
+        return segment;
+      }
     }
   }
   
-  return '';
+  // Return stored API key if available
+  return storedApiKey || '';
 }
 
 /**

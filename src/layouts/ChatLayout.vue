@@ -54,8 +54,19 @@ watch(() => sidebarStore.isOpen, (isOpen) => {
 // Initialize sidebar state based on screen size
 onMounted(() => {
    if (apiKey) {
-    apiKeyStore.setApiKey(apiKey)
-    console.log('API Key set:', apiKey)
+    // Check if route API key is different from localStorage
+    const localApiKey = apiKeyStore.getApiKey || '';
+    if (apiKey !== localApiKey && apiKey !== 'undefined' && apiKey !== 'null') {
+      console.log('🔄 ChatLayout: Route API key differs from localStorage, updating...', {
+        routeApiKey: apiKey,
+        localApiKey
+      });
+      apiKeyStore.setApiKey(apiKey);
+      console.log('✅ ChatLayout: API key updated from route params:', apiKey);
+    } else if (apiKey && (!localApiKey || localApiKey === 'undefined' || localApiKey === 'null')) {
+      apiKeyStore.setApiKey(apiKey);
+      console.log('🔑 ChatLayout: API key set from route params:', apiKey);
+    }
   } 
   if (isMobile.value) {
     sidebarStore.closeSidebar();

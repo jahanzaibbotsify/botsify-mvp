@@ -170,6 +170,30 @@ router.beforeEach(async (to, from, next) => {
     
     let apikey = storeApiKey || localApiKey || '';
     
+    // Check if route has a different API key than localStorage
+    if (to.name === 'agent' && to.params.id) {
+      const routeApiKey = to.params.id as string;
+      const currentApiKey = localApiKey || storeApiKey || '';
+      
+      // If route API key is different from current API key, update it
+      if (routeApiKey && routeApiKey !== currentApiKey && routeApiKey !== 'undefined' && routeApiKey !== 'null') {
+        console.log('🔄 Route API key differs from localStorage, updating...', {
+          routeApiKey,
+          currentApiKey
+        });
+        apikey = routeApiKey;
+        botStore.setApiKey(routeApiKey);
+        console.log('✅ API key updated from route params:', routeApiKey);
+      } else if (routeApiKey && (routeApiKey === currentApiKey || !currentApiKey)) {
+        // If route API key is the same or no current API key, use route API key
+        apikey = routeApiKey;
+        if (!currentApiKey) {
+          botStore.setApiKey(routeApiKey);
+          console.log('🔑 API key set from route params:', routeApiKey);
+        }
+      }
+    }
+    
     // If no API key found, try to extract from URL or route params
     if (!apikey || apikey === 'undefined' || apikey === 'null') {
       console.log('🔍 No valid API key found, extracting from URL/route params...');
