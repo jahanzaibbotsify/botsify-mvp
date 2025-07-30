@@ -82,6 +82,11 @@ export const useRoleStore = defineStore('role', () => {
     
     console.log(`🔐 Role set: ${currentRole.value} (bot_role: ${user.bot_role})`)
     console.log(`📋 Permissions:`, userPermissions.value)
+    
+    // Clear caches when user data changes
+    import('@/utils/apiKeyUtils').then(({ clearRoleCache }) => {
+      clearRoleCache();
+    });
   }
 
   // Check if user has a specific permission

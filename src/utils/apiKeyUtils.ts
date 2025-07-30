@@ -74,8 +74,13 @@ export function isValidApiKeyFormat(apiKey: string): boolean {
 }
 
 
+// Cache for user role to avoid repeated store calls
+let cachedUserRole: string | null = null;
+let roleCacheExpiry: number = 0;
+const ROLE_CACHE_DURATION = 5000; // 5 seconds
+
 export function getDefaultRedirect() {
-  // Check if API key exists in localStorage
+  // Check if API key exists in localStorage (fast operation)
   const storedApiKey = getCurrentApiKey();
   
   if (storedApiKey && storedApiKey !== 'undefined' && storedApiKey !== 'null') {
@@ -83,11 +88,39 @@ export function getDefaultRedirect() {
     return { name: 'agent', params: { id: storedApiKey } };
   }
   
-  // Default route based on user role (fallback)
-  const roleStore = useRoleStore();
-  if (roleStore.isLiveChatAgent) {
-    return { name: 'conversation' };
-  } else {
+  // Use cached role if available and not expired
+  const now = Date.now();
+  if (cachedUserRole && now < roleCacheExpiry) {
+    if (cachedUserRole === 'live_chat_agent') {
+      return { name: 'conversation' };
+    } else {
+      return { name: 'agent', params: { id: 'default' } };
+    }
+  }
+  
+  // Fallback: get role from store (this should be rare)
+  try {
+    const roleStore = useRoleStore();
+    const isLiveChatAgent = roleStore.isLiveChatAgent;
+    
+    // Cache the result
+    cachedUserRole = isLiveChatAgent ? 'live_chat_agent' : 'default';
+    roleCacheExpiry = now + ROLE_CACHE_DURATION;
+    
+    if (isLiveChatAgent) {
+      return { name: 'conversation' };
+    } else {
+      return { name: 'agent', params: { id: 'default' } };
+    }
+  } catch (error) {
+    // If store is not available, default to agent
+    console.warn('Role store not available, defaulting to agent route');
     return { name: 'agent', params: { id: 'default' } };
   }
+}
+
+// Function to clear role cache when user data changes
+export function clearRoleCache() {
+  cachedUserRole = null;
+  roleCacheExpiry = 0;
 }

@@ -22,19 +22,19 @@ const routes: RouteRecordRaw[] = [
       {
         path: '/agent/:id',
         name: 'agent',
-        component: () => import('../views/ChatView.vue'),
+        component: () => import(/* webpackChunkName: "chat", webpackPrefetch: true */ '../views/ChatView.vue'),
         props: true
       },
       {
         path: '/conversation/:id?',
         name: 'conversation',
-        component: () => import('../views/ConversationView.vue'),
+        component: () => import(/* webpackChunkName: "conversation", webpackPrefetch: true */ '../views/ConversationView.vue'),
         props: true
       },
       {
         path: '/users',
         name: 'users',
-        component: () => import('../views/UserView.vue')
+        component: () => import(/* webpackChunkName: "users", webpackPrefetch: true */ '../views/UserView.vue')
       }
     ]
   },

@@ -17,6 +17,7 @@ import { useRoleStore } from './stores/roleStore';
 import { useWhitelabelStore } from './stores/whitelabelStore';
 import { installPermissions } from './utils/permissions';
 import { extractApiKey, getCurrentApiKey } from './utils/apiKeyUtils';
+import { performanceMonitor, lazyLoader, memoryManager } from './utils/performance';
 
 import Swal from 'sweetalert2';
 
@@ -96,19 +97,33 @@ function checkLocalStorage() {
 }
 
 
+// Cache for bot details to avoid repeated API calls
+const botDetailsCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 30000; // 30 seconds
+
 // Reusable function to make an authenticated GET request with axios
-function getBotDetails(apikey: string) {
-  return axios.get(
-    BOTSIFY_BASE_URL + `/v1/bot/get-data?apikey=${apikey}`,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${BOTSIFY_AUTH_TOKEN}`
+async function getBotDetails(apikey: string) {
+  // Check cache first
+  const cached = botDetailsCache.get(apikey);
+  const now = Date.now();
+  
+  if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+    console.log('📦 Using cached bot details for:', apikey);
+    return cached.data;
+  }
+  
+  try {
+    const response = await axios.get(
+      BOTSIFY_BASE_URL + `/v1/bot/get-data?apikey=${apikey}`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${BOTSIFY_AUTH_TOKEN}`
+        }
       }
-    }
-  )
-  .then(response => {
-    console.log('ressssss ', response.data);
+    );
+    
+    console.log('📡 Fetched fresh bot details for:', apikey);
     
     const roleStore = useRoleStore();
     const whitelabelStore = useWhitelabelStore();
@@ -133,18 +148,68 @@ function getBotDetails(apikey: string) {
         }
       }
     }
+    
     const botStore = useBotStore();
     botStore.setApiKeyConfirmed(true);
     botStore.setBotId(response.data.data.bot.id);
     botStore.setUser(response.data.data.user);  
     botStore.setBotName(response.data.data.bot.name);
 
+    // Cache the result
+    botDetailsCache.set(apikey, { data: response.data.data, timestamp: now });
+    
     return response.data.data;
-  })
-  .catch(error => {
+  } catch (error) {
     console.error('API request error:', error);
     return false;
+  }
+}
+
+// Function to clear bot details cache
+export function clearBotDetailsCache() {
+  botDetailsCache.clear();
+}
+
+// Function to clear navigation cache
+export function clearNavigationCache() {
+  navigationCache.clear();
+}
+
+// Function to clear all caches
+export function clearAllCaches() {
+  botDetailsCache.clear();
+  navigationCache.clear();
+  componentCache.clear();
+  // Import and call the role cache clear function
+  import('./utils/apiKeyUtils').then(({ clearRoleCache }) => {
+    clearRoleCache();
   });
+}
+
+// Store cache for better performance
+const storeCache = new Map<string, { data: any; timestamp: number }>();
+const STORE_CACHE_DURATION = 15000; // 15 seconds
+
+// Cached store getter
+function getCachedStore<T>(storeName: string, getter: () => T): T {
+  const now = Date.now();
+  const cached = storeCache.get(storeName);
+  
+  if (cached && (now - cached.timestamp) < STORE_CACHE_DURATION) {
+    performanceMonitor.recordCacheHit(storeName, true);
+    return cached.data;
+  }
+  
+  performanceMonitor.recordCacheHit(storeName, false);
+  const data = getter();
+  storeCache.set(storeName, { data, timestamp: now });
+  
+  return data;
+}
+
+// Function to clear store cache
+export function clearStoreCache() {
+  storeCache.clear();
 }
 
 // Create router instance
@@ -153,57 +218,131 @@ const router = createRouter({
   routes
 })
 
+// Component cache for better performance
+const componentCache = new Map<string, any>();
+const COMPONENT_CACHE_DURATION = 60000; // 1 minute
+
+// Lazy load and cache components
+function getCachedComponent(componentPath: string) {
+  const now = Date.now();
+  const cached = componentCache.get(componentPath);
+  
+  if (cached && (now - cached.timestamp) < COMPONENT_CACHE_DURATION) {
+    console.log('📦 Using cached component:', componentPath);
+    return cached.component;
+  }
+  
+  // Load and cache the component
+  const component = () => import(componentPath);
+  componentCache.set(componentPath, { component, timestamp: now });
+  console.log('📡 Loading fresh component:', componentPath);
+  
+  return component;
+}
+
+// Note: Route prefetching is handled automatically by Vue Router
+
+// Add loading state for better perceived performance
+router.beforeEach((to, from, next) => {
+  // Start performance monitoring
+  const routeName = String(to.name || 'unknown');
+  performanceMonitor.startTimer(`route-${routeName}`);
+  
+  // Show loading indicator for slow routes
+  if (to.name === 'agent' || to.name === 'conversation') {
+    console.log('🔄 Loading route:', to.name);
+  }
+  next();
+})
+
+// Monitor route completion
+router.afterEach((to) => {
+  const routeName = String(to.name || 'unknown');
+  performanceMonitor.endTimer(`route-${routeName}`);
+  
+  // Check memory usage periodically
+  if (Math.random() < 0.1) { // 10% chance on each route
+    memoryManager.checkMemoryUsage();
+  }
+})
+
+// Preload critical components
+function preloadCriticalComponents() {
+  const criticalComponents = [
+    '../views/ChatView.vue',
+    '../views/ConversationView.vue',
+    '../views/UserView.vue'
+  ];
+  
+  criticalComponents.forEach(componentPath => {
+    getCachedComponent(componentPath);
+  });
+}
+
+// Preload components after initial load
+setTimeout(preloadCriticalComponents, 2000);
+
+
+// Cache for navigation state to avoid repeated checks
+const navigationCache = new Map<string, { timestamp: number; data: any }>();
+const NAVIGATION_CACHE_DURATION = 10000; // 10 seconds
 
 router.beforeEach(async (to, from, next) => {
+  // Skip navigation guard for certain routes to improve performance
+  if (to.name === 'Unauthenticated' || to.name === 'NotFound') {
+    return next();
+  }
+
   if (to.name === 'agent' || to.name === 'conversation') {
+    // Use cached store data for better performance
     const botStore = useBotStore();
-    const roleStore = useRoleStore();
-    const storeApiKey = botStore.getApiKey;
+    const storeApiKey = getCachedStore('botStore-apiKey', () => botStore.getApiKey);
     const localApiKey = getCurrentApiKey();
-    
-    console.log('🔍 API Key Debug:', {
-      storeApiKey,
-      localApiKey,
-      routeName: to.name,
-      routeParams: to.params
-    });
     
     let apikey = storeApiKey || localApiKey || '';
     
     // If no API key found, try to extract from URL or route params
     if (!apikey || apikey === 'undefined' || apikey === 'null') {
-      console.log('🔍 No valid API key found, extracting from URL/route params...');
-      
       // For /agent/:id route, extract API key from route params
       if (to.name === 'agent' && to.params.id) {
         apikey = to.params.id as string;
         botStore.setApiKey(apikey);
-        console.log('🔑 API key extracted from route params:', apikey);
       } else {
         // Try to extract from URL path
         apikey = botStore.extractApiKeyFromUrl();
       }
     }    
     
-    console.log('🔑 Final API key:', apikey);
-    
     if (apikey && apikey !== 'undefined' && apikey !== 'null') {
+      // Check navigation cache first
+      const cacheKey = `${apikey}-${to.name}`;
+      const cached = navigationCache.get(cacheKey);
+      const now = Date.now();
+      
+      if (cached && (now - cached.timestamp) < NAVIGATION_CACHE_DURATION) {
+        console.log('📦 Using cached navigation data for:', cacheKey);
+        return next();
+      }
+      
       try {
         const data = await getBotDetails(apikey);
         if (data) {
+          const roleStore = useRoleStore();
           roleStore.setCurrentUser(data.user);
 
           const chatStore = useChatStore();
           const conversationStore = useConversationStore();
 
-          // Check subscription requirements for restricted pages
-          if (to.name === 'conversation' && !roleStore.hasSubscription) {
+          // Check subscription requirements for restricted pages (cached)
+          const hasSubscription = getCachedStore('roleStore-hasSubscription', () => roleStore.hasSubscription);
+          if (to.name === 'conversation' && !hasSubscription) {
             console.log('🔒 Conversation page requires subscription, redirecting to agent');
             return next({ name: 'agent', params: { id: apikey } });
           }
 
-          // Role-based restriction for live chat agents
-          if (roleStore.isLiveChatAgent) {
+          // Role-based restriction for live chat agents (cached)
+          const isLiveChatAgent = getCachedStore('roleStore-isLiveChatAgent', () => roleStore.isLiveChatAgent);
+          if (isLiveChatAgent) {
             if (to.name !== 'conversation') {
               console.log('🔄 Live chat agent redirected to conversation page');
               return next({ name: 'conversation' });
@@ -226,6 +365,9 @@ router.beforeEach(async (to, from, next) => {
             }
           }
 
+          // Cache the navigation result
+          navigationCache.set(cacheKey, { timestamp: now, data: data });
+          
           return next();
         } else {
           console.error('❌ Failed to get bot details');
@@ -241,10 +383,11 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // Handle users page - redirect if no subscription
+  // Handle users page - redirect if no subscription (cached)
   if (to.name === 'users') {
     const roleStore = useRoleStore();
-    if (!roleStore.hasSubscription) {
+    const hasSubscription = getCachedStore('roleStore-hasSubscription-users', () => roleStore.hasSubscription);
+    if (!hasSubscription) {
       console.log('🔒 Users page requires subscription, redirecting to agent');
       return next({ name: 'agent', params: { id: 'default' } });
     }
@@ -283,6 +426,18 @@ window.$confirm = function (overrideOpt = {}, callback = () => {}) {
     }
   });
 };
+
+// Performance debugging tools (development only)
+if (import.meta.env.DEV) {
+  (window as any).$performance = {
+    report: () => performanceMonitor.logPerformanceReport(),
+    clearCaches: () => clearAllCaches(),
+    clearMemory: () => memoryManager.clearMemory(),
+    preloadComponents: () => preloadCriticalComponents()
+  };
+  
+  console.log('🔧 Performance tools available: window.$performance');
+}
 
 
 // Check localStorage before mounting

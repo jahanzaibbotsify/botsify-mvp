@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from 'vue';
+import { ref, computed, onMounted, nextTick, watch, defineAsyncComponent } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 import { useRoleStore } from '@/stores/roleStore';
@@ -9,6 +9,11 @@ import MessageInput from '@/components/chat/MessageInput.vue';
 import TypingIndicator from '@/components/chat/TypingIndicator.vue';
 import SystemMessageSender from '@/components/chat/SystemMessageSender.vue';
 import ChatHeader from '@/components/chat/ChatHeader.vue';
+
+// Lazy load heavy components with caching
+const LazySystemMessageSender = defineAsyncComponent(() => 
+  import('@/components/chat/SystemMessageSender.vue')
+);
 
 const router = useRouter();
 const roleStore = useRoleStore();
@@ -165,7 +170,7 @@ function toggleStorySidebar() {
             <i class="pi pi-times"></i>
           </button>
         </div>
-        <SystemMessageSender />
+        <LazySystemMessageSender />
       </div>
     </div>
   </div>
