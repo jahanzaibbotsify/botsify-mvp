@@ -24,6 +24,7 @@ import Swal from 'sweetalert2';
 // Import routes
 import routes from '@/router'
 import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from './utils/config'
+import { axiosInstance } from './utils/axiosInstance'
 (window as any).Swal = Swal;
 
 // Extract and store API key
@@ -99,15 +100,7 @@ function checkLocalStorage() {
 
 // Reusable function to make an authenticated GET request with axios
 function getBotDetails(apikey: string) {
-  return axios.get(
-    BOTSIFY_BASE_URL + `/v1/bot/get-data?apikey=${apikey}`,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${BOTSIFY_AUTH_TOKEN}`
-      }
-    }
-  )
+  return axiosInstance.get(`/v1/bot/get-data?apikey=${apikey}`)
   .then(response => {
     // console.log('ressssss ', response.data);
     
@@ -156,6 +149,18 @@ const router = createRouter({
 
 
 router.beforeEach(async (to, from, next) => {
+  // Handle Unauthenticated route - allow it to render without any checks
+  if (to.name === 'Unauthenticated') {
+    console.log('🔓 Rendering Unauthenticated page');
+    return next();
+  }
+
+  // Handle NotFound route - allow it to render without any checks
+  if (to.name === 'NotFound') {
+    console.log('❌ Rendering NotFound page');
+    return next();
+  }
+
   if (to.name === 'agent' || to.name === 'conversation') {
     const botStore = useBotStore();
     const roleStore = useRoleStore();

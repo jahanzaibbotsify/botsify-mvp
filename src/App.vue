@@ -1,13 +1,22 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue';
-// import { useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 import { useBotStore } from "@/stores/botStore";
 import BotsifyLoader from './components/ui/BotsifyLoader.vue';
 
-// const router = useRouter();
+const route = useRoute();
 const isAuthenticated = computed(() => useBotStore().apiKeyConfirmed);
 const chatStore = useChatStore();
+
+// Check if current route should show loading screen
+const shouldShowLoading = computed(() => {
+  // Don't show loading for Unauthenticated and NotFound routes
+  if (route.name === 'Unauthenticated' || route.name === 'NotFound') {
+    return false;
+  }
+  return !isAuthenticated.value;
+});
 
 const showStorageWarning = ref(false);
 const storageSizeMB = ref(0);
@@ -76,7 +85,7 @@ onMounted(() => {
 
 <template>
   <div class="app-container">
-    <div v-if="!isAuthenticated" class="main-loading">
+    <div v-if="shouldShowLoading" class="main-loading">
       <botsify-loader />
     </div>
     <div v-else>  
