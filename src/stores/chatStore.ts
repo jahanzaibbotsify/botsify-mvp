@@ -20,16 +20,18 @@ export const useChatStore = defineStore('chat', () => {
   const botStore = useBotStore();
 
   function convertStoredVersionsToStoryStructure(aiPromptVersions: object[]) {
-    let activeVersionId = 0;
+    let versionId = '';
+    let activeVersionId = '';
     let activeVersionContent = '';
     const StoredVersions = aiPromptVersions.map((ver: any) => {
       let prompt = JSON.parse(ver.ai_prompt);
+      versionId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
       if (ver.is_active) {
-        activeVersionId = ver.id;
         activeVersionContent = prompt;
+        activeVersionId = versionId
       }
       return {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        id: versionId,
         version_id: ver.id,
         name: ver.name,
         content: prompt,
@@ -42,7 +44,7 @@ export const useChatStore = defineStore('chat', () => {
       'content': activeVersionContent,
       'updatedAt': currentTime(),
       'versions': StoredVersions,
-      'activeVersionId': activeAiPromptVersion.value?.id ?? activeVersionId
+      'activeVersionId': versionId
     };
   }
 
@@ -94,10 +96,9 @@ export const useChatStore = defineStore('chat', () => {
           }
         } catch (jsonError) {
           console.error('❌ Failed to parse stored chats JSON:', jsonError);
-          // Clear corrupted data
-          localStorage.removeItem('botsify_chats');
         }
       } else {
+        chats.value[0].id = botStore.apiKey;
         chats.value.forEach(chat => {
           if (chat) {
             (chat as any).story = storedTemplates; 

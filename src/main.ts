@@ -171,8 +171,8 @@ router.beforeEach(async (to, from, next) => {
     let apikey = storeApiKey || localApiKey || '';
     
     // If no API key found, try to extract from URL or route params
-    if (!apikey || apikey === 'undefined' || apikey === 'null') {
-      console.log('🔍 No valid API key found, extracting from URL/route params...');
+    // if (!apikey || apikey === 'undefined' || apikey === 'null') {
+    //   console.log('🔍 No valid API key found, extracting from URL/route params...');
       
       // For /agent/:id route, extract API key from route params
       if (to.name === 'agent' && to.params.id) {
@@ -183,7 +183,7 @@ router.beforeEach(async (to, from, next) => {
         // Try to extract from URL path
         apikey = botStore.extractApiKeyFromUrl();
       }
-    }    
+    // }    
     
     console.log('🔑 Final API key:', apikey);
     
