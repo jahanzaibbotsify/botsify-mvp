@@ -757,10 +757,12 @@ const hideLoading = () => {
       </div>
     </div>
 
-    <McpConnectionModal
-        :is-open="showMCPModal"
-        @close="closeMCPModal"
-    />
+    <Teleport to="body">
+      <McpConnectionModal
+          :is-open="showMCPModal"
+          @close="closeMCPModal"
+      />
+    </Teleport>
 
     <!-- File Search Modal -->
     <div v-if="showFileSearchModal" class="modal-overlay" @click="closeFileSearchModal">
