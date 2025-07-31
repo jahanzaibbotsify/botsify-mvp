@@ -72,22 +72,3 @@ export function clearApiKey(): void {
 export function isValidApiKeyFormat(apiKey: string): boolean {
   return apiKey.length >= 8 && /^[a-zA-Z0-9_-]+$/.test(apiKey);
 }
-
-
-export function getDefaultRedirect() {
-  // Check if API key exists in localStorage
-  const storedApiKey = getCurrentApiKey();
-  
-  if (storedApiKey && storedApiKey !== 'undefined' && storedApiKey !== 'null') {
-    // If API key exists, redirect to agent with that key
-    return { name: 'agent', params: { id: storedApiKey } };
-  }
-  
-  // Default route based on user role (fallback)
-  const roleStore = useRoleStore();
-  if (roleStore.isLiveChatAgent) {
-    return { name: 'conversation' };
-  } else {
-    return { name: 'agent', params: { id: storedApiKey } };
-  }
-}

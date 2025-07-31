@@ -122,7 +122,9 @@ function saveEdit() {
 }
 
 function revertToVersion(versionId: string) {
-  window.$confirm({}, () => {
+  window.$confirm({
+    text: 'Are you sure you want to revert to this version?',
+  }, () => {
     chatStore.revertToPromptVersion(props.chatId, versionId);
   });
   showVersionHistory.value = false;
@@ -131,7 +133,9 @@ function revertToVersion(versionId: string) {
 }
 
 function deleteVersion(versionId: string) {
-  window.$confirm({}, () => {
+  window.$confirm({
+    text: 'Are you sure you want to delete this version?',
+  }, () => {
     chatStore.deletePromptVersion(props.chatId, versionId);
   });
 }
@@ -165,7 +169,9 @@ function loadTemplate(templateId: string) {
 }
 
 function deleteTemplate(templateId: string) {
-  window.$confirm({}, () => {
+  window.$confirm({
+    text: 'Are you sure you want to delete this template?',
+  }, () => {
     chatStore.deleteGlobalPromptTemplate(templateId);
   });
 }

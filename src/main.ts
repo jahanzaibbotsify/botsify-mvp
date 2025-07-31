@@ -127,6 +127,7 @@ function getBotDetails(apikey: string) {
     }
     const botStore = useBotStore();
     botStore.setApiKeyConfirmed(true);
+    botStore.setApiKey(apikey);
     botStore.setBotId(response.data.data.bot.id);
     botStore.setUser(response.data.data.user);  
     botStore.setBotName(response.data.data.bot.name);
@@ -153,11 +154,11 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // Handle NotFound route - allow it to render without any checks
-  if (to.name === 'NotFound' || typeof to.name === 'undefined') {
+  if (to.name === 'NotFound') {
     return next();
   }
 
-  if(isBotDataLoaded) {
+  if (isBotDataLoaded) {
     return next();
   }
 
@@ -167,6 +168,9 @@ router.beforeEach(async (to, from, next) => {
 
   let apikey = paramKey || localApiKey || '';
   if (apikey && apikey !== 'undefined' && apikey !== 'null') {
+    if (typeof to.name === 'undefined') {
+      return next({ name: 'agent', params: { id: apikey } });
+    }
     try {
       const data = await getBotDetails(apikey);
       isBotDataLoaded = true;
@@ -176,16 +180,9 @@ router.beforeEach(async (to, from, next) => {
         const chatStore = useChatStore();
         const conversationStore = useConversationStore();
 
-        // Check subscription requirements for restricted pages
-        if (to.name === 'conversation' && !roleStore.hasSubscription) {
-          // console.log('🔒 Conversation page requires subscription, redirecting to agent');
-          return next({ name: 'agent', params: { id: apikey } });
-        }
-
         // Role-based restriction for live chat agents
         if (roleStore.isLiveChatAgent) {
           if (to.name !== 'conversation') {
-            // console.log('🔄 Live chat agent redirected to conversation page');
             return next({ name: 'conversation' });
           }
         }
