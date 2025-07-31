@@ -112,7 +112,9 @@ const deleteAttribute = (id: number) => {
     return
   }
 
-  window.$confirm({}, async () => {
+  window.$confirm({
+    text: 'Are you sure you want to delete this attribute?',
+  }, async () => {
     loading.value = true
     errorMessage.value = ''
 

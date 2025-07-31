@@ -28,6 +28,7 @@ export interface MCPServer {
   authMethod?: 'api_key' | 'bearer_token' | 'basic_auth' | 'oauth' | 'none';
   authLabel?: string;
   comingSoon?: boolean;
+  externalData?: object
 }
 
 export interface CustomMCPServerForm {
