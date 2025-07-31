@@ -69,9 +69,9 @@ const navigationButtons = computed(() => {
     const hasPermission = roleStore.hasPermission(button.permission);
     
     // If button requires subscription, check if user has subscription
-    if (button.requiresSubscription) {
-      return hasPermission && roleStore.hasSubscription;
-    }
+    // if (button.requiresSubscription) {
+    //   return hasPermission && roleStore.hasSubscription;
+    // }
     
     // If button doesn't require subscription, only check permission
     return hasPermission;
@@ -151,17 +151,17 @@ const filteredChats = computed(() => {
 
 const navigateToPage = (pageId: string) => {
   // Check subscription requirements for specific pages
-  if (pageId === 'users' && !roleStore.hasSubscription) {
-    console.log('🔒 Users page requires subscription');
-    window.$toast?.error('Users page requires an active subscription');
-    return;
-  }
+  // if (pageId === 'users' && !roleStore.hasSubscription) {
+  //   console.log('🔒 Users page requires subscription');
+  //   window.$toast?.error('Users page requires an active subscription');
+  //   return;
+  // }
   
-  if (pageId === 'conversation' && !roleStore.hasSubscription) {
-    console.log('🔒 Conversation page requires subscription');
-    window.$toast?.error('Conversation page requires an active subscription');
-    return;
-  }
+  // if (pageId === 'conversation' && !roleStore.hasSubscription) {
+  //   console.log('🔒 Conversation page requires subscription');
+  //   window.$toast?.error('Conversation page requires an active subscription');
+  //   return;
+  // }
   
   // Role-based navigation logic
   if (roleStore.isLiveChatAgent) {

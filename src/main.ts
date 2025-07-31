@@ -162,8 +162,6 @@ router.beforeEach(async (to, from, next) => {
     return next();
   }
 
-  console.log('to', to.name);
-  
   const paramKey = to.name === 'agent' ? to.params.id as string : '';
   const roleStore = useRoleStore();
   const localApiKey = getCurrentApiKey();
@@ -182,16 +180,9 @@ router.beforeEach(async (to, from, next) => {
         const chatStore = useChatStore();
         const conversationStore = useConversationStore();
 
-        // Check subscription requirements for restricted pages
-        if (to.name === 'conversation' && !roleStore.hasSubscription) {
-          // console.log('🔒 Conversation page requires subscription, redirecting to agent');
-          return next({ name: 'agent', params: { id: apikey } });
-        }
-
         // Role-based restriction for live chat agents
         if (roleStore.isLiveChatAgent) {
           if (to.name !== 'conversation') {
-            // console.log('🔄 Live chat agent redirected to conversation page');
             return next({ name: 'conversation' });
           }
         }
