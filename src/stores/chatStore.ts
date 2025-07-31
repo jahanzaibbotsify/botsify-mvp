@@ -363,7 +363,7 @@ export const useChatStore = defineStore('chat', () => {
       // update content
       chat.story.content = content;
       chat.story.updatedAt = new Date();
-      saveToTemplate();
+
 
     }
 
