@@ -37,8 +37,10 @@ const chat = computed(() => {
   return foundChat;
 });
 
+
 const latestPromptContent = computed(() => chat.value?.story?.content || '');
 const hasPromptContent = computed(() => latestPromptContent.value.trim().length > 0);
+console.log(hasPromptContent.value, "hasPromptContent");
 
 const scrollToBottom = async () => {
   await nextTick();
@@ -136,7 +138,7 @@ function toggleStorySidebar() {
         <div class="centered-heading">
           <h1>Start building your AI agent prompt...</h1>
         </div>
-        <MessageInput :chatId="chatId" :centered="true" />
+        <MessageInput :chatId="chatId" :centered="true" :has-prompt-content="hasPromptContent" />
         <div class="suggestion-buttons">
           <button v-for="suggestion in suggestions" :key="suggestion" class="suggestion-btn" @click="sendSuggestion(suggestion)">
             {{ suggestion }}
@@ -146,7 +148,7 @@ function toggleStorySidebar() {
     </div>
     
     <!-- Bottom MessageInput if there are real messages -->
-      <MessageInput v-if="!showCenteredInput" :chatId="chatId" />
+      <MessageInput v-if="!showCenteredInput" :chatId="chatId" :has-prompt-content="hasPromptContent" />
     
      <!-- Story Sidebar - Only show when enabled -->
      <StorySidebar 

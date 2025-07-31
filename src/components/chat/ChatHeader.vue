@@ -57,7 +57,7 @@
             <i :class="themeStore.theme === 'light' ? 'pi pi-moon' : 'pi pi-sun'" style="font-size: 18px;"></i>
             <span>{{ themeStore.theme === 'light' ? 'Night Theme' : 'Light Theme' }}</span>
           </button>
-          <button class="dropdown-item" @click="handleAIPrompt">
+          <button class="dropdown-item" @click="handleAIPrompt" v-if="props.hasPromptContent">
             <i class="pi pi-bolt" style="font-size: 18px;"></i>
             <span>AI Prompt</span>
           </button>
@@ -141,7 +141,7 @@ function deployAI() {
     return;
   }
   window.$confirm({
-    // text: "Do you really want to deploy your AI agent? This will make it available for use.",
+    text: "Are you sure you want to deploy it?",
     confirmButtonText: "Yes, Deploy it!",
     cancelButtonText: "No, Cancel",
     animation: false,
@@ -177,6 +177,7 @@ function handleReset(type: string) {
     confirmButtonText += ' Clear it!';
   }
   window.$confirm({
+    text: "Are you sure you want to clear the conversation?",
     confirmButtonText: confirmButtonText
   }, async() => {
     chatStore.clearChatMessages()
