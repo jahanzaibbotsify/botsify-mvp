@@ -65,6 +65,6 @@ import { BOTSIFY_WEB_URL } from '@/utils/config';
   }
   
   .login-btn:hover {
-    background: #0077b6;
+    background: var(--color-primary-hover);
   }
   </style>
