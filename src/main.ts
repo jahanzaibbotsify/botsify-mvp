@@ -127,6 +127,7 @@ function getBotDetails(apikey: string) {
     }
     const botStore = useBotStore();
     botStore.setApiKeyConfirmed(true);
+    botStore.setApiKey(apikey);
     botStore.setBotId(response.data.data.bot.id);
     botStore.setUser(response.data.data.user);  
     botStore.setBotName(response.data.data.bot.name);
