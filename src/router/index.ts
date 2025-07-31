@@ -15,11 +15,6 @@ const routes: RouteRecordRaw[] = [
     component: ChatLayout,
     children: [
       {
-        path: '',
-        name: 'default',
-        redirect: getDefaultRedirect
-      },
-      {
         path: '/agent/:id',
         name: 'agent',
         component: () => import('../views/ChatView.vue'),

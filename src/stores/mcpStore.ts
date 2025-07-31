@@ -132,8 +132,11 @@ export const useMCPStore = defineStore('mcp', () => {
     }
   ]);
   const connectedServers = ref([]);
-
+  const initialized = ref(false);
+  
   const setIntialize = async () => {
+    if (initialized.value) return;
+    initialized.value = true;
     const response = await botsifyApi.getAllConnectedMCPs();
     connectedServers.value = response.data;
     connectedServers.value.forEach((connectedServer: any) => {
