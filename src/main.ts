@@ -153,20 +153,25 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // Handle NotFound route - allow it to render without any checks
-  if (to.name === 'NotFound' || typeof to.name === 'undefined') {
+  if (to.name === 'NotFound') {
     return next();
   }
 
-  if(isBotDataLoaded) {
+  if (isBotDataLoaded && from.name === to.name) {
     return next();
   }
 
+  console.log('to', to.name);
+  
   const paramKey = to.name === 'agent' ? to.params.id as string : '';
   const roleStore = useRoleStore();
   const localApiKey = getCurrentApiKey();
 
   let apikey = paramKey || localApiKey || '';
   if (apikey && apikey !== 'undefined' && apikey !== 'null') {
+    if (typeof to.name === 'undefined') {
+      return next({ name: 'agent', params: { id: apikey } });
+    }
     try {
       const data = await getBotDetails(apikey);
       isBotDataLoaded = true;

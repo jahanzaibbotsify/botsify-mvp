@@ -8,6 +8,7 @@ import { useWhitelabelStore } from '@/stores/whitelabelStore';
 import BookMeeting from '@/components/ui/BookMeeting.vue';
 import { botsifyApi } from '@/services/botsifyApi'
 import { BOTSIFY_WEB_URL } from '@/utils/config';
+import CalendlyModal from '../ui/CalendlyModal.vue';
 
 
 const chatStore = useChatStore();
@@ -31,6 +32,7 @@ const selectedNavigationButton = computed(() => {
 // const isMobile = computed(() => width.value < 768);
 const showDropdown = ref(false);
 const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
+const calendlyModalRef = ref<InstanceType<typeof CalendlyModal> | null>(null)
 
 // Close dropdown when clicking outside
 const dropdownRef = ref<HTMLElement | null>(null);
@@ -198,6 +200,13 @@ const openBookMeetingModal = () => {
   }
 };
 
+const handleCalendly = () => {
+  if (calendlyModalRef.value) {
+    calendlyModalRef.value.openModal()
+    closeDropdown();
+  }
+}
+
 const billingLoading = ref(false)
 
 const handleManageBilling = async () => {
@@ -343,7 +352,15 @@ onUnmounted(() => {
           </div>
         </button>
     </div>
+    <div v-else class="sidebar-pricing">
+        <button class="pricing-button" @click="handleCalendly">
+          <div class="button-content">
+            <span class="pricing-text">Book Demo</span>
+          </div>
+        </button>
+    </div>
     <BookMeeting ref="bookMeetingRef"></BookMeeting>
+    <CalendlyModal ref="calendlyModalRef"></CalendlyModal>
     <User ref="userRef"></User>
   </aside>
 </template>
