@@ -177,6 +177,7 @@ function handleReset(type: string) {
     confirmButtonText += ' Clear it!';
   }
   window.$confirm({
+    text: "Are you sure you want to clear the conversation?",
     confirmButtonText: confirmButtonText
   }, async() => {
     chatStore.clearChatMessages()
