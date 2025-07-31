@@ -12,6 +12,7 @@ const props = defineProps<{
   message?: string;
   loading?: boolean;
   centered?: boolean;
+  hasPromptContent: boolean;
 }>();
 
 const chatStore = useChatStore();
@@ -665,7 +666,7 @@ const hideLoading = () => {
           </button>
 
           <!-- Chain Icon with New Dropdown -->
-          <div class="mcp-dropdown-container" @click.stop v-if="chatStore.chats[0].messages.length > 1">
+          <div class="mcp-dropdown-container" @click.stop v-if="props.hasPromptContent">
             <button 
               class="icon-button mcp-icon-button" 
               @click="toggleMCPDropdown" 
@@ -737,7 +738,7 @@ const hideLoading = () => {
             </div>
           </div>
           <button 
-          v-if="chatStore.chats[0].messages.length > 1"
+          v-if="props.hasPromptContent"
             class="icon-button mcp-icon-button" 
             @click="openMCPServers" title="MCP Servers" 
             :disabled="loadingFor === 'fileUploadingFromPin' || chatStore.doInputDisable">           

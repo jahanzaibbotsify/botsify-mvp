@@ -57,7 +57,7 @@
             <i :class="themeStore.theme === 'light' ? 'pi pi-moon' : 'pi pi-sun'" style="font-size: 18px;"></i>
             <span>{{ themeStore.theme === 'light' ? 'Night Theme' : 'Light Theme' }}</span>
           </button>
-          <button class="dropdown-item" @click="handleAIPrompt" v-if="chatStore.chats[0].messages.length > 1">
+          <button class="dropdown-item" @click="handleAIPrompt" v-if="props.hasPromptContent">
             <i class="pi pi-bolt" style="font-size: 18px;"></i>
             <span>AI Prompt</span>
           </button>
