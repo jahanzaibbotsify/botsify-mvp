@@ -36,26 +36,5 @@ export const useBotStore = defineStore('bot', {
       this.apiKey = '';
       clearApiKeyUtil();
     },
-    extractApiKeyFromUrl() {
-      const pathname = window.location.pathname;
-      const segments = pathname.split('/').filter(segment => segment.length > 0);
-      
-      // For routes like /agent/123, the API key is the second segment
-      if (segments.length >= 2 && segments[0] === 'agent') {
-        const apiKey = segments[1];
-        this.setApiKey(apiKey);
-        return apiKey;
-      }
-      
-      // For other routes, try to find a valid API key pattern
-      for (const segment of segments) {
-        if (segment.length >= 8 && /^[a-zA-Z0-9_-]+$/.test(segment)) {
-          this.setApiKey(segment);
-          return segment;
-        }
-      }
-      
-      return '';
-    }
   }
 })

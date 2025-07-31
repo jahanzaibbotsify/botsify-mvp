@@ -145,145 +145,79 @@ const router = createRouter({
   routes
 })
 
-
+let isBotDataLoaded = false;
 router.beforeEach(async (to, from, next) => {
   // Handle Unauthenticated route - allow it to render without any checks
   if (to.name === 'Unauthenticated') {
-    console.log('🔓 Rendering Unauthenticated page');
     return next();
   }
 
   // Handle NotFound route - allow it to render without any checks
-  if (to.name === 'NotFound') {
-    console.log('❌ Rendering NotFound page');
+  if (to.name === 'NotFound' || typeof to.name === 'undefined') {
     return next();
   }
 
-  if (to.name === 'agent' || to.name === 'conversation') {
-    const botStore = useBotStore();
-    const roleStore = useRoleStore();
-    const storeApiKey = botStore.getApiKey;
-    const localApiKey = getCurrentApiKey();
-    
-    console.log('🔍 API Key Debug:', {
-      storeApiKey,
-      localApiKey,
-      routeName: to.name,
-      routeParams: to.params
-    });
-    
-    let apikey = storeApiKey || localApiKey || '';
-    
-    // Check if route has a different API key than localStorage
-    if (to.name === 'agent' && to.params.id) {
-      const routeApiKey = to.params.id as string;
-      const currentApiKey = localApiKey || storeApiKey || '';
-      
-      // If route API key is different from current API key, update it
-      if (routeApiKey && routeApiKey !== currentApiKey && routeApiKey !== 'undefined' && routeApiKey !== 'null') {
-        console.log('🔄 Route API key differs from localStorage, updating...', {
-          routeApiKey,
-          currentApiKey
-        });
-        apikey = routeApiKey;
-        botStore.setApiKey(routeApiKey);
-        console.log('✅ API key updated from route params:', routeApiKey);
-      } else if (routeApiKey && (routeApiKey === currentApiKey || !currentApiKey)) {
-        // If route API key is the same or no current API key, use route API key
-        apikey = routeApiKey;
-        if (!currentApiKey) {
-          botStore.setApiKey(routeApiKey);
-          console.log('🔑 API key set from route params:', routeApiKey);
+  if(isBotDataLoaded) {
+    return next();
+  }
+
+  const paramKey = to.name === 'agent' ? to.params.id as string : '';
+  const roleStore = useRoleStore();
+  const localApiKey = getCurrentApiKey();
+
+  let apikey = paramKey || localApiKey || '';
+  if (apikey && apikey !== 'undefined' && apikey !== 'null') {
+    try {
+      const data = await getBotDetails(apikey);
+      isBotDataLoaded = true;
+      if (data) {
+        roleStore.setCurrentUser(data.user);
+
+        const chatStore = useChatStore();
+        const conversationStore = useConversationStore();
+
+        // Check subscription requirements for restricted pages
+        if (to.name === 'conversation' && !roleStore.hasSubscription) {
+          // console.log('🔒 Conversation page requires subscription, redirecting to agent');
+          return next({ name: 'agent', params: { id: apikey } });
         }
-      }
-    }
-    
-    // If no API key found, try to extract from URL or route params
-    // if (!apikey || apikey === 'undefined' || apikey === 'null') {
-    //   // console.log('🔍 No valid API key found, extracting from URL/route params...');
-      
-      // For /agent/:id route, extract API key from route params
-      if (to.name === 'agent' && to.params.id) {
-        apikey = to.params.id as string;
-        botStore.setApiKey(apikey);
-        // console.log('🔑 API key extracted from route params:', apikey);
+
+        // Role-based restriction for live chat agents
+        if (roleStore.isLiveChatAgent) {
+          if (to.name !== 'conversation') {
+            // console.log('🔄 Live chat agent redirected to conversation page');
+            return next({ name: 'conversation' });
+          }
+        }
+
+        // Load chat data if not already loaded or if navigating to a different page
+        if (!chatStore.chats.length || from.name !== to.name) {
+          chatStore.loadFromStorage(data.bot.chat_flow, data.versions);
+        }
+
+        // Initialize Firebase if not already connected
+        if (!conversationStore.isFirebaseConnected) {
+          try {
+            console.log('🔥 Initializing Firebase...');
+            conversationStore.initializeFirebase();
+            console.log('✅ Firebase initialized successfully');
+          } catch (error) {
+            console.error('❌ Error initializing Firebase:', error);
+          }
+        }
+        return next();
       } else {
-        // Try to extract from URL path
-        apikey = botStore.extractApiKeyFromUrl();
-      }
-    // }    
-    
-    // console.log('🔑 Final API key:', apikey);
-    
-    if (apikey && apikey !== 'undefined' && apikey !== 'null') {
-      try {
-        const data = await getBotDetails(apikey);
-        if (data) {
-          roleStore.setCurrentUser(data.user);
-
-          const chatStore = useChatStore();
-          const conversationStore = useConversationStore();
-
-          // Check subscription requirements for restricted pages
-          if (to.name === 'conversation' && !roleStore.hasSubscription) {
-            // console.log('🔒 Conversation page requires subscription, redirecting to agent');
-            return next({ name: 'agent', params: { id: apikey } });
-          }
-
-          // Role-based restriction for live chat agents
-          if (roleStore.isLiveChatAgent) {
-            if (to.name !== 'conversation') {
-              // console.log('🔄 Live chat agent redirected to conversation page');
-              return next({ name: 'conversation' });
-            }
-          }
-
-          // Load chat data if not already loaded or if navigating to a different page
-          if (!chatStore.chats.length || from.name !== to.name) {
-            chatStore.loadFromStorage(data.bot.chat_flow, data.versions);
-          }
-
-          // Initialize Firebase if not already connected
-          if (!conversationStore.isFirebaseConnected) {
-            try {
-              console.log('🔥 Initializing Firebase...');
-              conversationStore.initializeFirebase();
-              console.log('✅ Firebase initialized successfully');
-            } catch (error) {
-              console.error('❌ Error initializing Firebase:', error);
-            }
-          }
-
-          return next();
-        } else {
-          console.error('❌ Failed to get bot details');
-          return next({ name: 'Unauthenticated' });
-        }
-      } catch (error) {
-        console.error('❌ Error fetching bot details:', error);
+        console.error('❌ Failed to get bot details');
         return next({ name: 'Unauthenticated' });
       }
-    } else {
-      console.error('❌ No API key found');
+    } catch (error) {
+      console.error('❌ Error fetching bot details:', error);
       return next({ name: 'Unauthenticated' });
     }
+  } else {
+    console.error('❌ No API key found');
+    return next({ name: 'Unauthenticated' });
   }
-
-  // Handle users page - redirect if no subscription
-  if (to.name === 'users') {
-    const roleStore = useRoleStore();
-    if (!roleStore.hasSubscription) {
-      // console.log('🔒 Users page requires subscription, redirecting to agent');
-      return next({ name: 'agent', params: { id: 'default' } });
-    }
-  }
-
-  // Redirect to 404 if route name is undefined
-  if (typeof to.name === 'undefined') {
-    return next({ name: 'NotFound' });
-  }
-
-  return next();
 });
 
 
