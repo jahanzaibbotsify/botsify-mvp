@@ -505,7 +505,6 @@ watch(() => props.attributes, (newAttributes) => {
 
 .cancel-btn {
   background-color: var(--color-error);
-  opacity: 0.9;
   color: white;
   border: none;
   padding: 6px 12px;
@@ -516,7 +515,7 @@ watch(() => props.attributes, (newAttributes) => {
 }
 
 .cancel-btn:hover:not(:disabled) {
-  opacity: 1;
+  background-color: var(--color-error-hover);
 }
 
 .cancel-btn:disabled {

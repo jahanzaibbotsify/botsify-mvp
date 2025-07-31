@@ -1,98 +1,43 @@
-export interface User {
-  id: string;
-  name: string;
-  avatar?: string;
-  email: string;
-  subs?: {
-    id: string;
-    status: string;
-    stripe_plan: string;
-  }
-}
+/**
+ * Types Index
+ * Central export file for all TypeScript types
+ */
 
-export interface Message {
-  id: string;
-  content: string;
-  timestamp: string;
-  sender: 'user' | 'assistant';
-  status?: 'sending' | 'sent' | 'error';
-  attachments?: Attachment[];
-}
+// Export API types
+export * from './api'
 
-export interface PromptVersion {
-  id: string;
-  version_id: number;
-  name: string;
-  content: string;
-  updatedAt: Date;
-  version: number;
-  isActive: boolean;
-}
+// Export user types
+export * from './user'
 
-export interface Story {
-  content: string;
-  updatedAt: Date;
-  versions: PromptVersion[];
-  activeVersionId?: string;
-}
-
-export interface GlobalPromptTemplate {
-  id: string;
-  name: string;
-  content: string;
-  isDefault: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface Chat {
-  id: string;
-  title: string;
-  lastMessage?: string;
-  timestamp: string;
-  messages: Message[];
-  unread?: boolean;
-  story?: Story;
-}
-
-export interface Attachment {
-  id: string;
-  name: string;
-  type: string;
-  url: string;
-  size: number;
-  preview?: string;
-  uploadedUrl?: string;
-  fileId?: string;
-  uploadedAt?: string;
-  isUploaded?: boolean;
-}
-
-export interface PricingTier {
-  id: string;
-  name: string;
-  price: number;
-  features: string[];
-  isPopular?: boolean;
-}
-
-// Extended Chat interface for the chat interface
-export interface ExtendedChat extends Chat {
-  email?: string
-  status?: string
-  source?: string
-  lastConverse?: string
-  phone?: string
-  country?: string
-  active_for_bot?: number;
-  csr?: string | null;
-  os?: string
-  lastPage?: string
-  fbid?: string
-  assignedTo?: string
-  satisfaction?: number
-  profilePic?: string
-}
+// Export chat types
+export * from './chat'
 
 // Export conversation types
 export * from './conversation'
+
+// Export MCP types
+export * from './mcp'
+
+// Export Firebase types
+export * from './firebase'
+
+// Core application types
+export interface User {
+  id: string
+  name: string
+  avatar?: string
+  email: string
+  subs?: {
+    id: string
+    status: string
+    stripe_plan: string
+  }
+}
+
+export interface PricingTier {
+  id: string
+  name: string
+  price: number
+  features: string[]
+  isPopular?: boolean
+}

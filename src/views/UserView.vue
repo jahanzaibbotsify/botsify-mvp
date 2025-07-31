@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import UserFilters from '@/components/user/Filters.vue'
 import UserTable from '@/components/user/Table.vue'
@@ -44,7 +44,7 @@ const handleImportActions = (action: 'toggle' | 'close' | 'import', data?: User[
 }
 
 // Watch for action changes
-watch(() => userStore.selectedAction, (newAction) => {
+watch(() => userStore.selectedAction, (newAction: ActionType) => {
   if (newAction) {
     // Check permissions for editor role
     if (roleStore.isEditor) {
@@ -68,8 +68,8 @@ watch(() => userStore.selectedAction, (newAction) => {
         confirmButtonText: `Yes, ${actionCap} it!`
       }, async() => {
         const selectedUserIds = userStore.users
-          .filter(user => user.selected)
-          .map(user => user.id)
+          .filter((user: User) => user.selected)
+          .map((user: User) => user.id)
         await userStore.executeUserAction(newAction, selectedUserIds)
         window.$toast({
           message: '${actionCap} successfully.',

@@ -2,7 +2,7 @@ import { RouteRecordRaw } from 'vue-router'
 import ChatLayout from '../layouts/ChatLayout.vue'
 import NotFound from '@/views/NotFound.vue';
 import Unauthenticated from '@/views/Unauthenticated.vue';
-import { getDefaultRedirect } from '@/utils/apiKeyUtils';
+import { getDefaultRedirect } from '@/utils/api';
 
 
 const routes: RouteRecordRaw[] = [

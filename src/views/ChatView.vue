@@ -7,7 +7,6 @@ import StorySidebar from '@/components/sidebar/StorySidebar.vue';
 import ChatMessage from '@/components/chat/ChatMessage.vue';
 import MessageInput from '@/components/chat/MessageInput.vue';
 import TypingIndicator from '@/components/chat/TypingIndicator.vue';
-import SystemMessageSender from '@/components/chat/SystemMessageSender.vue';
 import ChatHeader from '@/components/chat/ChatHeader.vue';
 
 // Lazy load heavy components with caching
@@ -379,16 +378,19 @@ function toggleStorySidebar() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start; /* Keep content at the top */
   height: 80vh;
   width: 100%;
   padding: 0;
-  background-color:var(--color-bg-primary);
+  background-color: var(--color-bg-primary);
+  padding-top: calc(40vh - (desired-content-height / 2)); /* Optional */
 }
+
 .centered-message-input > * {
   width: 100%;
   max-width: 100%;
 }
+
 /* Centered heading styles */
 .centered-heading {
   width: 100%;

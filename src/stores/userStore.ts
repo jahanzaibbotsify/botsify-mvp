@@ -1,47 +1,58 @@
-import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
-import { userApi } from '@/services/userApi';
-import type { User } from '../types';
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { userApi } from '@/services/userApi'
 import type { 
-  UserAttribute, 
-  ActionType, 
-  FilterType, 
-  SegmentType, 
+  User, 
+  ApiUser, 
   SortBy, 
-  SortOrder, 
-  PerPage,
-  PaginationData,
-  SortingData,
-  ApiUser
-} from '@/types/user';
+  PerPage, 
+  GetUsersParams,
+  AttributeResponse,
+  UserAttribute,
+  ActionType
+} from '@/types/user'
+import type { SortOrder, PaginationData } from '@/types/api'
 
 // User filter state interface
-export interface UserFilterState {
+interface UserFilterState {
+  segmentId: number | null
+  date: string
   search: string
-  filter: FilterType
-  segment: SegmentType
-  dateRange: {
-    startDate: Date | null
-    endDate: Date | null
-  }
-  page: number
-  perPage: PerPage
+  status: string
   sortBy: SortBy
   sortOrder: SortOrder
+  perPage: PerPage
+  currentPage: number
 }
 
-// Extended user type with UI-specific properties
-export interface ExtendedUser extends Omit<ApiUser, 'status'> {
+// Extended user interface for UI
+interface ExtendedUser extends User {
   selected: boolean
-  status: 'Active' | 'Inactive'
   hasConversation: boolean
 }
 
+// Transform API user to UI user
+const transformApiUser = (apiUser: ApiUser): ExtendedUser => {
+  return {
+    ...apiUser,
+    status: apiUser.status === 1 ? 'Active' : 'Inactive',
+    selected: false,
+    hasConversation: false
+  }
+}
+
 export const useUserStore = defineStore('user', () => {
-  // User authentication state
-  const user = ref<User | null>(null);
-  const loading = ref(false);
-  const error = ref<string | null>(null);
+  // User filter state
+  const filters = ref<UserFilterState>({
+    segmentId: null,
+    date: '',
+    search: '',
+    status: '',
+    sortBy: 'id',
+    sortOrder: 'desc',
+    perPage: 20,
+    currentPage: 1
+  })
 
   // User management state
   const users = ref<ExtendedUser[]>([])
@@ -49,23 +60,7 @@ export const useUserStore = defineStore('user', () => {
   const selectAll = ref<boolean>(false)
   const selectedUser = ref<User | null>(null)
   const showUserDetails = ref<boolean>(false)
-
-  // Filter state
-  const filterState = ref<UserFilterState>({
-    search: '',
-    filter: 'all',
-    segment: 'all',
-    dateRange: {
-      startDate: null,
-      endDate: null
-    },
-    page: 1,
-    perPage: 20,
-    sortBy: 'id',
-    sortOrder: 'desc'
-  })
-
-  // Pagination and sorting state
+  const loading = ref<boolean>(false)
   const pagination = ref<PaginationData>({
     currentPage: 1,
     totalPages: 1,
@@ -73,194 +68,95 @@ export const useUserStore = defineStore('user', () => {
     perPage: 20
   })
 
-  const sorting = ref<SortingData>({
-    sortBy: 'id',
-    sortOrder: 'desc'
-  })
-
-  // Cache for user data
-  const usersCache = ref<Map<string, { 
-    users: ExtendedUser[], 
-    pagination: PaginationData,
-    timestamp: number 
-  }>>(new Map())
-
-  // Cache for user attributes
-  const attributesCache = ref<Map<string, { 
-    attributes: UserAttribute[], 
-    timestamp: number 
-  }>>(new Map())
-  
-  // Cache expiration time (5 minutes)
-  const CACHE_EXPIRY_TIME = 5 * 60 * 1000
-
-  // Computed properties
-  const isAuthenticated = computed(() => !!user.value);
-
-  const selectedUsersCount = computed<number>(() => {
-    return users.value.filter(user => user.selected).length
-  })
-
-  // Helper function to check if cache is valid
-  const isCacheValid = (timestamp: number) => {
-    return Date.now() - timestamp < CACHE_EXPIRY_TIME
-  }
-
-  // Helper function to generate cache key
-  const generateCacheKey = (params: any) => {
-    return JSON.stringify(params)
-  }
-
-  // Helper function to get cached users
-  const getCachedUsers = (cacheKey: string) => {
-    const cached = usersCache.value.get(cacheKey)
-    if (cached && isCacheValid(cached.timestamp)) {
-      return cached
-    }
-    return null
-  }
-
-  // Helper function to set cached users
-  const setCachedUsers = (cacheKey: string, users: ExtendedUser[], pagination: PaginationData) => {
-    usersCache.value.set(cacheKey, {
-      users,
-      pagination,
-      timestamp: Date.now()
-    })
-  }
-
-  // Helper function to get cached attributes
-  const getCachedAttributes = (userId: string) => {
-    const cached = attributesCache.value.get(userId)
-    if (cached && isCacheValid(cached.timestamp)) {
-      return cached.attributes
-    }
-    return null
-  }
-
-  // Helper function to set cached attributes
-  const setCachedAttributes = (userId: string, attributes: UserAttribute[]) => {
-    attributesCache.value.set(userId, {
-      attributes,
-      timestamp: Date.now()
-    })
-  }
-
-  // Helper function to clear cache for a user
-  const clearUserCache = (userId: string) => {
-    attributesCache.value.delete(userId)
-  }
-
-  // Helper function to clear all cache
-  const clearAllCache = () => {
-    usersCache.value.clear()
-    attributesCache.value.clear()
-  }
-
-  // Convert filter state to API parameters
-  const toApiParams = () => {
-    const params: any = {
-      page: filterState.value.page,
-      per_page: filterState.value.perPage,
-      sortby: filterState.value.sortBy,
-      sortorder: filterState.value.sortOrder
-    }
-
-    // Add search query
-    if (filterState.value.search) {
-      params.query = filterState.value.search
-    }
-
-    // Add status filter
-    if (filterState.value.filter !== 'all') {
-      params.status = filterState.value.filter === 'active' ? '1' : '0'
-    }
-
-    // Add segment filter
-    if (filterState.value.segment !== 'all') {
-      const segmentMap: Record<string, number> = {
-        sms: -2,
-        whatsapp: -3,
-        facebook: -4,
-        website: -5,
-        instagram: -6,
-        telegram: -7
-      }
-      params.segment_id = segmentMap[filterState.value.segment]
-    }
-
-    // Add date range in the correct format
-    if (filterState.value.dateRange.startDate && filterState.value.dateRange.endDate) {
-      const startDate = filterState.value.dateRange.startDate.toISOString().split('T')[0].replace(/-/g, '/')
-      const endDate = filterState.value.dateRange.endDate.toISOString().split('T')[0].replace(/-/g, '/')
-      params.date = `${startDate}-${endDate}`
-    }
-
-    return params
-  }
-
-  // Transform API user to extended user
-  const transformApiUser = (apiUser: ApiUser): ExtendedUser => {
-    return {
-      ...apiUser,
-      selected: false,
-      status: apiUser.active_for_bot === 1 ? 'Active' : 'Inactive',
-      hasConversation: Boolean(apiUser.last_converse)
-    }
-  }
-
-  // Fetch users with caching
-  const fetchUsers = async (forceRefresh = false): Promise<void> => {
-    loading.value = true
-    error.value = null
+  // Execute user actions
+  const executeUserAction = async (action: ActionType, userIds: number[]): Promise<void> => {
+    if (!action || userIds.length === 0) return
     
     try {
-      const params = toApiParams()
-      const cacheKey = generateCacheKey(params)
+      loading.value = true
       
-      // Check cache first if not forcing refresh
-      if (!forceRefresh) {
-        const cached = getCachedUsers(cacheKey)
-        if (cached) {
-          console.log('Using cached users data')
-          users.value = cached.users
-          pagination.value = cached.pagination
-          loading.value = false
-          return
-        }
+      switch (action) {
+        case 'activate':
+          await userApi.changeUserStatus(1, userIds)
+          break
+        case 'deactivate':
+          await userApi.changeUserStatus(0, userIds)
+          break
+        case 'delete':
+          await userApi.executeUserAction('delete', userIds)
+          break
+        case 'delete_conversation':
+          await userApi.executeUserAction('delete_conversation', userIds)
+          break
+        default:
+          console.warn(`Unknown action: ${action}`)
       }
       
-      console.log('Fetching users with params:', params)
+      // Refresh users after action
+      await fetchUsers()
+      
+      // Reset selection
+      selectedAction.value = ''
+      selectAll.value = false
+      users.value.forEach(user => user.selected = false)
+      
+    } catch (error) {
+      console.error('Error executing user action:', error)
+      window.$toast.error('Failed to execute user action')
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Fetch users with proper error handling
+  const fetchUsers = async (): Promise<void> => {
+    loading.value = true
+    
+    try {
+      const params: GetUsersParams = {
+        page: filters.value.currentPage,
+        per_page: filters.value.perPage,
+        sortby: filters.value.sortBy,
+        sortorder: filters.value.sortOrder
+      }
+
+      if (filters.value.search) {
+        params.search = filters.value.search
+      }
+
+      if (filters.value.status) {
+        params.status = filters.value.status
+      }
+
+      if (filters.value.segmentId) {
+        params.segment_id = filters.value.segmentId
+      }
+
+      if (filters.value.date) {
+        params.date = filters.value.date
+      }
+
       const response = await userApi.getUsers(params)
       
-      if (response.success) {
-        // Transform API data to extended users
-        const transformedUsers = response.data.users.data.map(transformApiUser)
-        users.value = transformedUsers
+      if (response.success && response.data) {
+        const responseData = response.data as { users: { data: ApiUser[]; current_page: number; last_page: number; total: number; per_page: number } }
         
-        // Update pagination from API response
-        if (response.data.users) {
+        if (responseData.users && responseData.users.data) {
+          const transformedUsers = responseData.users.data.map(transformApiUser)
+          users.value = transformedUsers
+          
+          // Update pagination
           pagination.value = {
-            currentPage: response.data.users.current_page,
-            totalPages: response.data.users.last_page,
-            totalItems: response.data.users.total,
-            perPage: response.data.users.per_page as PerPage
+            currentPage: responseData.users.current_page,
+            totalPages: responseData.users.last_page,
+            totalItems: responseData.users.total,
+            perPage: responseData.users.per_page as PerPage
           }
         }
-        
-        // Cache the results
-        setCachedUsers(cacheKey, transformedUsers, pagination.value)
-        
-        console.log('✅ Users fetched and cached successfully')
-      } else {
-        console.error('Failed to fetch users:', response.message)
-        error.value = response.message || 'Failed to fetch users'
-        users.value = []
       }
-    } catch (err) {
-      console.error('Error fetching users:', err)
-      error.value = 'An error occurred while fetching users'
-      users.value = []
+    } catch (error) {
+      console.error('Error fetching users:', error)
+      window.$toast.error('Failed to fetch users')
     } finally {
       loading.value = false
     }
@@ -268,21 +164,20 @@ export const useUserStore = defineStore('user', () => {
 
   // Update filter state
   const updateFilter = (updates: Partial<UserFilterState>) => {
-    Object.assign(filterState.value, updates)
+    Object.assign(filters.value, updates)
     
     // Reset page if any filter other than page/perPage changed
-    const hasNonPageChanges = Object.keys(updates).some(key => key !== 'page' && key !== 'perPage')
+    const hasNonPageChanges = Object.keys(updates).some(key => key !== 'currentPage' && key !== 'perPage')
     if (hasNonPageChanges) {
-      filterState.value.page = 1
+      filters.value.currentPage = 1
     }
     
-    // Fetch users with new filters
     fetchUsers()
   }
 
   // Update search with debouncing
   const updateSearch = (search: string) => {
-    filterState.value.search = search
+    filters.value.search = search
     
     // Clear existing timeout
     if ((window as any).searchTimeout) {
@@ -291,194 +186,100 @@ export const useUserStore = defineStore('user', () => {
     
     // Set new timeout
     ;(window as any).searchTimeout = setTimeout(() => {
-      filterState.value.page = 1
+      filters.value.currentPage = 1
       fetchUsers()
     }, 500)
   }
 
   // Update sorting
   const updateSorting = (sortBy: SortBy, sortOrder: SortOrder) => {
-    filterState.value.sortBy = sortBy
-    filterState.value.sortOrder = sortOrder
-    filterState.value.page = 1
+    filters.value.sortBy = sortBy
+    filters.value.sortOrder = sortOrder
+    filters.value.currentPage = 1
     fetchUsers()
   }
 
-  // Handle pagination
+  // Handle page change
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= pagination.value.totalPages) {
-      filterState.value.page = page
+      filters.value.currentPage = page
       fetchUsers()
     }
   }
 
   const handlePerPageChange = (perPage: PerPage) => {
-    filterState.value.perPage = perPage
-    filterState.value.page = 1
+    filters.value.perPage = perPage
+    filters.value.currentPage = 1
     fetchUsers()
   }
+
+  // Computed properties
+  const selectedUsersCount = computed<number>(() => {
+    return users.value.filter(user => user.selected).length
+  })
 
   // Handle selection changes
   const handleSelectionChange = (type: 'all' | 'single', value?: boolean | number): void => {
     if (type === 'all') {
-      selectAll.value = value as boolean
-      users.value.forEach(user => {
-        user.selected = value as boolean
-      })
-    } else {
-      const userId = value as number
-      const user = users.value.find(u => u.id === userId)
+      const selectAllValue = value as boolean
+      selectAll.value = selectAllValue
+      users.value.forEach(user => user.selected = selectAllValue)
+    } else if (type === 'single' && typeof value === 'number') {
+      const user = users.value.find(u => u.id === value)
       if (user) {
         user.selected = !user.selected
-        
-        // Update selectAll state based on current selection
-        const allSelected = users.value.every(user => user.selected)
-        const noneSelected = users.value.every(user => !user.selected)
-        
-        if (allSelected) selectAll.value = true
-        else if (noneSelected) selectAll.value = false
+        // Update select all state
+        selectAll.value = users.value.every(u => u.selected)
       }
     }
   }
 
-  // Execute user actions
-  const executeUserAction = async (action: ActionType, userIds: number[]): Promise<void> => {
-    if (!action || userIds.length === 0) return
-    
-    loading.value = true
-    
+  // Fetch user attributes
+  const fetchUserAttributes = async (fbId: string): Promise<UserAttribute[]> => {
     try {
-      // Map actions to API status codes
-      const statusMap = {
-        'activate': 1,
-        'deactivate': 0,
-        'delete': 2,
-        'test': 3,
-        'export': 4,
-        'delete_conversation': 6
-      }
-      
-      const status = statusMap[action]
-      if (status === undefined) {
-        console.error('Unknown action:', action)
-        error.value = 'Unknown action selected'
-        return
-      }
-      
-      const response = await userApi.changeUserStatus(status, userIds)
-      
-      if (response.success) {
-        if (response.data.file) {
-          const blob = new Blob([response.data.file], { type: 'text/csv;charset=utf-8;' });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.setAttribute('download', 'exported_users.csv');
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }
-        
-        console.log(`Successfully executed ${action} on ${userIds.length} users`)
-        
-        // Clear cache and refresh the user list
-        clearAllCache()
-        await fetchUsers(true)
-        
-        // Reset selection
-        selectedAction.value = ''
-        selectAll.value = false
-      } else {
-        console.error('Failed to execute action:', response.message)
-        error.value = response.message || `Failed to ${action} users`
-      }
-    } catch (err) {
-      console.error('Error executing action:', err)
-      error.value = `Error executing ${action}`
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // Fetch user attributes with caching
-  const fetchUserAttributes = async (userId: string, forceRefresh = false) => {
-    // Check cache first if not forcing refresh
-    if (!forceRefresh) {
-      const cached = getCachedAttributes(userId)
-      if (cached) {
-        console.log('Using cached attributes for user:', userId)
-        return { success: true, data: cached, fromCache: true }
-      }
-    }
-
-    try {
-      console.log('Fetching user attributes for user ID:', userId)
-      const response = await userApi.getUserAttributes(userId)
-      
+      const response = await userApi.getUserAttributes(fbId)
       if (response.success && response.data) {
-        // Cache the attributes
-        setCachedAttributes(userId, response.data)
-        console.log('✅ User attributes fetched and cached successfully:', response.data)
-        return { ...response, fromCache: false }
-      } else {
-        console.error('❌ Failed to fetch user attributes:', response.message)
-        return { ...response, fromCache: false }
+        return response.data
       }
+      return []
     } catch (error) {
-      console.error('❌ Error fetching user attributes:', error)
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : 'Failed to fetch user attributes',
-        data: [],
-        fromCache: false
-      }
+      console.error('Error fetching user attributes:', error)
+      return []
     }
   }
 
-  // User authentication methods
-  async function login(email: string, _password: string) {
-    loading.value = true;
-    error.value = null;
-    
+  // Update user attributes
+  const updateUserAttributes = async (userIds: number[], attributes: UserAttribute[]): Promise<boolean> => {
     try {
-      // Simulated login - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      user.value = {
-        id: '1',
-        name: 'Demo User',
-        email,
-        avatar: 'https://images.pexels.com/photos/2269872/pexels-photo-2269872.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'
-      };
-    } catch (e) {
-      error.value = 'Login failed. Please try again.';
-    } finally {
-      loading.value = false;
+      const response = await userApi.updateUserAttributes(userIds, attributes)
+      return response.success
+    } catch (error) {
+      console.error('Error updating user attributes:', error)
+      return false
     }
   }
 
-  function logout() {
-    user.value = null;
+  // Delete user attribute
+  const deleteUserAttribute = async (messengerUserId: string, attributeId: number): Promise<boolean> => {
+    try {
+      const response = await userApi.deleteUserAttribute(messengerUserId, attributeId)
+      return response.success
+    } catch (error) {
+      console.error('Error deleting user attribute:', error)
+      return false
+    }
   }
 
   return {
-    // User authentication
-    user,
-    loading,
-    error,
-    isAuthenticated,
-    login,
-    logout,
-    
     // User management state
     users,
     selectedAction,
     selectAll,
     selectedUser,
     showUserDetails,
-    filterState,
+    filters,
     pagination,
-    sorting,
+    loading,
     selectedUsersCount,
     
     // Methods
@@ -491,9 +292,7 @@ export const useUserStore = defineStore('user', () => {
     handleSelectionChange,
     executeUserAction,
     fetchUserAttributes,
-    
-    // Cache management
-    clearUserCache,
-    clearAllCache
-  };
-});
+    updateUserAttributes,
+    deleteUserAttribute
+  }
+})

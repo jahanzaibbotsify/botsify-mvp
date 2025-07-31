@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { conversationApi } from '@/services/conversationApi'
-import { firebaseService } from '@/services/firebase'
+import { firebaseService } from '@/utils/firebase'
 import { NotificationService } from '@/utils/notification'
 import type { FirebaseMessage } from '@/types/firebase'
 import type { 
@@ -690,7 +690,7 @@ export const useConversationStore = defineStore('conversation', () => {
           }
         }
   
-        return { success: true, message: response.data.message };
+        return { success: true, message: response.data?.message || 'Failed to delete conversation' };
       } else {
         return { success: false, message: response.message || 'Failed to delete conversation' };
       }
@@ -708,7 +708,7 @@ export const useConversationStore = defineStore('conversation', () => {
       }
       const response = await conversationApi.changeBotActivation(userId, status)
       if (response.success) {
-        return { success: true, message: response.data.message }
+        return { success: true, message: response.data?.message || 'Failed to change bot activation' }
       } else {
         return { success: false, message: 'Internal Server Error, Please Contact team@botsify.com' }
       }

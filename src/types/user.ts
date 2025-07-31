@@ -1,13 +1,13 @@
-export type FilterType = 'all' | 'active' | 'inactive'
-export type ActionType = '' | 'activate' | 'deactivate' | 'delete' | 'test' | 'export' | 'delete_conversation'
-export type SegmentType = 'all' | 'sms' | 'whatsapp' | 'facebook' | 'website' | 'instagram' | 'telegram'
-export type SegmentId = -2 | -3 | -4 | -5 | -6 | -7 | null
-export type SortBy = 'id' | 'name' | 'type' | 'active_for_bot' | 'created_at' | 'country'
-export type SortOrder = 'asc' | 'desc'
-export type PerPage = 20 | 50 | 100
+/**
+ * User Types
+ * All user-related interfaces and types
+ */
 
-// Role-based access control types
+import type { ApiPagination, SortOrder } from './api'
+
+// User role and permission types
 export type UserRole = 'admin' | 'editor' | 'live_chat_agent'
+
 export type Permission = 
   | 'send_messages'
   | 'delete_user_chats'
@@ -32,6 +32,12 @@ export interface RolePermissions {
   description: string
 }
 
+// Filter and segment types
+export type FilterType = 'all' | 'active' | 'inactive'
+export type SegmentType = 'all' | 'sms' | 'whatsapp' | 'facebook' | 'website' | 'instagram' | 'telegram'
+export type SegmentId = -2 | -3 | -4 | -5 | -6 | -7 | null
+
+// Bot user types
 export interface BotUser {
   id: number
   name: string
@@ -42,17 +48,17 @@ export interface BotUser {
   is_whitelabel_client: boolean
   subs?: {
     status: string
-    [key: string]: any
+    [key: string]: unknown
   }
-  appsumoUser?: any[]
-  botAdmin?: any[]
+  appsumoUser?: unknown[]
+  botAdmin?: unknown[]
   whitelabel?: {
-    company_name: string,
-    primary_color: string,
-    secondary_color: string,
-    logo: string,
-    favicon: string | null,
-    domain: string,
+    company_name: string
+    primary_color: string
+    secondary_color: string
+    logo: string
+    favicon: string | null
+    domain: string
     mask_url: string
   }
 }
@@ -68,8 +74,8 @@ export interface BotData {
   status: number
   name: string
   user_id: number
-  bot_flow: any
-  chat_flow: any
+  bot_flow: unknown
+  chat_flow: unknown
   created_at: string
   updated_at: string
   type: string
@@ -108,23 +114,7 @@ export interface BotApiResponse {
   }
 }
 
-export interface PaginationData {
-  currentPage: number
-  totalPages: number
-  totalItems: number
-  perPage: PerPage
-}
-
-export interface SortingData {
-  sortBy: SortBy
-  sortOrder: SortOrder
-}
-
-export interface User extends Omit<ApiUser, 'status'> {
-  status: 'Active' | 'Inactive'
-  hasConversation: boolean
-  selected: boolean
-}
+// User attribute types
 export interface UserAttribute {
   id: number
   key: string
@@ -134,6 +124,7 @@ export interface UserAttribute {
   new_value?: string
 }
 
+// API user types
 export interface ApiUser {
   id: number
   name: string
@@ -180,91 +171,78 @@ export interface ApiUser {
   attributes: UserAttribute[]
 }
 
-export interface ApiPagination {
-  current_page: number
-  data: ApiUser[]
-  first_page_url: string
-  from: number
-  last_page: number
-  last_page_url: string
-  links: Array<{
-    url: string | null
-    label: string
-    active: boolean
-  }>
-  next_page_url: string | null
-  path: string
-  per_page: number
-  prev_page_url: string | null
-  to: number
-  total: number
+// User interface for UI
+export interface User extends Omit<ApiUser, 'status'> {
+  status: 'Active' | 'Inactive'
+  hasConversation: boolean
+  selected: boolean
 }
 
-export interface ApiResponse<T = any> {
-  success: boolean
-  data: T
-  message?: string
-}
-
+// User API response types
 export interface ApiUsersResponse {
   key_attributes: Record<string, Record<string, string>>
   users: ApiPagination
   bot_key: string
 }
 
-
+// User API parameter types
 export interface GetUsersParams {
-  segment_id?: number;
-  date?: string;
-  sortby?: string;
-  sortorder?: string;
-  per_page?: number;
-  page?: number;
-  search?: string;
-  status?: string;
+  segment_id?: number
+  date?: string
+  sortby?: string
+  sortorder?: string
+  per_page?: number
+  page?: number
+  search?: string
+  status?: string
 }
 
+// User action payload types
 export interface UserActionPayload {
-  user_ids: number[];
-  apikey: string;
+  user_ids: number[]
+  apikey: string
 }
 
-export interface UsersResponse {
-  users: any[];
-  pagination: {
-    current_page: number;
-    total_pages: number;
-    total_items: number;
-    per_page: number;
-  };
-}
-
-
-// Add interface for import response
-export interface ImportResponse {
-  success: boolean;
-  message: string;
-  imported_count?: number;
-  errors?: string[];
-}
-
-// Add interfaces for attribute operations
+// User attribute payload types
 export interface AttributeUpdatePayload {
-  apikey: string;
-  user_ids: number[];
-  user_attributes: UserAttribute[];
+  apikey: string
+  user_ids: number[]
+  user_attributes: UserAttribute[]
 }
 
 export interface AttributeDeletePayload {
-  apikey: string;
-  messenger_user_id: string;
-  id: number;
+  apikey: string
+  messenger_user_id: string
+  id: number
 }
 
 export interface AttributeResponse {
-  success?: boolean;
-  status?: string;
-  message: string;
-  updated_count?: number;
-  deleted_count?: number;
+  success?: boolean
+  status?: string
+  message: string
+  updated_count?: number
+  deleted_count?: number
 }
+
+// User sorting types
+export type SortBy = 'id' | 'name' | 'type' | 'active_for_bot' | 'created_at' | 'country'
+export type PerPage = 20 | 50 | 100
+
+export interface SortingData {
+  sortBy: SortBy
+  sortOrder: SortOrder
+}
+
+// User response types
+export interface UsersResponse {
+  users: unknown[]
+  pagination: {
+    current_page: number
+    total_pages: number
+    total_items: number
+    per_page: number
+  }
+}
+
+// Action type for user operations
+export type ActionType = '' | 'activate' | 'deactivate' | 'delete' | 'test' | 'export' | 'delete_conversation'
