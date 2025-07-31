@@ -158,7 +158,7 @@ router.beforeEach(async (to, from, next) => {
     return next();
   }
 
-  if (isBotDataLoaded && from.name === to.name) {
+  if (isBotDataLoaded) {
     return next();
   }
 
