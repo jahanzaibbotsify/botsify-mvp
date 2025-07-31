@@ -240,7 +240,7 @@ watch(() => props.attributes, (newAttributes) => {
                   @click="startEdit(attribute.id)"
                   :disabled="loading"
                 >
-                  <i class="pi pi-pencil" />
+                  <i class="pi pi-pen-to-square"></i>
                 </button>
                 <button 
                   class="delete-btn" 
