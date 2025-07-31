@@ -223,12 +223,7 @@ defineExpose({
 
             <button v-if="story?.versions && story.versions.length > 1"
               @click="showVersionHistory = !showVersionHistory" class="icon-btn history-btn" title="Version history">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                <path d="M3 3v5h5"></path>
-                <path d="M12 7v5l4 2"></path>
-              </svg>
+              <i class="pi pi-history"></i>
             </button>
 
             <button @click="showTemplateManager = !showTemplateManager" class="icon-btn template-btn"
