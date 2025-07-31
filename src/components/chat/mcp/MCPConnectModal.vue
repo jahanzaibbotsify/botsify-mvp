@@ -115,6 +115,9 @@ const removeHeader = (index: number) => {
  */
 const getAuthLabel = (type: string) => {
   const method = authMethods.find(m => m.value === type);
+  if (props.server && !props.server.isCustom) {
+    return props.server.authLabel;
+  }
   return method ? method.label : '';
 }
 
@@ -146,6 +149,7 @@ function handleBack() {
  * This function is used to validate the connection to the MCP server
  */
 async function checkConnection() {
+  error.value = ''
   isConnecting.value = true;
   let url: string;
   if (props.server && props.server.id === 'shopify') {
@@ -349,7 +353,10 @@ onMounted(() => {
 
       <div v-if="!serverTools.length">
         <div class="pt-20" v-if="server && server.name === 'Shopify'">
-          <input type="text" id="shopify-domain" v-model="serverUrl" placeholder="Your Shopify Store Domain *" required>
+          <input type="text" id="shopify-domain" v-model="serverUrl" placeholder="Your Shopify Store Base Domain *" required>
+          <div class="text-center pt-5">
+            <a class="external-link" target="_blank" href="https://www.hulkapps.com/blogs/shopify-hub/how-to-find-your-shopify-domain-a-step-by-step-guide">Get Your Shopify Store's Base Domain <i class="pi pi-external-link"></i></a>
+          </div>
         </div>
         <div v-if="isCustom">
           <div class="pt-20">
@@ -433,6 +440,9 @@ onMounted(() => {
                 </path>
               </svg>
             </button>
+          </div>
+          <div class="text-center pt-5" v-if="server && server.externalData">
+            <a class="external-link" target="_blank" :href="server.externalData.link"> {{ server.externalData.label }} <i class="pi pi-external-link"></i></a>
           </div>
         </div>
         <div class="pt-10" v-if="authType === 'custom_headers'">
@@ -776,5 +786,11 @@ input {
 .error-message svg {
   flex-shrink: 0;
   margin-top: 2px;
+}
+.external-link {
+  font-size: 12px;
+}
+.pt-5 {
+  padding-top: 5px;
 }
 </style>

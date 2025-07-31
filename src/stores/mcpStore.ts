@@ -15,6 +15,10 @@ export const useMCPStore = defineStore('mcp', () => {
       authMethod: 'api_key',
       authLabel: 'Stripe Secret Key',
       server_url: 'https://mcp.stripe.com',
+      externalData: {
+        link: "https://docs.stripe.com/keys#create-restricted-api-secret-key",
+        label: 'Get secret key'
+      }
     },
     {
       id: 'shopify',
