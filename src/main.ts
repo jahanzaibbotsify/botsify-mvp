@@ -8,7 +8,6 @@ import 'primeicons/primeicons.css'
 import '@fontsource/ubuntu/400.css'
 import '@fontsource/ubuntu/500.css'
 import '@fontsource/ubuntu/700.css'
-import axios from 'axios';
 import ToastPlugin, { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-bootstrap.css';
 import { useBotStore } from './stores/botStore';
@@ -23,7 +22,6 @@ import Swal from 'sweetalert2';
 
 // Import routes
 import routes from '@/router'
-import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from './utils/config'
 import { axiosInstance } from './utils/axiosInstance'
 (window as any).Swal = Swal;
 
