@@ -88,6 +88,6 @@ export function getDefaultRedirect() {
   if (roleStore.isLiveChatAgent) {
     return { name: 'conversation' };
   } else {
-    return { name: 'agent', params: { id: 'default' } };
+    return { name: 'agent', params: { id: storedApiKey } };
   }
 }
