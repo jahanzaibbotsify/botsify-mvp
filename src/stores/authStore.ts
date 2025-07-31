@@ -46,6 +46,21 @@ export const useAuthStore = defineStore('auth', () => {
         'All integrations',
         '1 Month Chat History'
       ],
+      excludedFeatures: [
+        'Unlimited Users',
+        '$25/month/Additional Agent pricing',
+        'Integrate MCP',
+        'Scheduled Agents (Coming soon)',
+        'WhatsApp platform support',
+        '1-Agent development free worth $100/Month',
+        'Whitelabel Dashboard & Reselling Rights',
+        'Access to all Botsify Resources',
+        'Personal Onboarding Session',
+        'Bi-Weekly Training of 1 Agent Free for 12 Months',
+        'WhatsApp Agents (1,000 free conversations each month)',
+        'Priority Support',
+        '3 Months Chat History'
+      ],
       limits: {
         conversations: 5000,
         agents: 2,

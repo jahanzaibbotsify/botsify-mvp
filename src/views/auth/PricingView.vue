@@ -447,6 +447,13 @@ const contactSupport = () => {
                 </div>
                 <span>{{ feature }}</span>
               </li>
+              <!-- Excluded Features with Cross Marks -->
+              <li v-for="excludedFeature in plan.excludedFeatures" :key="'excluded-' + excludedFeature" class="feature-item excluded">
+                <div class="feature-cross">
+                  <i class="pi pi-times"></i>
+                </div>
+                <span class="excluded-text">{{ excludedFeature }}</span>
+              </li>
             </ul>
           </div>
         </div>
@@ -1114,6 +1121,19 @@ const contactSupport = () => {
   color: var(--color-primary);
 }
 
+.plan-card.selected .feature-cross {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--color-error);
+}
+
+.plan-card.selected .feature-cross i {
+  color: var(--color-error);
+}
+
+.plan-card.selected .excluded-text {
+  color: rgba(255, 255, 255, 0.7);
+}
+
 .plan-card.selected .plan-button {
   background: rgba(255, 255, 255, 0.95);
   color: var(--color-primary);
@@ -1326,6 +1346,34 @@ const contactSupport = () => {
   color: white;
   font-size: 0.625rem;
   font-weight: 600;
+}
+
+/* Excluded Features Styles */
+.feature-item.excluded {
+  opacity: 0.6;
+}
+
+.feature-cross {
+  width: 20px;
+  height: 20px;
+  background: var(--color-error);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.feature-cross i {
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 600;
+}
+
+.excluded-text {
+  color: var(--color-text-secondary);
+  text-decoration: line-through;
 }
 
 /* Plan Metrics */
