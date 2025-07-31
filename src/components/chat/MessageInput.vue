@@ -447,7 +447,9 @@ const loadWebSearchData = async () => {
 
 // Delete File Search entry
 const deleteFileSearchEntry = (fileSearchId: string, fileSearchName: string) => {
-  window.$confirm({}, async() => {
+  window.$confirm({
+    text: 'Are you sure you want to delete this File Search?',
+  }, async() => {
     try {
       fileSearchDeleteLoading.value = true;
       fileSearchSelectedId.value = fileSearchId;
@@ -485,7 +487,9 @@ const deleteFileSearchEntry = (fileSearchId: string, fileSearchName: string) => 
 
 // Delete File Search entry
 const deleteAllFileSearchEntry = () => {
-  window.$confirm({}, async() => {
+  window.$confirm({
+    text: 'Are you sure you want to delete all File Search?',
+  }, async() => {
     try {
       fileSearchAllDeleteLoading.value = true;
       const ids = fileSearchResults.map(file=>file.id);
@@ -514,7 +518,9 @@ const deleteAllFileSearchEntry = () => {
 
 // Delete Web Search entry
 const deleteWebSearchEntry = (webSearchId: string, webSearchUrl: string) => {
-  window.$confirm({}, async() => {
+  window.$confirm({
+    text: 'Are you sure you want to delete this Web Search?',
+  }, async() => {
     try {
       webSearchDeleteLoading.value = true;
       webSearchSelectedUrlId.value = webSearchId;
@@ -552,7 +558,9 @@ const deleteWebSearchEntry = (webSearchId: string, webSearchUrl: string) => {
 
 // Delete Web Search entry
 const deleteWebSearchAllEntry = () => {
-  window.$confirm({}, async() => {
+  window.$confirm({
+    text: 'Are you sure you want to delete all Web Search?',
+  }, async() => {
     const ids = webSearchResults.map(item=>item.id);
     try {
       webSearchDeleteAllLoading.value = true;

@@ -47,7 +47,9 @@ const formattedSize = computed(() => {
 
 // Clear old chats (keep only the 5 most recent)
 function clearOldChats() {
-  window.$confirm({}, () => {
+  window.$confirm({
+    text: 'Are you sure you want to clear old chats?',
+  }, () => {
     const sortedChats = [...chatStore.chats].sort((a, b) =>
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );

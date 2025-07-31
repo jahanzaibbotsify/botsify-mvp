@@ -181,7 +181,9 @@ const exportChat = (extension: 'csv' | 'txt') => {
 }
 
 const deleteConversation = async () => {
-  window.$confirm({}, async () => {
+  window.$confirm({
+    text: 'Are you sure you want to delete this conversation?',
+  }, async () => {
     try {
       const response = await conversationStore.deleteConversation()
       if (response?.success) {
