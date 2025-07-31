@@ -221,7 +221,7 @@ defineExpose({
               <i class="pi pi-pen-to-square"></i>
             </button>
 
-            <button v-if="story?.versions && story.versions.length >= 1"
+            <button v-if="story?.versions && story.versions.length > 1"
               @click="showVersionHistory = !showVersionHistory" class="icon-btn history-btn" title="Version history">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
