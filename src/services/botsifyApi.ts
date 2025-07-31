@@ -1048,10 +1048,12 @@ export class BotsifyApiService {
 
   async deleteAiPromptVersion(version_ids: number[]): Promise<BotsifyResponse> {
     try {
-      const response = await axiosInstance.post(`/v1/delete-version`, {
-        version_ids: version_ids
+      const response = await axiosInstance.delete('/v1/delete-version', {
+        data: {
+          version_ids: version_ids
+        }
       });
-
+      
       if (response.data.status === 'success') {
         console.log('AI Prompt version deleted: ', response.data);
         return {
