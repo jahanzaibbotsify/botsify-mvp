@@ -115,6 +115,9 @@ const removeHeader = (index: number) => {
  */
 const getAuthLabel = (type: string) => {
   const method = authMethods.find(m => m.value === type);
+  if (props.server && !props.server.isCustom) {
+    return props.server.authLabel;
+  }
   return method ? method.label : '';
 }
 
@@ -350,9 +353,9 @@ onMounted(() => {
 
       <div v-if="!serverTools.length">
         <div class="pt-20" v-if="server && server.name === 'Shopify'">
-          <input type="text" id="shopify-domain" v-model="serverUrl" placeholder="Your Shopify Store Domain *" required>
+          <input type="text" id="shopify-domain" v-model="serverUrl" placeholder="Your Shopify Store Base Domain *" required>
           <div class="text-center pt-5">
-            <a class="external-link" target="_blank" href="https://www.hulkapps.com/blogs/shopify-hub/how-to-find-your-shopify-domain-a-step-by-step-guide">How to Find Your Shopify Store's Base Domain <i class="pi pi-external-link"></i></a>
+            <a class="external-link" target="_blank" href="https://www.hulkapps.com/blogs/shopify-hub/how-to-find-your-shopify-domain-a-step-by-step-guide">Get Your Shopify Store's Base Domain <i class="pi pi-external-link"></i></a>
           </div>
         </div>
         <div v-if="isCustom">
