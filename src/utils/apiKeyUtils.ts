@@ -1,10 +1,4 @@
 /**
- * Utility functions for API key management
- */
-
-import { useRoleStore } from "@/stores/roleStore";
-
-/**
  * Extracts API key from URL path or localStorage
  * @returns The API key if found, empty string otherwise
  */

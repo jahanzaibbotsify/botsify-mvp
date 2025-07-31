@@ -53,7 +53,7 @@ import { BOTSIFY_WEB_URL } from '@/utils/config';
   }
   
   .login-btn {
-    background: #00a3ff;
+    background: var(--color-primary);
     color: #fff;
     border: none;
     border-radius: 0.75rem;
