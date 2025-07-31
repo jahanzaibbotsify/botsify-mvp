@@ -665,7 +665,7 @@ const hideLoading = () => {
           </button>
 
           <!-- Chain Icon with New Dropdown -->
-          <div class="mcp-dropdown-container" @click.stop>
+          <div class="mcp-dropdown-container" @click.stop v-if="chatStore.chats[0].messages.length > 1">
             <button 
               class="icon-button mcp-icon-button" 
               @click="toggleMCPDropdown" 
@@ -737,6 +737,7 @@ const hideLoading = () => {
             </div>
           </div>
           <button 
+          v-if="chatStore.chats[0].messages.length > 1"
             class="icon-button mcp-icon-button" 
             @click="openMCPServers" title="MCP Servers" 
             :disabled="loadingFor === 'fileUploadingFromPin' || chatStore.doInputDisable">           
