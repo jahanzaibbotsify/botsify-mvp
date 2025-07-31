@@ -773,6 +773,7 @@ const hideLoading = () => {
     </Teleport>
 
     <!-- File Search Modal -->
+     <Teleport  to="body">
     <div v-if="showFileSearchModal" class="modal-overlay" @click="closeFileSearchModal">
       <span v-if="loadingData" class="loading-spinner loading-spinner-large"></span>
       <div v-else class="modal-content file-search-modal" @click.stop>
@@ -910,8 +911,10 @@ const hideLoading = () => {
         </div>
       </div>
     </div>
+  </Teleport>
 
     <!-- Web Search Modal -->
+     <Teleport  to="body">
     <div v-if="showWebSearchModal" class="modal-overlay" @click="closeWebSearchModal">
       <span v-if="loadingData" class="loading-spinner loading-spinner-large"></span>
       <div v-else class="modal-content web-search-modal" @click.stop>
@@ -1001,6 +1004,7 @@ const hideLoading = () => {
         </div>
       </div>
     </div>
+  </Teleport>
   </div>
 </template>
 
