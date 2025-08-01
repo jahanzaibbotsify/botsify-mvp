@@ -332,12 +332,6 @@ onMounted(() => {
   padding: var(--space-6);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg-secondary);
-  gap: var(--space-4);
-}
-
-.header-content {
-  flex: 1;
-  min-width: 0; /* Allow content to shrink and text to wrap if needed */
 }
 
 .header-content h2 {
@@ -365,7 +359,6 @@ onMounted(() => {
   justify-content: center;
   cursor: pointer;
   transition: all var(--transition-normal);
-  flex-shrink: 0; /* Prevent button from shrinking */
 }
 
 .close-button:hover {
@@ -712,29 +705,6 @@ onMounted(() => {
 
   .modal-header {
     padding: var(--space-4);
-    gap: var(--space-3);
-  }
-
-  .header-content {
-    flex: 1;
-    min-width: 0; /* Allow text to wrap/truncate */
-    margin-right: var(--space-2);
-  }
-
-  .header-content h2 {
-    font-size: 1.25rem;
-    line-height: 1.3;
-  }
-
-  .header-content p {
-    font-size: 0.8rem;
-    line-height: 1.4;
-  }
-
-  .close-button {
-    flex-shrink: 0; /* Prevent close button from shrinking */
-    width: 36px;
-    height: 36px;
   }
 
   .modal-content {
@@ -768,36 +738,6 @@ onMounted(() => {
   .header-cell,
   .cell {
     padding: var(--space-2) 0;
-  }
-}
-
-/* Extra small screens */
-@media (max-width: 480px) {
-  .billing-modal {
-    width: 98%;
-    margin: var(--space-2);
-    max-height: 95vh;
-  }
-
-  .modal-header {
-    padding: var(--space-3);
-  }
-
-  .header-content h2 {
-    font-size: 1.125rem;
-  }
-
-  .header-content p {
-    font-size: 0.75rem;
-  }
-
-  .close-button {
-    width: 32px;
-    height: 32px;
-  }
-
-  .modal-content {
-    padding: var(--space-3);
   }
 }
 </style>
