@@ -3,12 +3,14 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import type { PricingPlan } from '@/types/auth'
+import BillingModal from '@/components/auth/BillingModal.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
 const selectedPlanId = ref<string | null>(null)
 const billingCycle = ref<'monthly' | 'annually'>('monthly')
+const showBillingModal = ref(false)
 
 // Show all plans with dynamic pricing
 const allPlans = computed(() => {
@@ -317,6 +319,14 @@ const contactSupport = () => {
   window.$toast?.success('Redirecting to support...')
   console.log('Contact support requested')
 }
+
+const openBillingModal = () => {
+  showBillingModal.value = true
+}
+
+const closeBillingModal = () => {
+  showBillingModal.value = false
+}
 </script>
 
 <template>
@@ -346,21 +356,27 @@ const contactSupport = () => {
     <!-- Billing Toggle -->
     <div class="billing-toggle-section">
       <div class="billing-toggle-container">
-        <div class="billing-toggle">
-          <button
-            @click="billingCycle = 'monthly'"
-            class="billing-btn"
-            :class="{ active: billingCycle === 'monthly' }"
-          >
-            Monthly
-          </button>
-          <button
-            @click="billingCycle = 'annually'"
-            class="billing-btn"
-            :class="{ active: billingCycle === 'annually' }"
-          >
-            <span>Annually</span>
-            <span class="discount-badge-small">17% OFF</span>
+        <div class="billing-controls">
+          <div class="billing-toggle">
+            <button
+              @click="billingCycle = 'monthly'"
+              class="billing-btn"
+              :class="{ active: billingCycle === 'monthly' }"
+            >
+              Monthly
+            </button>
+            <button
+              @click="billingCycle = 'annually'"
+              class="billing-btn"
+              :class="{ active: billingCycle === 'annually' }"
+            >
+              <span>Annually</span>
+              <span class="discount-badge-small">17% OFF</span>
+            </button>
+          </div>
+          <button @click="openBillingModal" class="billing-info-btn">
+            <i class="pi pi-credit-card"></i>
+            <span>View Billing</span>
           </button>
         </div>
       </div>
@@ -829,6 +845,9 @@ const contactSupport = () => {
         </div>
       </div>
     </div>
+
+    <!-- Billing Modal -->
+    <BillingModal :show="showBillingModal" @close="closeBillingModal" />
   </div>
 </template>
 
@@ -1000,6 +1019,37 @@ const contactSupport = () => {
   font-weight: 600;
   text-transform: uppercase;
   margin-left: var(--space-1);
+}
+
+.billing-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.billing-info-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.billing-info-btn:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.billing-info-btn i {
+  font-size: 1rem;
 }
 
 /* Pricing Container */

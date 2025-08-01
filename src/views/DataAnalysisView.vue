@@ -189,7 +189,7 @@ const sendSuggestion = (suggestion: string) => {
 
 .page-header {
   background-color: var(--color-bg-secondary);
-  padding: var(--space-6) var(--space-6) var(--space-4);
+  padding: var(--space-4) var(--space-4) var(--space-4);
   border-bottom: 1px solid var(--color-border);
   display: flex;
   justify-content: space-between;
