@@ -32,6 +32,21 @@ export const useMCPStore = defineStore('mcp', () => {
       server_url: '/api/mcp',
     },
     {
+      id: 'google-sheet',
+      name: 'Google Sheet',
+      description: 'Read and write to Google Sheets',
+      icon: 'google-sheet.svg',
+      apiKeyRequired: true,
+      isPopular: true,
+      authMethod: 'oauth',
+      authLabel: 'Google OAuth Token',
+      server_url: 'https://mcp.botsify.com/google-sheet-mcp',
+      externalData: {
+        link: 'https://docs.robomotion.io/how-to-guides/authentication/google/service-account',
+        label: 'Get google service account'
+      }
+    },
+    {
       id: 'paypal',
       name: 'PayPal',
       description: 'Manage PayPal payments and transactions',
@@ -121,17 +136,6 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'Zoho API Key',
-      comingSoon: true,
-    },
-    {
-      id: 'google-sheet',
-      name: 'Google Sheet',
-      description: 'Read and write to Google Sheets',
-      icon: 'google-sheet.svg',
-      apiKeyRequired: true,
-      isPopular: true,
-      authMethod: 'oauth',
-      authLabel: 'Google OAuth Token',
       comingSoon: true,
     }
   ]);
