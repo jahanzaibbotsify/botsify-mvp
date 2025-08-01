@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { ConfigurationTask, ConfigurationResponse, ConfigurationResponseData, ApiRequestData, ChatMessage, ApiError } from '../types/openai'
 import { useBotStore } from './botStore';
 import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from '@/utils/config';
@@ -9,18 +9,22 @@ import { handleApiError } from '@/utils/errorHandler';
 export const useOpenAIStore = defineStore('openai', () => {
   // Try to get API key from environment variables first, then fallback to localStorage
   const authToken = BOTSIFY_AUTH_TOKEN;
-  const botApiKey = useBotStore().apiKey;
-
   
   // Reactive state - no OpenAI client here to avoid private member issues
   const error = ref<string | null>(null);
   const rateLimited = ref(false);
 
-  const mcpConfiguration = {
+  // Get current API key reactively
+  const getCurrentApiKey = () => {
+    return useBotStore().apiKey;
+  };
+
+  // Make mcpConfiguration reactive to API key changes
+  const mcpConfiguration = computed(() => ({
     type: "mcp" as const,
     server_label: "botsify_mcp_server",
     server_url: "https://mcp.botsify.com/mcp",
-    server_description: `The server is designed to work seamlessly with Botsify’s infrastructure, supporting easy integration, rapid deployment, and centralized configuration management for all Botsify-powered chatbots and virtual agents. Use this Botsify chatbot api key every time: ${botApiKey}`,
+    server_description: `The server is designed to work seamlessly with Botsify's infrastructure, supporting easy integration, rapid deployment, and centralized configuration management for all Botsify-powered chatbots and virtual agents. Use this Botsify chatbot api key every time: ${getCurrentApiKey()}`,
     allowed_tools: [
       "updateBotSettings",
       "updateBotGeneralSettings",
@@ -43,7 +47,7 @@ export const useOpenAIStore = defineStore('openai', () => {
       "getAllPageMessages"
     ],
     require_approval: "never" as const
-  }
+  }));
 
 
   // Handle configuration API requests
@@ -282,7 +286,7 @@ If unsure about structure or limits, ask the user in the ---CHAT_RESPONSE--- sec
         const payload = {
             input: inputText,
             instructions: instructions,
-            tools: [mcpConfiguration]
+            tools: [mcpConfiguration.value]
           };
 
         const stream = await fetch(`${BOTSIFY_BASE_URL}/v1/get-ai-response`, {
@@ -292,7 +296,7 @@ If unsure about structure or limits, ask the user in the ---CHAT_RESPONSE--- sec
             'Authorization': `Bearer ${authToken}`
           },
           body: JSON.stringify({
-            apikey : botApiKey,
+            apikey : getCurrentApiKey(),
             payload: payload
           })
         });
