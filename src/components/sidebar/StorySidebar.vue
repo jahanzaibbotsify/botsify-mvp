@@ -107,7 +107,7 @@ function cancelEditing() {
 
 function saveEdit() {
   if (editContent.value.trim()) {
-    chatStore.updateStory(props.chatId, editContent.value.trim(), false);
+    chatStore.updateStory(props.chatId, editContent.value.trim(), false, true);
     isEditing.value = false;
     editContent.value = '';
 
@@ -124,6 +124,7 @@ function saveEdit() {
 function revertToVersion(versionId: string) {
   window.$confirm({
     text: 'Are you sure you want to revert to this version?',
+    confirmButtonText: 'Yes, Revert it!',
   }, () => {
     chatStore.revertToPromptVersion(props.chatId, versionId);
   });
