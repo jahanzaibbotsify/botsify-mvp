@@ -17,7 +17,15 @@ export const useChatStore = defineStore('chat', () => {
   const doInputDisable = ref(false);
   const globalPromptTemplates = ref<GlobalPromptTemplate[]>([]);
   const activeAiPromptVersion = computed(() => chats.value[0]?.story?.versions.find(v => v.isActive) || null);
-  const botStore = useBotStore();
+
+  // Get current API key and bot ID reactively
+  const getCurrentApiKey = () => {
+    return useBotStore().apiKey;
+  };
+
+  const getCurrentBotId = () => {
+    return useBotStore().botId;
+  };
 
   function convertStoredVersionsToStoryStructure(aiPromptVersions: object[]) {
     let versionId = '';
@@ -101,7 +109,7 @@ export const useChatStore = defineStore('chat', () => {
           console.error('❌ Failed to parse stored chats JSON:', jsonError);
         }
       } else {
-        chats.value[0].id = botStore.apiKey;
+        chats.value[0].id = getCurrentApiKey();
         chats.value.forEach(chat => {
           if (chat) {
             (chat as any).story = storedTemplates; 
@@ -132,7 +140,7 @@ export const useChatStore = defineStore('chat', () => {
 
       
       const payload = {
-          bot_id: botStore.botId,
+          bot_id: getCurrentBotId(),
           ai_prompt: aiPrompt,
           chat_flow: chatsJson,
           name: activeAiPromptVersion.value?.name ?? 'version-1',
@@ -943,7 +951,7 @@ Use the above connected services information to understand what tools and data s
     const initialPrompt = defaultPromptTemplate.value?.content || '';
 
     const newChat: Chat = {
-      id: botStore.apiKey,
+      id: getCurrentApiKey(),
       title: '',
       timestamp: currentTime(),
       messages: [
@@ -1030,7 +1038,7 @@ Use the above connected services information to understand what tools and data s
   async function clearChatMessages() {
     try {
 
-      const response = await botsifyApi.clearAgentConversion({apikey: botStore.apiKey});
+      const response = await botsifyApi.clearAgentConversion({apikey: getCurrentApiKey()});
       
       if (!response.success) {
         console.error('❌ Error clearing conversation:', response.message);
