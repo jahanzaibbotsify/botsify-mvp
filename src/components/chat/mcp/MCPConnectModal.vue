@@ -477,9 +477,7 @@ onMounted(() => {
         <div class="button-row">
           <button class="back-btn" @click="handleBack">
           <span class="icon-left">
-            <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path
-                d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round"/></svg>
+            <i class="pi pi-arrow-left"></i>
           </span>
             Back
           </button>
@@ -608,26 +606,6 @@ input {
   margin: 40px auto 0 auto;
   max-width: 500px;
   width: 100%;
-}
-
-.back-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #f5f5f5;
-  color: #222;
-  border: none;
-  border-radius: 10px;
-  padding: 0 20px;
-  height: 40px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.back-btn:hover {
-  background: #e9e9e9;
 }
 
 .connect-btn {

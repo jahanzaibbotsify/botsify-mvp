@@ -4,13 +4,14 @@
         <div class="icon">🔒</div>
         <h1>Authentication Required</h1>
         <p>You must be logged in to access this page.</p>
-        <a :href="`${BOTSIFY_WEB_URL}/login`" class="login-btn">Login</a>
+        <a :href="`${getWebUrl()}/login`" class="login-btn">Login</a>
       </div>
     </div>
   </template>
   
   <script setup lang="ts">
-import { BOTSIFY_WEB_URL } from '@/utils/config';
+import { getWebUrl } from '@/utils';
+
 
   </script>
   
