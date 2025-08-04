@@ -4,6 +4,7 @@ import WebsiteModal from "./WebsiteModal.vue"; // Import the WebsiteModal
 import TelegramModal from "./TelegramModal.vue"; // Import the WebsiteModal
 import WhatsAppModal from "./WhatsApp/WhatsAppModal.vue"; // Import the WhatsAppModal
 import SmsModal from "./Sms/SmsModal.vue"; // Import the WhatsAppModal
+import MessengerModal from "./Messenger/MessengerModal.vue"; // Import the WhatsAppModal
 import { ref } from "vue";
 
 const modalRef = ref<InstanceType<typeof ModalLayout> | null>(null);
@@ -11,6 +12,7 @@ const websiteModalRef = ref<InstanceType<typeof WebsiteModal> | null>(null); // 
 const whatsappModalRef = ref<InstanceType<typeof WhatsAppModal> | null>(null); // Create ref for WhatsAppModal
 const telegramModalRef = ref<InstanceType<typeof TelegramModal> | null>(null); // Create ref for WhatsAppModal
 const smsModalRef = ref<InstanceType<typeof SmsModal> | null>(null); // Create ref for WhatsAppModal
+const messengerModalRef = ref<InstanceType<typeof MessengerModal> | null>(null); // Create ref for WhatsAppModal
 
 const openModal = () => {
   modalRef.value?.openModal();
@@ -25,6 +27,8 @@ const handleBotClick = (botLabel: string) => {
     telegramModalRef.value?.openModal()
   } else if (botLabel === 'SMS'){
     smsModalRef.value?.openModal()
+  } else if (botLabel === 'Messenger'){
+    messengerModalRef.value?.openModal()
   }
   modalRef.value?.closeModal(); // Close main modal
   // Add handlers for other bot types here
@@ -93,6 +97,11 @@ defineExpose({ openModal });
    <!-- Sms Modal Component -->
    <SmsModal 
     ref="smsModalRef" 
+    @back="handleBackToMain" 
+  />
+
+  <MessengerModal 
+    ref="messengerModalRef" 
     @back="handleBackToMain" 
   />
 </template>

@@ -3,15 +3,14 @@ import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
 import Pagination from "@/components/ui/Pagination.vue";
 import { ref } from "vue";
 import PublishBotTab from "./PublishBotTab.vue";
-import MediaBlockTab from "./MediaBlockTab.vue";
+import CommentAutoResponderTab from "./CommentAutoResponderTab.vue";
 import BroadcastTab from "./BroadcastTab.vue";
-import BroadcastReportTab from "./BroadcastReportTab.vue";
-import CatalogTab from "./CatalogTab.vue";
+import ScheduleMessagesTab from "./ScheduleMessagesTab.vue";
+import FacebookCheckboxTab from "./FacebookCheckboxTab.vue";
 
 // Define tabs
 const tabs = [
   { id: 'publish-bot', label: 'Publish Bot' },
-  { id: 'greeting', label: 'Greeting Message' },
   { id: 'comment-auto-responder', label: 'Comment Auto Responder' },
   { id: 'broadcast', label: 'Broadcast' },
   { id: 'schedule-messages', label: 'Schedule Messages' },
@@ -23,9 +22,10 @@ const currentActiveTab = ref('publish-bot');
 
 // Tab component refs
 const publishBotTabRef = ref<InstanceType<typeof PublishBotTab> | null>(null);
-const mediaBlockTabRef = ref<InstanceType<typeof MediaBlockTab> | null>(null);
+const commentAutoResponderTabRef = ref<InstanceType<typeof CommentAutoResponderTab> | null>(null);
 const broadcastTabRef = ref<InstanceType<typeof BroadcastTab> | null>(null);
-const broadcastReportTabRef = ref<InstanceType<typeof BroadcastReportTab> | null>(null);
+const scheduleMessagesTabRef = ref<InstanceType<typeof ScheduleMessagesTab> | null>(null);
+const facebookCheckboxTabRef = ref<InstanceType<typeof FacebookCheckboxTab> | null>(null);
 
 const emit = defineEmits<{
   back: [];
@@ -52,37 +52,25 @@ const handleTabChange = (tabId: string) => {
 };
 
 // Publish Bot Tab Events
-const handleTestBot = () => {
-  isLoading.value = true;
-  try {
-    console.log('Testing bot...');
-    // Add actual test bot logic here
-  } catch (error) {
-    console.error('Failed to test bot:', error);
-  } finally {
-    isLoading.value = false;
-  }
+const handleCreateNewPage = () => {
+  console.log('Creating new page');
 };
 
-// Media Block Tab Events
-const handleCreateMediaBlock = (block: any) => {
-  console.log('Creating media block:', block);
+const handleRefreshPagePermission = () => {
+  console.log('Refreshing page permission');
 };
 
-const handleDeleteMediaBlock = (id: number) => {
-  console.log('Deleting media block:', id);
+const handleRemovePagePermission = () => {
+  console.log('Removing page permission');
 };
 
-const handleCloneMediaBlock = (block: any) => {
-  console.log('Cloning media block:', block);
+const handleConnectAccount = () => {
+  console.log('Connecting account');
 };
 
-const handlePreviewMediaBlock = (block: any) => {
-  console.log('Previewing media block:', block);
-};
-
-const handleCopyPayload = (block: any) => {
-  console.log('Copying payload:', block);
+// Comment Auto Responder Tab Events
+const handleSaveAutoResponder = (settings: any) => {
+  console.log('Saving auto responder settings:', settings);
 };
 
 // Broadcast Tab Events
@@ -90,45 +78,18 @@ const handleSendBroadcast = (data: any) => {
   console.log('Sending broadcast:', data);
 };
 
-
-const handleFilterReport = (filters: any) => {
-  console.log('Filtering report:', filters);
+// Schedule Messages Tab Events
+const handleScheduleMessage = (message: any) => {
+  console.log('Scheduling message:', message);
 };
 
-// Catalog Tab Events
-const handleCreateProduct = (product: any) => {
-  console.log('Creating product:', product);
+const handleDeleteScheduled = (id: number) => {
+  console.log('Deleting scheduled message:', id);
 };
 
-const handleUpdateProduct = (product: any) => {
-  console.log('Updating product:', product);
-};
-
-const handleDeleteProduct = (id: number) => {
-  console.log('Deleting product:', id);
-};
-
-const handleExportCatalog = (format: string) => {
-  console.log('Exporting catalog:', format);
-};
-
-const handleSaveSettings = () => {
-  isLoading.value = true;
-  try {
-    console.log('Saving Meta Cloud settings:');
-    // Add actual save logic here
-  } catch (error) {
-    console.error('Failed to save Meta Cloud settings:', error);
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-// Pagination handler for media block tab
-const handleMediaBlockPageChange = (page: number) => {
-  if (mediaBlockTabRef.value) {
-    mediaBlockTabRef.value.currentPage = page;
-  }
+// Facebook Checkbox Tab Events
+const handleSaveCheckbox = (settings: any) => {
+  console.log('Saving checkbox settings:', settings);
 };
 
 defineExpose({ openModal, closeModal });
@@ -137,7 +98,7 @@ defineExpose({ openModal, closeModal });
 <template>
   <PublishModalLayout
     ref="modalRef"
-    title="WhatsApp Integration"
+    title="Messenger Integration"
     :tabs="tabs"
     max-width="650px"
     default-tab="publish-bot"
@@ -150,19 +111,18 @@ defineExpose({ openModal, closeModal });
         v-if="activeTab === 'publish-bot'"
         ref="publishBotTabRef"
         :is-loading="isLoading"
-        @save-settings="handleSaveSettings"
+        @create-new-page="handleCreateNewPage"
+        @refresh-page-permission="handleRefreshPagePermission"
+        @remove-page-permission="handleRemovePagePermission"
+        @connect-account="handleConnectAccount"
       />
 
-      <!-- Media Block Tab -->
-      <MediaBlockTab 
-        v-if="activeTab === 'media-block'"
-        ref="mediaBlockTabRef"
+      <!-- Comment Auto Responder Tab -->
+      <CommentAutoResponderTab 
+        v-if="activeTab === 'comment-auto-responder'"
+        ref="commentAutoResponderTabRef"
         :is-loading="isLoading"
-        @create-media-block="handleCreateMediaBlock"
-        @delete-media-block="handleDeleteMediaBlock"
-        @clone-media-block="handleCloneMediaBlock"
-        @preview-media-block="handlePreviewMediaBlock"
-        @copy-payload="handleCopyPayload"
+        @save-settings="handleSaveAutoResponder"
       />
 
       <!-- Broadcast Tab -->
@@ -173,48 +133,35 @@ defineExpose({ openModal, closeModal });
         @send-broadcast="handleSendBroadcast"
       />
 
-      <!-- Broadcast Report Tab -->
-      <BroadcastReportTab 
-        v-if="activeTab === 'broadcast-report'"
-        ref="broadcastReportTabRef"
+      <!-- Schedule Messages Tab -->
+      <ScheduleMessagesTab 
+        v-if="activeTab === 'schedule-messages'"
+        ref="scheduleMessagesTabRef"
         :is-loading="isLoading"
-        @filter-report="handleFilterReport"
+        @schedule-message="handleScheduleMessage"
+        @delete-scheduled="handleDeleteScheduled"
+      />
+
+      <!-- Facebook Checkbox Tab -->
+      <FacebookCheckboxTab 
+        v-if="activeTab === 'facebook-checkbox'"
+        ref="facebookCheckboxTabRef"
+        :is-loading="isLoading"
+        @save-checkbox="handleSaveCheckbox"
       />
 
     </template>
     
     <template #actions>
-      <!-- Test Bot Button for Publish Bot Tab -->
+      <!-- Save Settings Button for Comment Auto Responder Tab -->
       <button 
-        v-if="currentActiveTab === 'publish-bot'" 
-        class="action-button"
-        @click="handleTestBot"
-        :disabled="isLoading"
-      >
-        {{ isLoading ? 'Testing...' : 'Test Bot' }}
-      </button>
-      
-      <!-- Save Settings Button for Publish Bot Tab -->
-      <button 
-        v-if="currentActiveTab === 'publish-bot'" 
+        v-if="currentActiveTab === 'comment-auto-responder'" 
         class="action-button primary" 
-        @click="handleSaveSettings"
+        @click="commentAutoResponderTabRef?.saveSettings()"
         :disabled="isLoading"
       >
         {{ isLoading ? 'Saving...' : 'Save Settings' }}
       </button>
-
-      <!-- Pagination for Media Block Tab -->
-      <Pagination
-        v-if="currentActiveTab === 'media-block' && (mediaBlockTabRef?.totalPages || 0) > 1"
-        :current-page="mediaBlockTabRef?.currentPage || 1"
-        :total-pages="mediaBlockTabRef?.totalPages || 1"
-        :total-items="mediaBlockTabRef?.filteredMediaBlocks?.length || 0"
-        :items-per-page="5"
-        :show-page-info="false"
-        :disabled="isLoading"
-        @page-change="handleMediaBlockPageChange"
-      />
 
       <!-- Send Message Button for Broadcast Tab -->
       <button 
@@ -224,6 +171,16 @@ defineExpose({ openModal, closeModal });
         :disabled="isLoading"
       >
         {{ isLoading ? 'Sending...' : 'Send Message' }}
+      </button>
+
+      <!-- Save Settings Button for Facebook Checkbox Tab -->
+      <button 
+        v-if="currentActiveTab === 'facebook-checkbox'" 
+        class="action-button primary" 
+        @click="facebookCheckboxTabRef?.saveSettings()"
+        :disabled="isLoading"
+      >
+        {{ isLoading ? 'Saving...' : 'Save Settings' }}
       </button>
     </template>
   </PublishModalLayout>

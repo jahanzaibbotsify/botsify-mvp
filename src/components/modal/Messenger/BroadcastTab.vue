@@ -16,12 +16,10 @@ const emit = defineEmits<{
 }>();
 
 // Reactive data
-const broadcastType = ref('single'); // 'single' or 'multiple'
 const broadcastForm = ref({
   message: '',
   template: '',
   userSegment: '',
-  phoneNumber: '',
   mediaType: 'text'
 });
 
@@ -49,10 +47,6 @@ const previewData = ref({
   buttons: [] as string[],
   description: ''
 });
-
-// Computed properties
-const showUserSegment = computed(() => broadcastType.value === 'multiple');
-const showPhoneNumber = computed(() => broadcastType.value === 'single');
 
 // Methods
 const handleTemplateChange = () => {
@@ -98,19 +92,14 @@ const sendBroadcast = () => {
     return;
   }
   
-  if (broadcastType.value === 'single' && !broadcastForm.value.phoneNumber) {
-    console.error('Phone number is required for single broadcast');
-    return;
-  }
-  
-  if (broadcastType.value === 'multiple' && !broadcastForm.value.userSegment) {
-    console.error('User segment is required for multiple broadcast');
+  if (!broadcastForm.value.userSegment) {
+    console.error('User segment is required for broadcast');
     return;
   }
   
   emit('send-broadcast', {
     ...broadcastForm.value,
-    type: broadcastType.value
+    type: 'multiple'
   });
 };
 
@@ -123,30 +112,9 @@ defineExpose({
 <template>
   <div class="tab-panel">
     <h3>Broadcast</h3>
-    <p class="subtitle">Send broadcast messages to your audience</p>
+    <p class="subtitle">Send broadcast messages to your Facebook audience</p>
     
     <div class="broadcast-form">
-      <!-- Broadcast Type Toggle -->
-      <div class="form-group">
-        <label>Broadcast Type</label>
-        <div class="toggle-group">
-          <button 
-            class="toggle-btn"
-            :class="{ active: broadcastType === 'single' }"
-            @click="broadcastType = 'single'"
-          >
-            Single
-          </button>
-          <button 
-            class="toggle-btn"
-            :class="{ active: broadcastType === 'multiple' }"
-            @click="broadcastType = 'multiple'"
-          >
-            Multiple
-          </button>
-        </div>
-      </div>
-      
       <!-- Message Template -->
       <div class="form-group">
         <label for="broadcast-template">Message Template</label>
@@ -162,8 +130,8 @@ defineExpose({
         </select>
       </div>
       
-      <!-- User Segment (Multiple only) -->
-      <div v-if="showUserSegment" class="form-group">
+      <!-- User Segment -->
+      <div class="form-group">
         <label for="broadcast-segment">User Segment</label>
         <select id="broadcast-segment" v-model="broadcastForm.userSegment" class="form-input">
           <option v-for="segment in userSegments" :key="segment.value" :value="segment.value">
@@ -171,20 +139,33 @@ defineExpose({
           </option>
         </select>
         <small v-if="broadcastForm.userSegment === 'upload-user'" class="help-text">
-          Upload a CSV file with phone numbers to send to specific users.
+          Upload a CSV file with user IDs to send to specific users.
         </small>
       </div>
       
-      <!-- Phone Number (Single only) -->
-      <div v-if="showPhoneNumber" class="form-group">
-        <label for="broadcast-phone">Phone Number</label>
-        <input 
-          id="broadcast-phone"
-          v-model="broadcastForm.phoneNumber"
-          type="tel"
-          placeholder="Enter phone number"
+      <!-- Message -->
+      <div class="form-group">
+        <label for="broadcast-message">Message</label>
+        <textarea 
+          id="broadcast-message"
+          v-model="broadcastForm.message"
+          placeholder="Enter your broadcast message..."
           class="form-input"
-        />
+          rows="4"
+          @input="handleMessageChange"
+        ></textarea>
+      </div>
+      
+      <!-- Media Type -->
+      <div class="form-group">
+        <label for="broadcast-media">Media Type</label>
+        <select id="broadcast-media" v-model="broadcastForm.mediaType" class="form-input">
+          <option value="text">Text</option>
+          <option value="image">Image</option>
+          <option value="video">Video</option>
+          <option value="audio">Audio</option>
+          <option value="document">Document</option>
+        </select>
       </div>
     </div>
     
@@ -296,39 +277,6 @@ textarea.form-input {
   margin-top: 4px;
 }
 
-/* Toggle Group */
-.toggle-group {
-  display: flex;
-  gap: 8px;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  padding: 4px;
-  background: var(--color-bg-tertiary, #f3f4f6);
-}
-
-.toggle-btn {
-  flex: 1;
-  padding: 8px 16px;
-  border: none;
-  border-radius: var(--radius-sm, 4px);
-  background: transparent;
-  color: var(--color-text-secondary, #6b7280);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal, 0.2s ease);
-}
-
-.toggle-btn.active {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.toggle-btn:hover:not(.active) {
-  background: var(--color-bg-secondary, #f9fafb);
-  color: var(--color-text-primary, #111827);
-}
-
 /* Preview Section */
 .preview-section {
   margin-top: 24px;
@@ -403,10 +351,6 @@ textarea.form-input {
 }
 
 @media (max-width: 768px) {
-  .toggle-group {
-    flex-direction: column;
-  }
-  
   .preview-buttons {
     flex-direction: column;
   }
