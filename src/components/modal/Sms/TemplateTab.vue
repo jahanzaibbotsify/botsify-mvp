@@ -2,7 +2,7 @@
 import { ref, computed } from "vue";
 import ModalLayout from "@/components/ui/ModalLayout.vue";
 import Pagination from "@/components/ui/Pagination.vue";
-import CreateMediaBlockModal from "./CreateMediaBlockModal.vue";
+import CreateTemplateModal from "./CreateTemplateModal.vue";
 
 // Props
 interface Props {
@@ -15,46 +15,34 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Emits
 const emit = defineEmits<{
-  'create-media-block': [block: any];
-  'delete-media-block': [id: number];
-  'clone-media-block': [block: any];
-  'preview-media-block': [block: any];
+  'create-template': [block: any];
+  'delete-template': [id: number];
+  'clone-template': [block: any];
+  'preview-template': [block: any];
   'copy-payload': [block: any];
 }>();
 
-const createModalRef = ref<InstanceType<typeof CreateMediaBlockModal> | null>(null);
+const createModalRef = ref<InstanceType<typeof CreateTemplateModal> | null>(null);
 
 // Local reactive data
-const mediaBlocks = ref([
+const templates = ref([
   {
     id: 1,
-    name: 'Welcome Message',
-    category: 'greeting',
-    language: 'en',
-    type: 'text',
-    body: 'Welcome to our service!',
-    status: 'active',
-    createdAt: '2024-01-15'
+    name: "Welcome Template",
+    type: "text",
+    status: "active"
   },
   {
     id: 2,
-    name: 'Product Catalog',
-    category: 'product',
-    language: 'en',
-    type: 'catalog',
-    body: 'Product list with images',
-    status: 'active',
-    createdAt: '2024-01-14'
+    name: "Product Catalog",
+    type: "catalog",
+    status: "active"
   },
   {
     id: 3,
-    name: 'FAQ Response',
-    category: 'support',
-    language: 'en',
-    type: 'text',
-    body: 'Frequently asked questions',
-    status: 'inactive',
-    createdAt: '2024-01-13'
+    name: "Promotional Message",
+    type: "text",
+    status: "inactive"
   }
 ]);
 
@@ -63,22 +51,21 @@ const currentPage = ref(1);
 const itemsPerPage = 5;
 
 // Computed properties
-const filteredMediaBlocks = computed(() => {
-  return mediaBlocks.value.filter(block => 
+const filteredTemplates = computed(() => {
+  return templates.value.filter(block =>
     block.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    block.category.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
     block.type.toLowerCase().includes(searchQuery.value.toLowerCase())
   );
 });
 
-const paginatedMediaBlocks = computed(() => {
+const paginatedTemplates = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
   const end = start + itemsPerPage;
-  return filteredMediaBlocks.value.slice(start, end);
+  return filteredTemplates.value.slice(start, end);
 });
 
 const totalPages = computed(() => {
-  return Math.ceil(filteredMediaBlocks.value.length / itemsPerPage);
+  return Math.ceil(filteredTemplates.value.length / itemsPerPage);
 });
 
 // Methods
@@ -90,38 +77,40 @@ const closeCreateModal = () => {
   createModalRef.value?.closeModal();
 };
 
-const createMediaBlock = (block: any) => {
-  // Add to local state (will be replaced with API call)
+const createTemplate = (block: any) => {
   const newBlock = {
     id: Date.now(),
-    ...block,
-    createdAt: new Date().toISOString().split('T')[0]
+    name: block.name,
+    type: block.type,
+    content: block.content,
+    created_at: new Date().toISOString().split('T')[0],
+    status: 'active'
   };
-  mediaBlocks.value.unshift(newBlock);
-  emit('create-media-block', newBlock);
+  templates.value.unshift(newBlock);
+  emit('create-template', newBlock);
 };
 
-const deleteMediaBlock = (id: number) => {
-  // Remove from local state (will be replaced with API call)
-  mediaBlocks.value = mediaBlocks.value.filter(block => block.id !== id);
-  emit('delete-media-block', id);
+const deleteTemplate = (id: number) => {
+  templates.value = templates.value.filter(block => block.id !== id);
+  emit('delete-template', id);
 };
 
-const cloneMediaBlock = (block: any) => {
-  // Clone in local state (will be replaced with API call)
+const cloneTemplate = (block: any) => {
   const newBlock = {
-    ...block,
     id: Date.now(),
     name: `${block.name} (Copy)`,
-    createdAt: new Date().toISOString().split('T')[0]
+    type: block.type,
+    content: block.content,
+    created_at: new Date().toISOString().split('T')[0],
+    status: 'active'
   };
-  mediaBlocks.value.unshift(newBlock);
-  emit('clone-media-block', newBlock);
+  templates.value.unshift(newBlock);
+  emit('clone-template', newBlock);
 };
 
-const previewMediaBlock = (block: any) => {
-  console.log('Previewing media block:', block);
-  emit('preview-media-block', block);
+const previewTemplate = (block: any) => {
+  console.log('Previewing template:', block);
+  emit('preview-template', block);
 };
 
 const copyPayload = (block: any) => {
@@ -137,15 +126,9 @@ const handlePageChange = (page: number) => {
 
 // Expose methods for parent component
 defineExpose({
-  openCreateModal,
-  closeCreateModal,
-  deleteMediaBlock,
-  cloneMediaBlock,
-  previewMediaBlock,
-  copyPayload,
   currentPage,
   totalPages,
-  filteredMediaBlocks
+  filteredTemplates
 });
 </script>
 
@@ -155,9 +138,9 @@ defineExpose({
       <div class="search-create-section">
         <div class="search-box">
           <input 
-            v-model="searchQuery"
             type="text"
-            placeholder="Search media blocks..."
+            v-model="searchQuery"
+            placeholder="Search templates..."
             class="search-input"
           />
           <i class="pi pi-search search-icon"></i>
@@ -183,61 +166,47 @@ defineExpose({
           <div class="header-cell">Actions</div>
         </div>
         
-        <div 
-          v-for="block in paginatedMediaBlocks" 
-          :key="block.id"
-          class="table-row"
-        >
-          <div class="cell">{{ block.name }}</div>
-          <div class="cell">
-            <span class="type-badge" :class="block.type">
-              {{ block.type }}
-            </span>
-          </div>
-          <div class="cell">
-            <span class="status-badge" :class="block.status">
+        <tr v-for="block in paginatedTemplates" :key="block.id" class="table-row">
+          <td class="table-cell">{{ block.name }}</td>
+          <td class="table-cell">{{ block.type }}</td>
+          <td class="table-cell">
+            <span :class="['status-badge', block.status]">
               {{ block.status }}
             </span>
-          </div>
-          <div class="cell actions-cell">
-            <button 
-              class="action-icon"
-              @click="deleteMediaBlock(block.id)"
-              title="Delete"
-            >
-              <i class="pi pi-trash"></i>
-            </button>
-            <button 
-              class="action-icon"
-              @click="cloneMediaBlock(block)"
-              title="Clone"
-            >
-              <i class="pi pi-copy"></i>
-            </button>
-            <button 
-              class="action-icon"
-              @click="previewMediaBlock(block)"
-              title="Preview"
-            >
-              <i class="pi pi-eye"></i>
-            </button>
-            <button 
-              class="action-icon"
-              @click="copyPayload(block)"
-              title="Copy Payload"
-            >
-              <i class="pi pi-clipboard"></i>
-            </button>
-          </div>
-        </div>
+          </td>
+          <td class="table-cell">
+            <div class="action-buttons">
+              <button
+                class="action-button delete"
+                @click="deleteTemplate(block.id)"
+                title="Delete template"
+              >
+                <i class="pi pi-trash"></i>
+              </button>
+              <button
+                class="action-button clone"
+                @click="cloneTemplate(block)"
+                title="Clone template"
+              >
+                <i class="pi pi-copy"></i>
+              </button>
+              <button
+                class="action-button preview"
+                @click="previewTemplate(block)"
+                title="Preview template"
+              >
+                <i class="pi pi-eye"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
       </div>
     </div>
 
-    <!-- Create Media Block Modal -->
-    <CreateMediaBlockModal
+    <!-- Create Template Modal -->
+    <CreateTemplateModal
       ref="createModalRef"
-      :is-loading="isLoading"
-      @create-media-block="createMediaBlock"
+      @create-template="createTemplate"
     />
   </div>
 </template>
@@ -247,7 +216,7 @@ defineExpose({
   padding: 0;
 }
 
-/* Media Block Styles */
+/* Template Styles */
 .media-header {
   margin-bottom: 20px;
 }
@@ -345,7 +314,7 @@ defineExpose({
   border-bottom: none;
 }
 
-.cell {
+.table-cell {
   padding: 12px 16px;
   font-size: 14px;
   color: var(--color-text-primary, #111827);
@@ -353,13 +322,13 @@ defineExpose({
   align-items: center;
 }
 
-.actions-cell {
+.action-buttons {
   display: flex;
   gap: 8px;
   justify-content: flex-start;
 }
 
-.action-icon {
+.action-button {
   background: none;
   border: none;
   padding: 6px;
@@ -372,47 +341,21 @@ defineExpose({
   justify-content: center;
 }
 
-.action-icon:hover {
+.action-button:hover {
   background: var(--color-bg-tertiary, #f3f4f6);
   color: var(--color-text-primary, #111827);
 }
 
-.type-badge {
-  padding: 4px 8px;
-  border-radius: var(--radius-sm, 4px);
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: capitalize;
+.action-button.delete {
+  color: var(--color-error, #ef4444);
 }
 
-.type-badge.text {
-  background: var(--color-bg-secondary, #f9fafb);
-  color: var(--color-text-primary, #111827);
+.action-button.clone {
+  color: var(--color-primary, #3b82f6);
 }
 
-.type-badge.image {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.type-badge.video {
-  background: var(--color-accent, #8b5cf6);
-  color: white;
-}
-
-.type-badge.audio {
-  background: var(--color-secondary, #10b981);
-  color: white;
-}
-
-.type-badge.document {
-  background: var(--color-warning, #f59e0b);
-  color: white;
-}
-
-.type-badge.catalog {
-  background: var(--color-error, #ef4444);
-  color: white;
+.action-button.preview {
+  color: var(--color-info, #3b82f6);
 }
 
 .status-badge {
@@ -444,19 +387,19 @@ defineExpose({
   
   .table-header,
   .table-row {
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
   }
   
   .header-cell,
-  .cell {
+  .table-cell {
     padding: 8px 12px;
   }
   
-  .actions-cell {
+  .action-buttons {
     gap: 4px;
   }
   
-  .action-icon {
+  .action-button {
     padding: 4px;
   }
 }

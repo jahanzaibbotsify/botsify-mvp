@@ -20,29 +20,29 @@ const openModal = () => {
   modalRef.value?.openModal();
 };
 
-const handleBotClick = (botLabel: string) => {
-  if (botLabel === 'Website') {
+const handleAgentClick = (agentLabel: string) => {
+  if (agentLabel === 'Website') {
     websiteModalRef.value?.openModal(); // Open website modal
-  } else if (botLabel === 'WhatsApp') {
+  } else if (agentLabel === 'WhatsApp') {
     whatsappModalRef.value?.openModal(); // Open WhatsApp modal
-  } else if (botLabel === 'Telegram'){
+  } else if (agentLabel === 'Telegram'){
     telegramModalRef.value?.openModal()
-  } else if (botLabel === 'SMS'){
+  } else if (agentLabel === 'SMS'){
     smsModalRef.value?.openModal()
-  } else if (botLabel === 'Messenger'){
+  } else if (agentLabel === 'Messenger'){
     messengerModalRef.value?.openModal()
-  } else if (botLabel === 'Instagram'){
+  } else if (agentLabel === 'Instagram'){
     instagramModalRef.value?.openModal()
   }
   modalRef.value?.closeModal(); // Close main modal
-  // Add handlers for other bot types here
+  // Add handlers for other agent types here
 };
 
 const handleBackToMain = () => {
   modalRef.value?.openModal(); // Reopen main modal when back is clicked
 };
 
-const bots = [
+const agents = [
   { icon: 'website.png', label: 'Website' },
   { icon: 'whatsapp.png', label: 'WhatsApp' },
   { icon: 'instagram.png', label: 'Instagram' },
@@ -56,24 +56,24 @@ defineExpose({ openModal });
 </script>
 
 <template>
-  <!-- Main Bot Selection Modal -->
+  <!-- Main Agent Selection Modal -->
   <ModalLayout
     ref="modalRef"
-    title="Publish Bot"
-    max-width="500px"
+    title="Publish Agent"
+    max-width="650px"
   >
     <div class="server-grid">
       <div
         class="server-card"
-        v-for="bot in bots"
-        :key="bot.icon"
-        @click="handleBotClick(bot.label)"
+        v-for="agent in agents"
+        :key="agent.icon"
+        @click="handleAgentClick(agent.label)"
       >
         <div class="server-icon">
-          <img :src="`/bots/${bot.icon}`" width="28" height="28" :alt="`${bot.label} icon`"/>
+          <img :src="`/bots/${agent.icon}`" width="28" height="28" :alt="`${agent.label} icon`"/>
         </div>
         <div class="text-sm text-emphasis">
-          <div>{{ bot.label }}</div>
+          <div>{{ agent.label }}</div>
         </div>
       </div>
     </div>

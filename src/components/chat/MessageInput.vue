@@ -7,7 +7,7 @@ import FileUpload from '@/components/ui/FileUpload.vue';
 import { botsifyApi } from '@/services/botsifyApi';
 import McpConnectionModal from "@/components/chat/mcp/MCPConnectionModal.vue";
 import CalendlyModal from "@/components/modal/CalendlyModal.vue";
-import PublishBotModal from "@/components/modal/PublishBotModal.vue";
+import PublishAgentModal from "@/components/modal/PublishAgentModal.vue";
 import FileSearchModal from "@/components/modal/FileSearchModal.vue";
 import WebSearchModal from "@/components/modal/WebSearchModal.vue";
 
@@ -28,12 +28,12 @@ const attachments = ref<Attachment[]>([]);
 const showMCPModal = ref(false);
 const showMCPDropdown = ref(false);
 const showCustomServerOnOpen = ref(false);
-const publishBotRef = ref<InstanceType<typeof PublishBotModal> | null>(null)
+const publishAgentRef = ref<InstanceType<typeof PublishAgentModal> | null>(null)
 const fileSearchModalRef = ref<InstanceType<typeof FileSearchModal> | null>(null)
 const webSearchModalRef = ref<InstanceType<typeof WebSearchModal> | null>(null)
 
-const openPublishBotModal = () => {
-  publishBotRef.value?.openModal()
+const openPublishAgentModal = () => {
+  publishAgentRef.value?.openModal()
 }
 
 const openFileSearchModal = () => {
@@ -341,7 +341,7 @@ const hideLoading = () => {
             </button>
             <button
               class="icon-button mcp-icon-button"
-              @click="openPublishBotModal"
+              @click="openPublishAgentModal"
               title="Connect to external services"
               :disabled="loadingFor === 'fileUploadingFromPin' || chatStore.doInputDisable"
             >
@@ -425,7 +425,7 @@ const hideLoading = () => {
           :is-open="showMCPModal"
           @close="closeMCPModal"
       />
-      <PublishBotModal ref="publishBotRef"/>
+      <PublishAgentModal ref="publishAgentRef"/>
       <FileSearchModal ref="fileSearchModalRef" :chatId="props.chatId" />
       <WebSearchModal ref="webSearchModalRef" :chatId="props.chatId" />
     </Teleport>

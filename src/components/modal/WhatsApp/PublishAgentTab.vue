@@ -74,7 +74,7 @@ defineExpose({
 
 <template>
   <div class="tab-panel">
-    <h3>Publish Your Bot</h3>
+    <h3>Publish Your Agent</h3>
     <p class="subtitle">Choose your WhatsApp provider and configure settings</p>
     
     <!-- Provider Selection -->

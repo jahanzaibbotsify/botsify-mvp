@@ -82,7 +82,7 @@ defineExpose({ openModal, closeModal });
     <template #default="{ activeTab }">
       <!-- Publish Tab -->
       <div v-if="activeTab === 'publish'" class="tab-panel">
-        <h3>Telegram Bot Configuration</h3>
+        <h3>Telegram Agent Configuration</h3>
         <p class="subtitle">Configure your Telegram bot settings</p>
         
         <div class="form-section">
@@ -101,12 +101,12 @@ defineExpose({ openModal, closeModal });
           </div>
           
           <div class="form-group">
-            <label for="bot-name">Bot Name</label>
+            <label for="bot-name">Agent Name</label>
             <input 
               id="bot-name"
               v-model="telegramForm.botName"
               type="text"
-              placeholder="Enter your bot name"
+              placeholder="Enter your agent name"
               class="form-input"
             />
           </div>
@@ -126,16 +126,16 @@ defineExpose({ openModal, closeModal });
           </div>
           
           <div class="form-group">
-            <label for="chatbot-url">Telegram Chatbot URL</label>
+            <label for="chatbot-url">Telegram Agent URL</label>
             <input 
               id="chatbot-url"
               v-model="telegramForm.telegramChatbotUrl"
               type="url"
-              placeholder="https://t.me/your_bot_username"
+              placeholder="https://t.me/your_agent_username"
               class="form-input"
             />
             <small class="help-text">
-              The URL where users can access your chatbot
+              The URL where users can access your agent
             </small>
           </div>
         </div>

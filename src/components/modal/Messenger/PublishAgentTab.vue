@@ -28,7 +28,7 @@ const pages = ref([
     name: 'My Business Page',
     is_bot_page: true,
     status: 'connected',
-    botName: 'bot1'
+    botName: 'agent1'
   },
   {
     id: '987654321',
@@ -58,7 +58,7 @@ const connectPage = async (pageId: string) => {
     if (page) {
       page.is_bot_page = true;
       page.status = 'connected';
-      page.botName = 'bot1';
+      page.botName = 'agent1';
     }
   } catch (error) {
     console.error('Failed to connect page:', error);

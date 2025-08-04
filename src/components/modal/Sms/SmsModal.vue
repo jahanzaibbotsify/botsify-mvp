@@ -1,28 +1,28 @@
 <script setup lang="ts">
 import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
 import Pagination from "@/components/ui/Pagination.vue";
-import { ref } from "vue";
-import PublishBotTab from "./PublishBotTab.vue";
-import MediaBlockTab from "./MediaBlockTab.vue";
+import { ref, computed } from "vue";
+import PublishAgentTab from "./PublishAgentTab.vue";
 import BroadcastTab from "./BroadcastTab.vue";
 import BroadcastReportTab from "./BroadcastReportTab.vue";
+import TemplateTab from "./TemplateTab.vue";
 
 // Define tabs
 const tabs = [
-  { id: 'publish-bot', label: 'Publish Bot' },
-  { id: 'media-block', label: 'Media Block' },
+  { id: 'publish-agent', label: 'Publish Agent' },
+  { id: 'template', label: 'Template' },
   { id: 'broadcast', label: 'Broadcast' },
   { id: 'broadcast-report', label: 'Broadcast Report' },
 ];
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
-const currentActiveTab = ref('publish-bot');
+const currentActiveTab = ref('publish-agent');
 
 // Tab component refs
-const publishBotTabRef = ref<InstanceType<typeof PublishBotTab> | null>(null);
-const mediaBlockTabRef = ref<InstanceType<typeof MediaBlockTab> | null>(null);
+const publishAgentTabRef = ref<InstanceType<typeof PublishAgentTab> | null>(null);
 const broadcastTabRef = ref<InstanceType<typeof BroadcastTab> | null>(null);
 const broadcastReportTabRef = ref<InstanceType<typeof BroadcastReportTab> | null>(null);
+const templateTabRef = ref<InstanceType<typeof TemplateTab> | null>(null);
 
 const emit = defineEmits<{
   back: [];
@@ -48,7 +48,7 @@ const handleTabChange = (tabId: string) => {
   currentActiveTab.value = tabId;
 };
 
-// Publish Bot Tab Events
+// Publish Agent Tab Events
 const handleTestBot = () => {
   isLoading.value = true;
   try {
@@ -61,25 +61,25 @@ const handleTestBot = () => {
   }
 };
 
-// Media Block Tab Events
-const handleCreateMediaBlock = (block: any) => {
-  console.log('Creating media block:', block);
+// Template Tab Events
+const handleCreateTemplate = (block: any) => {
+  console.log('Creating template:', block);
+  // Handle template creation
 };
 
-const handleDeleteMediaBlock = (id: number) => {
-  console.log('Deleting media block:', id);
+const handleDeleteTemplate = (id: number) => {
+  console.log('Deleting template:', id);
+  // Handle template deletion
 };
 
-const handleCloneMediaBlock = (block: any) => {
-  console.log('Cloning media block:', block);
+const handleCloneTemplate = (block: any) => {
+  console.log('Cloning template:', block);
+  // Handle template cloning
 };
 
-const handlePreviewMediaBlock = (block: any) => {
-  console.log('Previewing media block:', block);
-};
-
-const handleCopyPayload = (block: any) => {
-  console.log('Copying payload:', block);
+const handlePreviewTemplate = (block: any) => {
+  console.log('Previewing template:', block);
+  // Handle template preview
 };
 
 // Broadcast Tab Events
@@ -104,10 +104,10 @@ const handleSaveSettings = () => {
   }
 };
 
-// Pagination handler for media block tab
-const handleMediaBlockPageChange = (page: number) => {
-  if (mediaBlockTabRef.value) {
-    mediaBlockTabRef.value.currentPage = page;
+// Pagination handler for template tab
+const handleTemplatePageChange = (page: number) => {
+  if (templateTabRef.value) {
+    templateTabRef.value.currentPage = page;
   }
 };
 
@@ -117,32 +117,31 @@ defineExpose({ openModal, closeModal });
 <template>
   <PublishModalLayout
     ref="modalRef"
-    title="WhatsApp Integration"
+    title="Sms Integration"
     :tabs="tabs"
     max-width="650px"
-    default-tab="publish-bot"
+    default-tab="publish-agent"
     @back="handleBack"
     @tab-change="handleTabChange"
   >
     <template #default="{ activeTab }">
-      <!-- Publish Bot Tab -->
-      <PublishBotTab 
-        v-if="activeTab === 'publish-bot'"
-        ref="publishBotTabRef"
+      <!-- Publish Agent Tab -->
+      <PublishAgentTab 
+        v-if="activeTab === 'publish-agent'"
+        ref="publishAgentTabRef"
         :is-loading="isLoading"
         @save-settings="handleSaveSettings"
       />
 
-      <!-- Media Block Tab -->
-      <MediaBlockTab 
-        v-if="activeTab === 'media-block'"
-        ref="mediaBlockTabRef"
+      <!-- Template Tab -->
+      <TemplateTab
+        v-if="activeTab === 'template'"
+        ref="templateTabRef"
         :is-loading="isLoading"
-        @create-media-block="handleCreateMediaBlock"
-        @delete-media-block="handleDeleteMediaBlock"
-        @clone-media-block="handleCloneMediaBlock"
-        @preview-media-block="handlePreviewMediaBlock"
-        @copy-payload="handleCopyPayload"
+        @create-template="handleCreateTemplate"
+        @delete-template="handleDeleteTemplate"
+        @clone-template="handleCloneTemplate"
+        @preview-template="handlePreviewTemplate"
       />
 
       <!-- Broadcast Tab -->
@@ -164,19 +163,19 @@ defineExpose({ openModal, closeModal });
     </template>
     
     <template #actions>
-      <!-- Test Bot Button for Publish Bot Tab -->
+      <!-- Test Bot Button for Publish Agent Tab -->
       <button 
-        v-if="currentActiveTab === 'publish-bot'" 
+        v-if="currentActiveTab === 'publish-agent'" 
         class="action-button"
         @click="handleTestBot"
         :disabled="isLoading"
       >
-        {{ isLoading ? 'Testing...' : 'Test Bot' }}
+        {{ isLoading ? 'Testing...' : 'Test Agent' }}
       </button>
       
-      <!-- Save Settings Button for Publish Bot Tab -->
+      <!-- Save Settings Button for Publish Agent Tab -->
       <button 
-        v-if="currentActiveTab === 'publish-bot'" 
+        v-if="currentActiveTab === 'publish-agent'" 
         class="action-button primary" 
         @click="handleSaveSettings"
         :disabled="isLoading"
@@ -184,16 +183,16 @@ defineExpose({ openModal, closeModal });
         {{ isLoading ? 'Saving...' : 'Save Settings' }}
       </button>
 
-      <!-- Pagination for Media Block Tab -->
+      <!-- Pagination for Template Tab -->
       <Pagination
-        v-if="currentActiveTab === 'media-block' && (mediaBlockTabRef?.totalPages || 0) > 1"
-        :current-page="mediaBlockTabRef?.currentPage || 1"
-        :total-pages="mediaBlockTabRef?.totalPages || 1"
-        :total-items="mediaBlockTabRef?.filteredMediaBlocks?.length || 0"
+        v-if="currentActiveTab === 'template' && (templateTabRef?.totalPages || 0) > 1"
+        :current-page="templateTabRef?.currentPage || 1"
+        :total-pages="templateTabRef?.totalPages || 1"
+        :total-items="templateTabRef?.filteredTemplates?.length || 0"
         :items-per-page="5"
         :show-page-info="false"
         :disabled="isLoading"
-        @page-change="handleMediaBlockPageChange"
+        @page-change="handleTemplatePageChange"
       />
 
       <!-- Send Message Button for Broadcast Tab -->

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import FileUpload from "@/components/ui/FileUpload.vue";
 
 // Props
 interface Props {
@@ -16,13 +17,13 @@ const emit = defineEmits<{
 }>();
 
 // Reactive data
-const broadcastType = ref('single'); // 'single' or 'multiple'
 const broadcastForm = ref({
   message: '',
   template: '',
   userSegment: '',
   phoneNumber: '',
-  mediaType: 'text'
+  mediaType: 'text',
+  uploadedFile: null as any | null
 });
 
 // Message templates
@@ -39,7 +40,8 @@ const messageTemplates = [
 const userSegments = [
   { value: '', label: 'Select user segment' },
   { value: 'subscribed', label: 'Subscribed Users' },
-  { value: 'upload-user', label: 'Upload User List' }
+  { value: 'upload', label: 'Upload User' },
+  { value: 'single', label: 'Single User' }
 ];
 
 // Preview data
@@ -51,8 +53,8 @@ const previewData = ref({
 });
 
 // Computed properties
-const showUserSegment = computed(() => broadcastType.value === 'multiple');
-const showPhoneNumber = computed(() => broadcastType.value === 'single');
+const showFileUpload = computed(() => broadcastForm.value.userSegment === 'upload');
+const showPhoneNumber = computed(() => broadcastForm.value.userSegment === 'single');
 
 // Methods
 const handleTemplateChange = () => {
@@ -92,25 +94,36 @@ const handleMessageChange = () => {
   updatePreview();
 };
 
+const handleFileUpload = (attachments: any[]) => {
+  if (attachments && attachments.length > 0) {
+    broadcastForm.value.uploadedFile = attachments[0];
+  }
+};
+
 const sendBroadcast = () => {
   if (!broadcastForm.value.message) {
     console.error('Message is required');
     return;
   }
   
-  if (broadcastType.value === 'single' && !broadcastForm.value.phoneNumber) {
-    console.error('Phone number is required for single broadcast');
+  if (!broadcastForm.value.userSegment) {
+    console.error('User segment is required');
     return;
   }
   
-  if (broadcastType.value === 'multiple' && !broadcastForm.value.userSegment) {
-    console.error('User segment is required for multiple broadcast');
+  if (broadcastForm.value.userSegment === 'single' && !broadcastForm.value.phoneNumber) {
+    console.error('Phone number is required for single user broadcast');
+    return;
+  }
+  
+  if (broadcastForm.value.userSegment === 'upload' && !broadcastForm.value.uploadedFile) {
+    console.error('File upload is required for upload user broadcast');
     return;
   }
   
   emit('send-broadcast', {
     ...broadcastForm.value,
-    type: broadcastType.value
+    type: broadcastForm.value.userSegment
   });
 };
 
@@ -126,27 +139,6 @@ defineExpose({
     <p class="subtitle">Send broadcast messages to your audience</p>
     
     <div class="broadcast-form">
-      <!-- Broadcast Type Toggle -->
-      <div class="form-group">
-        <label>Broadcast Type</label>
-        <div class="toggle-group">
-          <button 
-            class="toggle-btn"
-            :class="{ active: broadcastType === 'single' }"
-            @click="broadcastType = 'single'"
-          >
-            Single
-          </button>
-          <button 
-            class="toggle-btn"
-            :class="{ active: broadcastType === 'multiple' }"
-            @click="broadcastType = 'multiple'"
-          >
-            Multiple
-          </button>
-        </div>
-      </div>
-      
       <!-- Message Template -->
       <div class="form-group">
         <label for="broadcast-template">Message Template</label>
@@ -162,20 +154,33 @@ defineExpose({
         </select>
       </div>
       
-      <!-- User Segment (Multiple only) -->
-      <div v-if="showUserSegment" class="form-group">
+      <!-- User Segment -->
+      <div class="form-group">
         <label for="broadcast-segment">User Segment</label>
         <select id="broadcast-segment" v-model="broadcastForm.userSegment" class="form-input">
           <option v-for="segment in userSegments" :key="segment.value" :value="segment.value">
             {{ segment.label }}
           </option>
         </select>
-        <small v-if="broadcastForm.userSegment === 'upload-user'" class="help-text">
-          Upload a CSV file with phone numbers to send to specific users.
+      </div>
+      
+      <!-- File Upload (Upload user only) -->
+      <div v-if="showFileUpload" class="form-group">
+        <label>Upload User File</label>
+        <FileUpload
+          v-model="broadcastForm.uploadedFile"
+          accept=".csv,.txt"
+          :multiple="false"
+          :max-size-m-b="10"
+          text="Upload CSV or TXT file with phone numbers"
+          @upload="handleFileUpload"
+        />
+        <small class="help-text">
+          Upload a CSV or TXT file containing phone numbers to send messages to.
         </small>
       </div>
       
-      <!-- Phone Number (Single only) -->
+      <!-- Phone Number (Single user only) -->
       <div v-if="showPhoneNumber" class="form-group">
         <label for="broadcast-phone">Phone Number</label>
         <input 

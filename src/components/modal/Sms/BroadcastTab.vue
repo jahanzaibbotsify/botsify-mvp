@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import FileUpload from "@/components/ui/FileUpload.vue";
 
 // Props
 interface Props {
@@ -20,7 +21,8 @@ const broadcastForm = ref({
   message: '',
   template: '',
   userSegment: '',
-  mediaType: 'text'
+  mediaType: 'text',
+  uploadedFile: null as any | null
 });
 
 // Message templates
@@ -50,6 +52,7 @@ const previewData = ref({
 
 // Computed properties
 const showUserSegment = computed(() => true); // Always show user segment for multiple broadcast
+const showFileUpload = computed(() => broadcastForm.value.userSegment === 'upload-user');
 
 // Methods
 const handleTemplateChange = () => {
@@ -89,6 +92,12 @@ const handleMessageChange = () => {
   updatePreview();
 };
 
+const handleFileUpload = (attachments: any[]) => {
+  if (attachments && attachments.length > 0) {
+    broadcastForm.value.uploadedFile = attachments[0];
+  }
+};
+
 const sendBroadcast = () => {
   if (!broadcastForm.value.message) {
     console.error('Message is required');
@@ -97,6 +106,11 @@ const sendBroadcast = () => {
   
   if (!broadcastForm.value.userSegment) {
     console.error('User segment is required for broadcast');
+    return;
+  }
+  
+  if (broadcastForm.value.userSegment === 'upload-user' && !broadcastForm.value.uploadedFile) {
+    console.error('File upload is required for upload user broadcast');
     return;
   }
   
@@ -141,8 +155,21 @@ defineExpose({
             {{ segment.label }}
           </option>
         </select>
-        <small v-if="broadcastForm.userSegment === 'upload-user'" class="help-text">
-          Upload a CSV file with phone numbers to send to specific users.
+      </div>
+      
+      <!-- File Upload (Upload user only) -->
+      <div v-if="showFileUpload" class="form-group">
+        <label>Upload User File</label>
+        <FileUpload
+          v-model="broadcastForm.uploadedFile"
+          accept=".csv,.txt"
+          :multiple="false"
+          :max-size-m-b="10"
+          text="Upload CSV or TXT file with phone numbers"
+          @upload="handleFileUpload"
+        />
+        <small class="help-text">
+          Upload a CSV or TXT file containing phone numbers to send messages to.
         </small>
       </div>
     </div>

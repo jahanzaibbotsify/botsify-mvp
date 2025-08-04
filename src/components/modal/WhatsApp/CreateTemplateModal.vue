@@ -13,14 +13,14 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Emits
 const emit = defineEmits<{
-  'create-media-block': [block: any];
+  'create-template': [template: any];
 }>();
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
 
 // Dummy tabs for PublishModalLayout (not used in this simple form modal)
 const tabs = [
-  { id: 'create', label: 'Create Media Block' }
+  { id: 'create', label: 'Create Template' }
 ];
 
 // Step management
@@ -93,22 +93,19 @@ const prevStep = () => {
   }
 };
 
-const createMediaBlock = () => {
+const createTemplate = () => {
   if (!createForm.value.name || !createForm.value.body) {
     console.error('Name and body are required');
     return;
   }
 
-  const newBlock = {
-    id: Date.now(),
-    ...createForm.value,
-    createdAt: new Date().toISOString().split('T')[0]
+  const templateData = {
+    name: createForm.value.name,
+    message: createForm.value.body,
+    buttons: [] // No buttons in this simple form
   };
 
-  // Emit event
-  emit('create-media-block', newBlock);
-  
-  // Close modal
+  emit('create-template', templateData);
   closeModal();
 };
 
@@ -118,7 +115,7 @@ defineExpose({ openModal, closeModal });
 <template>
   <PublishModalLayout
     ref="modalRef"
-    title="Create Media Block"
+    title="Create Template"
     :tabs="tabs"
     max-width="650px"
     default-tab="create"
@@ -141,8 +138,8 @@ defineExpose({ openModal, closeModal });
         <!-- Step 1: Form -->
         <div v-if="currentStep === 1" class="step-content">
           <div class="form-group">
-            <label for="media-category">Category</label>
-            <select id="media-category" v-model="createForm.category" class="form-input">
+            <label for="template-category">Category</label>
+            <select id="template-category" v-model="createForm.category" class="form-input">
               <option v-for="category in categories" :key="category.value" :value="category.value">
                 {{ category.label }}
               </option>
@@ -151,8 +148,8 @@ defineExpose({ openModal, closeModal });
           
           <div class="form-row">
             <div class="form-group">
-              <label for="media-language">Language</label>
-              <select id="media-language" v-model="createForm.language" class="form-input">
+              <label for="template-language">Language</label>
+              <select id="template-language" v-model="createForm.language" class="form-input">
                 <option v-for="language in languages" :key="language.value" :value="language.value">
                   {{ language.label }}
                 </option>
@@ -160,8 +157,8 @@ defineExpose({ openModal, closeModal });
             </div>
             
             <div class="form-group">
-              <label for="media-type">Type</label>
-              <select id="media-type" v-model="createForm.type" class="form-input">
+              <label for="template-type">Type</label>
+              <select id="template-type" v-model="createForm.type" class="form-input">
                 <option v-for="type in types" :key="type.value" :value="type.value">
                   {{ type.label }}
                 </option>
@@ -170,19 +167,19 @@ defineExpose({ openModal, closeModal });
           </div>
           
           <div class="form-group">
-            <label for="media-status">Status</label>
-            <select id="media-status" v-model="createForm.status" class="form-input">
+            <label for="template-status">Status</label>
+            <select id="template-status" v-model="createForm.status" class="form-input">
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
           </div>
           
           <div class="form-group">
-            <label for="media-body">Body</label>
+            <label for="template-body">Body</label>
             <textarea 
-              id="media-body"
+              id="template-body"
               v-model="createForm.body"
-              placeholder="Enter media block content"
+              placeholder="Enter template content"
               class="form-input"
               rows="4"
             ></textarea>
@@ -192,12 +189,12 @@ defineExpose({ openModal, closeModal });
         <!-- Step 2: Preview -->
         <div v-if="currentStep === 2" class="step-content">
           <div class="form-group">
-            <label for="media-name">Media Block Name</label>
+            <label for="template-name">Template Name</label>
             <input 
-              id="media-name"
+              id="template-name"
               v-model="createForm.name"
               type="text"
-              placeholder="Enter media block name"
+              placeholder="Enter template name"
               class="form-input"
             />
           </div>
@@ -258,10 +255,10 @@ defineExpose({ openModal, closeModal });
       <button 
         v-if="currentStep === 2"
         class="action-button primary" 
-        @click="createMediaBlock"
+        @click="createTemplate"
         :disabled="isLoading || !createForm.name || !createForm.body"
       >
-        {{ isLoading ? 'Creating...' : 'Create Media Block' }}
+        {{ isLoading ? 'Creating...' : 'Create Template' }}
       </button>
     </template>
   </PublishModalLayout>

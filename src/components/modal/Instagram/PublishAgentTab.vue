@@ -28,7 +28,7 @@ const accounts = ref([
     name: 'My Instagram Business',
     is_bot_account: true,
     status: 'connected',
-    botName: 'bot1'
+    botName: 'agent1'
   },
   {
     id: '987654321',
@@ -58,7 +58,7 @@ const connectAccount = async (accountId: string) => {
     if (account) {
       account.is_bot_account = true;
       account.status = 'connected';
-      account.botName = 'bot1';
+      account.botName = 'agent1';
     }
   } catch (error) {
     console.error('Failed to connect account:', error);

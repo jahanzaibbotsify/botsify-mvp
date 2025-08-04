@@ -2,13 +2,13 @@
 import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
 import Pagination from "@/components/ui/Pagination.vue";
 import { ref } from "vue";
-import PublishBotTab from "./PublishBotTab.vue";
+import PublishAgentTab from "./PublishAgentTab.vue";
 import CommentAutoResponderTab from "./CommentAutoResponderTab.vue";
 import BroadcastTab from "./BroadcastTab.vue";
 
 // Define tabs
 const tabs = [
-  { id: 'publish-bot', label: 'Publish Bot' },
+  { id: 'publish-bot', label: 'Publish Agent' },
   { id: 'comment-auto-responder', label: 'Comment Auto Responder' },
   { id: 'broadcast', label: 'Broadcast' },
 ];
@@ -17,7 +17,7 @@ const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
 const currentActiveTab = ref('publish-bot');
 
 // Tab component refs
-const publishBotTabRef = ref<InstanceType<typeof PublishBotTab> | null>(null);
+const publishAgentTabRef = ref<InstanceType<typeof PublishAgentTab> | null>(null);
 const commentAutoResponderTabRef = ref<InstanceType<typeof CommentAutoResponderTab> | null>(null);
 const broadcastTabRef = ref<InstanceType<typeof BroadcastTab> | null>(null);
 
@@ -94,10 +94,10 @@ defineExpose({ openModal, closeModal });
     @tab-change="handleTabChange"
   >
     <template #default="{ activeTab }">
-      <!-- Publish Bot Tab -->
-      <PublishBotTab 
+      <!-- Publish Agent Tab -->
+      <PublishAgentTab 
         v-if="activeTab === 'publish-bot'"
-        ref="publishBotTabRef"
+        ref="publishAgentTabRef"
         :is-loading="isLoading"
         @create-new-page="handleCreateNewPage"
         @refresh-page-permission="handleRefreshPagePermission"

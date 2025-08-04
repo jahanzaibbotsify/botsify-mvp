@@ -20,7 +20,7 @@ const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
 
 // Dummy tabs for PublishModalLayout (not used in this simple form modal)
 const tabs = [
-  { id: 'create', label: 'Create Media Block' }
+  { id: 'create', label: 'Create Template' }
 ];
 
 // Create form data
@@ -69,7 +69,7 @@ const removeButton = (index: number) => {
   createForm.value.buttons.splice(index, 1);
 };
 
-const createMediaBlock = () => {
+const createTemplate = () => {
   if (!createForm.value.message) {
     console.error('Message is required');
     return;
@@ -82,7 +82,7 @@ const createMediaBlock = () => {
   };
 
   // Emit event
-  emit('create-media-block', newBlock);
+  emit('create-template', newBlock);
   
   // Close modal
   closeModal();
@@ -94,7 +94,7 @@ defineExpose({ openModal, closeModal });
 <template>
   <PublishModalLayout
     ref="modalRef"
-    title="Create Media Block"
+    title="Create Template"
     :tabs="tabs"
     max-width="650px"
     default-tab="create"
@@ -182,10 +182,10 @@ defineExpose({ openModal, closeModal });
       
              <button 
          class="action-button primary" 
-         @click="createMediaBlock"
+         @click="createTemplate"
          :disabled="isLoading || !createForm.message"
        >
-         {{ isLoading ? 'Creating...' : 'Create Media Block' }}
+         {{ isLoading ? 'Creating...' : 'Create Template' }}
        </button>
     </template>
   </PublishModalLayout>

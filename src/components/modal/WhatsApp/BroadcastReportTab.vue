@@ -72,10 +72,6 @@ const totalRead = computed(() => {
   return filteredReports.value.reduce((sum, report) => sum + report.read, 0);
 });
 
-const deliveryRate = computed(() => {
-  return totalRecipients.value > 0 ? ((totalDelivered.value / totalRecipients.value) * 100).toFixed(1) : '0';
-});
-
 const readRate = computed(() => {
   return totalDelivered.value > 0 ? ((totalRead.value / totalDelivered.value) * 100).toFixed(1) : '0';
 });
@@ -140,10 +136,6 @@ defineExpose({
       <div class="stat-card">
         <div class="stat-value">{{ totalRead }}</div>
         <div class="stat-label">Read</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ deliveryRate }}%</div>
-        <div class="stat-label">Delivery Rate</div>
       </div>
       <div class="stat-card">
         <div class="stat-value">{{ readRate }}%</div>

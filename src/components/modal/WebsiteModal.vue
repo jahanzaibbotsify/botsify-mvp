@@ -10,7 +10,7 @@ const tabs = [
   { id: 'install-code', label: 'Install Code Yourself' },
   { id: 'inline-widget', label: 'Inline Widget' },
   { id: 'email-developer', label: 'Email To Developer' },
-  { id: 'landing-bot', label: 'Landing Bot' }
+  { id: 'landing-bot', label: 'Landing Agent' }
 ];
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
@@ -216,8 +216,8 @@ defineExpose({ openModal, closeModal });
 
       <!-- Landing Bot Tab -->
       <div v-if="activeTab === 'landing-bot'" class="tab-panel">
-        <h3>Landing Bot</h3>
-        <p>Use this URL to send the user to the landing page chatbot.</p>
+              <h3>Landing Agent</h3>
+      <p>Use this URL to send the user to the landing page agent.</p>
         
         <div class="url-section">
           <div class="url-display">

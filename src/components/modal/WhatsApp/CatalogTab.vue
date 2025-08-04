@@ -15,7 +15,6 @@ const emit = defineEmits<{
   'create-product': [product: any];
   'update-product': [product: any];
   'delete-product': [id: number];
-  'export-catalog': [format: string];
 }>();
 
 // Reactive data
@@ -103,16 +102,11 @@ const deleteProduct = (id: number) => {
   emit('delete-product', id);
 };
 
-const exportCatalog = (format: 'csv' | 'pdf' | 'excel') => {
-  emit('export-catalog', format);
-};
-
 // Expose methods for parent component
 defineExpose({
   createProduct,
   updateProduct,
   deleteProduct,
-  exportCatalog
 });
 </script>
 
@@ -187,22 +181,6 @@ defineExpose({
           </button>
         </div>
       </div>
-    </div>
-
-    <!-- Export Actions -->
-    <div class="export-section">
-      <button class="export-button" @click="exportCatalog('csv')">
-        <i class="pi pi-download"></i>
-        Export CSV
-      </button>
-      <button class="export-button" @click="exportCatalog('pdf')">
-        <i class="pi pi-file-pdf"></i>
-        Export PDF
-      </button>
-      <button class="export-button" @click="exportCatalog('excel')">
-        <i class="pi pi-file-excel"></i>
-        Export Excel
-      </button>
     </div>
   </div>
 </template>

@@ -82,8 +82,8 @@ defineExpose({
     :max-width="maxWidth"
   >
     <div class="bot-modal-content">
-      <!-- Tabs Header -->
-      <div v-if="tabs.length > 0" class="tabs-header">
+      <!-- Tabs Header - Only show when there are multiple tabs -->
+      <div v-if="tabs.length > 1" class="tabs-header">
         <button
           v-for="tab in tabs"
           :key="tab.id"
