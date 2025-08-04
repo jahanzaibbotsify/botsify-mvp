@@ -5,6 +5,7 @@ import TelegramModal from "./TelegramModal.vue"; // Import the WebsiteModal
 import WhatsAppModal from "./WhatsApp/WhatsAppModal.vue"; // Import the WhatsAppModal
 import SmsModal from "./Sms/SmsModal.vue"; // Import the WhatsAppModal
 import MessengerModal from "./Messenger/MessengerModal.vue"; // Import the WhatsAppModal
+import InstagramModal from "./Instagram/InstagramModal.vue"; // Import the InstagramModal
 import { ref } from "vue";
 
 const modalRef = ref<InstanceType<typeof ModalLayout> | null>(null);
@@ -13,6 +14,7 @@ const whatsappModalRef = ref<InstanceType<typeof WhatsAppModal> | null>(null); /
 const telegramModalRef = ref<InstanceType<typeof TelegramModal> | null>(null); // Create ref for WhatsAppModal
 const smsModalRef = ref<InstanceType<typeof SmsModal> | null>(null); // Create ref for WhatsAppModal
 const messengerModalRef = ref<InstanceType<typeof MessengerModal> | null>(null); // Create ref for WhatsAppModal
+const instagramModalRef = ref<InstanceType<typeof InstagramModal> | null>(null); // Create ref for InstagramModal
 
 const openModal = () => {
   modalRef.value?.openModal();
@@ -29,6 +31,8 @@ const handleBotClick = (botLabel: string) => {
     smsModalRef.value?.openModal()
   } else if (botLabel === 'Messenger'){
     messengerModalRef.value?.openModal()
+  } else if (botLabel === 'Instagram'){
+    instagramModalRef.value?.openModal()
   }
   modalRef.value?.closeModal(); // Close main modal
   // Add handlers for other bot types here
@@ -102,6 +106,11 @@ defineExpose({ openModal });
 
   <MessengerModal 
     ref="messengerModalRef" 
+    @back="handleBackToMain" 
+  />
+
+  <InstagramModal 
+    ref="instagramModalRef" 
     @back="handleBackToMain" 
   />
 </template>

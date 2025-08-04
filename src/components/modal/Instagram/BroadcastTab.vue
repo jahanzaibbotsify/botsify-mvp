@@ -70,7 +70,7 @@ defineExpose({
 <template>
   <div class="tab-panel">
     <h3>Broadcast</h3>
-    <p class="subtitle">Send broadcast messages to your Messenger audience</p>
+    <p class="subtitle">Send broadcast messages to your Instagram audience</p>
 
     <div class="form-section">
       <div class="form-group">

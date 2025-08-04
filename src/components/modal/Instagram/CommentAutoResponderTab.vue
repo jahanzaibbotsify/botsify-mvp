@@ -31,7 +31,7 @@ const autoResponders = ref<AutoResponder[]>([
     id: '1',
     keywords: ['help', 'support'],
     selectedPost: 'post-1',
-    message: 'Thank you for your message! Our team will get back to you soon.'
+    message: 'Thank you for your comment! Our team will get back to you soon.'
   },
   {
     id: '2',
@@ -165,7 +165,7 @@ defineExpose({
 <template>
   <div class="tab-panel">
     <h3>Comment Auto Responder</h3>
-    <p class="subtitle">Configure automatic responses to comments on your posts</p>
+    <p class="subtitle">Configure automatic responses to comments on your Instagram posts</p>
 
     <!-- Add New Auto Responder Button -->
     <div class="add-new-section">
@@ -397,7 +397,7 @@ defineExpose({
       <div class="empty-content">
         <i class="pi pi-comments empty-icon"></i>
         <h4>No Auto Responders</h4>
-        <p>Create your first auto responder to automatically reply to comments.</p>
+        <p>Create your first auto responder to automatically reply to Instagram comments.</p>
       </div>
     </div>
   </div>
@@ -412,14 +412,14 @@ defineExpose({
   margin: 0 0 8px 0;
   font-size: 20px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--color-text-primary, #111827);
 }
 
 .subtitle {
   margin: 0 0 20px 0;
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-text-secondary);
+  color: var(--color-text-secondary, #6b7280);
 }
 
 .add-new-section {
@@ -433,7 +433,7 @@ defineExpose({
   padding: 12px 16px;
   border: none;
   border-radius: var(--radius-md, 8px);
-  background: var(--color-primary);
+  background: var(--color-primary, #3b82f6);
   color: white;
   font-size: 14px;
   font-weight: 500;
@@ -442,7 +442,7 @@ defineExpose({
 }
 
 .add-new-btn:hover {
-  background: var(--color-primary-hover);
+  background: var(--color-primary-hover, #2563eb);
 }
 
 .add-new-btn i {
@@ -450,8 +450,8 @@ defineExpose({
 }
 
 .new-responder-form {
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: var(--radius-md, 8px);
   padding: 20px;
   margin-bottom: 24px;
@@ -461,11 +461,7 @@ defineExpose({
   margin: 0 0 16px 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.form-section {
-  margin-top: 20px;
+  color: var(--color-text-primary, #111827);
 }
 
 .form-group {
@@ -476,17 +472,17 @@ defineExpose({
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: var(--color-text-primary);
+  color: var(--color-text-primary, #111827);
   font-size: 14px;
 }
 
 .form-input {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: var(--radius-md, 8px);
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
+  background: var(--color-bg-tertiary, #f3f4f6);
+  color: var(--color-text-primary, #111827);
   font-size: 14px;
   font-family: inherit;
   transition: border-color var(--transition-normal, 0.2s ease);
@@ -495,7 +491,7 @@ defineExpose({
 
 .form-input:focus {
   outline: none;
-  border-color: var(--color-primary);
+  border-color: var(--color-primary, #3b82f6);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -527,7 +523,7 @@ textarea.form-input {
   padding: 12px 16px;
   border: none;
   border-radius: var(--radius-md, 8px);
-  background: var(--color-primary);
+  background: var(--color-primary, #3b82f6);
   color: white;
   font-size: 14px;
   font-weight: 500;
@@ -537,7 +533,7 @@ textarea.form-input {
 }
 
 .add-keyword-btn:hover:not(:disabled) {
-  background: var(--color-primary-hover);
+  background: var(--color-primary-hover, #2563eb);
 }
 
 .add-keyword-btn:disabled {
@@ -556,25 +552,33 @@ textarea.form-input {
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: var(--radius-sm, 4px);
   font-size: 14px;
 }
 
 .keyword-text {
-  color: var(--color-text-primary);
+  color: var(--color-text-primary, #111827);
 }
 
 .remove-keyword-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
   border: none;
+  border-radius: 50%;
+  background: var(--color-error, #ef4444);
+  color: white;
   cursor: pointer;
   transition: background-color var(--transition-normal, 0.2s ease);
   font-size: 10px;
 }
 
 .remove-keyword-btn:hover {
-  background: var(--color-error-hover);
+  background: var(--color-error-hover, #dc2626);
 }
 
 /* Responders List */
@@ -586,12 +590,12 @@ textarea.form-input {
   margin: 0 0 16px 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--color-text-primary, #111827);
 }
 
 .responder-item {
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: var(--radius-md, 8px);
   padding: 16px;
   margin-bottom: 12px;
@@ -616,7 +620,7 @@ textarea.form-input {
 .keyword-badge {
   display: inline-block;
   padding: 2px 8px;
-  background: var(--color-primary);
+  background: var(--color-primary, #3b82f6);
   color: white;
   border-radius: var(--radius-sm, 4px);
   font-size: 12px;
@@ -625,7 +629,7 @@ textarea.form-input {
 
 .post-display {
   font-size: 14px;
-  color: var(--color-text-secondary);
+  color: var(--color-text-secondary, #6b7280);
 }
 
 .responder-actions {
@@ -636,12 +640,12 @@ textarea.form-input {
 .responder-message {
   font-size: 14px;
   line-height: 1.5;
-  color: var(--color-text-primary);
+  color: var(--color-text-primary, #111827);
 }
 
 .responder-edit {
   padding-top: 16px;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border, #e5e7eb);
   margin-top: 16px;
 }
 
@@ -665,30 +669,30 @@ textarea.form-input {
 }
 
 .action-btn.primary {
-  background: var(--color-primary);
+  background: var(--color-primary, #3b82f6);
   color: white;
 }
 
 .action-btn.primary:hover:not(:disabled) {
-  background: var(--color-primary-hover);
+  background: var(--color-primary-hover, #2563eb);
 }
 
 .action-btn {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
+  background: var(--color-bg-tertiary, #f3f4f6);
+  color: var(--color-text-primary, #111827);
 }
 
 .action-btn:hover:not(:disabled) {
-  background: var(--color-bg-secondary);
+  background: var(--color-bg-secondary, #f9fafb);
 }
 
 .action-btn.danger {
-  background: var(--color-error);
+  background: var(--color-error, #ef4444);
   color: white;
 }
 
 .action-btn.danger:hover:not(:disabled) {
-  background: var(--color-error-hover);
+  background: var(--color-error-hover, #dc2626);
 }
 
 .action-btn.small {
@@ -710,7 +714,7 @@ textarea.form-input {
 .empty-state {
   text-align: center;
   padding: 40px 20px;
-  color: var(--color-text-secondary);
+  color: var(--color-text-secondary, #6b7280);
 }
 
 .empty-content {
@@ -728,7 +732,7 @@ textarea.form-input {
   margin: 0 0 8px 0;
   font-size: 18px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--color-text-primary, #111827);
 }
 
 .empty-state p {
