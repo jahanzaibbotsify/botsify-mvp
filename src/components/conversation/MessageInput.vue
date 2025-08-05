@@ -155,7 +155,14 @@ const removeAttachment = (id: string) => {
           <span class="attachment-name">{{ file.name }}</span>
           <span class="attachment-size">{{ (file.size / 1024).toFixed(1) }}KB</span>
           <span v-if="file.isUploaded" class="attachment-status uploaded">✅ Ready for AI</span>
-          <span v-else-if="file?.type?.startsWith('image/') || file?.type?.startsWith('video/')" class="attachment-status pending">📤 Will upload</span>
+          <span v-else-if="
+            file.type.startsWith('image/') 
+            || file.type.startsWith('video/') 
+            || file.type.startsWith('audio/')
+            || file.type.startsWith('application/')
+            || file.type.startsWith('text/')" 
+            class="attachment-status pending">
+          </span>
           <span v-else class="attachment-status unsupported">⚠️ Not supported</span>
         </div>
         <button class="remove-attachment" @click.stop="removeAttachment(file.id)">

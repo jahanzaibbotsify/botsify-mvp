@@ -112,7 +112,9 @@ const deleteAttribute = (id: number) => {
     return
   }
 
-  window.$confirm({}, async () => {
+  window.$confirm({
+    text: 'Are you sure you want to delete this attribute?',
+  }, async () => {
     loading.value = true
     errorMessage.value = ''
 
@@ -240,7 +242,7 @@ watch(() => props.attributes, (newAttributes) => {
                   @click="startEdit(attribute.id)"
                   :disabled="loading"
                 >
-                  <i class="pi pi-pencil" />
+                  <i class="pi pi-pen-to-square"></i>
                 </button>
                 <button 
                   class="delete-btn" 

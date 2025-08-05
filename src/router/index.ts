@@ -3,7 +3,6 @@ import ChatLayout from '../layouts/ChatLayout.vue'
 import AuthLayout from '../layouts/AuthLayout.vue'
 import NotFound from '@/views/NotFound.vue';
 import Unauthenticated from '@/views/Unauthenticated.vue';
-import { useRoleStore } from '@/stores/roleStore';
 
 const routes: RouteRecordRaw[] = [
   // Auth Routes (with AuthLayout)
@@ -81,19 +80,6 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
     children: [
       {
-        path: '',
-        name: 'default',
-        redirect: () => {
-          // Default route based on user role
-          const roleStore = useRoleStore();
-          if (roleStore.isLiveChatAgent) {
-            return { name: 'conversation' };
-          } else {
-            return { name: 'agent', params: { id: 'default' } };
-          }
-        }
-      },
-      {
         path: '/agent/:id',
         name: 'agent',
         component: () => import('../views/ChatView.vue'),
@@ -160,3 +146,4 @@ router.beforeEach(async (to, from, next) => {
 })
 
 export default router
+export { routes }

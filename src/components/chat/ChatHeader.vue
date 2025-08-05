@@ -47,7 +47,6 @@
         </div>
       </button>
 
-
       <!-- Dropdown Menu Trigger -->
       <div class="dropdown dropdown-container" id="moreActionsDropdown" ref="dropdownRef">
         <button class="icon-button" title="More actions">
@@ -58,7 +57,7 @@
             <i :class="themeStore.theme === 'light' ? 'pi pi-moon' : 'pi pi-sun'" style="font-size: 18px;"></i>
             <span>{{ themeStore.theme === 'light' ? 'Night Theme' : 'Light Theme' }}</span>
           </button>
-          <button class="dropdown-item" @click="handleAIPrompt">
+          <button class="dropdown-item" @click="handleAIPrompt" v-if="props.hasPromptContent">
             <i class="pi pi-bolt" style="font-size: 18px;"></i>
             <span>AI Prompt</span>
           </button>
@@ -68,51 +67,14 @@
           </button>
         </div>
       </div>
-      <!-- Profile Dropdown -->
-      <div class="dropdown" ref="profileDropdownRef">
-        <button class="icon-button profile-button" @click="toggleProfileDropdown" title="Profile">
-          <div class="profile-avatar">
-            <img 
-              v-if="authStore.user?.avatar" 
-              :src="authStore.user.avatar" 
-              :alt="authStore.fullName"
-              class="avatar-image"
-            />
-            <i v-else class="pi pi-user"></i>
-          </div>
-        </button>
-        <div v-if="showProfileDropdown" class="dropdown-content">
-          <div class="user-info-section">
-            <div class="user-name">{{ authStore.fullName || 'User' }}</div>
-            <div class="user-email">{{ authStore.user?.email || '' }}</div>
-          </div>
-          <div class="dropdown-divider"></div>
-          <button class="dropdown-item" @click="openEditProfile">
-            <i class="pi pi-user-edit" style="font-size: 18px;"></i>
-            <span>Edit Profile</span>
-          </button>
-          <button class="dropdown-item danger" @click="handleLogout">
-            <i class="pi pi-sign-out" style="font-size: 18px;"></i>
-            <span>Logout</span>
-          </button>
-        </div>
-      </div>
     </div>
     <CalendlyModal ref="bookMeetingRef"></CalendlyModal>
   </div>
-
-  <!-- Edit Profile Modal -->
-  <EditProfileModal 
-    :isVisible="showEditProfileModal" 
-    @close="showEditProfileModal = false"
-    @updated="() => showEditProfileModal = false"
-  />
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useThemeStore } from '@/stores/themeStore';
-import { useAuthStore } from '@/stores/authStore';
 import { botsifyApi } from '@/services/botsifyApi';
 import { BOTSIFY_WEB_URL } from '@/utils/config';
 import { useChatStore } from '@/stores/chatStore';
@@ -120,8 +82,6 @@ import { useWhitelabelStore } from '@/stores/whitelabelStore';
 import { useBotStore } from '@/stores/botStore';
 import { useRoleStore } from '@/stores/roleStore';
 import CalendlyModal from '@/components/ui/CalendlyModal.vue';
-
-import EditProfileModal from '@/components/auth/EditProfileModal.vue';
 
 interface Props {
   chatId: string,
@@ -134,13 +94,7 @@ const props = defineProps<Props>();
 const chatStore = useChatStore();
 const botStore = useBotStore();
 const themeStore = useThemeStore();
-const authStore = useAuthStore();
 const showDropdown = ref(false);
-
-const showProfileDropdown = ref(false);
-const showEditProfileModal = ref(false);
-const profileDropdownRef = ref<HTMLDivElement | null>(null);
-
 const showBotNameDropdown = ref(false);
 const dropdownRef = ref<HTMLDivElement | null>(null);
 const lastOpenedDropdownId = ref<string | undefined>('');
@@ -169,19 +123,15 @@ async function testAI() {
     return;
   }
   const apiKey = botStore.apiKey;
-
-  let url = `https://${BOTSIFY_WEB_URL}/web-bot/agent/${apiKey}?testagent=true`;
+  let url = `${BOTSIFY_WEB_URL}/web-bot/agent/${apiKey}?testagent=true`;
   if (whitelabelStore.isWhitelabelClient && whitelabelStore.maskUrl) {
     url = `${whitelabelStore.maskUrl}/web-bot/agent/${botStore.apiKey}?testagent=true`;
-
   }
   window.open(url, '_blank');
 }
 
 function deployAI() {
-
   if (!roleStore.hasSubscription) {
-
     bookMeetingRef.value?.openModal();
     return;
   }
@@ -191,9 +141,7 @@ function deployAI() {
     return;
   }
   window.$confirm({
-
-    // text: "Do you really want to deploy your AI agent? This will make it available for use.",
-
+    text: "Are you sure you want to deploy it?",
     confirmButtonText: "Yes, Deploy it!",
     cancelButtonText: "No, Cancel",
     animation: false,
@@ -226,35 +174,13 @@ async function deploying(content: string){
 function handleReset(type: string) {
   let confirmButtonText = 'Yes';
   if (type === 'reset') {
-    confirmButtonText += ' clear it!';
+    confirmButtonText += ' Clear it!';
   }
   window.$confirm({
-    confirmButtonText: confirmButtonText,
-    text: "Clearing the conversation is irreversible!"
+    text: "Are you sure you want to clear the conversation?",
+    confirmButtonText: confirmButtonText
   }, async() => {
     chatStore.clearChatMessages()
-  });
-}
-
-function toggleProfileDropdown() {
-  showProfileDropdown.value = !showProfileDropdown.value;
-  if (showProfileDropdown.value) {
-    showDropdown.value = false; // Close other dropdown
-  }
-}
-
-function openEditProfile() {
-  showEditProfileModal.value = true;
-  showProfileDropdown.value = false;
-}
-
-function handleLogout() {
-  showProfileDropdown.value = false;
-  window.$confirm({
-    confirmButtonText: "Yes, Logout!",
-    text: "Are you sure you want to logout?"
-  }, async() => {
-    authStore.logout();
   });
 }
 
@@ -273,27 +199,13 @@ function handleClickOutside(event: Event) {
     lastOpenedDropdownId.value = currentSelectedDropdownId;
   }else{
     lastOpenedDropdownId.value = '';
-
-  }
-  if (showProfileDropdown.value && profileDropdownRef.value && !profileDropdownRef.value.contains(target)) {
-    showProfileDropdown.value = false;
   }
 }
-
 
 function closeAllDropdowns() {
   showBotNameDropdown.value = false;
   showDropdown.value = false;
 }
-
-// Add/remove event listener when dropdown is toggled
-watch([showDropdown, showProfileDropdown], ([newDropdownVal, newProfileDropdownVal]) => {
-  if (newDropdownVal || newProfileDropdownVal) {
-    document.addEventListener('click', handleClickOutside);
-  } else {
-    document.removeEventListener('click', handleClickOutside);
-  }
-});
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside);
@@ -488,60 +400,5 @@ onBeforeUnmount(() => {
 
 .dropdown-item.danger:hover {
   background-color: rgba(239, 68, 68, 0.1);
-}
-
-/* Profile Button and Dropdown Styles */
-.profile-button {
-  padding: var(--space-1);
-}
-
-.profile-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  background-color: var(--color-bg-tertiary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border: 2px solid var(--color-border);
-}
-
-.profile-avatar .avatar-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: var(--radius-full);
-}
-
-.profile-avatar i {
-  font-size: 16px;
-  color: var(--color-text-secondary);
-}
-
-.profile-button:hover .profile-avatar {
-  border-color: var(--color-primary);
-}
-
-.user-info-section {
-  padding: var(--space-3) var(--space-4);
-}
-
-.user-name {
-  font-weight: 600;
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-  margin-bottom: var(--space-1);
-}
-
-.user-email {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-}
-
-.dropdown-divider {
-  height: 1px;
-  background-color: var(--color-border);
-  margin: var(--space-2) 0;
 }
 </style> 

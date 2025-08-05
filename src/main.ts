@@ -1,12 +1,13 @@
+
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import { createRouter, createWebHistory } from 'vue-router'
 import App from '@/App.vue'
 import './style.css'
 import 'primeicons/primeicons.css'
 import '@fontsource/ubuntu/400.css'
 import '@fontsource/ubuntu/500.css'
 import '@fontsource/ubuntu/700.css'
-import axios from 'axios';
 import ToastPlugin, { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-bootstrap.css';
 import { useBotStore } from './stores/botStore';
@@ -21,7 +22,7 @@ import Swal from 'sweetalert2';
 
 // Import router
 import router from '@/router'
-import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from './utils/config'
+import { axiosInstance } from './utils/axiosInstance'
 (window as any).Swal = Swal;
 
 // Extract and store API key
@@ -39,9 +40,10 @@ if (import.meta.env.DEV) {
   });
 }
 
+
 const swalOption = {
   title: "Are you sure?",
-  // text: "Are you sure you want to perform this action?",
+  text: "Are you sure you want to perform this action?",
   icon: "warning", // updated from `type`
   showCloseButton: true,
   showCancelButton: true,
@@ -49,6 +51,9 @@ const swalOption = {
   cancelButtonColor: "#e7515a",
   confirmButtonText: "Yes, Delete it!",
   cancelButtonText: "No, Keep it",
+  // customClass: {
+  //   cancelButton: 'custom-cancel-btn',
+  // },
   animation: false,
 };
 
@@ -61,18 +66,12 @@ function checkLocalStorage() {
     localStorage.removeItem(testKey);
     
     const isAvailable = testValue === 'test';
-    console.log('📦 localStorage availability check:', isAvailable ? 'Available' : 'Not available');
-    
-    if (!isAvailable) {
-      console.error('⚠️ localStorage is not working properly. Chat history may not be saved.');
-    }
     
     // Check for private browsing mode with a smaller test size
     const testData = '0'.repeat(1024); // 1KB instead of 5MB
     try {
       localStorage.setItem(testKey, testData);
       localStorage.removeItem(testKey);
-      console.log('✅ localStorage has sufficient space');
     } catch (e) {
       if (e instanceof Error && e.name === 'QuotaExceededError') {
         console.warn('⚠️ localStorage quota exceeded - may be in private browsing mode or has limited space');
@@ -90,19 +89,11 @@ function checkLocalStorage() {
   }
 }
 
+
 // Reusable function to make an authenticated GET request with axios
 function getBotDetails(apikey: string) {
-  return axios.get(
-    BOTSIFY_BASE_URL + `/v1/bot/get-data?apikey=${apikey}`,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${BOTSIFY_AUTH_TOKEN}`
-      }
-    }
-  )
+  return axiosInstance.get(`/v1/bot/get-data?apikey=${apikey}`)
   .then(response => {
-    console.log('ressssss ', response.data);
     
     const roleStore = useRoleStore();
     const whitelabelStore = useWhitelabelStore();
@@ -113,7 +104,6 @@ function getBotDetails(apikey: string) {
       
       // Set whitelabel data if user is a whitelabel client
       if (response.data.data.user.is_whitelabel_client) {
-        console.log('🎨 Setting whitelabel data:', response.data.data.user.whitelabel);
         whitelabelStore.setWhitelabelData(response.data.data.user);
         // Set favicon if present
         if (response.data.data.user.whitelabel && response.data.data.user.whitelabel.favicon) {
@@ -129,6 +119,7 @@ function getBotDetails(apikey: string) {
     }
     const botStore = useBotStore();
     botStore.setApiKeyConfirmed(true);
+    botStore.setApiKey(apikey);
     botStore.setBotId(response.data.data.bot.id);
     botStore.setUser(response.data.data.user);  
     botStore.setBotName(response.data.data.bot.name);
@@ -141,109 +132,73 @@ function getBotDetails(apikey: string) {
   });
 }
 
+// Router is imported from router/index.ts
 
+let isBotDataLoaded = false;
 router.beforeEach(async (to, from, next) => {
-  if (to.name === 'agent' || to.name === 'conversation') {
-    const botStore = useBotStore();
-    const roleStore = useRoleStore();
-    const storeApiKey = botStore.getApiKey;
-    const localApiKey = getCurrentApiKey();
-    
-    console.log('🔍 API Key Debug:', {
-      storeApiKey,
-      localApiKey,
-      routeName: to.name,
-      routeParams: to.params
-    });
-    
-    let apikey = storeApiKey || localApiKey || '';
-    
-    // If no API key found, try to extract from URL or route params
-    if (!apikey || apikey === 'undefined' || apikey === 'null') {
-      console.log('🔍 No valid API key found, extracting from URL/route params...');
-      
-      // For /agent/:id route, extract API key from route params
-      if (to.name === 'agent' && to.params.id) {
-        apikey = to.params.id as string;
-        botStore.setApiKey(apikey);
-        console.log('🔑 API key extracted from route params:', apikey);
-      } else {
-        // Try to extract from URL path
-        apikey = botStore.extractApiKeyFromUrl();
-      }
-    }    
-    
-    console.log('🔑 Final API key:', apikey);
-    
-    if (apikey && apikey !== 'undefined' && apikey !== 'null') {
-      try {
-        const data = await getBotDetails(apikey);
-        if (data) {
-          roleStore.setCurrentUser(data.user);
+  // Handle Unauthenticated route - allow it to render without any checks
+  if (to.name === 'Unauthenticated') {
+    return next();
+  }
 
-          const chatStore = useChatStore();
-          const conversationStore = useConversationStore();
+  // Handle NotFound route - allow it to render without any checks
+  if (to.name === 'NotFound') {
+    return next();
+  }
 
-          // Check subscription requirements for restricted pages
-          if (to.name === 'conversation' && !roleStore.hasSubscription) {
-            console.log('🔒 Conversation page requires subscription, redirecting to agent');
-            return next({ name: 'agent', params: { id: apikey } });
+  if (isBotDataLoaded) {
+    return next();
+  }
+
+  const paramKey = to.name === 'agent' ? to.params.id as string : '';
+  const roleStore = useRoleStore();
+  const localApiKey = getCurrentApiKey();
+
+  let apikey = paramKey || localApiKey || '';
+  if (apikey && apikey !== 'undefined' && apikey !== 'null') {
+    if (typeof to.name === 'undefined') {
+      return next({ name: 'agent', params: { id: apikey } });
+    }
+    try {
+      const data = await getBotDetails(apikey);
+      isBotDataLoaded = true;
+      if (data) {
+        roleStore.setCurrentUser(data.user);
+
+        const chatStore = useChatStore();
+        const conversationStore = useConversationStore();
+
+        // Role-based restriction for live chat agents
+        if (roleStore.isLiveChatAgent) {
+          if (to.name !== 'conversation') {
+            return next({ name: 'conversation' });
           }
-
-          // Role-based restriction for live chat agents
-          if (roleStore.isLiveChatAgent) {
-            if (to.name !== 'conversation') {
-              console.log('🔄 Live chat agent redirected to conversation page');
-              return next({ name: 'conversation' });
-            }
-          }
-
-          // Load chat data if not already loaded or if navigating to a different page
-          if (!chatStore.chats.length || from.name !== to.name) {
-            chatStore.loadFromStorage(data.bot.chat_flow, data.versions);
-          }
-
-          // Initialize Firebase if not already connected
-          if (!conversationStore.isFirebaseConnected) {
-            try {
-              console.log('🔥 Initializing Firebase...');
-              conversationStore.initializeFirebase();
-              console.log('✅ Firebase initialized successfully');
-            } catch (error) {
-              console.error('❌ Error initializing Firebase:', error);
-            }
-          }
-
-          return next();
-        } else {
-          console.error('❌ Failed to get bot details');
-          return next({ name: 'Unauthenticated' });
         }
-      } catch (error) {
-        console.error('❌ Error fetching bot details:', error);
+
+        // Load chat data if not already loaded or if navigating to a different page
+        if (!chatStore.chats.length || from.name !== to.name) {
+          chatStore.loadFromStorage(data.bot.chat_flow, data.versions);
+        }
+
+        // Initialize Firebase if not already connected
+        if (!conversationStore.isFirebaseConnected) {
+          try {
+            conversationStore.initializeFirebase();
+          } catch (error) {
+            console.error('❌ Error initializing Firebase:', error);
+          }
+        }
+        return next();
+      } else {
         return next({ name: 'Unauthenticated' });
       }
-    } else {
-      console.error('❌ No API key found');
+    } catch (error) {
       return next({ name: 'Unauthenticated' });
     }
+  } else {
+    console.error('❌ No API key found');
+    return next({ name: 'Unauthenticated' });
   }
-
-  // Handle users page - redirect if no subscription
-  if (to.name === 'users') {
-    const roleStore = useRoleStore();
-    if (!roleStore.hasSubscription) {
-      console.log('🔒 Users page requires subscription, redirecting to agent');
-      return next({ name: 'agent', params: { id: 'default' } });
-    }
-  }
-
-  // Redirect to 404 if route name is undefined
-  if (typeof to.name === 'undefined') {
-    return next({ name: 'NotFound' });
-  }
-
-  return next();
 });
 
 

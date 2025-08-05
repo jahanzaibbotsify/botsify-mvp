@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import {ref, onMounted} from 'vue';
+import {ref} from 'vue';
 import type { MCPServer } from '../types/mcp';
 import { botsifyApi } from '../services/botsifyApi';
 
@@ -15,6 +15,10 @@ export const useMCPStore = defineStore('mcp', () => {
       authMethod: 'api_key',
       authLabel: 'Stripe Secret Key',
       server_url: 'https://mcp.stripe.com',
+      externalData: {
+        link: "https://docs.stripe.com/keys#create-restricted-api-secret-key",
+        label: 'Get secret key'
+      }
     },
     {
       id: 'shopify',
@@ -132,8 +136,11 @@ export const useMCPStore = defineStore('mcp', () => {
     }
   ]);
   const connectedServers = ref([]);
-
-  onMounted(async () => {
+  const initialized = ref(false);
+  
+  const setIntialize = async () => {
+    if (initialized.value) return;
+    initialized.value = true;
     const response = await botsifyApi.getAllConnectedMCPs();
     connectedServers.value = response.data;
     connectedServers.value.forEach((connectedServer: any) => {
@@ -155,7 +162,7 @@ export const useMCPStore = defineStore('mcp', () => {
         }
       }
     })
-  })
+  }
 
   /**
    * Generate a default system prompt for a given MCP server
@@ -338,6 +345,7 @@ Remember: You have access to ${connectedServers.value.length} MCP server${connec
 
   return {
     servers,
+    setIntialize,
     connectedServers,
     getCombinedSystemPrompt,
     generateDefaultSystemPrompt,

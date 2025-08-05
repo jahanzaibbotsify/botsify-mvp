@@ -107,7 +107,7 @@ function cancelEditing() {
 
 function saveEdit() {
   if (editContent.value.trim()) {
-    chatStore.updateStory(props.chatId, editContent.value.trim(), false);
+    chatStore.updateStory(props.chatId, editContent.value.trim(), false, true);
     isEditing.value = false;
     editContent.value = '';
 
@@ -122,7 +122,10 @@ function saveEdit() {
 }
 
 function revertToVersion(versionId: string) {
-  window.$confirm({}, () => {
+  window.$confirm({
+    text: 'Are you sure you want to revert to this version?',
+    confirmButtonText: 'Yes, Revert it!',
+  }, () => {
     chatStore.revertToPromptVersion(props.chatId, versionId);
   });
   showVersionHistory.value = false;
@@ -131,7 +134,9 @@ function revertToVersion(versionId: string) {
 }
 
 function deleteVersion(versionId: string) {
-  window.$confirm({}, () => {
+  window.$confirm({
+    text: 'Are you sure you want to delete this version?',
+  }, () => {
     chatStore.deletePromptVersion(props.chatId, versionId);
   });
 }
@@ -165,7 +170,9 @@ function loadTemplate(templateId: string) {
 }
 
 function deleteTemplate(templateId: string) {
-  window.$confirm({}, () => {
+  window.$confirm({
+    text: 'Are you sure you want to delete this template?',
+  }, () => {
     chatStore.deleteGlobalPromptTemplate(templateId);
   });
 }
@@ -178,11 +185,11 @@ function formatVersionDate(date: Date) {
   return new Date(date).toLocaleString();
 }
 
-function clearAllVersionHistory() {
-  window.$confirm({}, () => {
-    chatStore.clearVersionHistory(props.chatId);
-  });
-}
+// function clearAllVersionHistory() {
+//   window.$confirm({}, () => {
+//     chatStore.clearVersionHistory(props.chatId);
+//   });
+// }
 
 const scrollToBottom = async () => {
   await nextTick();
@@ -218,24 +225,15 @@ defineExpose({
           <div class="header-actions">
             <button v-if="story?.content && !isEditing" @click="startEditing" class="icon-btn edit-btn"
               title="Edit prompt">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-              </svg>
+              <i class="pi pi-pen-to-square"></i>
             </button>
 
             <button v-if="story?.versions && story.versions.length > 1"
               @click="showVersionHistory = !showVersionHistory" class="icon-btn history-btn" title="Version history">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                <path d="M3 3v5h5"></path>
-                <path d="M12 7v5l4 2"></path>
-              </svg>
+              <i class="pi pi-history"></i>
             </button>
 
-            <button @click="showTemplateManager = !showTemplateManager" class="icon-btn template-btn"
+           <!-- <button @click="showTemplateManager = !showTemplateManager" class="icon-btn template-btn"
               title="Manage templates">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -243,7 +241,7 @@ defineExpose({
                 <rect x="7" y="7" width="10" height="3"></rect>
                 <rect x="7" y="14" width="10" height="3"></rect>
               </svg>
-            </button>
+            </button> -->
             <button @click="handleAIPrompt" class="icon-btn template-btn"
               title="Manage templates">
               <i style="" class="pi pi-chevron-right"></i>
@@ -276,7 +274,7 @@ defineExpose({
         <div class="section-header">
           <h4>Version History</h4>
           <div class="header-actions">
-            <button v-if="story?.versions && story.versions.length > 1" @click="clearAllVersionHistory"
+            <!-- <button v-if="story?.versions && story.versions.length > 1" @click="clearAllVersionHistory"
               class="icon-btn clear-btn" title="Clear version history">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -284,7 +282,7 @@ defineExpose({
                 <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
                 <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
               </svg>
-            </button>
+            </button> -->
             <button @click="showVersionHistory = false" class="close-btn">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -312,12 +310,7 @@ defineExpose({
               </button>
               <button v-if="!version.isActive && sortedVersions.length > 1" @click="deleteVersion(version.id)"
                 class="btn-delete" title="Delete this version">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 6h18"></path>
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-              </svg>
+                <i class="pi pi-trash"></i>
               </button>
             </div>
           </div>
@@ -363,13 +356,13 @@ defineExpose({
               <div class="template-preview">{{ template.content.substring(0, 100) }}...</div>
             </div>
             <div class="template-actions">
-              <button @click="loadTemplate(template.id)" class="btn-load">Load</button>
+              <button @click="loadTemplate(template.id)" class="btn-load"><i class="pi pi-undo"></i></button>
               <button v-if="!template.isDefault" @click="setAsDefaultTemplate(template.id)" class="btn-default"
                 title="Set as default template for new chats">
                 Set Default
               </button>
               <button @click="deleteTemplate(template.id)" class="btn-delete" title="Delete template">
-                Delete
+                <i class="pi pi-trash"></i>
               </button>
             </div>
           </div>
@@ -726,37 +719,39 @@ defineExpose({
 
 .btn-revert,
 .btn-load {
-  background-color: var(--color-primary);
-  color: white;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
 }
 
 
 .btn-load:hover {
-  background-color: var(--color-primary-hover);
+  background-color: var(--color-primary);
+  color: white;
 }
 
 .btn-default {
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning);
+}
+
+.btn-default:hover {
   background-color: var(--color-warning);
   color: white;
 }
 
-.btn-default:hover {
-  background-color: var(--color-warning-hover);
+.btn-delete {
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
 }
 
-.btn-delete {
+.btn-delete:hover {
   background-color: var(--color-error);
   color: white;
 }
 
-.btn-delete:hover {
-  background-color: var(--color-error-hover);
-  color: var(--color-text-danger);
-}
-
 .btn-revert:hover {
-  background-color: transparent;
-  color: #6D3ADB;
+  background-color: var(--color-primary);
+  color: white;
 }
 
 /* Template Manager */

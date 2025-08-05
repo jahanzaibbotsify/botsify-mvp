@@ -49,7 +49,9 @@ const handleUpdateAttributes = (attributes: UserAttribute[]): void => {
 }
 
 const handleDeleteUser = (userId: number) => {
-  window.$confirm({}, async() => {
+  window.$confirm({
+    text: 'Are you sure you want to delete this user?',
+  }, async() => {
     const response = await userApi.changeUserStatus(2, [userId]);
     if (response.success) {
       window.$toast.success(`Successfully deleted user.`);
@@ -608,8 +610,8 @@ const getPageNumbers = computed(() => {
 }
 
 .action-btn:hover {
-  background-color: #f3f4f6;
-  transform: scale(1.1);
+  background-color: var(--color-bg-secondary);
+  /* transform: scale(1.1); */
 }
 
 .action-btn svg {
