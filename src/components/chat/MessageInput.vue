@@ -1378,35 +1378,58 @@ const hideLoading = () => {
 /* Mobile styles */
 @media (max-width: 767px) {
   .message-input-container {
-    padding: var(--space-2);
+    padding: var(--space-3);
   }
   
   .mcp-dropdown {
-    width: calc(100vw - 32px);
-    left: calc(-100vw + 100% + 16px);
+    width: calc(100vw - 64px);
+    left: calc(-100vw + 100% + 32px);
     max-width: 320px;
+    bottom: calc(100% + 12px);
   }
   
   .input-area {
-    padding: var(--space-2);
+    padding: var(--space-3);
+    border-radius: 20px;
   }
   
   .message-textarea {
-    padding: 0 0 var(--space-1) 0;
+    padding: 0 0 var(--space-2) 0;
     font-size: 1rem;
+    min-height: 20px;
   }
   
   .input-actions {
-    margin-top: var(--space-1);
+    margin-top: var(--space-2);
+    gap: var(--space-2);
+  }
+
+  .left-actions {
+    gap: var(--space-2);
+  }
+
+  .icon-button {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .send-button {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
   
   .attachments-preview {
-    gap: var(--space-1);
-    margin-bottom: var(--space-2);
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
   }
   
   .attachment-item {
     min-width: 100%;
+    padding: var(--space-3);
   }
 
   .modal-content {
@@ -1431,6 +1454,8 @@ const hideLoading = () => {
 
   .connect-button {
     min-width: 100%;
+    padding: var(--space-3) var(--space-4);
+    font-size: 1rem;
   }
 
   .service-option {
@@ -1445,76 +1470,133 @@ const hideLoading = () => {
     white-space: normal;
     overflow: visible;
     text-overflow: unset;
+    font-size: 0.875rem;
+  }
+
+  .service-icon {
+    width: 40px;
+    height: 40px;
   }
 
   /* File Upload Mobile Styles */
   .file-upload-section h3 {
-    font-size: 0.875rem;
+    font-size: 1rem;
   }
 
   .file-upload-area {
-    padding: var(--space-3);
+    padding: var(--space-4);
   }
 
   .upload-label span {
-    font-size: 0.8rem;
+    font-size: 1rem;
   }
 
   .upload-label small {
-    font-size: 0.7rem;
+    font-size: 0.875rem;
   }
 
   .file-preview {
-    padding: var(--space-2);
-    gap: var(--space-2);
+    padding: var(--space-3);
+    gap: var(--space-3);
   }
 
   .file-details .file-name {
-    font-size: 0.8rem;
+    font-size: 1rem;
   }
 
   .progress-text {
-    font-size: 0.7rem;
+    font-size: 0.875rem;
   }
 
   /* Web Search Configuration Mobile Styles */
   .config-header {
-    padding: var(--space-2);
+    padding: var(--space-3);
   }
 
   .config-header h3 {
-    font-size: 0.875rem;
+    font-size: 1rem;
   }
 
   .config-content {
-    padding: var(--space-2);
+    padding: var(--space-3);
   }
 
   .location-fields {
     grid-template-columns: 1fr;
-    gap: var(--space-2);
+    gap: var(--space-3);
   }
 
   .field-group label {
-    font-size: 0.7rem;
+    font-size: 0.875rem;
   }
 
   .config-input,
   .config-select {
-    padding: var(--space-2);
-    font-size: 0.8rem;
+    padding: var(--space-3);
+    font-size: 1rem;
   }
 
   .radio-option {
-    padding: var(--space-2);
+    padding: var(--space-3);
   }
 
   .radio-label strong {
-    font-size: 0.8rem;
+    font-size: 1rem;
   }
 
   .radio-label small {
-    font-size: 0.7rem;
+    font-size: 0.875rem;
+  }
+
+  .url-input {
+    font-size: 1rem;
+    padding: var(--space-3);
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .message-input-container {
+    padding: var(--space-2);
+  }
+
+  .input-area {
+    padding: var(--space-2);
+  }
+
+  .icon-button {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .send-button {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .mcp-dropdown {
+    width: calc(100vw - 32px);
+    left: calc(-100vw + 100% + 16px);
+  }
+
+  .attachment-item {
+    padding: var(--space-2);
+  }
+
+  .service-option {
+    padding: var(--space-2);
+  }
+
+  .service-name {
+    font-size: 0.875rem;
+  }
+
+  .service-description {
+    font-size: 0.75rem;
   }
 }
 

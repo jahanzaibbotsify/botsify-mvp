@@ -401,4 +401,140 @@ onBeforeUnmount(() => {
 .dropdown-item.danger:hover {
   background-color: rgba(239, 68, 68, 0.1);
 }
+
+/* Mobile styles */
+@media (max-width: 767px) {
+  .chat-header {
+    padding: var(--space-2) var(--space-3);
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .chat-header-left {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .bot-name-dropdown {
+    font-size: 0.875rem;
+    max-width: 150px;
+  }
+
+  .chat-actions {
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+
+  .action-button {
+    padding: 0 var(--space-3);
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    font-size: 0.875rem;
+  }
+
+  .action-button .button-content {
+    gap: var(--space-1);
+  }
+
+  .action-button span {
+    display: none;
+  }
+
+  .action-button .pi {
+    font-size: 18px;
+  }
+
+  .icon-button {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: var(--space-2);
+  }
+
+  .dropdown-content {
+    right: 0;
+    left: auto;
+    min-width: 200px;
+    font-size: 0.875rem;
+  }
+
+  .dropdown-item {
+    padding: var(--space-3) var(--space-3);
+    font-size: 0.875rem;
+  }
+
+  .dropdown-item i {
+    font-size: 16px;
+  }
+
+  #botNameDropdown .dropdown-content {
+    left: 0;
+    right: auto;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .chat-header {
+    padding: var(--space-2);
+  }
+
+  .action-button {
+    padding: 0 var(--space-2);
+    height: 40px;
+    min-height: 40px;
+    max-height: 40px;
+  }
+
+  .action-button .pi {
+    font-size: 16px;
+  }
+
+  .icon-button {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .bot-name-dropdown {
+    font-size: 0.8rem;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dropdown-content {
+    min-width: 180px;
+  }
+
+  .dropdown-item {
+    padding: var(--space-2) var(--space-3);
+    font-size: 0.8rem;
+  }
+}
+
+/* Landscape orientation on small devices */
+@media (max-width: 767px) and (orientation: landscape) {
+  .chat-header {
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .action-button {
+    height: 36px;
+    min-height: 36px;
+    max-height: 36px;
+    padding: 0 var(--space-2);
+  }
+
+  .icon-button {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+}
 </style> 

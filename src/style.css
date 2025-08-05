@@ -368,6 +368,59 @@ code {
   opacity: 0.95;
 } */
 
+/* Modal responsive improvements */
+.modal-overlay {
+  padding: var(--space-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: 0;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-border);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-tertiary);
+}
+
+.modal-body {
+  padding: var(--space-4);
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  padding: var(--space-1);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-normal);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  color: var(--color-text-secondary);
+  background: var(--color-bg-active);
+}
+
 /* Responsive font sizes */
 @media (max-width: 767px) {
   h1 {
@@ -383,6 +436,118 @@ code {
   }
   
   body {
-    font-size: 0.9375rem;
+    font-size: 1rem;
+  }
+
+  /* Mobile modal improvements */
+  .modal-overlay {
+    padding: var(--space-1);
+    align-items: flex-start;
+    padding-top: var(--space-4);
+  }
+
+  .modal-content {
+    width: 95%;
+    max-width: none;
+    margin: 0;
+    max-height: calc(100vh - 32px);
+    border-radius: var(--radius-md);
+  }
+
+  .modal-header {
+    padding: var(--space-3);
+  }
+
+  .modal-header h2, .modal-header h3 {
+    font-size: 1.125rem;
+    margin: 0;
+  }
+
+  .modal-body {
+    padding: var(--space-3);
+  }
+
+  .modal-close {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Form improvements for mobile */
+  input, textarea, select {
+    font-size: 1rem;
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+  }
+
+  button {
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  .icon-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: var(--space-1);
+  }
+
+  .modal-content {
+    width: 98%;
+    max-height: calc(100vh - 16px);
+  }
+
+  .modal-header {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .modal-body {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .modal-close {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  input, textarea, select {
+    padding: var(--space-2);
+  }
+
+  button {
+    min-height: 40px;
+    font-size: 0.875rem;
+  }
+
+  .icon-button {
+    min-width: 40px;
+    min-height: 40px;
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (max-width: 767px) and (orientation: landscape) {
+  .modal-overlay {
+    padding-top: var(--space-2);
+  }
+
+  .modal-content {
+    max-height: calc(100vh - 16px);
+  }
+
+  .modal-header {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .modal-body {
+    padding: var(--space-2) var(--space-3);
   }
 }
