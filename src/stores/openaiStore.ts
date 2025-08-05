@@ -24,7 +24,10 @@ export const useOpenAIStore = defineStore('openai', () => {
     type: "mcp" as const,
     server_label: "botsify_mcp_server",
     server_url: "https://mcp.botsify.com/mcp",
-    server_description: `The server is designed to work seamlessly with Botsify's infrastructure, supporting easy integration, rapid deployment, and centralized configuration management for all Botsify-powered chatbots and virtual agents. Use this Botsify chatbot api key every time: ${getCurrentApiKey()}`,
+    server_description: `The server is designed to work seamlessly with Botsify's infrastructure, supporting easy integration, rapid deployment, and centralized configuration management for all Botsify-powered chatbots and virtual agents.`,
+    headers: {
+      Authorization: `Bearer ${getCurrentApiKey()}`
+    },
     allowed_tools: [
       "updateBotSettings",
       "updateBotGeneralSettings",
