@@ -57,13 +57,13 @@ const clearSearch = () => {
 <style scoped>
 .search-bar {
   position: relative;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-2);
   border-bottom: 1px solid var(--color-border);
 }
 
 .search-icon {
   position: absolute;
-  left: calc(var(--space-4) + var(--space-2));
+  left: calc(var(--space-4) + var(--space-1));
   top: 50%;
   transform: translateY(-50%);
   color: var(--color-text-tertiary);
@@ -76,7 +76,10 @@ const clearSearch = () => {
   width: 100%;
   padding-left: var(--space-6);
   padding-right: var(--space-6);
+  background: white;
+  border: 1px solid var(--color-border-secondary);
   font-size: 0.875rem;
+  height: 38px;
 }
 
 .clear-button {

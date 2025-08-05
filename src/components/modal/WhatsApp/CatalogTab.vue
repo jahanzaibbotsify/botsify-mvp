@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import SearchBar from "@/components/ui/SearchBar.vue";
 
 // Props
 interface Props {
@@ -118,15 +119,10 @@ defineExpose({
     <!-- Search and Filters -->
     <div class="catalog-header">
       <div class="search-filters">
-        <div class="search-box">
-          <input 
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search products..."
-            class="search-input"
-          />
-          <i class="pi pi-search search-icon"></i>
-        </div>
+        <SearchBar
+          v-model="searchQuery"
+          placeholder="Search products..."
+        />
         
         <div class="category-filter">
           <select v-model="selectedCategory" class="form-input">
@@ -137,7 +133,7 @@ defineExpose({
           </select>
         </div>
         
-        <button class="add-product-button">
+        <button class="action-button primary">
           <i class="pi pi-plus"></i>
           Add Product
         </button>
@@ -186,23 +182,7 @@ defineExpose({
 </template>
 
 <style scoped>
-.tab-panel {
-  padding: 0;
-}
-
-.tab-panel h3 {
-  margin: 0 0 8px 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-}
-
-.subtitle {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-secondary, #6b7280);
-}
+/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
 
 .catalog-header {
   margin-bottom: 24px;
@@ -214,52 +194,8 @@ defineExpose({
   align-items: center;
 }
 
-.search-box {
-  position: relative;
-  flex: 1;
-}
-
-.search-input {
-  width: 100%;
-  padding: 12px 16px 12px 40px;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-bg-tertiary, #f3f4f6);
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-  font-family: inherit;
-}
-
-.search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--color-text-secondary, #6b7280);
-  font-size: 14px;
-}
-
 .category-filter {
   min-width: 150px;
-}
-
-.add-product-button {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-  border: none;
-  padding: 12px 16px;
-  border-radius: var(--radius-md, 8px);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: background var(--transition-normal, 0.2s ease);
-}
-
-.add-product-button:hover {
-  background: var(--color-primary-hover, #2563eb);
 }
 
 .products-grid {

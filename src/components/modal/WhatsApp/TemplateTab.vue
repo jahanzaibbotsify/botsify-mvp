@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import SearchBar from "@/components/ui/SearchBar.vue";
 import CreateTemplateModal from "./CreateTemplateModal.vue";
 
 // Props
@@ -132,19 +133,14 @@ defineExpose({
   <div class="tab-panel">
     <div class="media-header">
       <div class="search-create-section">
-        <div class="search-box">
-          <input 
-            type="text"
-            v-model="searchQuery"
-            placeholder="Search templates..."
-            class="search-input"
-          />
-          <i class="pi pi-search search-icon"></i>
-        </div>
+        <SearchBar
+          v-model="searchQuery"
+          placeholder="Search templates..."
+        />
         
         <!-- Create Button moved back to search section -->
         <button 
-          class="create-button primary"
+          class="action-button primary"
           @click="openCreateModal"
         >
           <i class="pi pi-plus"></i>
@@ -214,6 +210,4 @@ defineExpose({
 .media-header {
   margin-bottom: 20px;
 }
-
-/* Component-specific overrides if needed */
 </style> 

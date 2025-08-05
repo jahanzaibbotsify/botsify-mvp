@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import VueSelect from "vue3-select-component";
 
 // Props
 interface Props {
@@ -43,6 +44,12 @@ const messageTags = [
   { value: 'NO_TAG', label: 'NO_TAG' }
 ];
 
+// Handle VueSelect values
+const handleSelectChange = (key: keyof typeof formData.value, value: string | string[]): void => {
+  const singleValue = Array.isArray(value) ? value[0] : value
+  formData.value[key] = singleValue
+};
+
 const noTestUser = () => {
   emit('no-test-user');
 };
@@ -75,28 +82,24 @@ defineExpose({
     <div class="form-section">
       <div class="form-group">
         <label for="user-segment">User Segments</label>
-        <select 
-          id="user-segment"
-          v-model="formData.userSegment"
-          class="form-input"
-        >
-          <option v-for="segment in userSegments" :key="segment.value" :value="segment.value">
-            {{ segment.label }}
-          </option>
-        </select>
+        <VueSelect
+          :model-value="formData.userSegment"
+          @update:model-value="(value: string | string[]) => handleSelectChange('userSegment', value)"
+          :options="userSegments"
+          placeholder="Select user segment"
+          :multiple="false"
+        />
       </div>
 
       <div class="form-group">
         <label for="message-tag">Select Message Tag</label>
-        <select 
-          id="message-tag"
-          v-model="formData.messageTag"
-          class="form-input"
-        >
-          <option v-for="tag in messageTags" :key="tag.value" :value="tag.value">
-            {{ tag.label }}
-          </option>
-        </select>
+        <VueSelect
+          :model-value="formData.messageTag"
+          @update:model-value="(value: string | string[]) => handleSelectChange('messageTag', value)"
+          :options="messageTags"
+          placeholder="Select message tag"
+          :multiple="false"
+        />
       </div>
 
       <div class="form-group">
@@ -114,65 +117,18 @@ defineExpose({
 </template>
 
 <style scoped>
-.tab-panel {
-  padding: 0;
-}
+/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
 
-.tab-panel h3 {
-  margin: 0 0 8px 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-}
-
-.subtitle {
-  margin: 0 0 20px 0;
+/* VueSelect Styling */
+.form-group :deep(.vue3-select-component) {
   font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-secondary, #6b7280);
+  height: 44px;
 }
 
-.form-section {
-  margin-top: 20px;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-}
-
-.form-input {
-  width: 100%;
+.form-group :deep(.vue3-select-component input) {
+  height: 44px;
   padding: 12px 16px;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-bg-tertiary, #f3f4f6);
-  color: var(--color-text-primary, #111827);
   font-size: 14px;
-  font-family: inherit;
-  transition: border-color var(--transition-normal, 0.2s ease);
-  box-sizing: border-box;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--color-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.form-input::placeholder {
-  color: var(--color-text-tertiary, #9ca3af);
-}
-
-select.form-input {
-  cursor: pointer;
 }
 
 @media (max-width: 640px) {
@@ -180,4 +136,4 @@ select.form-input {
     margin-bottom: 16px;
   }
 }
-</style> 
+</style>

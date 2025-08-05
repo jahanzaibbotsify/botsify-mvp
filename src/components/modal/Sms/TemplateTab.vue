@@ -2,6 +2,7 @@
 import { ref, computed } from "vue";
 import ModalLayout from "@/components/ui/ModalLayout.vue";
 import Pagination from "@/components/ui/Pagination.vue";
+import SearchBar from "@/components/ui/SearchBar.vue";
 import CreateTemplateModal from "./CreateTemplateModal.vue";
 
 // Props
@@ -136,19 +137,14 @@ defineExpose({
   <div class="tab-panel">
     <div class="media-header">
       <div class="search-create-section">
-        <div class="search-box">
-          <input 
-            type="text"
-            v-model="searchQuery"
-            placeholder="Search templates..."
-            class="search-input"
-          />
-          <i class="pi pi-search search-icon"></i>
-        </div>
+        <SearchBar
+          v-model="searchQuery"
+          placeholder="Search templates..."
+        />
         
         <!-- Create Button moved back to search section -->
         <button 
-          class="create-button primary"
+          class="action-button primary"
           @click="openCreateModal"
         >
           <i class="pi pi-plus"></i>
@@ -212,67 +208,11 @@ defineExpose({
 </template>
 
 <style scoped>
-.tab-panel {
-  padding: 0;
-}
+/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
 
 /* Template Styles */
 .media-header {
   margin-bottom: 20px;
-}
-
-.search-create-section {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.search-box {
-  position: relative;
-  flex: 1;
-}
-
-.search-input {
-  width: 100%;
-  padding: 12px 16px 12px 40px;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-bg-tertiary, #f3f4f6);
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-  font-family: inherit;
-}
-
-.search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--color-text-secondary, #6b7280);
-  font-size: 14px;
-}
-
-.create-button {
-  padding: 12px 16px;
-  border-radius: var(--radius-md, 8px);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal, 0.2s ease);
-  border: none;
-  font-family: inherit;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.create-button.primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.create-button.primary:hover {
-  background: var(--color-primary-hover, #2563eb);
 }
 
 .media-list {
@@ -304,10 +244,6 @@ defineExpose({
 }
 
 @media (max-width: 768px) {
-  .search-create-section {
-    flex-direction: column;
-  }
-  
   .media-table {
     font-size: 12px;
   }

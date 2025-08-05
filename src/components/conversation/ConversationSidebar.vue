@@ -4,6 +4,7 @@ import { ref, computed } from 'vue'
 import type { ExtendedChat } from '@/types'
 import ConversationSkeleton from './ConversationSkeleton.vue'
 import FilterSection from './Filter.vue'
+import SearchBar from '@/components/ui/SearchBar.vue'
 import { formatTime, getPlatformClass, getPlatformIcon } from '@/utils'
 
 interface Props {
@@ -148,9 +149,7 @@ const handleActiveTabUpdate = (value: string | string[]) => {
   emit('update:activeTab', finalValue)
 }
 
-const handleSearch = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const query = target.value
+const handleSearch = (query: string) => {
   emit('update:searchQuery', query)
   emit('search', query)
 }
@@ -186,27 +185,11 @@ const getUnreadCount = (conversation: ExtendedChat) => {
     <div class="sidebar-header">
       <h2 class="sidebar-title">Conversations</h2>
       <div class="search-container">
-        <div class="search-input-wrapper">
-          <span class="search-icon">
-            <i v-if="!isSearching" class="pi pi-search"></i>
-            <i v-else class="pi pi-spin pi-spinner"></i>
-          </span>
-          <input 
-            type="text" 
-            placeholder="Search conversations..." 
-            class="search-input"
-            :value="searchQuery"
-            @input="handleSearch"
-            :disabled="isSearching"
-          />
-          <div v-if="isSearching" class="search-loading-indicator">
-            <div class="loading-dots">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-          </div>
-        </div>
+        <SearchBar
+          :model-value="searchQuery"
+          placeholder="Search conversations..."
+          @update:model-value="handleSearch"
+        />
       </div>
     </div>
 
@@ -420,80 +403,6 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   position: relative;
 }
 
-.search-input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.search-icon {
-  position: absolute;
-  left: var(--space-3);
-  color: var(--color-text-tertiary);
-  z-index: 1;
-}
-
-.search-input {
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  padding-left: 40px;
-  padding-right: 48px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background-color: var(--color-bg-tertiary);
-  font-size: 0.875rem;
-  color: var(--color-text-primary);
-  transition: border-color var(--transition-normal);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.search-input:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.search-loading-indicator {
-  position: absolute;
-  right: var(--space-3);
-  z-index: 1;
-}
-
-.loading-dots {
-  display: flex;
-  gap: 2px;
-}
-
-.loading-dots span {
-  width: 4px;
-  height: 4px;
-  background-color: var(--color-primary);
-  border-radius: 50%;
-  animation: loading-dots 1.4s infinite ease-in-out;
-}
-
-.loading-dots span:nth-child(1) {
-  animation-delay: -0.32s;
-}
-
-.loading-dots span:nth-child(2) {
-  animation-delay: -0.16s;
-}
-
-@keyframes loading-dots {
-  0%, 80%, 100% {
-    transform: scale(0);
-    opacity: 0.5;
-  }
-  40% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
 /* Enhanced Filters Section */
 .filters-section {
   border-bottom: 1px solid var(--color-border);
@@ -576,7 +485,6 @@ const getUnreadCount = (conversation: ExtendedChat) => {
 .toggle-filters-btn.expanded i {
   transform: rotate(180deg);
 }
-
 
 .filters-container {
   padding: var(--space-4);

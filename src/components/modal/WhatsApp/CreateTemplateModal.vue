@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
+import VueSelect from "vue3-select-component";
 import { ref } from "vue";
 
 // Props
@@ -30,37 +31,97 @@ const totalSteps = 2;
 // Create form data
 const createForm = ref({
   name: '',
-  category: 'greeting',
-  language: 'en',
-  type: 'text',
-  body: '',
-  status: 'active'
+  category: '',
+  language: '',
+  type: '',
+  body: ''
 });
 
 // Options for dropdowns
+const templateTypes = [
+  { label: 'Standard (text only)', value: 'text' },
+  { label: 'Media & Interactive', value: 'media' },
+  { label: 'Media Carousel', value: 'generic' }
+];
+
 const categories = [
-  { value: 'greeting', label: 'Greeting' },
-  { value: 'product', label: 'Product' },
-  { value: 'support', label: 'Support' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'notification', label: 'Notification' }
+  { label: 'MARKETING', value: 'MARKETING' },
+  { label: 'Utility', value: 'UTILITY' },
+  { label: 'Authentication', value: 'AUTHENTICATION' }
 ];
 
 const languages = [
-  { value: 'en', label: 'English' },
-  { value: 'es', label: 'Spanish' },
-  { value: 'fr', label: 'French' },
-  { value: 'de', label: 'German' },
-  { value: 'ar', label: 'Arabic' }
-];
-
-const types = [
-  { value: 'text', label: 'Text' },
-  { value: 'image', label: 'Image' },
-  { value: 'video', label: 'Video' },
-  { value: 'audio', label: 'Audio' },
-  { value: 'document', label: 'Document' },
-  { value: 'catalog', label: 'Catalog' }
+  { label: "Afrikaans (af)", value: "af" },
+  { label: "Albanian (sq)", value: "sq" },
+  { label: "Arabic (ar)", value: "ar" },
+  { label: "Azerbaijani (az)", value: "az" },
+  { label: "Bengali (bn)", value: "bn" },
+  { label: "Bulgarian (bg)", value: "bg" },
+  { label: "Catalan (ca)", value: "ca" },
+  { label: "Chinese (CHN) (zh_CN)", value: "zh_CN" },
+  { label: "Chinese (HKG) (zh_HK)", value: "zh_HK" },
+  { label: "Chinese (TAI) (zh_TW)", value: "zh_TW" },
+  { label: "Croatian (hr)", value: "hr" },
+  { label: "Czech (cs)", value: "cs" },
+  { label: "Danish (da)", value: "da" },
+  { label: "Dutch (nl)", value: "nl" },
+  { label: "English (en)", value: "en" },
+  { label: "English (UK) (en_GB)", value: "en_GB" },
+  { label: "English (US) (en_US)", value: "en_US" },
+  { label: "Estonian (et)", value: "et" },
+  { label: "Filipino (fil)", value: "fil" },
+  { label: "Finnish (fi)", value: "fi" },
+  { label: "French (fr)", value: "fr" },
+  { label: "Georgian (ka)", value: "ka" },
+  { label: "German (de)", value: "de" },
+  { label: "Greek (el)", value: "el" },
+  { label: "Gujarati (gu)", value: "gu" },
+  { label: "Hausa (ha)", value: "ha" },
+  { label: "Hebrew (he)", value: "he" },
+  { label: "Hindi (hi)", value: "hi" },
+  { label: "Hungarian (hu)", value: "hu" },
+  { label: "Indonesian (id)", value: "id" },
+  { label: "Irish (ga)", value: "ga" },
+  { label: "Italian (it)", value: "it" },
+  { label: "Japanese (ja)", value: "ja" },
+  { label: "Kannada (kn)", value: "kn" },
+  { label: "Kazakh (kk)", value: "kk" },
+  { label: "Kinyarwanda (rw_RW)", value: "rw_RW" },
+  { label: "Korean (ko)", value: "ko" },
+  { label: "Kyrgyz (Kyrgyzstan) (ky_KG)", value: "ky_KG" },
+  { label: "Lao (lo)", value: "lo" },
+  { label: "Latvian (lv)", value: "lv" },
+  { label: "Lithuanian (lt)", value: "lt" },
+  { label: "Macedonian (mk)", value: "mk" },
+  { label: "Malay (ms)", value: "ms" },
+  { label: "Malayalam (ml)", value: "ml" },
+  { label: "Marathi (mr)", value: "mr" },
+  { label: "Norwegian (nb)", value: "nb" },
+  { label: "Persian (fa)", value: "fa" },
+  { label: "Polish (pl)", value: "pl" },
+  { label: "Portuguese (BR) (pt_BR)", value: "pt_BR" },
+  { label: "Portuguese (POR) (pt_PT)", value: "pt_PT" },
+  { label: "Punjabi (pa)", value: "pa" },
+  { label: "Romanian (ro)", value: "ro" },
+  { label: "Russian (ru)", value: "ru" },
+  { label: "Serbian (sr)", value: "sr" },
+  { label: "Slovak (sk)", value: "sk" },
+  { label: "Slovenian (sl)", value: "sl" },
+  { label: "Spanish (es)", value: "es" },
+  { label: "Spanish (ARG) (es_AR)", value: "es_AR" },
+  { label: "Spanish (SPA) (es_ES)", value: "es_ES" },
+  { label: "Spanish (MEX) (es_MX)", value: "es_MX" },
+  { label: "Swahili (sw)", value: "sw" },
+  { label: "Swedish (sv)", value: "sv" },
+  { label: "Tamil (ta)", value: "ta" },
+  { label: "Telugu (te)", value: "te" },
+  { label: "Thai (th)", value: "th" },
+  { label: "Turkish (tr)", value: "tr" },
+  { label: "Ukrainian (uk)", value: "uk" },
+  { label: "Urdu (ur)", value: "ur" },
+  { label: "Uzbek (uz)", value: "uz" },
+  { label: "Vietnamese (vi)", value: "vi" },
+  { label: "Zulu (zu)", value: "zu" }
 ];
 
 const openModal = () => {
@@ -68,11 +129,10 @@ const openModal = () => {
   // Reset form and step when opening
   createForm.value = {
     name: '',
-    category: 'greeting',
-    language: 'en',
-    type: 'text',
-    body: '',
-    status: 'active'
+    category: '',
+    language: '',
+    type: '',
+    body: ''
   };
   currentStep.value = 1;
 };
@@ -109,6 +169,12 @@ const createTemplate = () => {
   closeModal();
 };
 
+// Handle VueSelect values
+const handleSelectChange = (key: keyof typeof createForm.value, value: string | string[]): void => {
+  const singleValue = Array.isArray(value) ? value[0] : value
+  createForm.value[key] = singleValue
+};
+
 defineExpose({ openModal, closeModal });
 </script>
 
@@ -139,39 +205,37 @@ defineExpose({ openModal, closeModal });
         <div v-if="currentStep === 1" class="step-content">
           <div class="form-group">
             <label for="template-category">Category</label>
-            <select id="template-category" v-model="createForm.category" class="form-input">
-              <option v-for="category in categories" :key="category.value" :value="category.value">
-                {{ category.label }}
-              </option>
-            </select>
+            <VueSelect
+              :model-value="createForm.category"
+              @update:model-value="(value: string | string[]) => handleSelectChange('category', value)"
+              :options="categories"
+              placeholder="Select category"
+              :multiple="false"
+            />
           </div>
           
           <div class="form-row">
             <div class="form-group">
               <label for="template-language">Language</label>
-              <select id="template-language" v-model="createForm.language" class="form-input">
-                <option v-for="language in languages" :key="language.value" :value="language.value">
-                  {{ language.label }}
-                </option>
-              </select>
+              <VueSelect
+                :model-value="createForm.language"
+                @update:model-value="(value: string | string[]) => handleSelectChange('language', value)"
+                :options="languages"
+                placeholder="Select language"
+                :multiple="false"
+              />
             </div>
             
             <div class="form-group">
-              <label for="template-type">Type</label>
-              <select id="template-type" v-model="createForm.type" class="form-input">
-                <option v-for="type in types" :key="type.value" :value="type.value">
-                  {{ type.label }}
-                </option>
-              </select>
+              <label for="template-type">Template Type</label>
+              <VueSelect
+                :model-value="createForm.type"
+                @update:model-value="(value: string | string[]) => handleSelectChange('type', value)"
+                :options="templateTypes"
+                placeholder="Select template type"
+                :multiple="false"
+              />
             </div>
-          </div>
-          
-          <div class="form-group">
-            <label for="template-status">Status</label>
-            <select id="template-status" v-model="createForm.status" class="form-input">
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
           </div>
           
           <div class="form-group">
@@ -203,16 +267,13 @@ defineExpose({ openModal, closeModal });
             <h4>Preview</h4>
             <div class="preview-container">
               <div class="preview-item">
-                <strong>Category:</strong> {{ categories.find(c => c.value === createForm.category)?.label }}
+                <strong>Category:</strong> {{ categories.find(c => c.value === createForm.category)?.label || 'Not selected' }}
               </div>
               <div class="preview-item">
-                <strong>Language:</strong> {{ languages.find(l => l.value === createForm.language)?.label }}
+                <strong>Language:</strong> {{ languages.find(l => l.value === createForm.language)?.label || 'Not selected' }}
               </div>
               <div class="preview-item">
-                <strong>Type:</strong> {{ types.find(t => t.value === createForm.type)?.label }}
-              </div>
-              <div class="preview-item">
-                <strong>Status:</strong> {{ createForm.status === 'active' ? 'Active' : 'Inactive' }}
+                <strong>Template Type:</strong> {{ templateTypes.find(t => t.value === createForm.type)?.label || 'Not selected' }}
               </div>
               <div class="preview-item">
                 <strong>Body:</strong>
@@ -334,46 +395,21 @@ defineExpose({ openModal, closeModal });
   margin-top: 20px;
 }
 
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.create-media-content .form-group {
-  margin-bottom: 20px;
-}
-
-.create-media-content .form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--color-text-primary, #111827);
+/* VueSelect Styling */
+.create-media-content .form-group :deep(.vue3-select-component) {
   font-size: 14px;
+  height: 44px;
 }
-
-.create-media-content .form-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--color-border, #e5e7eb);
+.create-media-content .form-group :deep(.control) {
+  border: 1px solid var(--color-border-secondary);
   border-radius: var(--radius-md, 8px);
-  background: var(--color-bg-tertiary, #f3f4f6);
-  color: var(--color-text-primary, #111827);
+  padding: var(--space-1) var(--space-2);
+}
+
+.create-media-content .form-group :deep(.vue3-select-component input) {
+  height: 44px;
+  padding: 12px 16px;
   font-size: 14px;
-  font-family: inherit;
-  transition: border-color var(--transition-normal, 0.2s ease);
-  box-sizing: border-box;
-}
-
-.create-media-content .form-input:focus {
-  outline: none;
-  border-color: var(--color-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.create-media-content textarea.form-input {
-  resize: vertical;
-  min-height: 80px;
 }
 
 /* Preview Section */

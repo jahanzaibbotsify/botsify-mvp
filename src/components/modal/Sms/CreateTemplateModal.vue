@@ -267,42 +267,6 @@ defineExpose({ openModal, closeModal });
   gap: 16px;
 }
 
-.create-media-content .form-group {
-  margin-bottom: 20px;
-}
-
-.create-media-content .form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-}
-
-.create-media-content .form-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-bg-tertiary, #f3f4f6);
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-  font-family: inherit;
-  transition: border-color var(--transition-normal, 0.2s ease);
-  box-sizing: border-box;
-}
-
-.create-media-content .form-input:focus {
-  outline: none;
-  border-color: var(--color-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.create-media-content textarea.form-input {
-  resize: vertical;
-  min-height: 80px;
-}
-
 /* Button Management Styles */
 .existing-buttons {
   margin-bottom: 16px;

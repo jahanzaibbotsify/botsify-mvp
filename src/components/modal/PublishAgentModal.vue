@@ -176,11 +176,11 @@ defineExpose({ openModal });
 
 .form-input {
   width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--color-border, #e5e7eb);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border-secondary);
   border-radius: var(--radius-md, 8px);
-  background: var(--color-bg-tertiary, #f3f4f6);
-  color: var(--color-text-primary, #111827);
+  background: white;
+  color: var(--color-text-primary);
   font-size: 14px;
   font-family: inherit;
   transition: border-color var(--transition-normal, 0.2s ease);
@@ -373,37 +373,13 @@ select.form-input {
 /* Search and Create Button Styles */
 .search-create-section {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
-}
-
-.search-box {
-  position: relative;
-  flex: 1;
-}
-
-.search-input {
-  width: 100%;
-  padding: 12px 16px 12px 40px;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-bg-tertiary, #f3f4f6);
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-  font-family: inherit;
-}
-
-.search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--color-text-secondary, #6b7280);
-  font-size: 14px;
+  justify-content: end;
 }
 
 .create-button {
-  padding: 12px 16px;
+  padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-md, 8px);
   font-size: 14px;
   font-weight: 500;
