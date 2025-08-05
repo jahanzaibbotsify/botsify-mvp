@@ -118,63 +118,10 @@ defineExpose({ openModal });
 
 <style>
 /* Common Modal Styles - Centralized for all modal components */
-
-/* Server Grid and Cards */
-.server-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-top: 8px;
-}
-
-.server-card {
-  background: var(--color-bg-secondary);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 16px 12px 12px 16px;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  min-height: 80px;
-  height: 100px;
-  min-width: 0;
-  box-sizing: border-box;
-  position: relative;
-}
-
-.server-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-primary);
-}
-
-.server-card .server-icon {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-bg-tertiary);
-  border-radius: var(--radius-md);
-  margin-bottom: 6px;
-}
-
 .server-card .server-icon img {
   width: 32px;
   height: 32px;
   object-fit: contain;
-}
-
-.server-card .text-sm {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--color-text-primary);
-  text-align: left;
-  margin-top: 0;
-  margin-left: 0;
-  padding-left: 0;
 }
 
 /* Tab Panel Styles */
