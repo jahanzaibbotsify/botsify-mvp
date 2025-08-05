@@ -214,16 +214,7 @@ defineExpose({
 </template>
 
 <style scoped>
-.tab-panel {
-  padding: 0;
-}
-
-.tab-panel h3 {
-  margin: 0 0 8px 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-}
+/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
 
 .subtitle {
   margin: 0 0 12px 0;
@@ -234,46 +225,6 @@ defineExpose({
 
 .broadcast-form {
   margin-top: 20px;
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-}
-
-.form-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-bg-tertiary, #f3f4f6);
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-  font-family: inherit;
-  transition: border-color var(--transition-normal, 0.2s ease);
-  box-sizing: border-box;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--color-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.form-input::placeholder {
-  color: var(--color-text-tertiary, #9ca3af);
-}
-
-textarea.form-input {
-  resize: vertical;
-  min-height: 80px;
 }
 
 .help-text {
@@ -312,7 +263,6 @@ textarea.form-input {
 
 .toggle-btn:hover:not(.active) {
   background: var(--color-bg-secondary, #f9fafb);
-  color: var(--color-text-primary, #111827);
 }
 
 /* Preview Section */
@@ -322,84 +272,45 @@ textarea.form-input {
   border-top: 1px solid var(--color-border, #e5e7eb);
 }
 
-.preview-section h4 {
-  margin: 0 0 12px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-}
-
 .preview-container {
   background: var(--color-bg-secondary, #f9fafb);
   border: 1px solid var(--color-border, #e5e7eb);
   border-radius: var(--radius-md, 8px);
   padding: 16px;
-  min-height: 120px;
 }
 
-.preview-image {
+.preview-item {
   margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
 }
 
-.preview-image img {
-  max-width: 100%;
-  height: auto;
-  border-radius: var(--radius-sm, 4px);
+.preview-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
-.preview-text {
-  margin-bottom: 12px;
+.preview-item strong {
+  color: var(--color-text-primary, #111827);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.preview-content {
+  color: var(--color-text-secondary, #6b7280);
   font-size: 14px;
   line-height: 1.5;
-  color: var(--color-text-primary, #111827);
 }
 
-.preview-buttons {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-
-.preview-button {
-  padding: 6px 12px;
-  border: 1px solid var(--color-primary, #3b82f6);
-  border-radius: var(--radius-sm, 4px);
-  background: var(--color-primary, #3b82f6);
-  color: white;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.preview-description {
-  font-size: 12px;
-  color: var(--color-text-secondary, #6b7280);
-  line-height: 1.4;
-}
-
-.preview-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 80px;
-  color: var(--color-text-tertiary, #9ca3af);
-  font-size: 14px;
-  text-align: center;
-}
-
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .toggle-group {
     flex-direction: column;
   }
   
-  .preview-buttons {
-    flex-direction: column;
-  }
-  
-  .preview-button {
+  .toggle-btn {
     width: 100%;
-    text-align: center;
   }
 }
 </style> 

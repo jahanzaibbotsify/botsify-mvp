@@ -21,18 +21,18 @@ const emit = defineEmits<{
 
 const publishStore = usePublishStore();
 
-// Instagram account data - this would come from API in real implementation
+// Account data - this would come from API in real implementation
 const accounts = ref([
   {
     id: '123456789',
-    name: 'My Instagram Business',
+    name: 'My Business Account',
     is_bot_account: true,
     status: 'connected',
     botName: 'agent1'
   },
   {
     id: '987654321',
-    name: 'Personal Instagram',
+    name: 'Marketing Account',
     is_bot_account: false,
     status: 'disconnected',
     botName: null
@@ -45,7 +45,7 @@ const isLoading = ref(false);
 const createNewAccount = () => {
   // Redirect to Instagram new account creation
   window.open('https://www.instagram.com/accounts/emailsignup/', '_blank');
-  emit('create-new-account');
+  emit('create-new-page');
 };
 
 const connectAccount = async (accountId: string) => {
@@ -67,32 +67,33 @@ const connectAccount = async (accountId: string) => {
   }
 };
 
-const reconnectAccount = async (accountId: string) => {
+const disconnectAccount = async (accountId: string) => {
   isLoading.value = true;
   try {
-    console.log('Reconnecting account:', accountId);
-    // Add actual reconnect logic here
-    // Update account status to connected
+    console.log('Disconnecting account:', accountId);
+    // Add actual disconnect logic here
+    // Update account status to disconnected
     const account = accounts.value.find(a => a.id === accountId);
     if (account) {
-      account.status = 'connected';
+      account.is_bot_account = false;
+      account.status = 'disconnected';
+      account.botName = null;
     }
   } catch (error) {
-    console.error('Failed to reconnect account:', error);
+    console.error('Failed to disconnect account:', error);
   } finally {
     isLoading.value = false;
   }
 };
 
-const refreshAllAccountPermissions = async () => {
+const refreshAccountPermissions = async () => {
   isLoading.value = true;
   try {
-    console.log('Refreshing all account permissions');
-    // Add actual refresh logic here for all accounts
+    console.log('Refreshing account permissions');
     const result = await publishStore.refreshPagePermission('all');
-
+    
     if (result.success) {
-      console.log('All account permissions refreshed successfully');
+      console.log('Account permissions refreshed successfully');
     } else {
       console.error('Failed to refresh account permissions:', result.error);
     }
@@ -101,38 +102,6 @@ const refreshAllAccountPermissions = async () => {
   } finally {
     isLoading.value = false;
   }
-  emit('refresh-page-permission');
-};
-
-const removeAllAccountPermissions = async () => {
-  isLoading.value = true;
-  try {
-    console.log('Removing all account permissions');
-    // Add actual remove logic here for all accounts
-    const result = await publishStore.removePagePermission('all');
-
-    if (result.success) {
-      console.log('All account permissions removed successfully');
-      // Update all accounts status to disconnected
-      accounts.value.forEach(account => {
-        account.is_bot_account = false;
-        account.status = 'disconnected';
-        account.botName = null;
-      });
-    } else {
-      console.error('Failed to remove account permissions:', result.error);
-    }
-  } catch (error) {
-    console.error('Failed to remove account permissions:', error);
-  } finally {
-    isLoading.value = false;
-  }
-  emit('remove-page-permission');
-};
-
-const connectInstagramAccount = () => {
-  console.log('Connecting Instagram account');
-  emit('connect-account');
 };
 
 const getStatusColor = (status: string) => {
@@ -140,128 +109,111 @@ const getStatusColor = (status: string) => {
     case 'connected':
       return 'var(--color-secondary, #10b981)';
     case 'disconnected':
+      return 'var(--color-text-tertiary, #9ca3af)';
+    case 'error':
       return 'var(--color-error, #ef4444)';
     default:
-      return 'var(--color-text-secondary, #6b7280)';
+      return 'var(--color-text-tertiary, #9ca3af)';
   }
 };
 
 // Expose methods for parent component
 defineExpose({
-  createNewAccount,
-  connectAccount,
-  reconnectAccount,
-  refreshAllAccountPermissions,
-  removeAllAccountPermissions,
-  connectInstagramAccount
+  accounts,
+  isLoading
 });
 </script>
 
 <template>
   <div class="tab-panel">
-    <h3>Account Management</h3>
-    <p class="subtitle">Manage your Instagram accounts and bot connections</p>
+    <h3>Instagram Integration</h3>
+    <p class="subtitle">Connect your Instagram accounts to enable Instagram bot functionality</p>
 
     <!-- Empty State -->
     <div v-if="accounts.length === 0" class="empty-state">
       <div class="empty-content">
-        <i class="pi pi-instagram empty-icon"></i>
-        <h4>No Accounts Connected</h4>
-        <p>Connect your Instagram accounts to start using the Instagram bot.</p>
-        <button
+        <div class="empty-icon">
+          <i class="pi pi-instagram"></i>
+        </div>
+        <h4>No Instagram Accounts Found</h4>
+        <p>Connect your Instagram account to manage your accounts and enable Instagram bot functionality.</p>
+        <button 
           class="connect-account-btn"
-          @click="connectInstagramAccount"
+          @click="emit('connect-account')"
           :disabled="isLoading"
         >
           <i class="pi pi-link"></i>
-          {{ isLoading ? 'Connecting...' : 'Connect Account' }}
+          Connect Instagram Account
         </button>
       </div>
     </div>
 
-    <!-- Accounts Table -->
-    <div v-else class="accounts-section">
-      <div class="table-header">
-        <h4>Connected Accounts</h4>
-        <div class="header-actions">
-          <button
-            class="action-btn"
-            @click="refreshAllAccountPermissions"
-            :disabled="isLoading"
-          >
-            <i class="pi pi-refresh"></i>
-            {{ isLoading ? 'Refreshing...' : 'Refresh All Permissions' }}
-          </button>
-          <button
-            class="action-btn danger"
-            @click="removeAllAccountPermissions"
-            :disabled="isLoading"
-          >
-            <i class="pi pi-trash"></i>
-            {{ isLoading ? 'Removing...' : 'Remove All Permissions' }}
-          </button>
-          <button
-            class="create-account-btn"
-            @click="createNewAccount"
-            :disabled="isLoading"
-          >
-            <i class="pi pi-plus"></i>
-            Create New Account
-          </button>
-        </div>
+    <!-- Accounts List -->
+    <div v-else>
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <button 
+          class="refresh-btn"
+          @click="refreshAccountPermissions"
+          :disabled="isLoading"
+        >
+          <i class="pi pi-refresh"></i>
+          {{ isLoading ? 'Refreshing...' : 'Refresh Accounts' }}
+        </button>
+        <button 
+          class="create-account-btn"
+          @click="createNewAccount"
+          :disabled="isLoading"
+        >
+          <i class="pi pi-plus"></i>
+          Create New Account
+        </button>
       </div>
 
-      <div class="accounts-table">
-        <div class="table-row header">
-          <div class="col-account-name">Account Name</div>
-          <div class="col-status">Status</div>
-          <div class="col-actions">Actions</div>
-        </div>
-
-        <div
-          v-for="account in accounts"
+      <!-- Accounts List -->
+      <div class="accounts-list">
+        <div 
+          v-for="account in accounts" 
           :key="account.id"
-          class="table-row"
+          class="account-card"
         >
-          <div class="col-account-name">
+          <div class="account-info">
             <div class="account-name">{{ account.name }}</div>
             <div class="account-id">ID: {{ account.id }}</div>
             <div v-if="account.is_bot_account && account.botName" class="bot-connection">
               Connected to {{ account.botName }}
             </div>
           </div>
-
-          <div class="col-status">
-            <span
+          
+          <div class="account-status">
+            <span 
               class="status-badge"
               :style="{ backgroundColor: getStatusColor(account.status) }"
             >
               {{ account.status }}
             </span>
           </div>
-
-          <div class="col-actions">
-            <div class="action-buttons">
-              <!-- Connect Button -->
-              <button
-                class="action-btn primary"
-                @click="connectAccount(account.id)"
-                :disabled="isLoading"
-              >
-                <i class="pi pi-link"></i>
-                Connect
-              </button>
-
-              <!-- Reconnect Button -->
-              <button
-                class="action-btn primary"
-                @click="reconnectAccount(account.id)"
-                :disabled="isLoading"
-              >
-                <i class="pi pi-refresh"></i>
-                Reconnect
-              </button>
-            </div>
+          
+          <div class="account-actions">
+            <button 
+              v-if="!account.is_bot_account"
+              class="action-btn primary"
+              @click="connectAccount(account.id)"
+              :disabled="isLoading"
+            >
+              <i class="pi pi-link"></i>
+              Connect
+            </button>
+            
+            <button 
+              v-else
+              class="action-btn secondary"
+              @click="disconnectAccount(account.id)"
+              :disabled="isLoading"
+            >
+              <i class="pi pi-unlink"></i>
+              Disconnect
+            </button>
           </div>
         </div>
       </div>
@@ -270,16 +222,7 @@ defineExpose({
 </template>
 
 <style scoped>
-.tab-panel {
-  padding: 0;
-}
-
-.tab-panel h3 {
-  margin: 0 0 8px 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-}
+/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
 
 .subtitle {
   margin: 0 0 20px 0;
@@ -348,141 +291,111 @@ defineExpose({
   font-size: 12px;
 }
 
-/* Accounts Section */
-.accounts-section {
-  margin-top: 20px;
-}
-
-.table-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.table-header h4 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-}
-
+/* Header Actions */
 .header-actions {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
+.refresh-btn,
 .create-account-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-bg-secondary, #f9fafb);
+  color: var(--color-text-primary, #111827);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal, 0.2s ease);
+}
+
+.refresh-btn:hover:not(:disabled),
+.create-account-btn:hover:not(:disabled) {
+  background: var(--color-bg-tertiary, #f3f4f6);
+  border-color: var(--color-primary, #3b82f6);
+}
+
+.refresh-btn:disabled,
+.create-account-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.refresh-btn i,
+.create-account-btn i {
+  font-size: 12px;
+}
+
+/* Accounts List */
+.accounts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.account-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--color-bg-secondary, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
+  transition: border-color var(--transition-normal, 0.2s ease);
+}
+
+.account-card:hover {
+  border-color: var(--color-primary, #3b82f6);
+}
+
+.account-info {
+  flex: 1;
+}
+
+.account-name {
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.account-id {
+  font-size: 12px;
+  color: var(--color-text-secondary, #6b7280);
+  margin-bottom: 4px;
+}
+
+.bot-connection {
+  font-size: 12px;
+  color: var(--color-primary, #3b82f6);
+  font-weight: 500;
+}
+
+.account-status {
+  margin-right: 16px;
+}
+
+.account-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
   border: none;
   border-radius: var(--radius-md, 8px);
-  background: var(--color-primary, #3b82f6);
-  color: white;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color var(--transition-normal, 0.2s ease);
-}
-
-.create-account-btn:hover:not(:disabled) {
-  background: var(--color-primary-hover, #2563eb);
-}
-
-.create-account-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.create-account-btn i {
-  font-size: 12px;
-}
-
-/* Table Styles */
-.accounts-table {
-  background: var(--color-bg-secondary, #f9fafb);
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  overflow: hidden;
-}
-
-.table-row {
-  display: grid;
-  grid-template-columns: 2fr 1fr 2fr;
-  gap: 16px;
-  padding: 16px;
-  align-items: center;
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
-}
-
-.table-row:last-child {
-  border-bottom: none;
-}
-
-.table-row.header {
-  background: var(--color-bg-tertiary, #f3f4f6);
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-}
-
-.col-account-name {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.account-name {
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-}
-
-.account-id {
-  font-size: 12px;
-  color: var(--color-text-secondary, #6b7280);
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-}
-
-.bot-connection {
-  font-size: 12px;
-  color: var(--color-secondary, #10b981);
-  font-weight: 500;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm, 4px);
-  color: white;
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: capitalize;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.action-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border: none;
-  border-radius: var(--radius-sm, 4px);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color var(--transition-normal, 0.2s ease);
-  white-space: nowrap;
+  transition: all var(--transition-normal, 0.2s ease);
 }
 
 .action-btn.primary {
@@ -494,22 +407,15 @@ defineExpose({
   background: var(--color-primary-hover, #2563eb);
 }
 
-.action-btn {
+.action-btn.secondary {
   background: var(--color-bg-tertiary, #f3f4f6);
   color: var(--color-text-primary, #111827);
+  border: 1px solid var(--color-border, #e5e7eb);
 }
 
-.action-btn:hover:not(:disabled) {
-  background: var(--color-bg-secondary, #f9fafb);
-}
-
-.action-btn.danger {
-  background: var(--color-error, #ef4444);
-  color: white;
-}
-
-.action-btn.danger:hover:not(:disabled) {
-  background: var(--color-error-hover, #dc2626);
+.action-btn.secondary:hover:not(:disabled) {
+  background: var(--color-bg-hover, #f1f5f9);
+  border-color: var(--color-primary, #3b82f6);
 }
 
 .action-btn:disabled {
@@ -518,62 +424,27 @@ defineExpose({
 }
 
 .action-btn i {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 @media (max-width: 768px) {
-  .table-row {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .table-row.header {
-    display: none;
-  }
-
-  .col-account-name,
-  .col-status,
-  .col-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .col-account-name::before {
-    content: 'Account Name:';
-    font-weight: 600;
-    color: var(--color-text-primary, #111827);
-  }
-
-  .col-status::before {
-    content: 'Status:';
-    font-weight: 600;
-    color: var(--color-text-primary, #111827);
-  }
-
-  .col-actions::before {
-    content: 'Actions:';
-    font-weight: 600;
-    color: var(--color-text-primary, #111827);
-  }
-
-  .action-buttons {
-    flex-direction: column;
-  }
-
-  .action-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
   .header-actions {
     flex-direction: column;
-    width: 100%;
   }
-
-  .action-btn {
+  
+  .account-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .account-status {
+    margin-right: 0;
+  }
+  
+  .account-actions {
     width: 100%;
-    justify-content: center;
+    justify-content: flex-end;
   }
 }
 </style> 

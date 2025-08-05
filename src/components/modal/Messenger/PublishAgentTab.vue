@@ -67,32 +67,33 @@ const connectPage = async (pageId: string) => {
   }
 };
 
-const reconnectPage = async (pageId: string) => {
+const disconnectPage = async (pageId: string) => {
   isLoading.value = true;
   try {
-    console.log('Reconnecting page:', pageId);
-    // Add actual reconnect logic here
-    // Update page status to connected
+    console.log('Disconnecting page:', pageId);
+    // Add actual disconnect logic here
+    // Update page status to disconnected
     const page = pages.value.find(p => p.id === pageId);
     if (page) {
-      page.status = 'connected';
+      page.is_bot_page = false;
+      page.status = 'disconnected';
+      page.botName = null;
     }
   } catch (error) {
-    console.error('Failed to reconnect page:', error);
+    console.error('Failed to disconnect page:', error);
   } finally {
     isLoading.value = false;
   }
 };
 
-const refreshAllPagePermissions = async () => {
+const refreshPagePermissions = async () => {
   isLoading.value = true;
   try {
-    console.log('Refreshing all page permissions');
-    // Add actual refresh logic here for all pages
+    console.log('Refreshing page permissions');
     const result = await publishStore.refreshPagePermission('all');
     
     if (result.success) {
-      console.log('All page permissions refreshed successfully');
+      console.log('Page permissions refreshed successfully');
     } else {
       console.error('Failed to refresh page permissions:', result.error);
     }
@@ -101,38 +102,6 @@ const refreshAllPagePermissions = async () => {
   } finally {
     isLoading.value = false;
   }
-  emit('refresh-page-permission');
-};
-
-const removeAllPagePermissions = async () => {
-  isLoading.value = true;
-  try {
-    console.log('Removing all page permissions');
-    // Add actual remove logic here for all pages
-    const result = await publishStore.removePagePermission('all');
-    
-    if (result.success) {
-      console.log('All page permissions removed successfully');
-      // Update all pages status to disconnected
-      pages.value.forEach(page => {
-        page.is_bot_page = false;
-        page.status = 'disconnected';
-        page.botName = null;
-      });
-    } else {
-      console.error('Failed to remove page permissions:', result.error);
-    }
-  } catch (error) {
-    console.error('Failed to remove page permissions:', error);
-  } finally {
-    isLoading.value = false;
-  }
-  emit('remove-page-permission');
-};
-
-const connectAccount = () => {
-  console.log('Connecting Facebook account');
-  emit('connect-account');
 };
 
 const getStatusColor = (status: string) => {
@@ -140,90 +109,75 @@ const getStatusColor = (status: string) => {
     case 'connected':
       return 'var(--color-secondary, #10b981)';
     case 'disconnected':
+      return 'var(--color-text-tertiary, #9ca3af)';
+    case 'error':
       return 'var(--color-error, #ef4444)';
     default:
-      return 'var(--color-text-secondary, #6b7280)';
+      return 'var(--color-text-tertiary, #9ca3af)';
   }
 };
 
 // Expose methods for parent component
 defineExpose({
-  createNewPage,
-  connectPage,
-  reconnectPage,
-  refreshAllPagePermissions,
-  removeAllPagePermissions,
-  connectAccount
+  pages,
+  isLoading
 });
 </script>
 
 <template>
   <div class="tab-panel">
-    <h3>Page Management</h3>
-    <p class="subtitle">Manage your Facebook pages and bot connections</p>
+    <h3>Messenger Integration</h3>
+    <p class="subtitle">Connect your Facebook pages to enable Messenger bot functionality</p>
 
     <!-- Empty State -->
     <div v-if="pages.length === 0" class="empty-state">
       <div class="empty-content">
-        <i class="pi pi-facebook empty-icon"></i>
-        <h4>No Pages Connected</h4>
-        <p>Connect your Facebook pages to start using the Messenger bot.</p>
+        <div class="empty-icon">
+          <i class="pi pi-facebook"></i>
+        </div>
+        <h4>No Facebook Pages Found</h4>
+        <p>Connect your Facebook account to manage your pages and enable Messenger bot functionality.</p>
         <button 
           class="connect-account-btn"
-          @click="connectAccount"
+          @click="emit('connect-account')"
           :disabled="isLoading"
         >
           <i class="pi pi-link"></i>
-          {{ isLoading ? 'Connecting...' : 'Connect Account' }}
+          Connect Facebook Account
         </button>
       </div>
     </div>
 
-    <!-- Pages Table -->
-    <div v-else class="pages-section">
-      <div class="table-header">
-        <h4>Connected Pages</h4>
-        <div class="header-actions">
-          <button 
-            class="action-btn"
-            @click="refreshAllPagePermissions"
-            :disabled="isLoading"
-          >
-            <i class="pi pi-refresh"></i>
-            {{ isLoading ? 'Refreshing...' : 'Refresh All Permissions' }}
-          </button>
-          <button 
-            class="action-btn danger"
-            @click="removeAllPagePermissions"
-            :disabled="isLoading"
-          >
-            <i class="pi pi-trash"></i>
-            {{ isLoading ? 'Removing...' : 'Remove All Permissions' }}
-          </button>
-          <button 
-            class="create-page-btn"
-            @click="createNewPage"
-            :disabled="isLoading"
-          >
-            <i class="pi pi-plus"></i>
-            Create New Page
-          </button>
-        </div>
+    <!-- Pages List -->
+    <div v-else>
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <button 
+          class="refresh-btn"
+          @click="refreshPagePermissions"
+          :disabled="isLoading"
+        >
+          <i class="pi pi-refresh"></i>
+          {{ isLoading ? 'Refreshing...' : 'Refresh Pages' }}
+        </button>
+        <button 
+          class="create-page-btn"
+          @click="createNewPage"
+          :disabled="isLoading"
+        >
+          <i class="pi pi-plus"></i>
+          Create New Page
+        </button>
       </div>
 
-      <div class="pages-table">
-        <div class="table-row header">
-          <div class="col-page-name">Page Name</div>
-          <div class="col-status">Status</div>
-          <div class="col-actions">Actions</div>
-        </div>
-
+      <!-- Pages List -->
+      <div class="pages-list">
         <div 
           v-for="page in pages" 
           :key="page.id"
-          class="table-row"
+          class="page-card"
         >
-          <div class="col-page-name">
+          <div class="page-info">
             <div class="page-name">{{ page.name }}</div>
             <div class="page-id">ID: {{ page.id }}</div>
             <div v-if="page.is_bot_page && page.botName" class="bot-connection">
@@ -231,7 +185,7 @@ defineExpose({
             </div>
           </div>
           
-          <div class="col-status">
+          <div class="page-status">
             <span 
               class="status-badge"
               :style="{ backgroundColor: getStatusColor(page.status) }"
@@ -240,28 +194,26 @@ defineExpose({
             </span>
           </div>
           
-          <div class="col-actions">
-            <div class="action-buttons">
-              <!-- Connect Button -->
-              <button 
-                class="action-btn primary"
-                @click="connectPage(page.id)"
-                :disabled="isLoading"
-              >
-                <i class="pi pi-link"></i>
-                Connect
-              </button>
-              
-              <!-- Reconnect Button -->
-              <button 
-                class="action-btn primary"
-                @click="reconnectPage(page.id)"
-                :disabled="isLoading"
-              >
-                <i class="pi pi-refresh"></i>
-                Reconnect
-              </button>
-            </div>
+          <div class="page-actions">
+            <button 
+              v-if="!page.is_bot_page"
+              class="action-btn primary"
+              @click="connectPage(page.id)"
+              :disabled="isLoading"
+            >
+              <i class="pi pi-link"></i>
+              Connect
+            </button>
+            
+            <button 
+              v-else
+              class="action-btn secondary"
+              @click="disconnectPage(page.id)"
+              :disabled="isLoading"
+            >
+              <i class="pi pi-unlink"></i>
+              Disconnect
+            </button>
           </div>
         </div>
       </div>
@@ -270,16 +222,7 @@ defineExpose({
 </template>
 
 <style scoped>
-.tab-panel {
-  padding: 0;
-}
-
-.tab-panel h3 {
-  margin: 0 0 8px 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-}
+/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
 
 .subtitle {
   margin: 0 0 20px 0;
@@ -348,141 +291,111 @@ defineExpose({
   font-size: 12px;
 }
 
-/* Pages Section */
-.pages-section {
-  margin-top: 20px;
-}
-
-.table-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.table-header h4 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-}
-
+/* Header Actions */
 .header-actions {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
+.refresh-btn,
 .create-page-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-bg-secondary, #f9fafb);
+  color: var(--color-text-primary, #111827);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal, 0.2s ease);
+}
+
+.refresh-btn:hover:not(:disabled),
+.create-page-btn:hover:not(:disabled) {
+  background: var(--color-bg-tertiary, #f3f4f6);
+  border-color: var(--color-primary, #3b82f6);
+}
+
+.refresh-btn:disabled,
+.create-page-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.refresh-btn i,
+.create-page-btn i {
+  font-size: 12px;
+}
+
+/* Pages List */
+.pages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.page-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--color-bg-secondary, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
+  transition: border-color var(--transition-normal, 0.2s ease);
+}
+
+.page-card:hover {
+  border-color: var(--color-primary, #3b82f6);
+}
+
+.page-info {
+  flex: 1;
+}
+
+.page-name {
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.page-id {
+  font-size: 12px;
+  color: var(--color-text-secondary, #6b7280);
+  margin-bottom: 4px;
+}
+
+.bot-connection {
+  font-size: 12px;
+  color: var(--color-primary, #3b82f6);
+  font-weight: 500;
+}
+
+.page-status {
+  margin-right: 16px;
+}
+
+.page-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
   border: none;
   border-radius: var(--radius-md, 8px);
-  background: var(--color-primary, #3b82f6);
-  color: white;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color var(--transition-normal, 0.2s ease);
-}
-
-.create-page-btn:hover:not(:disabled) {
-  background: var(--color-primary-hover, #2563eb);
-}
-
-.create-page-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.create-page-btn i {
-  font-size: 12px;
-}
-
-/* Table Styles */
-.pages-table {
-  background: var(--color-bg-secondary, #f9fafb);
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  overflow: hidden;
-}
-
-.table-row {
-  display: grid;
-  grid-template-columns: 2fr 1fr 2fr;
-  gap: 16px;
-  padding: 16px;
-  align-items: center;
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
-}
-
-.table-row:last-child {
-  border-bottom: none;
-}
-
-.table-row.header {
-  background: var(--color-bg-tertiary, #f3f4f6);
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-}
-
-.col-page-name {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.page-name {
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-}
-
-.page-id {
-  font-size: 12px;
-  color: var(--color-text-secondary, #6b7280);
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-}
-
-.bot-connection {
-  font-size: 12px;
-  color: var(--color-secondary, #10b981);
-  font-weight: 500;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm, 4px);
-  color: white;
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: capitalize;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.action-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border: none;
-  border-radius: var(--radius-sm, 4px);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color var(--transition-normal, 0.2s ease);
-  white-space: nowrap;
+  transition: all var(--transition-normal, 0.2s ease);
 }
 
 .action-btn.primary {
@@ -494,22 +407,15 @@ defineExpose({
   background: var(--color-primary-hover, #2563eb);
 }
 
-.action-btn {
+.action-btn.secondary {
   background: var(--color-bg-tertiary, #f3f4f6);
   color: var(--color-text-primary, #111827);
+  border: 1px solid var(--color-border, #e5e7eb);
 }
 
-.action-btn:hover:not(:disabled) {
-  background: var(--color-bg-secondary, #f9fafb);
-}
-
-.action-btn.danger {
-  background: var(--color-error, #ef4444);
-  color: white;
-}
-
-.action-btn.danger:hover:not(:disabled) {
-  background: var(--color-error-hover, #dc2626);
+.action-btn.secondary:hover:not(:disabled) {
+  background: var(--color-bg-hover, #f1f5f9);
+  border-color: var(--color-primary, #3b82f6);
 }
 
 .action-btn:disabled {
@@ -518,62 +424,27 @@ defineExpose({
 }
 
 .action-btn i {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 @media (max-width: 768px) {
-  .table-row {
-    grid-template-columns: 1fr;
+  .header-actions {
+    flex-direction: column;
+  }
+  
+  .page-card {
+    flex-direction: column;
+    align-items: flex-start;
     gap: 12px;
   }
   
-  .table-row.header {
-    display: none;
+  .page-status {
+    margin-right: 0;
   }
   
-  .col-page-name,
-  .col-status,
-  .col-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  
-  .col-page-name::before {
-    content: 'Page Name:';
-    font-weight: 600;
-    color: var(--color-text-primary, #111827);
-  }
-  
-  .col-status::before {
-    content: 'Status:';
-    font-weight: 600;
-    color: var(--color-text-primary, #111827);
-  }
-  
-  .col-actions::before {
-    content: 'Actions:';
-    font-weight: 600;
-    color: var(--color-text-primary, #111827);
-  }
-  
-  .action-buttons {
-    flex-direction: column;
-  }
-  
-  .action-btn {
+  .page-actions {
     width: 100%;
-    justify-content: center;
-  }
-  
-  .header-actions {
-    flex-direction: column;
-    width: 100%;
-  }
-  
-  .action-btn {
-    width: 100%;
-    justify-content: center;
+    justify-content: flex-end;
   }
 }
 </style> 

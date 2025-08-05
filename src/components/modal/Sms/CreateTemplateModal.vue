@@ -192,8 +192,73 @@ defineExpose({ openModal, closeModal });
 </template>
 
 <style scoped>
+/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
+
 .create-media-content {
   padding: 0;
+}
+
+/* Step Indicator */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  gap: 12px;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-bg-tertiary, #f3f4f6);
+  color: var(--color-text-secondary, #6b7280);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  border: 2px solid var(--color-border, #e5e7eb);
+}
+
+.step.active .step-number {
+  background: var(--color-primary, #3b82f6);
+  color: white;
+  border-color: var(--color-primary, #3b82f6);
+}
+
+.step.completed .step-number {
+  background: var(--color-secondary, #10b981);
+  color: white;
+  border-color: var(--color-secondary, #10b981);
+}
+
+.step-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.step.active .step-label {
+  color: var(--color-text-primary, #111827);
+}
+
+.step-line {
+  width: 40px;
+  height: 2px;
+  background: var(--color-border, #e5e7eb);
+  margin: 0 8px;
+}
+
+.step-content {
+  margin-top: 20px;
 }
 
 .form-row {
@@ -238,31 +303,6 @@ defineExpose({ openModal, closeModal });
   min-height: 80px;
 }
 
-.action-button {
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  border: none;
-  font-family: inherit;
-}
-
-.action-button.primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.action-button.primary:hover:not(:disabled) {
-  background: var(--color-primary-hover, #2563eb);
-}
-
-.action-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 /* Button Management Styles */
 .existing-buttons {
   margin-bottom: 16px;
@@ -298,68 +338,53 @@ defineExpose({ openModal, closeModal });
   word-break: break-all;
 }
 
-.remove-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: var(--radius-sm, 4px);
-  background: var(--color-error, #ef4444);
-  color: white;
-  cursor: pointer;
-  transition: background-color var(--transition-normal, 0.2s ease);
-  margin-left: 12px;
+/* Preview Section */
+.preview-section {
+  margin-top: 20px;
 }
 
-.remove-button:hover {
-  background: var(--color-error-hover, #dc2626);
+.preview-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
 }
 
-.add-button-form {
-  margin-top: 12px;
-}
-
-.button-input-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  gap: 8px;
-  align-items: end;
-}
-
-.button-input {
-  margin-bottom: 0;
-}
-
-.add-button-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 12px 16px;
-  border: none;
+.preview-container {
+  background: var(--color-bg-secondary, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: var(--radius-md, 8px);
-  background: var(--color-primary, #3b82f6);
-  color: white;
+  padding: 16px;
+}
+
+.preview-item {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.preview-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.preview-item strong {
+  color: var(--color-text-primary, #111827);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.preview-body {
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--color-bg-tertiary, #f3f4f6);
+  border-radius: var(--radius-sm, 4px);
   font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color var(--transition-normal, 0.2s ease);
-  white-space: nowrap;
-}
-
-.add-button-btn:hover:not(:disabled) {
-  background: var(--color-primary-hover, #2563eb);
-}
-
-.add-button-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.add-button-btn i {
-  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-primary, #111827);
+  white-space: pre-wrap;
 }
 
 @media (max-width: 768px) {
@@ -367,20 +392,12 @@ defineExpose({ openModal, closeModal });
     grid-template-columns: 1fr;
   }
   
-  .button-input-row {
-    grid-template-columns: 1fr;
-    gap: 12px;
+  .step-indicator {
+    gap: 8px;
   }
   
-  .button-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-  
-  .remove-button {
-    align-self: flex-end;
-    margin-left: 0;
+  .step-line {
+    width: 20px;
   }
 }
 </style> 

@@ -162,28 +162,5 @@ defineExpose({ openModal, closeModal });
 </template>
 
 <style scoped>
-.action-button {
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  border: none;
-  font-family: inherit;
-}
-
-.action-button.primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.action-button.primary:hover:not(:disabled) {
-  background: var(--color-primary-hover, #2563eb);
-}
-
-.action-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
 </style> 

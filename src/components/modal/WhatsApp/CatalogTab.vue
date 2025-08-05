@@ -243,25 +243,6 @@ defineExpose({
   min-width: 150px;
 }
 
-.form-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-bg-tertiary, #f3f4f6);
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-  font-family: inherit;
-  transition: border-color var(--transition-normal, 0.2s ease);
-  box-sizing: border-box;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--color-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
 .add-product-button {
   background: var(--color-primary, #3b82f6);
   color: white;
@@ -380,52 +361,6 @@ defineExpose({
 
 .product-card:hover .product-actions {
   opacity: 1;
-}
-
-.action-btn {
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
-  padding: 6px;
-  border-radius: var(--radius-sm, 4px);
-  cursor: pointer;
-  color: var(--color-text-secondary, #6b7280);
-  transition: all var(--transition-normal, 0.2s ease);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-}
-
-.action-btn:hover {
-  background: white;
-  color: var(--color-text-primary, #111827);
-}
-
-.export-section {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-}
-
-.export-button {
-  background: var(--color-bg-tertiary, #f3f4f6);
-  border: 1px solid var(--color-border, #e5e7eb);
-  padding: 8px 16px;
-  border-radius: var(--radius-md, 8px);
-  cursor: pointer;
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-  font-weight: 500;
-  transition: all var(--transition-normal, 0.2s ease);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.export-button:hover {
-  background: var(--color-bg-secondary, #f9fafb);
-  border-color: var(--color-primary, #3b82f6);
 }
 
 @media (max-width: 768px) {

@@ -285,79 +285,6 @@ defineExpose({
   overflow: hidden;
 }
 
-.table-header {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
-  background: var(--color-bg-tertiary, #f3f4f6);
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
-}
-
-.header-cell {
-  padding: 12px 16px;
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--color-text-primary, #111827);
-}
-
-.table-row {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
-  transition: background var(--transition-normal, 0.2s ease);
-}
-
-.table-row:hover {
-  background: var(--color-bg-secondary, #f9fafb);
-}
-
-.table-row:last-child {
-  border-bottom: none;
-}
-
-.table-cell {
-  padding: 12px 16px;
-  font-size: 14px;
-  color: var(--color-text-primary, #111827);
-  display: flex;
-  align-items: center;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-start;
-}
-
-.action-button {
-  background: none;
-  border: none;
-  padding: 6px;
-  border-radius: var(--radius-sm, 4px);
-  cursor: pointer;
-  color: var(--color-text-secondary, #6b7280);
-  transition: all var(--transition-normal, 0.2s ease);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.action-button:hover {
-  background: var(--color-bg-tertiary, #f3f4f6);
-  color: var(--color-text-primary, #111827);
-}
-
-.action-button.delete {
-  color: var(--color-error, #ef4444);
-}
-
-.action-button.clone {
-  color: var(--color-primary, #3b82f6);
-}
-
-.action-button.preview {
-  color: var(--color-info, #3b82f6);
-}
-
 .status-badge {
   padding: 4px 8px;
   border-radius: var(--radius-sm, 4px);
@@ -383,24 +310,6 @@ defineExpose({
   
   .media-table {
     font-size: 12px;
-  }
-  
-  .table-header,
-  .table-row {
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
-  }
-  
-  .header-cell,
-  .table-cell {
-    padding: 8px 12px;
-  }
-  
-  .action-buttons {
-    gap: 4px;
-  }
-  
-  .action-button {
-    padding: 4px;
   }
 }
 </style> 

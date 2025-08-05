@@ -302,23 +302,7 @@ defineExpose({ openModal, closeModal });
 </template>
 
 <style scoped>
-.tab-panel {
-  padding: 0;
-}
-
-.tab-panel h3 {
-  margin: 0 0 8px 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-}
-
-.subtitle {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-secondary, #6b7280);
-}
+/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
 
 .description {
   margin: 0 0 20px 0;
@@ -541,17 +525,6 @@ defineExpose({ openModal, closeModal });
   max-width: 100%;
 }
 
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--color-text-primary, #111827);
-}
-
 .email-input,
 .message-input {
   width: 100%;
@@ -595,31 +568,6 @@ defineExpose({ openModal, closeModal });
 }
 
 .send-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.action-button {
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  border: none;
-  font-family: inherit;
-}
-
-.action-button.primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.action-button.primary:hover:not(:disabled) {
-  background: var(--color-primary-hover, #2563eb);
-}
-
-.action-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
