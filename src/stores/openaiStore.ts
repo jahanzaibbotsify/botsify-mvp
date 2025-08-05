@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { ConfigurationTask, ConfigurationResponse, ConfigurationResponseData, ApiRequestData, ChatMessage, ApiError } from '../types/openai'
 import { useBotStore } from './botStore';
 import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from '@/utils/config';
@@ -9,18 +9,22 @@ import { handleApiError } from '@/utils/errorHandler';
 export const useOpenAIStore = defineStore('openai', () => {
   // Try to get API key from environment variables first, then fallback to localStorage
   const authToken = BOTSIFY_AUTH_TOKEN;
-  const botApiKey = useBotStore().apiKey;
-
   
   // Reactive state - no OpenAI client here to avoid private member issues
   const error = ref<string | null>(null);
   const rateLimited = ref(false);
 
-  const mcpConfiguration = {
+  // Get current API key reactively
+  const getCurrentApiKey = () => {
+    return useBotStore().apiKey;
+  };
+
+  // Make mcpConfiguration reactive to API key changes
+  const mcpConfiguration = computed(() => ({
     type: "mcp" as const,
     server_label: "botsify_mcp_server",
     server_url: "https://mcp.botsify.com/mcp",
-    server_description: `The server is designed to work seamlessly with Botsify’s infrastructure, supporting easy integration, rapid deployment, and centralized configuration management for all Botsify-powered chatbots and virtual agents. Use this Botsify chatbot api key every time: ${botApiKey}`,
+    server_description: `The server is designed to work seamlessly with Botsify's infrastructure, supporting easy integration, rapid deployment, and centralized configuration management for all Botsify-powered chatbots and virtual agents. Use this Botsify chatbot api key every time: ${getCurrentApiKey()}`,
     allowed_tools: [
       "updateBotSettings",
       "updateBotGeneralSettings",
@@ -43,7 +47,7 @@ export const useOpenAIStore = defineStore('openai', () => {
       "getAllPageMessages"
     ],
     require_approval: "never" as const
-  }
+  }));
 
 
   // Handle configuration API requests
@@ -215,12 +219,22 @@ Your job is to convert user messages into chatbot flows using Botsify’s suppor
 
 2. 🧠 CORE BEHAVIOR
 Respond in a strict DUAL format:
+Do not update chatbot flow (AI_PROMPT) for configuration actions (such as: adding/removing team members; updating company name, logo, or settings; adjusting bot appearance; integrating with other platforms), OR when requesting additional information from the user (e.g., asking for a new name, email, or details needed to complete an action).
+In both the cases mention above, return the last updated chatbot flow in AI_PROMPT section
 
 ---CHAT_RESPONSE---
-[Conversational, emoji-rich reply to the user.]
-Break Line after that and then continue to AI_PROMPT
+Always provide a friendly confirmation message for the user, including emojis. Never mention updating the --AI_PROMPT-- section or technical details in this message.
 ---AI_PROMPT---
-[Structured bot flow or logic block based on user input. No emojis.]
+
+***IMPORTANT: DO NOT ALTER THIS SECTION FOR CONFIGURATION, TOOL ACTIONS, USER CONFIRMATION, OR INFORMATION REQUEST MESSAGES.***
+
+Strict Policy:
+
+ONLY update the --CHAT_RESPONSE-- for configuration actions (such as: adding/removing team members; updating company name, logo, or settings; adjusting bot appearance; integrating with other platforms).
+UNDER NO CIRCUMSTANCES should the --AI_PROMPT-- section be changed for these actions, OR when requesting additional information from the user (e.g., asking for a new name, email, or details needed to complete an action).
+The --AI_PROMPT-- section should remain EXACTLY AS WRITTEN unless the user explicitly requests a change to the chatbot flow
+If the user's request is ambiguous, default to not updating the --AI_PROMPT--.
+For ALL configuration and information-gathering steps, only the --CHAT_RESPONSE-- should be updated.
 ---END---
   
 Use clear, structured steps in ---AI_PROMPT---.
@@ -247,7 +261,6 @@ API calls
 File attachments
 Attribute updates
 Use clean, readable formatting. No JSON or raw object data.
-Never create imaginary flows — only use what the user specifies.
 
 4. 🧷 BUTTON & QUICK REPLY RULES
 If the user asks for quick replies, always use the quick reply format — not buttons.
@@ -258,31 +271,7 @@ Respond in ---CHAT_RESPONSE--- with an explanation:
 “🚫 Meta allows only 3 buttons per message. Would you like to convert the extras into quick replies?”
 Wait for user confirmation before updating the flow.
 
-5. 🛠 MCP TOOL HANDLING
-Botsify uses MCP Tools to manage bot configuration (e.g., settings, team, menu, page messages).
-If the user request requires calling an MCP tool:
-✅ Perform the MCP tool action.
-❌ DO NOT change or return anything in ---AI_PROMPT---.
-❌ DO NOT add MCP result/confirmation inside the bot flow.
-The tools are provided via tools parameter. You don't need to describe or define them — just recognize when a request matches a tool action.
-
-6. 🛠 BOT CONFIGURATION UPDATE POLICY (IMPORTANT)
-If the user request involves updating bot settings, team members, chatbot menu, or any configuration, handle the configuration update first.
-Do not include the result or confirmation of the configuration update in the chatbot flow (---AI_PROMPT---).
-After the update, return the last known chatbot flow exactly as it was in the previous AI_PROMPT.
-This ensures the configuration actions are handled silently and do not interfere with the user-facing flow.
-                                                                                           
-7. ✨ CHAT RESPONSE STYLE (---CHAT_RESPONSE---)
-Use friendly, human-style confirmation messages with emojis:
-Never use JSON, YAML, or raw object formats.
-Examples:
-“All set! ✅ Your chatbot flow is now updated. Want to add anything else? 😊”
-“Got it! 🔧 I've applied your instructions. Would you like to preview another section?”
-Avoid:
-Phrases like “sidebar”, “UI updated”, or anything UI-specific.
-Emojis in ---AI_PROMPT--- section.
-
-8. RULES SUMMARY
+5. RULES SUMMARY
 Always dual format: ---CHAT_RESPONSE--- and ---AI_PROMPT---
 Include emojis in ---CHAT_RESPONSE---
 NEVER add JSON or raw object data
@@ -300,7 +289,7 @@ If unsure about structure or limits, ask the user in the ---CHAT_RESPONSE--- sec
         const payload = {
             input: inputText,
             instructions: instructions,
-            tools: [mcpConfiguration]
+            tools: [mcpConfiguration.value]
           };
 
         const stream = await fetch(`${BOTSIFY_BASE_URL}/v1/get-ai-response`, {
@@ -310,7 +299,7 @@ If unsure about structure or limits, ask the user in the ---CHAT_RESPONSE--- sec
             'Authorization': `Bearer ${authToken}`
           },
           body: JSON.stringify({
-            apikey : botApiKey,
+            apikey : getCurrentApiKey(),
             payload: payload
           })
         });

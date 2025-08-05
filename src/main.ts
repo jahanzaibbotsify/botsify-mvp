@@ -66,18 +66,12 @@ function checkLocalStorage() {
     localStorage.removeItem(testKey);
     
     const isAvailable = testValue === 'test';
-    // console.log('📦 localStorage availability check:', isAvailable ? 'Available' : 'Not available');
-    
-    if (!isAvailable) {
-      console.error('⚠️ localStorage is not working properly. Chat history may not be saved.');
-    }
     
     // Check for private browsing mode with a smaller test size
     const testData = '0'.repeat(1024); // 1KB instead of 5MB
     try {
       localStorage.setItem(testKey, testData);
       localStorage.removeItem(testKey);
-      // console.log('✅ localStorage has sufficient space');
     } catch (e) {
       if (e instanceof Error && e.name === 'QuotaExceededError') {
         console.warn('⚠️ localStorage quota exceeded - may be in private browsing mode or has limited space');
@@ -100,7 +94,6 @@ function checkLocalStorage() {
 function getBotDetails(apikey: string) {
   return axiosInstance.get(`/v1/bot/get-data?apikey=${apikey}`)
   .then(response => {
-    // console.log('ressssss ', response.data);
     
     const roleStore = useRoleStore();
     const whitelabelStore = useWhitelabelStore();
@@ -111,7 +104,6 @@ function getBotDetails(apikey: string) {
       
       // Set whitelabel data if user is a whitelabel client
       if (response.data.data.user.is_whitelabel_client) {
-        // console.log('🎨 Setting whitelabel data:', response.data.data.user.whitelabel);
         whitelabelStore.setWhitelabelData(response.data.data.user);
         // Set favicon if present
         if (response.data.data.user.whitelabel && response.data.data.user.whitelabel.favicon) {
@@ -195,20 +187,16 @@ router.beforeEach(async (to, from, next) => {
         // Initialize Firebase if not already connected
         if (!conversationStore.isFirebaseConnected) {
           try {
-            console.log('🔥 Initializing Firebase...');
             conversationStore.initializeFirebase();
-            console.log('✅ Firebase initialized successfully');
           } catch (error) {
             console.error('❌ Error initializing Firebase:', error);
           }
         }
         return next();
       } else {
-        console.error('❌ Failed to get bot details');
         return next({ name: 'Unauthenticated' });
       }
     } catch (error) {
-      console.error('❌ Error fetching bot details:', error);
       return next({ name: 'Unauthenticated' });
     }
   } else {

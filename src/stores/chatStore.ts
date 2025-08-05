@@ -17,7 +17,15 @@ export const useChatStore = defineStore('chat', () => {
   const doInputDisable = ref(false);
   const globalPromptTemplates = ref<GlobalPromptTemplate[]>([]);
   const activeAiPromptVersion = computed(() => chats.value[0]?.story?.versions.find(v => v.isActive) || null);
-  const botStore = useBotStore();
+
+  // Get current API key and bot ID reactively
+  const getCurrentApiKey = () => {
+    return useBotStore().apiKey;
+  };
+
+  const getCurrentBotId = () => {
+    return useBotStore().botId;
+  };
 
   function convertStoredVersionsToStoryStructure(aiPromptVersions: object[]) {
     let versionId = '';
@@ -61,16 +69,9 @@ export const useChatStore = defineStore('chat', () => {
   // Load data from localStorage on initialization
   function loadFromStorage(userChats: string, aiPromptVersions: object[]) {
     try {
-      // console.log('🔍 Attempting to load data from localStorage');
       const storedChats = userChats;
       const storedTemplates = convertStoredVersionsToStoryStructure(aiPromptVersions);
-      const storedActiveChat = localStorage.getItem('botsify_active_chat');
-      
-      // console.log('📊 Storage check:', {
-      //  hasStoredChats: !!storedChats,
-      //  hasStoredTemplates: !!storedTemplates,
-      //  hasStoredActiveChat: !!storedActiveChat
-      //});      
+      const storedActiveChat = localStorage.getItem('botsify_active_chat');    
       
       if (storedChats && storedChats.length > 4 && storedChats !== 'null' && storedChats !== 'undefined') {
       try {
@@ -108,7 +109,7 @@ export const useChatStore = defineStore('chat', () => {
           console.error('❌ Failed to parse stored chats JSON:', jsonError);
         }
       } else {
-        chats.value[0].id = botStore.apiKey;
+        chats.value[0].id = getCurrentApiKey();
         chats.value.forEach(chat => {
           if (chat) {
             (chat as any).story = storedTemplates; 
@@ -116,30 +117,6 @@ export const useChatStore = defineStore('chat', () => {
         });
         console.warn('⚠️ No chats found in localStorage');
       }
-
-      // if (storedTemplates && storedTemplates !== 'null' && storedTemplates !== 'undefined') {
-      //   try {
-      //     const parsedTemplates = JSON.parse(storedTemplates);
-      //     // Ensure parsedTemplates is an array before mapping
-      //     if (Array.isArray(parsedTemplates)) {
-      //       globalPromptTemplates.value = parsedTemplates.map((template: any) => ({
-      //         ...template,
-      //         createdAt: new Date(template.createdAt),
-      //         updatedAt: new Date(template.updatedAt)
-      //       }));
-      //       // console.log('✅ Loaded prompt templates from storage:', globalPromptTemplates.value.length);
-      //     } else {
-      //       console.warn('⚠️ Stored templates is not an array, clearing storage');
-      //       localStorage.removeItem('botsify_prompt_templates');
-      //     }
-      //   } catch (jsonError) {
-      //     console.error('❌ Failed to parse stored templates JSON:', jsonError);
-      //     // Clear corrupted data
-      //     localStorage.removeItem('botsify_prompt_templates');
-      //   }
-      // } else {
-      //   console.warn('⚠️ No templates found in localStorage');
-      // }
 
       if (storedActiveChat && chats.value.some(c => c.id === storedActiveChat)) {
         activeChat.value = storedActiveChat;
@@ -163,7 +140,7 @@ export const useChatStore = defineStore('chat', () => {
 
       
       const payload = {
-          bot_id: botStore.botId,
+          bot_id: getCurrentBotId(),
           ai_prompt: aiPrompt,
           chat_flow: chatsJson,
           name: activeAiPromptVersion.value?.name ?? 'version-1',
@@ -198,22 +175,6 @@ export const useChatStore = defineStore('chat', () => {
      }
 
   }
-
-  // Add window event listeners to ensure data is saved before page unload
-  // if (typeof window !== 'undefined') {
-  //   window.addEventListener('beforeunload', () => {
-  //     // console.log('📝 Page unloading, saving data');
-  //     // saveToTemplate();
-  //   });
-
-  //   // Also save when tab visibility changes (user switches tabs)
-  //   window.addEventListener('visibilitychange', () => {
-  //     if (document.visibilityState === 'hidden') {
-  //       // console.log('📝 Tab hidden, saving data');
-  //       // saveToTemplate();
-  //     }
-  //   });
-  // }
 
   const currentChat = computed(() => {
     return chats.value.find(chat => chat.id === activeChat.value) || null;
@@ -256,12 +217,10 @@ export const useChatStore = defineStore('chat', () => {
 
     // Only trigger AI response for user messages when connected
     if (sender === 'user') {
-      // console.log('Triggering AI response');
       try {
         await handleAIResponse(chat);
       } catch (error: any) {
         console.error('Error in handleAIResponse:', error);
-        // Error is already handled in handleAIResponse, just ensure typing indicators are off
         isTyping.value = false;
         isAIPromptGenerating.value = false;
       }
@@ -329,7 +288,7 @@ export const useChatStore = defineStore('chat', () => {
     };
   }
 
-  function updateStory(chatId: string, content: string, createNewVersion: boolean = true) {
+  function updateStory(chatId: string, content: string, createNewVersion: boolean = true, edit: boolean = false) {
     // console.log(`Updating story for chat ${chatId}`);
     const chat = chats.value.find(c => c.id === chatId);
     if (!chat) {
@@ -363,8 +322,9 @@ export const useChatStore = defineStore('chat', () => {
       // update content
       chat.story.content = content;
       chat.story.updatedAt = new Date();
-
-
+      if (edit) {
+        saveToTemplate();
+      }
     }
 
     return chat.story;
@@ -495,7 +455,6 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   async function handleAIResponse(chat: Chat) {
-    // console.log('Handling AI response for chat:', chat.id);
     doInputDisable.value = true;
     isTyping.value = true;
     let streamedContent = '';
@@ -509,146 +468,7 @@ export const useChatStore = defineStore('chat', () => {
       }));
 
       // Get the default system prompt from OpenAI store as the base
-      const defaultSystemPrompt = `You are an AI prompt designer and chatbot configuration assistant. 
-
-**IMPORTANT: You must provide DUAL RESPONSES in the following structured format:**
-
----CHAT_RESPONSE---
-[Provide a friendly user message here like "I've updated your AI prompt according to your requirements. What would you like me to help you with next?" or "Great! I've created the chatbot flow you requested. The prompt is now ready for testing. How else can I assist you?"]
----AI_PROMPT---
-[Provide the detailed technical AI prompt/flow here that will go to the sidebar]
----END---
-
-**Your two main functions:**
-
-1. **Prompt Design**: I will describe how the chatbot should behave, and you will build a structured chatbot flow 
-step-by-step. The flow should support all types of messages, including:
-- Text replies
-- Buttons (with button titles and optional payloads)
-- Quick replies
-- Carousels (with title, image, subtitle, and buttons)
-- Input fields (text, email, number, etc.)
-- File attachments
-- Delay blocks (e.g., "wait 2 seconds")
-- Typing indicators (e.g., "show typing...")
-- Location requests
-- API calls and custom attributes
-
-2. **Configuration Management**: When users request configuration changes for their chatbot (language, logo, colors, 
-status, welcome message, name, etc.), use the configure_chatbot tool to process these requests.
-
-**Configuration Tool Usage:**
-Use the configure_chatbot tool when users request any of the following:
-- Change language (e.g., "change language to Arabic", "set language to French")
-- Update logo (e.g., "change logo to [URL]", "update chatbot logo")
-- Modify color scheme/theme (e.g., "change colors to blue", "update theme")
-- Toggle chatbot status (e.g., "turn off chatbot", "disable bot", "enable chatbot")
-- Update welcome message (e.g., "change welcome message to...", "update greeting")
-- Change chatbot name (e.g., "rename chatbot to...", "change bot name")
-
-**Tool Call Format:**
-When detecting configuration requests, call the configure_chatbot tool with appropriate key-value pairs:
-- For language: key="change_language", value="[language]"
-- For logo: key="change_logo", value="[logo_url]"
-- For colors: key="change_color", value="[color_scheme]"
-- For status: key="toggle_chatbot", value="on/off"
-- For welcome message: key="update_welcome_message", value="[message]"
-- For name: key="change_name", value="[name]"
-
-**Prompt Design Format (for AI_PROMPT section):**
-For prompt design, show the **entire chatbot flow** in a clean, numbered format like this:
-
-1. If user says "Hi", bot replies with:
-   - Text: "Hey there!"
-   - Buttons:
-     - "Browse products"
-     - "Contact support"
-
-2. If user says "Browse products", bot replies with:
-   - Carousel:
-     - Item 1: "Red Shoes", image: [url], subtitle: "Comfortable & stylish", buttons: ["Buy Now"]
-     - Item 2: "Blue Hat", image: [url], subtitle: "Limited edition", buttons: ["Buy Now"]
-
-Format rules:
-- Always keep numbering
-- Be clean and readable
-- Do not include raw JSON
-- Reflect all user-defined blocks correctly
-- Use intuitive UX (e.g., typing delay before long texts)
-- Avoid repetitive blocks
-- Do not include flows by your own. Just convert user instructions to flows.
-
-**Chat Response Examples:**
-- "Perfect! I've created your chatbot flow as requested. The AI prompt is now updated in the sidebar. Would you like me to add more features or modify anything?"
-- "Great! I've updated your chatbot configuration. You can see the detailed prompt in the sidebar. What else would you like to customize?"
-- "Excellent! Your AI prompt has been generated and is now visible in the sidebar. The chatbot flow includes all the features you mentioned. Need any adjustments?"
-
-**Remember**: 
-1. ALWAYS use the dual response format with ---CHAT_RESPONSE--- and ---AI_PROMPT--- sections
-2. Prioritize using the configure_chatbot tool for configuration requests
-3. Keep chat responses friendly and conversational
-4. Make AI prompts technical and detailed for the sidebar
-
-**Here is an example of bot prompt. Take this as an example not to use same.**
-
-1. When user sends "hi text", then reply with "hi there, i".
-2. When user sends "Hello" or "Hi", then reply with "Hello how are you?".
-3. When user sends "Media", "Block", "Media bloc", or "media block", then reply with:
-"Here is the some media blocks"
-Carousel of slides with images, titles, subtitles, and website buttons.
-4. When user sends "Intro Form" or "introduction", then collect name and email, and say "Thank you for contacting us. One of our agents will contact you soon."
-5. When user sends "User Attributes", then reply with "hello\nwhat you want to buy?" and quick replies "Men", "women".
-6. When user replies "women", then set Gender = Women and reply "Ok thankyou".
-7. When user replies "Men", then set Gender = Men and reply "Ok thankyou".
-8. When user sends "JSON APi", then fetch data from https://api.botsify.com/covid with GET.
-9. When user sends "Media block Video", then reply with quick replies: image, text, video, audio, file, slider.
-**For each quick reply:**
-"file" → send a file with CSV download.
-"slider" → show carousel media.
-"audo" → play an audio file.
-"video" → show a video with a button to call an API.
-"text" → reply with a long message and quick reply buttons: help (human help), form, phone number.
-"image" → send an image with options to reply with "hey", "media", or "prompt".
-10. When user sends "new flow", then reply with:
-"Thank you for contacting us..."
-11. If it's Friday, trigger prompt "(Hello,Hi)".
-Else, reply with "fallback msg".
-12. When user sends "Testing Prompt" or "prompts", then reply with:
-"hello\nyes\nhow can i help you?"
-Typing indicator (20s)
-Human help message
-13. When user sends "User input", then:
-Show info about SQA Connect services.
-Send audio.
-Collect name and email.
-Show quick replies: "delay", "link prompt".
-On "delay", call JSON API.
-On "link prompt", trigger "(User Attributes)".
-14. When user sends "link prompt", trigger prompt "(QR w link)".
-When user sends "QR w link", then reply "qr texts" with quick replies: new prompt, hi.
-On "new prompt", trigger "(typing in)".
-On "hi", no response.
-15. When user sends "typing in", then simulate typing for 7 seconds, then reply "Text response after d".
-16. When user sends "human help", then reply with "requesting human help" and notify agents.
-17. When user sends "Admission information" or "info", then:
-Say "hello how can i help you?"
-Collect admission-related info (name, email, date, time, options, etc.).
-Notify agent via email.
-18. When user sends "Desk", "help desk", or "help", reply "how can i help you?" and offer human help.
-19. When user sends "stripe" or "shopify", then:
-Reply "Stripe flow" with quick replies: Stripe, form.
-On "form", collect customer info.
-On "Stripe", show Stripe plugin with one-time payment.
-20. When user sends "Rss Feed", reply with:
-"Good day\nType anything...."
-Show 2 items from RSS: https://cdn.mysitemapgenerator.com/...
-21. When user sends "another", show 10 items from https://rss.app/feed/...
-22. When user sends "AI Assistant", reply:
-"hello {first_name}"
-Run assistant named Urooj powered by OpenAI.
-23. When user sends "change language", offer "arabic", "urdu", or "french".
-On "arabic" or "urdu", update chatbot_language and reply "language changed".
-24. When user sends "keyword", "word", or "key", show default response (data incomplete in input).`;
+      const defaultSystemPrompt = systemPrompt();
 
       // Get MCP system prompt if there are connected servers
       const mcpSystemPrompt = mcpStore.getCombinedSystemPrompt();
@@ -666,10 +486,6 @@ On "arabic" or "urdu", update chatbot_language and reply "language changed".
 ---MCP_SERVERS---
 ${mcpSystemPrompt}
 ---END_MCP_SERVERS---`;
-
-        console.log('✅ MCP system prompt appended to default prompt');
-      } else {
-        console.log('ℹ️ No MCP system prompt to append');
       }
 
       // Append connected services information if available (never replace, only append)
@@ -681,10 +497,6 @@ ${connectedServicesJson}
 ---END_CONNECTED_SERVICES---
 
 Use the above connected services information to understand what tools and data sources are available for this chat session. When users ask about capabilities or need to access files/web content, refer to these connected services.`;
-
-        console.log('✅ Connected services JSON appended to system prompt');
-      } else {
-        console.log('ℹ️ No connected services found for this chat session');
       }
 
       // Build messages array with the complete system prompt
@@ -692,18 +504,7 @@ Use the above connected services information to understand what tools and data s
         { role: 'system', content: finalSystemPrompt },
         ...userMessages
       ];
-
-      console.log('Sending messages to OpenAI with enhanced system prompt:', {
-        hasDefaultPrompt: !!defaultSystemPrompt,
-        hasMCPPrompt: !!mcpSystemPrompt,
-        hasConnectedServices: !!connectedServicesJson,
-        connectedServers: mcpStore.connectedServers.length,
-        messageCount: messages.length,
-        finalPromptLength: finalSystemPrompt.length
-      });
-
       const stream = await openAIStore.streamChat(messages);
-      // // console.log('Stream object received:', stream);
       if (!stream.body) throw new Error('No response body for streaming');
       const reader = stream.body?.getReader();
       const decoder = new TextDecoder('utf-8');
@@ -721,25 +522,12 @@ Use the above connected services information to understand what tools and data s
         sender: 'assistant'
       };
       chat.messages.push(aiMessage);
-
-      // console.log('Waiting for first content chunk to create AI message');
-
-      console.log('Starting to process stream');
-      // for await (const chunk of stream) {
-        // // console.log('Received chunk:', chunk);
-
       while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           const chunk = decoder.decode(value, { stream: true });
-          // console.log('chunk--->', chunk); // or yield chunk, or process as needed
-
-        // Handle Responses API streaming format
-        // if (chunk.type === 'response.output_text.delta') {
           const content = chunk;
           eachStreamContent = content;
-
-          
           
           if (eachStreamContent.includes('---') && dataType !== '---AI_PROMPT---') {
             isChatResponse = false;
@@ -748,7 +536,7 @@ Use the above connected services information to understand what tools and data s
               isTyping.value = false;
               isChatResponse = true;
               chat.messages[chat.messages.length - 1].content += (streamedContent + eachStreamContent).replace(dataType, '');
-              }else if (dataType){
+            } else if (dataType){
               dataType =  eachStreamContent.split('---')[0];
               chat.messages[chat.messages.length - 1].content += dataType;
               dataType = '---AI_PROMPT---';
@@ -760,93 +548,19 @@ Use the above connected services information to understand what tools and data s
 
           streamedContent += eachStreamContent;
           eachStreamContent = '';
-
-          // Just collect content - don't create message bubble yet
-        // } else if (chunk.type && chunk.type.includes('function_call')) {
-          // Handle tool calls for Responses API
-          // // console.log('Tool call delta received:', chunk);
-          // Tool call handling for Responses API format
-          // This will need to be implemented based on the actual tool call structure
-        // }
       }
       isTyping.value = false;
-      console.log('Stream processing complete');
-      console.log('Final content length:', streamedContent.length);
-      console.log('Tool calls received:', toolCalls);
-
       // Parse the dual response format
       const parsedResponse = parseDualResponse(streamedContent);
-
-      // Only create AI message when we have content to show
-      // if (parsedResponse.chatResponse && parsedResponse.aiPrompt) {
-      //   // Create AI message with the chat response
-      //   aiMessage = {
-      //     id: Date.now().toString(),
-      //     content: parsedResponse.chatResponse,
-      //     timestamp: currentTime(),
-      //     sender: 'assistant'
-      //   };
-      //   chat.messages.push(aiMessage);
-      //   chat.lastMessage = parsedResponse.chatResponse;
-      //   await nextTick();
-
-      //   // Update the sidebar with the AI prompt
-      //   updateStory(chat.id, parsedResponse.aiPrompt, true);
-      //   // console.log('Updated sidebar with AI prompt');
-      // } else if (parsedResponse.chatResponse && !parsedResponse.aiPrompt) {
-      //   // Only chat response found, no AI prompt
-      //   aiMessage = {
-      //     id: Date.now().toString(),
-      //     content: parsedResponse.chatResponse,
-      //     timestamp: currentTime(),
-      //     sender: 'assistant'
-      //   };
-      //   chat.messages.push(aiMessage);
-      //   chat.lastMessage = parsedResponse.chatResponse;
-      //   await nextTick();
-      //   // console.log('Only chat response found, no AI prompt to update sidebar');
-      // } else if (!parsedResponse.chatResponse && parsedResponse.aiPrompt) {
-      //   // Only AI prompt found, no chat response - this shouldn't happen but handle it
-      //   aiMessage = {
-      //     id: Date.now().toString(),
-      //     content: 'I\'ve updated your AI prompt. You can see the details in the sidebar.',
-      //     timestamp: currentTime(),
-      //     sender: 'assistant'
-      //   };
-      //   chat.messages.push(aiMessage);
-      //   chat.lastMessage = aiMessage.content;
-      //   await nextTick();
-
-      //   // Update the sidebar with the AI prompt
-      //   updateStory(chat.id, parsedResponse.aiPrompt, true);
-      //   // console.log('Only AI prompt found, updated sidebar and provided generic chat message');
-      // } else {
-      //   // No structured format found - treat as regular chat response only
-      //   console.warn('No structured dual response format found, treating as regular chat response');
-      //   if (streamedContent) {
-      //     aiMessage = {
-      //       id: Date.now().toString(),
-      //       content: streamedContent,
-      //       timestamp: currentTime(),
-      //       sender: 'assistant'
-      //     };
-      //     chat.messages.push(aiMessage);
-      //     chat.lastMessage = streamedContent;
-      //     await nextTick();
-      //   }
-      //   // Do NOT update sidebar when no structured format is found
-      //   // console.log('No sidebar update - content treated as regular chat response only');
-      // }
-
       if (parsedResponse.chatResponse) {
         chat.lastMessage = parsedResponse.chatResponse;
       }
       if (parsedResponse.aiPrompt) {
+        console.log('parsedResponse.aiPrompt', parsedResponse.aiPrompt);
         updateStory(chat.id, parsedResponse.aiPrompt, !activeAiPromptVersion.value ? true : false);
       }
 
       await nextTick();
-
 
       // Process tool calls if any
       if (toolCalls.length > 0) {
@@ -1011,10 +725,6 @@ Use the above connected services information to understand what tools and data s
 
   // Helper function to parse dual response format
   function parseDualResponse(content: string): { chatResponse: string | null; aiPrompt: string | null } {
-    // console.log('=== PARSING DUAL RESPONSE ===');
-    // console.log('Full content received:', content);
-    // console.log('Content length:', content.length);
-
     // Handle case where content might contain the markers but not in expected order
     const chatResponseMatch = content.match(/---CHAT_RESPONSE---([\s\S]*?)(?=---AI_PROMPT---|---END---|$)/);
     const aiPromptMatch = content.match(/---AI_PROMPT---([\s\S]*?)(?=---END---|$)/);
@@ -1070,16 +780,6 @@ Use the above connected services information to understand what tools and data s
       // Count indicators
       const chatIndicatorCount = chatIndicators.filter(indicator => lowerContent.includes(indicator)).length;
       const promptIndicatorCount = promptIndicators.filter(indicator => lowerContent.includes(indicator)).length;
-
-      console.log('Content analysis:', {
-        chatIndicatorCount,
-        promptIndicatorCount,
-        hasNumberedList,
-        hasWhenUserPattern,
-        hasIfUserPattern,
-        hasBotRepliesPattern,
-        contentPreview: content.substring(0, 150) + '...'
-      });
 
       // Determine if this is clearly an AI prompt based on multiple indicators
       const isLikelyAIPrompt = (
@@ -1182,11 +882,6 @@ Use the above connected services information to understand what tools and data s
       }
     }
 
-    console.log('=== FINAL PARSING RESULTS ===');
-    console.log('Chat Response:', chatResponse ? `"${chatResponse.substring(0, 100)}..."` : 'null');
-    console.log('AI Prompt:', aiPrompt ? `"${aiPrompt.substring(0, 100)}..."` : 'null');
-    console.log('============================');
-
     return { chatResponse, aiPrompt };
   }
 
@@ -1230,46 +925,6 @@ Use the above connected services information to understand what tools and data s
         hasServices = true;
       }
 
-      // Check for File Search data
-      // try {
-      //   const fileSearchResponse = await botsifyApi.getFileSearch();
-      //   if (fileSearchResponse.success && fileSearchResponse.data?.files?.length > 0) {
-      //     connectedServices.services.file_search = {
-      //       status: 'connected',
-      //       files: fileSearchResponse.data.files.map((file: any) => ({
-      //         id: file.id,
-      //         name: file.name || file.filename,
-      //         type: file.type || file.fileType,
-      //         size: file.size,
-      //         uploadedAt: file.uploadedAt || file.createdAt
-      //       })),
-      //       totalFiles: fileSearchResponse.data.files.length,
-      //       lastUpdated: currentTime().toISOString()
-      //     };
-      //     hasServices = true;
-      //   }
-      // } catch (error) {
-      //   // console.log('No file search data or error loading:', error);
-      // }
-
-      // Check for Web Search data
-      // try {
-      //   const webSearchResponse = await botsifyApi.getWebSearch();
-      //   if (webSearchResponse.success && webSearchResponse.data) {
-      //     connectedServices.services.web_search = {
-      //       status: 'connected',
-      //       url: webSearchResponse.data.url,
-      //       title: webSearchResponse.data.title,
-      //       domain: webSearchResponse.data.domain,
-      //       connectedAt: webSearchResponse.data.connectedAt,
-      //       lastUpdated: currentTime().toISOString()
-      //     };
-      //     hasServices = true;
-      //   }
-      // } catch (error) {
-      //   // console.log('No web search data or error loading:', error);
-      // }
-
       // Return JSON only if we have connected services
       if (hasServices) {
         const jsonString = JSON.stringify(connectedServices, null, 2);
@@ -1292,13 +947,11 @@ Use the above connected services information to understand what tools and data s
   }
 
   function createNewChat() {
-    // console.log('Creating new chat');
-
     // Use default template if available
     const initialPrompt = defaultPromptTemplate.value?.content || '';
 
     const newChat: Chat = {
-      id: botStore.apiKey,
+      id: getCurrentApiKey(),
       title: '',
       timestamp: currentTime(),
       messages: [
@@ -1385,7 +1038,7 @@ Use the above connected services information to understand what tools and data s
   async function clearChatMessages() {
     try {
 
-      const response = await botsifyApi.clearAgentConversion({apikey: botStore.apiKey});
+      const response = await botsifyApi.clearAgentConversion({apikey: getCurrentApiKey()});
       
       if (!response.success) {
         console.error('❌ Error clearing conversation:', response.message);
@@ -1404,6 +1057,148 @@ Use the above connected services information to understand what tools and data s
      }
   }
 
+  function systemPrompt(){
+    return `You are an AI prompt designer and chatbot configuration assistant. 
+
+    **IMPORTANT: You must provide DUAL RESPONSES in the following structured format:**
+    
+    ---CHAT_RESPONSE---
+    [Provide a friendly user message here like "I've updated your AI prompt according to your requirements. What would you like me to help you with next?" or "Great! I've created the chatbot flow you requested. The prompt is now ready for testing. How else can I assist you?"]
+    ---AI_PROMPT---
+    [Provide the detailed technical AI prompt/flow here that will go to the sidebar]
+    ---END---
+    
+    **Your two main functions:**
+    
+    1. **Prompt Design**: I will describe how the chatbot should behave, and you will build a structured chatbot flow 
+    step-by-step. The flow should support all types of messages, including:
+    - Text replies
+    - Buttons (with button titles and optional payloads)
+    - Quick replies
+    - Carousels (with title, image, subtitle, and buttons)
+    - Input fields (text, email, number, etc.)
+    - File attachments
+    - Delay blocks (e.g., "wait 2 seconds")
+    - Typing indicators (e.g., "show typing...")
+    - Location requests
+    - API calls and custom attributes
+    
+    2. **Configuration Management**: When users request configuration changes for their chatbot (language, logo, colors, 
+    status, welcome message, name, etc.), use the configure_chatbot tool to process these requests.
+    
+    **Configuration Tool Usage:**
+    Use the configure_chatbot tool when users request any of the following:
+    - Change language (e.g., "change language to Arabic", "set language to French")
+    - Update logo (e.g., "change logo to [URL]", "update chatbot logo")
+    - Modify color scheme/theme (e.g., "change colors to blue", "update theme")
+    - Toggle chatbot status (e.g., "turn off chatbot", "disable bot", "enable chatbot")
+    - Update welcome message (e.g., "change welcome message to...", "update greeting")
+    - Change chatbot name (e.g., "rename chatbot to...", "change bot name")
+    
+    **Tool Call Format:**
+    When detecting configuration requests, call the configure_chatbot tool with appropriate key-value pairs:
+    - For language: key="change_language", value="[language]"
+    - For logo: key="change_logo", value="[logo_url]"
+    - For colors: key="change_color", value="[color_scheme]"
+    - For status: key="toggle_chatbot", value="on/off"
+    - For welcome message: key="update_welcome_message", value="[message]"
+    - For name: key="change_name", value="[name]"
+    
+    **Prompt Design Format (for AI_PROMPT section):**
+    For prompt design, show the **entire chatbot flow** in a clean, numbered format like this:
+    
+    1. If user says "Hi", bot replies with:
+       - Text: "Hey there!"
+       - Buttons:
+         - "Browse products"
+         - "Contact support"
+    
+    2. If user says "Browse products", bot replies with:
+       - Carousel:
+         - Item 1: "Red Shoes", image: [url], subtitle: "Comfortable & stylish", buttons: ["Buy Now"]
+         - Item 2: "Blue Hat", image: [url], subtitle: "Limited edition", buttons: ["Buy Now"]
+    
+    Format rules:
+    - Always keep numbering
+    - Be clean and readable
+    - Do not include raw JSON
+    - Reflect all user-defined blocks correctly
+    - Use intuitive UX (e.g., typing delay before long texts)
+    - Avoid repetitive blocks
+    - Do not include flows by your own. Just convert user instructions to flows.
+    
+    **Chat Response Examples:**
+    - "Perfect! I've created your chatbot flow as requested. The AI prompt is now updated in the sidebar. Would you like me to add more features or modify anything?"
+    - "Great! I've updated your chatbot configuration. You can see the detailed prompt in the sidebar. What else would you like to customize?"
+    - "Excellent! Your AI prompt has been generated and is now visible in the sidebar. The chatbot flow includes all the features you mentioned. Need any adjustments?"
+    
+    **Remember**: 
+    1. ALWAYS use the dual response format with ---CHAT_RESPONSE--- and ---AI_PROMPT--- sections
+    2. Prioritize using the configure_chatbot tool for configuration requests
+    3. Keep chat responses friendly and conversational
+    4. Make AI prompts technical and detailed for the sidebar
+    
+    **Here is an example of bot prompt. Take this as an example not to use same.**
+    
+    1. When user sends "hi text", then reply with "hi there, i".
+    2. When user sends "Hello" or "Hi", then reply with "Hello how are you?".
+    3. When user sends "Media", "Block", "Media bloc", or "media block", then reply with:
+    "Here is the some media blocks"
+    Carousel of slides with images, titles, subtitles, and website buttons.
+    4. When user sends "Intro Form" or "introduction", then collect name and email, and say "Thank you for contacting us. One of our agents will contact you soon."
+    5. When user sends "User Attributes", then reply with "hello\nwhat you want to buy?" and quick replies "Men", "women".
+    6. When user replies "women", then set Gender = Women and reply "Ok thankyou".
+    7. When user replies "Men", then set Gender = Men and reply "Ok thankyou".
+    8. When user sends "JSON APi", then fetch data from https://api.botsify.com/covid with GET.
+    9. When user sends "Media block Video", then reply with quick replies: image, text, video, audio, file, slider.
+    **For each quick reply:**
+    "file" → send a file with CSV download.
+    "slider" → show carousel media.
+    "audo" → play an audio file.
+    "video" → show a video with a button to call an API.
+    "text" → reply with a long message and quick reply buttons: help (human help), form, phone number.
+    "image" → send an image with options to reply with "hey", "media", or "prompt".
+    10. When user sends "new flow", then reply with:
+    "Thank you for contacting us..."
+    11. If it's Friday, trigger prompt "(Hello,Hi)".
+    Else, reply with "fallback msg".
+    12. When user sends "Testing Prompt" or "prompts", then reply with:
+    "hello\nyes\nhow can i help you?"
+    Typing indicator (20s)
+    Human help message
+    13. When user sends "User input", then:
+    Show info about SQA Connect services.
+    Send audio.
+    Collect name and email.
+    Show quick replies: "delay", "link prompt".
+    On "delay", call JSON API.
+    On "link prompt", trigger "(User Attributes)".
+    14. When user sends "link prompt", trigger prompt "(QR w link)".
+    When user sends "QR w link", then reply "qr texts" with quick replies: new prompt, hi.
+    On "new prompt", trigger "(typing in)".
+    On "hi", no response.
+    15. When user sends "typing in", then simulate typing for 7 seconds, then reply "Text response after d".
+    16. When user sends "human help", then reply with "requesting human help" and notify agents.
+    17. When user sends "Admission information" or "info", then:
+    Say "hello how can i help you?"
+    Collect admission-related info (name, email, date, time, options, etc.).
+    Notify agent via email.
+    18. When user sends "Desk", "help desk", or "help", reply "how can i help you?" and offer human help.
+    19. When user sends "stripe" or "shopify", then:
+    Reply "Stripe flow" with quick replies: Stripe, form.
+    On "form", collect customer info.
+    On "Stripe", show Stripe plugin with one-time payment.
+    20. When user sends "Rss Feed", reply with:
+    "Good day\nType anything...."
+    Show 2 items from RSS: https://cdn.mysitemapgenerator.com/...
+    21. When user sends "another", show 10 items from https://rss.app/feed/...
+    22. When user sends "AI Assistant", reply:
+    "hello {first_name}"
+    Run assistant named Urooj powered by OpenAI.
+    23. When user sends "change language", offer "arabic", "urdu", or "french".
+    On "arabic" or "urdu", update chatbot_language and reply "language changed".
+    24. When user sends "keyword", "word", or "key", show default response (data incomplete in input).`;     
+  }
 
   // Initialize with a default chat if none exists
   if (chats.value.length === 0) {
@@ -1431,6 +1226,7 @@ Keep flows organized, clear, and user-friendly.`,
       true
     );
   }
+  
 
   return {
     chats,

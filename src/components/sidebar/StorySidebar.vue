@@ -107,7 +107,7 @@ function cancelEditing() {
 
 function saveEdit() {
   if (editContent.value.trim()) {
-    chatStore.updateStory(props.chatId, editContent.value.trim(), false);
+    chatStore.updateStory(props.chatId, editContent.value.trim(), false, true);
     isEditing.value = false;
     editContent.value = '';
 
@@ -124,6 +124,7 @@ function saveEdit() {
 function revertToVersion(versionId: string) {
   window.$confirm({
     text: 'Are you sure you want to revert to this version?',
+    confirmButtonText: 'Yes, Revert it!',
   }, () => {
     chatStore.revertToPromptVersion(props.chatId, versionId);
   });
@@ -232,7 +233,7 @@ defineExpose({
               <i class="pi pi-history"></i>
             </button>
 
-            <button @click="showTemplateManager = !showTemplateManager" class="icon-btn template-btn"
+           <!-- <button @click="showTemplateManager = !showTemplateManager" class="icon-btn template-btn"
               title="Manage templates">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -240,7 +241,7 @@ defineExpose({
                 <rect x="7" y="7" width="10" height="3"></rect>
                 <rect x="7" y="14" width="10" height="3"></rect>
               </svg>
-            </button>
+            </button> -->
             <button @click="handleAIPrompt" class="icon-btn template-btn"
               title="Manage templates">
               <i style="" class="pi pi-chevron-right"></i>
