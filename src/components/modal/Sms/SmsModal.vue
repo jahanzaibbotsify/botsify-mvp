@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
-import Pagination from "@/components/ui/Pagination.vue";
+import {Button, PublishModalLayout, Pagination} from "@/components/ui";
 import { ref, computed } from "vue";
 import PublishAgentTab from "./PublishAgentTab.vue";
 import BroadcastTab from "./BroadcastTab.vue";
 import BroadcastReportTab from "./BroadcastReportTab.vue";
 import TemplateTab from "./TemplateTab.vue";
+import { usePublishStore } from "@/stores/publishStore";
 
 // Define tabs
 const tabs = [
@@ -17,6 +17,7 @@ const tabs = [
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
 const currentActiveTab = ref('publish-agent');
+const publishStore = usePublishStore();
 
 // Tab component refs
 const publishAgentTabRef = ref<InstanceType<typeof PublishAgentTab> | null>(null);
@@ -87,18 +88,21 @@ const handleSendBroadcast = (data: any) => {
   console.log('Sending broadcast:', data);
 };
 
-
 const handleFilterReport = (filters: any) => {
   console.log('Filtering report:', filters);
 };
 
-const handleSaveSettings = () => {
+const handleSaveSettings = async (settings: any) => {
   isLoading.value = true;
   try {
-    console.log('Saving Meta Cloud settings:');
-    // Add actual save logic here
+    const result = await publishStore.saveTwilioSettings(settings);
+    if (result.success) {
+      console.log('Twilio settings saved successfully');
+    } else {
+      console.error('Failed to save Twilio settings:', result.error);
+    }
   } catch (error) {
-    console.error('Failed to save Meta Cloud settings:', error);
+    console.error('Failed to save Twilio settings:', error);
   } finally {
     isLoading.value = false;
   }
@@ -111,6 +115,13 @@ const handleTemplatePageChange = (page: number) => {
   }
 };
 
+// Pagination handler for broadcast report tab
+const handleBroadcastReportPageChange = (page: number) => {
+  if (broadcastReportTabRef.value) {
+    broadcastReportTabRef.value.fetchSmsReport(page);
+  }
+};
+
 defineExpose({ openModal, closeModal });
 </script>
 
@@ -119,7 +130,7 @@ defineExpose({ openModal, closeModal });
     ref="modalRef"
     title="Sms Integration"
     :tabs="tabs"
-    max-width="650px"
+    max-width="1000px"
     default-tab="publish-agent"
     @back="handleBack"
     @tab-change="handleTabChange"
@@ -164,24 +175,26 @@ defineExpose({ openModal, closeModal });
     
     <template #actions>
       <!-- Test Bot Button for Publish Agent Tab -->
-      <button 
+      <Button 
         v-if="currentActiveTab === 'publish-agent'" 
-        class="action-button"
+        variant="secondary"
+        size="medium"
+        :loading="isLoading"
         @click="handleTestBot"
-        :disabled="isLoading"
       >
         {{ isLoading ? 'Testing...' : 'Test Agent' }}
-      </button>
+      </Button>
       
       <!-- Save Settings Button for Publish Agent Tab -->
-      <button 
+      <Button 
         v-if="currentActiveTab === 'publish-agent'" 
-        class="action-button primary" 
-        @click="handleSaveSettings"
-        :disabled="isLoading"
+        variant="primary"
+        size="medium"
+        :loading="isLoading"
+        @click="publishAgentTabRef?.saveSettings()"
       >
         {{ isLoading ? 'Saving...' : 'Save Settings' }}
-      </button>
+      </Button>
 
       <!-- Pagination for Template Tab -->
       <Pagination
@@ -196,14 +209,27 @@ defineExpose({ openModal, closeModal });
       />
 
       <!-- Send Message Button for Broadcast Tab -->
-      <button 
+      <Button 
         v-if="currentActiveTab === 'broadcast'" 
-        class="action-button primary"
+        variant="primary"
+        size="medium"
+        :loading="isLoading"
         @click="broadcastTabRef?.sendBroadcast()"
-        :disabled="isLoading"
       >
         {{ isLoading ? 'Sending...' : 'Send Message' }}
-      </button>
+      </Button>
+
+      <!-- Pagination for Broadcast Report Tab -->
+      <Pagination
+        v-if="currentActiveTab === 'broadcast-report' && (broadcastReportTabRef?.totalPages || 0) > 1"
+        :current-page="broadcastReportTabRef?.currentPage || 1"
+        :total-pages="broadcastReportTabRef?.totalPages || 1"
+        :total-items="broadcastReportTabRef?.totalItems || 0"
+        :items-per-page="20"
+        :show-page-info="false"
+        :disabled="isLoading"
+        @page-change="handleBroadcastReportPageChange"
+      />
     </template>
   </PublishModalLayout>
 </template>

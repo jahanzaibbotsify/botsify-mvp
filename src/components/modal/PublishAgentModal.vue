@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import ModalLayout from "@/components/ui/ModalLayout.vue";
-import { ref, defineAsyncComponent } from "vue";
+import { ref, defineAsyncComponent, onMounted } from "vue";
+import { usePublishStore } from "@/stores/publishStore";
 
 const WhatsAppModal = defineAsyncComponent(() => import('./WhatsApp/WhatsAppModal.vue'));
 const SmsModal = defineAsyncComponent(() => import('./Sms/SmsModal.vue'));
@@ -10,48 +11,87 @@ const TelegramModal = defineAsyncComponent(() => import('./TelegramModal.vue'));
 const WebsiteModal = defineAsyncComponent(() => import('./WebsiteModal.vue'));
 
 const modalRef = ref<InstanceType<typeof ModalLayout> | null>(null);
-const websiteModalRef = ref<InstanceType<typeof WebsiteModal> | null>(null); // Create ref for WebsiteModal
-const whatsappModalRef = ref<InstanceType<typeof WhatsAppModal> | null>(null); // Create ref for WhatsAppModal
-const telegramModalRef = ref<InstanceType<typeof TelegramModal> | null>(null); // Create ref for WhatsAppModal
-const smsModalRef = ref<InstanceType<typeof SmsModal> | null>(null); // Create ref for WhatsAppModal
-const messengerModalRef = ref<InstanceType<typeof MessengerModal> | null>(null); // Create ref for WhatsAppModal
-const instagramModalRef = ref<InstanceType<typeof InstagramModal> | null>(null); // Create ref for InstagramModal
+const websiteModalRef = ref<InstanceType<typeof WebsiteModal> | null>(null);
+const whatsappModalRef = ref<InstanceType<typeof WhatsAppModal> | null>(null);
+const telegramModalRef = ref<InstanceType<typeof TelegramModal> | null>(null);
+const smsModalRef = ref<InstanceType<typeof SmsModal> | null>(null);
+const messengerModalRef = ref<InstanceType<typeof MessengerModal> | null>(null);
+const instagramModalRef = ref<InstanceType<typeof InstagramModal> | null>(null);
+
+const publishStore = usePublishStore();
+const botDetails = ref<any>(null);
+const isLoading = ref(false);
+
+const agents = ref([
+  { icon: 'website.png', label: 'Website', status: 'inactive' },
+  { icon: 'whatsapp.png', label: 'WhatsApp', status: 'inactive' },
+  { icon: 'instagram.png', label: 'Instagram', status: 'inactive' },
+  { icon: 'messenger.png', label: 'Messenger', status: 'inactive' },
+  { icon: 'telegram.png', label: 'Telegram', status: 'inactive' },
+  { icon: 'sms.png', label: 'SMS', status: 'inactive' },
+  { icon: 'portable-agent-icon.svg', label: 'Portable Agent', status: 'inactive' },
+]);
+
+const fetchBotDetails = async () => {
+  isLoading.value = true;
+  try {
+    const result = await publishStore.getBotDetails();
+    if (result.success && result.data) {
+      botDetails.value = result.data;
+      updateAgentStatus();
+    }
+  } catch (error) {
+    console.error('Failed to fetch bot details:', error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const updateAgentStatus = () => {
+  if (!botDetails.value) return;
+
+  // Update status based on API response
+  agents.value.forEach(agent => {
+    switch (agent.label) {
+      case 'Telegram':
+        agent.status = botDetails.value.telegramConf ? 'active' : 'inactive';
+        break;
+      case 'SMS':
+        agent.status = botDetails.value.twilioConf ? 'active' : 'inactive';
+        break;
+      // Add other agents as needed
+      default:
+        agent.status = 'inactive';
+    }
+  });
+};
 
 const openModal = () => {
   modalRef.value?.openModal();
+  fetchBotDetails(); // Fetch bot details when modal opens
 };
 
 const handleAgentClick = (agentLabel: string) => {
   if (agentLabel === 'Website') {
-    websiteModalRef.value?.openModal(); // Open website modal
+    websiteModalRef.value?.openModal();
   } else if (agentLabel === 'WhatsApp') {
-    whatsappModalRef.value?.openModal(); // Open WhatsApp modal
+    whatsappModalRef.value?.openModal();
   } else if (agentLabel === 'Telegram'){
-    telegramModalRef.value?.openModal()
+    telegramModalRef.value?.openModal();
   } else if (agentLabel === 'SMS'){
-    smsModalRef.value?.openModal()
+    smsModalRef.value?.openModal();
   } else if (agentLabel === 'Messenger'){
-    messengerModalRef.value?.openModal()
+    messengerModalRef.value?.openModal();
   } else if (agentLabel === 'Instagram'){
-    instagramModalRef.value?.openModal()
+    instagramModalRef.value?.openModal();
   }
-  modalRef.value?.closeModal(); // Close main modal
-  // Add handlers for other agent types here
+  modalRef.value?.closeModal();
 };
 
 const handleBackToMain = () => {
-  modalRef.value?.openModal(); // Reopen main modal when back is clicked
+  modalRef.value?.openModal();
+  fetchBotDetails(); // Refresh bot details when returning to main modal
 };
-
-const agents = [
-  { icon: 'website.png', label: 'Website' },
-  { icon: 'whatsapp.png', label: 'WhatsApp' },
-  { icon: 'instagram.png', label: 'Instagram' },
-  { icon: 'messenger.png', label: 'Messenger' },
-  { icon: 'telegram.png', label: 'Telegram' },
-  { icon: 'sms.png', label: 'SMS' },
-  { icon: 'portable-agent-icon.svg', label: 'Portable Agent' },
-];
 
 defineExpose({ openModal });
 </script>
@@ -61,7 +101,7 @@ defineExpose({ openModal });
   <ModalLayout
     ref="modalRef"
     title="Publish Agent"
-    max-width="650px"
+    max-width="600px"
   >
     <div class="server-grid">
       <div
@@ -69,12 +109,18 @@ defineExpose({ openModal });
         v-for="agent in agents"
         :key="agent.icon"
         @click="handleAgentClick(agent.label)"
+        :class="{ 'active': agent.status === 'active' }"
       >
         <div class="server-icon">
           <img :src="`/bots/${agent.icon}`" width="28" height="28" :alt="`${agent.label} icon`"/>
         </div>
         <div class="text-sm text-emphasis">
           <div>{{ agent.label }}</div>
+        </div>
+        <!-- Only show badge for active status -->
+        <div v-if="agent.status === 'active'" class="status-badge active">
+          <i class="pi pi-check"></i>
+          Connected
         </div>
       </div>
     </div>
@@ -118,10 +164,48 @@ defineExpose({ openModal });
 
 <style>
 /* Common Modal Styles - Centralized for all modal components */
+.server-card {
+  position: relative;
+  cursor: pointer;
+  transition: all var(--transition-normal, 0.2s ease);
+}
+
 .server-card .server-icon img {
   width: 32px;
   height: 32px;
   object-fit: contain;
+}
+
+/* Active card styling */
+.server-card.active {
+  border: 2px solid var(--color-secondary, #10b981);
+  background-color: var(--color-bg-secondary, #f9fafb);
+}
+
+/* Status Badge Styles */
+.status-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm, 4px);
+  font-size: 11px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-secondary, #10b981);
+  color: white;
+  z-index: 1;
+}
+
+.status-badge.active {
+  background: var(--color-secondary, #10b981);
+  color: white;
+}
+
+.status-badge i {
+  font-size: 10px;
 }
 
 /* Tab Panel Styles */
@@ -293,25 +377,6 @@ select.form-input {
   color: var(--color-text-primary, #111827);
   display: flex;
   align-items: center;
-}
-
-/* Status Badge Styles */
-.status-badge {
-  padding: 4px 8px;
-  border-radius: var(--radius-sm, 4px);
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: capitalize;
-}
-
-.status-badge.active {
-  background: var(--color-secondary, #10b981);
-  color: white;
-}
-
-.status-badge.inactive {
-  background: var(--color-text-tertiary, #9ca3af);
-  color: white;
 }
 
 /* Code Block Styles */

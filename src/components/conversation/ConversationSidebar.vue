@@ -4,7 +4,7 @@ import { ref, computed } from 'vue'
 import type { ExtendedChat } from '@/types'
 import ConversationSkeleton from './ConversationSkeleton.vue'
 import FilterSection from './Filter.vue'
-import SearchBar from '@/components/ui/SearchBar.vue'
+import Input from '@/components/ui/Input.vue'
 import { formatTime, getPlatformClass, getPlatformIcon } from '@/utils'
 
 interface Props {
@@ -185,10 +185,11 @@ const getUnreadCount = (conversation: ExtendedChat) => {
     <div class="sidebar-header">
       <h2 class="sidebar-title">Conversations</h2>
       <div class="search-container">
-        <SearchBar
-          :model-value="searchQuery"
+        <Input 
+          v-model="searchQuery" 
           placeholder="Search conversations..."
-          @update:model-value="handleSearch"
+          searchable
+          @search="handleSearch"
         />
       </div>
     </div>

@@ -82,7 +82,7 @@ const createTemplate = () => {
   };
 
   // Emit event
-  emit('create-template', newBlock);
+  // emit('create-template', newBlock);
   
   // Close modal
   closeModal();

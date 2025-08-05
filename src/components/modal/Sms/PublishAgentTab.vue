@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {Input} from "@/components/ui";
 import { ref } from "vue";
 
 // Props
@@ -15,14 +16,12 @@ const emit = defineEmits<{
   'save-settings': [settings: any];
 }>();
 
-
 // Twilio fields
 const smsFields = ref({
   twilioAccountSid: '',
   twilioAuthToken: '',
   twilioSmsNumber: '',
   twilioSenderId: '',
- 
 });
 
 const saveSettings = () => {
@@ -43,62 +42,65 @@ defineExpose({
 <template>
   <div class="tab-panel">
     <h3>Publish Your Agent</h3>
-    <p class="subtitle">Choose your WhatsApp provider and configure settings</p>
+    <p class="subtitle">Choose your SMS provider and configure settings</p>
 
-      <div class="form-group">
-        <label for="twilio-account-sid">Twilio Account SID</label>
-        <input 
-          id="twilio-account-sid"
-          v-model="smsFields.twilioAccountSid"
-          type="text"
-          placeholder="Enter your Twilio Account SID"
-          class="form-input"
-        />
-        <small class="help-text">
-          Find this in your Twilio Console dashboard
-        </small>
-      </div>
-      <div class="form-group">
-        <label for="twilio-auth-token">Twilio Auth Token</label>
-        <input 
-          id="twilio-auth-token"
-          v-model="smsFields.twilioAuthToken"
-          type="password"
-          placeholder="Enter your Twilio Auth Token"
-          class="form-input"
-        />
-        <small class="help-text">
-          Keep this secure - it's your authentication token
-        </small>
-      </div>
-      <div class="form-group">
-        <label for="twilio-sms-number">Twilio SMS Number</label>
-        <input 
-          id="twilio-sms-number"
-          v-model="smsFields.twilioSmsNumber"
-          type="tel"
-          placeholder="Enter your Twilio phone number"
-          class="form-input"
-        />
-        <small class="help-text">
-          The phone number you purchased from Twilio
-        </small>
-      </div>
-      <div class="form-group">
-        <label for="twilio-sender-id">Twilio Sender ID</label>
-        <input 
-          id="twilio-sender-id"
-          v-model="smsFields.twilioSenderId"
-          type="text"
-          placeholder="Enter your sender ID (optional)"
-          class="form-input"
-        />
-                 <small class="help-text">
-           The name that appears as the sender (if supported in your region)
-         </small>
-       </div>
-   </div>
- </template>
+    <div class="form-group">
+      <label for="twilio-account-sid">Twilio Account SID</label>
+      <Input 
+        id="twilio-account-sid"
+        v-model="smsFields.twilioAccountSid"
+        type="text"
+        placeholder="Enter your Twilio Account SID"
+        size="medium"
+      />
+      <small class="help-text">
+        Find this in your Twilio Console dashboard
+      </small>
+    </div>
+    
+    <div class="form-group">
+      <label for="twilio-auth-token">Twilio Auth Token</label>
+      <Input 
+        id="twilio-auth-token"
+        v-model="smsFields.twilioAuthToken"
+        type="password"
+        placeholder="Enter your Twilio Auth Token"
+        size="medium"
+      />
+      <small class="help-text">
+        Keep this secure - it's your authentication token
+      </small>
+    </div>
+    
+    <div class="form-group">
+      <label for="twilio-sms-number">Twilio SMS Number</label>
+      <Input 
+        id="twilio-sms-number"
+        v-model="smsFields.twilioSmsNumber"
+        type="tel"
+        placeholder="Enter your Twilio phone number"
+        size="medium"
+      />
+      <small class="help-text">
+        The phone number you purchased from Twilio
+      </small>
+    </div>
+    
+    <div class="form-group">
+      <label for="twilio-sender-id">Twilio Sender ID</label>
+      <Input 
+        id="twilio-sender-id"
+        v-model="smsFields.twilioSenderId"
+        type="text"
+        placeholder="Enter your sender ID (optional)"
+        size="medium"
+      />
+      <small class="help-text">
+        The name that appears as the sender (if supported in your region)
+      </small>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 /* Component-specific styles only - common styles moved to PublishAgentModal.vue */

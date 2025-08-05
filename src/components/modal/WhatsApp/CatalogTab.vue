@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import SearchBar from "@/components/ui/SearchBar.vue";
+import { Input, Button, VueSelect, Badge } from "@/components/ui";
 
 // Props
 interface Props {
@@ -76,7 +76,13 @@ const filteredProducts = computed(() => {
 
 const categories = computed(() => {
   const cats = [...new Set(catalogProducts.value.map(product => product.category))];
-  return ['all', ...cats];
+  return [
+    { label: 'All Categories', value: 'all' },
+    ...cats.map(cat => ({ 
+      label: cat.charAt(0).toUpperCase() + cat.slice(1), 
+      value: cat 
+    }))
+  ];
 });
 
 // Methods
@@ -103,6 +109,35 @@ const deleteProduct = (id: number) => {
   emit('delete-product', id);
 };
 
+const handleSearch = (query: string) => {
+  searchQuery.value = query;
+};
+
+const handleCategoryChange = (value: any) => {
+  selectedCategory.value = value;
+};
+
+const handleAddProduct = () => {
+  // TODO: Implement add product functionality
+  console.log('Add product clicked');
+};
+
+const handleEditProduct = (product: any) => {
+  // TODO: Implement edit product functionality
+  console.log('Edit product:', product);
+};
+
+const handleDeleteProduct = (product: any) => {
+  if (confirm(`Are you sure you want to delete "${product.name}"?`)) {
+    deleteProduct(product.id);
+  }
+};
+
+const handleViewProduct = (product: any) => {
+  // TODO: Implement view product functionality
+  console.log('View product:', product);
+};
+
 // Expose methods for parent component
 defineExpose({
   createProduct,
@@ -119,24 +154,25 @@ defineExpose({
     <!-- Search and Filters -->
     <div class="catalog-header">
       <div class="search-filters">
-        <SearchBar
-          v-model="searchQuery"
-          placeholder="Search products..."
+        <Input 
+          v-model="searchQuery" 
+          placeholder="Search catalog..."
+          searchable
+          iconPosition="left"
+          @search="handleSearch"
         />
         
-        <div class="category-filter">
-          <select v-model="selectedCategory" class="form-input">
-            <option value="all">All Categories</option>
-            <option v-for="category in categories" :key="category" :value="category">
-              {{ category.charAt(0).toUpperCase() + category.slice(1) }}
-            </option>
-          </select>
-        </div>
+        <VueSelect
+          v-model="selectedCategory"
+          :options="categories"
+          placeholder="Select category"
+          @change="handleCategoryChange"
+        />
         
-        <button class="action-button primary">
+        <Button variant="primary" @click="handleAddProduct">
           <i class="pi pi-plus"></i>
           Add Product
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -161,20 +197,45 @@ defineExpose({
           </div>
           
           <div class="product-category">
-            <span class="category-badge">{{ product.category }}</span>
+            <Badge variant="info" size="small">{{ product.category }}</Badge>
+          </div>
+          
+          <div class="product-status">
+            <Badge 
+              variant="success" 
+              icon="pi pi-check" 
+              size="small"
+            >
+              {{ product.status }}
+            </Badge>
           </div>
         </div>
         
         <div class="product-actions">
-          <button class="action-btn" title="Edit">
-            <i class="pi pi-pencil"></i>
-          </button>
-          <button class="action-btn" title="Delete">
-            <i class="pi pi-trash"></i>
-          </button>
-          <button class="action-btn" title="View">
-            <i class="pi pi-eye"></i>
-          </button>
+          <Button 
+            variant="primary" 
+            size="small" 
+            icon="pi pi-pencil"
+            icon-only
+            @click="handleEditProduct(product)"
+            title="Edit"
+          />
+          <Button 
+            variant="error" 
+            size="small" 
+            icon="pi pi-trash"
+            icon-only
+            @click="handleDeleteProduct(product)"
+            title="Delete"
+          />
+          <Button 
+            variant="secondary" 
+            size="small" 
+            icon="pi pi-eye"
+            icon-only
+            @click="handleViewProduct(product)"
+            title="View"
+          />
         </div>
       </div>
     </div>
@@ -194,8 +255,13 @@ defineExpose({
   align-items: center;
 }
 
-.category-filter {
-  min-width: 150px;
+.search-filters > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.search-filters .ui-button {
+  flex-shrink: 0;
 }
 
 .products-grid {
@@ -272,17 +338,11 @@ defineExpose({
 }
 
 .product-category {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
-.category-badge {
-  padding: 4px 8px;
-  border-radius: var(--radius-sm, 4px);
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: capitalize;
-  background: var(--color-accent, #8b5cf6);
-  color: white;
+.product-status {
+  margin-bottom: 12px;
 }
 
 .product-actions {

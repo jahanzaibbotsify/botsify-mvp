@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
+import {Button, Input, PublishModalLayout} from "@/components/ui";
 import { ref } from "vue";
 import { useBotStore } from "@/stores/botStore";
 import { usePublishStore } from "@/stores/publishStore";
@@ -9,7 +9,6 @@ import { getWebUrl } from "@/utils";
 const tabs = [
   { id: 'install-code', label: 'Install Code Yourself' },
   { id: 'inline-widget', label: 'Inline Widget' },
-  { id: 'email-developer', label: 'Email To Developer' },
   { id: 'landing-bot', label: 'Landing Agent' }
 ];
 
@@ -23,7 +22,6 @@ const emit = defineEmits<{
 
 // Reactive data
 const apikey = useBotStore().apiKey;
-const developerEmail = ref('');
 const isLoading = ref(false);
 const selectedColor = ref('#3b82f6');
 const showColorPicker = ref(false);
@@ -82,29 +80,6 @@ o.src="${getWebUrl()}/web-bot/script/embed/"+e+"/"+s+"/"+bg+"/botsify.js"; n=doc
 };
 
 
-const sendEmail = async () => {
-  if (!developerEmail.value.trim()) {
-    console.error('Developer email is required');
-    return;
-  }
-
-  isLoading.value = true;
-  try {
-    const result = await publishStore.sendDeveloperEmail(developerEmail.value);
-    
-    if (result.success) {
-      developerEmail.value = '';
-      window.$toast.success('Email sent successfully to:', developerEmail.value);
-    } else {
-      window
-    }
-  } catch (error) {
-    console.error('Failed to send email:', error);
-  } finally {
-    isLoading.value = false;
-  }
-};
-
 const saveLandingSettings = async () => {
   isLoading.value = true;
   try {
@@ -151,11 +126,11 @@ defineExpose({ openModal, closeModal });
         <div class="code-block">
           <div class="code-header">
             <span class="code-title">HTML Code</span>
-            <button class="copy-button" @click="copyToClipboard(installCode)">
+            <Button size="small" variant="secondary" @click="copyToClipboard(installCode)">
               Copy
-            </button>
+            </Button>
           </div>
-          <pre><code>{{ installCode }}</code></pre>
+          <pre><code v-html="installCode"></code></pre>
         </div>
       </div>
 
@@ -186,32 +161,12 @@ defineExpose({ openModal, closeModal });
         <div v-if="generatedInlineCode" class="code-block">
           <div class="code-header">
             <span class="code-title">Generated Code</span>
-            <button class="copy-button" @click="copyToClipboard(generatedInlineCode)">
+            <Button size="small" variant="secondary" @click="copyToClipboard(generatedInlineCode)">
               Copy
-            </button>
+            </Button>
           </div>
-          <pre><code>{{ generatedInlineCode }}</code></pre>
+          <pre><code v-html="generatedInlineCode"></code></pre>
         </div>
-      </div>
-
-      <!-- Email Developer Tab -->
-      <div v-if="activeTab === 'email-developer'" class="tab-panel">
-        <h3>Email To Developer</h3>
-        <p>Send integration instructions to your developer:</p>
-        <form id="email-form" @submit.prevent="sendEmail" class="email-form">
-          <div class="form-group">
-            <label for="dev-email">Developer's Email:</label>
-            <input 
-              id="dev-email"
-              type="email" 
-              v-model="developerEmail"
-              placeholder="developer@company.com" 
-              class="email-input"
-              required
-            />
-          </div>
-
-        </form>
       </div>
 
       <!-- Landing Bot Tab -->
@@ -221,15 +176,14 @@ defineExpose({ openModal, closeModal });
         
         <div class="url-section">
           <div class="url-display">
-            <input 
-              type="text" 
-              :value="landingUrl" 
+            <Input 
+              :model-value="landingUrl" 
               readonly 
-              class="url-input"
+              size="medium"
             />
-            <button class="copy-url-button" @click="copyLandingUrl">
+            <Button size="small" variant="secondary" @click="copyLandingUrl">
               Copy
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -269,34 +223,37 @@ defineExpose({ openModal, closeModal });
     
     <template #actions>
       <!-- Generate Code Button for Inline Widget Tab -->
-      <button 
+      <Button 
         v-if="currentActiveTab === 'inline-widget'" 
-        class="action-button primary" 
+        variant="primary"
+        size="medium"
         @click="generateInlineCode"
       >
         Generate Code
-      </button>
+      </Button>
       
       <!-- Send Instructions Button for Email Developer Tab -->
-      <button 
+      <Button 
         v-if="currentActiveTab === 'email-developer'" 
-        class="action-button primary" 
+        variant="primary"
+        size="medium"
+        :loading="isLoading"
         type="submit"
         form="email-form"
-        :disabled="isLoading"
       >
         {{ isLoading ? 'Sending...' : 'Send Instructions' }}
-      </button>
+      </Button>
       
       <!-- Save Button for Landing Bot Tab -->
-      <button 
+      <Button 
         v-if="currentActiveTab === 'landing-bot'" 
-        class="action-button primary" 
+        variant="primary"
+        size="medium"
+        :loading="isLoading"
         @click="saveLandingSettings"
-        :disabled="isLoading"
       >
         {{ isLoading ? 'Saving...' : 'Save' }}
-      </button>
+      </Button>
     </template>
   </PublishModalLayout>
 </template>
@@ -336,21 +293,7 @@ defineExpose({ openModal, closeModal });
   letter-spacing: 0.5px;
 }
 
-.copy-button {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
 
-.copy-button:hover {
-  background: var(--color-primary-hover, #2563eb);
-}
 
 .code-block pre {
   margin: 0;
@@ -424,22 +367,7 @@ defineExpose({ openModal, closeModal });
   border: 1px solid var(--color-border, #e5e7eb);
 }
 
-.generate-button {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: var(--radius-md, 8px);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background 0.2s;
-  margin-bottom: 20px;
-}
 
-.generate-button:hover {
-  background: var(--color-primary-hover, #2563eb);
-}
 
 .url-section {
   margin: 20px 0;
@@ -450,34 +378,7 @@ defineExpose({ openModal, closeModal });
   gap: 8px;
 }
 
-.url-input {
-  flex: 1;
-  padding: 12px 16px;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-bg-secondary, #f9fafb);
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  box-sizing: border-box;
-}
 
-.copy-url-button {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: var(--radius-md, 8px);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background 0.2s;
-  white-space: nowrap;
-}
-
-.copy-url-button:hover {
-  background: var(--color-primary-hover, #2563eb);
-}
 
 .radio-group {
   display: flex;
@@ -504,73 +405,9 @@ defineExpose({ openModal, closeModal });
   cursor: pointer;
 }
 
-.save-button {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: var(--radius-md, 8px);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background 0.2s;
-  margin-top: 20px;
-}
 
-.save-button:hover {
-  background: var(--color-primary-hover, #2563eb);
-}
 
-.email-form {
-  max-width: 100%;
-}
 
-.email-input,
-.message-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  background: white;
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-  font-family: inherit;
-  transition: border-color 0.2s;
-  box-sizing: border-box;
-}
-
-.email-input:focus,
-.message-input:focus {
-  outline: none;
-  border-color: var(--color-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.message-input {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.send-button {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: var(--radius-md, 8px);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background 0.2s;
-}
-
-.send-button:hover:not(:disabled) {
-  background: var(--color-primary-hover, #2563eb);
-}
-
-.send-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 
 @media (max-width: 640px) {
   .color-picker-container {

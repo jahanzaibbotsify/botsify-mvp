@@ -20,37 +20,6 @@ export class PublishApiService {
   }
 
   /**
-   * Send developer email
-   */
-  async sendDeveloperEmail(email: string): Promise<PublishResponse> {
-    try {
-      const {apiKey} = useBotStore();
-      const response = await axiosInstance.post('/v1/webbot/email-code', {
-        email,
-        apikey: apiKey
-      }, {
-        timeout: 30000 // 30 seconds timeout
-      });
-
-      console.log('Send developer email response:', response.data);
-
-      return {
-        success: true,
-        message: 'Email sent successfully',
-        data: response.data
-      };
-    } catch (error: any) {
-      console.error('Error sending developer email:', error);
-
-      return {
-        success: false,
-        message: error.response?.data?.message || error.message || 'Failed to send email',
-        data: error.response?.data
-      };
-    }
-  }
-
-  /**
    * Save landing settings
    */
   async saveLandingSettings(backgroundStyle: 'primary' | 'gradient' | 'secondary'): Promise<PublishResponse> {
@@ -93,8 +62,11 @@ export class PublishApiService {
   }): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
-      const response = await axiosInstance.post('/bot/telegram/settings', {
-        ...settings,
+      const response = await axiosInstance.post('/v1/save-telegram-conf', {
+        access_token: settings.accessToken,
+        bot_name: settings.botName,
+        telegram_number: settings.telegramNumber,
+        telegram_url: settings.telegramChatbotUrl,
         apikey: apiKey
       }, {
         timeout: 30000 // 30 seconds timeout
@@ -113,6 +85,108 @@ export class PublishApiService {
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to save Telegram settings',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Save Twilio settings
+   */
+  async saveTwilioSettings(settings: {
+    twilioAccountSid: string;
+    twilioAuthToken: string;
+    twilioSmsNumber: string;
+    twilioSenderId: string;
+  }): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.post('/v1/twilio/save-configuration', {
+        twilio_account_sid: settings.twilioAccountSid,
+        twilio_auth_token: settings.twilioAuthToken,
+        twilio_sms_number: settings.twilioSmsNumber,
+        twilio_sender_id: settings.twilioSenderId,
+        apikey: apiKey
+      }, {
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Save Twilio settings response:', response.data);
+
+      return {
+        success: true,
+        message: 'Twilio settings saved successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error saving Twilio settings:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to save Twilio settings',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Get SMS report
+   */
+  async getSmsReport(page: number = 1): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.get('/v1/bot/sms/report', {
+        params: {
+          apikey: apiKey,
+          page: page
+        },
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Get SMS report response:', response.data);
+
+      return {
+        success: true,
+        message: 'SMS report retrieved successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error getting SMS report:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to get SMS report',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Get bot details
+   */
+  async getBotDetails(): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.get('/v1/get-bot-details', {
+        params: {
+          apikey: apiKey
+        },
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Get bot details response:', response.data);
+
+      return {
+        success: true,
+        message: 'Bot details retrieved successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error getting bot details:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to get bot details',
         data: error.response?.data
       };
     }

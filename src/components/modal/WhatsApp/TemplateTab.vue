@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import SearchBar from "@/components/ui/SearchBar.vue";
-import CreateTemplateModal from "./CreateTemplateModal.vue";
+import Input from "@/components/ui/Input.vue";
+import CreateTemplateModal from "./Create/CreateTemplateModal.vue";
 
 // Props
 interface Props {
@@ -121,6 +121,11 @@ const handlePageChange = (page: number) => {
   currentPage.value = page;
 };
 
+const handleSearch = (query: string) => {
+  searchQuery.value = query;
+  currentPage.value = 1; // Reset to first page on new search
+};
+
 // Expose methods for parent component
 defineExpose({
   currentPage,
@@ -133,9 +138,11 @@ defineExpose({
   <div class="tab-panel">
     <div class="media-header">
       <div class="search-create-section">
-        <SearchBar
-          v-model="searchQuery"
+        <Input 
+          v-model="searchQuery" 
           placeholder="Search templates..."
+          searchable
+          @search="handleSearch"
         />
         
         <!-- Create Button moved back to search section -->

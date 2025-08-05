@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
 import Pagination from "@/components/ui/Pagination.vue";
+import Button from "@/components/ui/Button.vue";
 import { ref } from "vue";
 import PublishAgentTab from "./PublishAgentTab.vue";
 import BroadcastTab from "./BroadcastTab.vue";
@@ -158,7 +159,7 @@ defineExpose({ openModal, closeModal });
     ref="modalRef"
     title="WhatsApp Integration"
     :tabs="tabs"
-    max-width="650px"
+    max-width="1000px"
     default-tab="publish-agent"
     @back="handleBack"
     @tab-change="handleTabChange"
@@ -214,24 +215,26 @@ defineExpose({ openModal, closeModal });
     
     <template #actions>
       <!-- Test Bot Button for Publish Bot Tab -->
-      <button 
+      <Button 
         v-if="currentActiveTab === 'publish-agent'" 
-        class="action-button"
+        variant="secondary"
+        size="medium"
+        :loading="isLoading"
         @click="handleTestBot"
-        :disabled="isLoading"
       >
         {{ isLoading ? 'Testing...' : 'Test Agent' }}
-      </button>
+      </Button>
       
       <!-- Save Settings Button for Publish Bot Tab -->
-      <button 
+      <Button 
         v-if="currentActiveTab === 'publish-agent' && publishAgentTabRef?.selectedProvider?.()" 
-        class="action-button primary" 
+        variant="primary"
+        size="medium"
+        :loading="isLoading"
         @click="handleSaveSettings"
-        :disabled="isLoading"
       >
         {{ isLoading ? 'Saving...' : 'Save Settings' }}
-      </button>
+      </Button>
 
       <!-- Pagination for Template Tab -->
       <Pagination
@@ -246,14 +249,15 @@ defineExpose({ openModal, closeModal });
       />
 
       <!-- Send Message Button for Broadcast Tab -->
-      <button 
+      <Button 
         v-if="currentActiveTab === 'broadcast'" 
-        class="action-button primary"
+        variant="primary"
+        size="medium"
+        :loading="isLoading"
         @click="broadcastTabRef?.sendBroadcast()"
-        :disabled="isLoading"
       >
         {{ isLoading ? 'Sending...' : 'Send Message' }}
-      </button>
+      </Button>
     </template>
   </PublishModalLayout>
 </template>

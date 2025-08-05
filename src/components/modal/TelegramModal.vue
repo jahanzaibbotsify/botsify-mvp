@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
-import { ref } from "vue";
+import {Button, Input, PublishModalLayout} from "@/components/ui";
+import { ref, onMounted } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 
 // Define tabs
@@ -27,6 +27,7 @@ const telegramForm = ref({
 
 const openModal = () => {
   modalRef.value?.openModal();
+  loadTelegramSettings();
 };
 
 const closeModal = () => {
@@ -40,6 +41,24 @@ const handleBack = () => {
 const handleTabChange = (tabId: string) => {
   console.log('Tab changed to:', tabId);
   currentActiveTab.value = tabId;
+};
+
+// Load existing Telegram settings
+const loadTelegramSettings = async () => {
+  try {
+    const result = await publishStore.getBotDetails();
+    if (result.success && result.data?.telegramConf?.setting) {
+      const settings = result.data.telegramConf.setting;
+      telegramForm.value = {
+        accessToken: settings.access_token || '',
+        botName: settings.bot_name || '',
+        telegramNumber: settings.telegram_number || '',
+        telegramChatbotUrl: settings.telegram_url || ''
+      };
+    }
+  } catch (error) {
+    console.error('Failed to load Telegram settings:', error);
+  }
 };
 
 // Methods
@@ -74,7 +93,7 @@ defineExpose({ openModal, closeModal });
     ref="modalRef"
     title="Telegram Integration"
     :tabs="tabs"
-    max-width="650px"
+    max-width="1000px"
     default-tab="publish"
     @back="handleBack"
     @tab-change="handleTabChange"
@@ -88,12 +107,12 @@ defineExpose({ openModal, closeModal });
         <div class="form-section">
           <div class="form-group">
             <label for="access-token">Access Token</label>
-            <input 
+            <Input 
               id="access-token"
               v-model="telegramForm.accessToken"
               type="text"
               placeholder="Enter your Telegram bot access token"
-              class="form-input"
+              size="medium"
             />
             <small class="help-text">
               Get this from @BotFather on Telegram
@@ -102,23 +121,23 @@ defineExpose({ openModal, closeModal });
           
           <div class="form-group">
             <label for="bot-name">Agent Name</label>
-            <input 
+            <Input 
               id="bot-name"
               v-model="telegramForm.botName"
               type="text"
               placeholder="Enter your agent name"
-              class="form-input"
+              size="medium"
             />
           </div>
           
           <div class="form-group">
             <label for="telegram-number">Telegram Number</label>
-            <input 
+            <Input 
               id="telegram-number"
               v-model="telegramForm.telegramNumber"
               type="tel"
               placeholder="Enter your Telegram phone number"
-              class="form-input"
+              size="medium"
             />
             <small class="help-text">
               Include country code (e.g., +1234567890)
@@ -127,12 +146,12 @@ defineExpose({ openModal, closeModal });
           
           <div class="form-group">
             <label for="chatbot-url">Telegram Agent URL</label>
-            <input 
+            <Input 
               id="chatbot-url"
               v-model="telegramForm.telegramChatbotUrl"
               type="url"
               placeholder="https://t.me/your_agent_username"
-              class="form-input"
+              size="medium"
             />
             <small class="help-text">
               The URL where users can access your agent
@@ -144,14 +163,15 @@ defineExpose({ openModal, closeModal });
     
     <template #actions>
       <!-- Save Button for Publish Tab -->
-      <button 
+      <Button 
         v-if="currentActiveTab === 'publish'" 
-        class="action-button primary" 
+        variant="primary"
+        size="medium"
+        :loading="isLoading"
         @click="saveTelegramSettings"
-        :disabled="isLoading"
       >
         {{ isLoading ? 'Saving...' : 'Save' }}
-      </button>
+      </Button>
     </template>
   </PublishModalLayout>
 </template>
@@ -180,10 +200,6 @@ defineExpose({ openModal, closeModal });
 @media (max-width: 640px) {
   .form-group {
     margin-bottom: 16px;
-  }
-  
-  .form-input {
-    font-size: 16px; /* Prevent zoom on iOS */
   }
 }
 </style> 

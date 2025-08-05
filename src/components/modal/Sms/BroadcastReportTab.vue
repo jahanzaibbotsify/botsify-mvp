@@ -1,183 +1,190 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, onMounted } from "vue";
+import { usePublishStore } from "@/stores/publishStore";
+import { Table, TableHead, TableBody, TableHeader, TableCell, Badge } from "@/components/ui";
 
-// Props
-interface Props {
-  isLoading?: boolean;
-}
 
-const props = withDefaults(defineProps<Props>(), {
-  isLoading: false
-});
-
-const emit = defineEmits<{
-  'filter-report': [filters: any];
+defineEmits<{
+  'page-change': [page: number];
 }>();
 
-// Reactive data
-const selectedPeriod = ref('7d');
-const selectedStatus = ref('all');
+const publishStore = usePublishStore();
 
-// Sample report data
-const reportData = ref([
-  {
-    id: 1,
-    message: 'Welcome Campaign',
-    recipients: 150,
-    delivered: 142,
-    read: 89,
-    status: 'completed',
-    sentAt: '2024-01-15 10:30:00'
+// Reactive data
+const reportData = ref<any>(null);
+const currentPage = ref(1);
+const totalPages = ref(1);
+const totalItems = ref(0);
+const isLoading = ref(false);
+
+// Stats cards data
+const statsCards = ref([
+  { 
+    title: 'Sent Today', 
+    value: 0, 
+    icon: 'pi pi-send',
+    color: 'var(--color-primary, #3b82f6)',
+    bgColor: 'rgba(59, 130, 246, 0.1)'
   },
-  {
-    id: 2,
-    message: 'Product Launch',
-    recipients: 200,
-    delivered: 195,
-    read: 156,
-    status: 'completed',
-    sentAt: '2024-01-14 14:20:00'
+  { 
+    title: 'Delivered Today', 
+    value: 0, 
+    icon: 'pi pi-check-circle',
+    color: 'var(--color-secondary, #10b981)',
+    bgColor: 'rgba(16, 185, 129, 0.1)'
   },
-  {
-    id: 3,
-    message: 'Weekly Newsletter',
-    recipients: 300,
-    delivered: 287,
-    read: 201,
-    status: 'completed',
-    sentAt: '2024-01-13 09:15:00'
+  { 
+    title: 'Failed Today', 
+    value: 0, 
+    icon: 'pi pi-times-circle',
+    color: 'var(--color-error, #ef4444)',
+    bgColor: 'rgba(239, 68, 68, 0.1)'
   }
 ]);
 
-// Computed properties
-const filteredReports = computed(() => {
-  let filtered = reportData.value;
-  
-  if (selectedStatus.value !== 'all') {
-    filtered = filtered.filter(report => report.status === selectedStatus.value);
-  }
-  
-  return filtered;
-});
-
-const totalRecipients = computed(() => {
-  return filteredReports.value.reduce((sum, report) => sum + report.recipients, 0);
-});
-
-const totalDelivered = computed(() => {
-  return filteredReports.value.reduce((sum, report) => sum + report.delivered, 0);
-});
-
-const totalRead = computed(() => {
-  return filteredReports.value.reduce((sum, report) => sum + report.read, 0);
-});
-
-const deliveryRate = computed(() => {
-  return totalRecipients.value > 0 ? ((totalDelivered.value / totalRecipients.value) * 100).toFixed(1) : '0';
-});
-
-const readRate = computed(() => {
-  return totalDelivered.value > 0 ? ((totalRead.value / totalDelivered.value) * 100).toFixed(1) : '0';
-});
-
-
-
-const filterReport = () => {
-  emit('filter-report', {
-    period: selectedPeriod.value,
-    status: selectedStatus.value
+// Date format utility function
+const formatDate = (dateString: string) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
   });
+};
+
+// Fetch SMS report data
+const fetchSmsReport = async (page: number = 1) => {
+  isLoading.value = true;
+  try {
+    const result = await publishStore.getSmsReport(page);
+    if (result.success && result.data) {
+      reportData.value = result.data;
+      currentPage.value = result.data.messages?.current_page || 1;
+      totalPages.value = result.data.messages?.last_page || 1;
+      totalItems.value = result.data.messages?.total || 0;
+      
+      // Update stats cards
+      statsCards.value[0].value = result.data.sent_today || 0;
+      statsCards.value[1].value = result.data.delivered_today || 0;
+      statsCards.value[2].value = result.data.failed_today || 0;
+    } else {
+      window.$toast.error(result.error || 'Failed to fetch SMS report');
+    }
+  } catch (error) {
+    console.error('Failed to fetch SMS report:', error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Helper functions
+const getStatusVariant = (message: any) => {
+  if (message.failed > 0) return 'error';
+  if (message.delivered > 0) return 'success';
+  if (message.sent > 0) return 'primary';
+  return 'warning';
+};
+
+const getStatusText = (message: any) => {
+  if (message.failed > 0) return 'Failed';
+  if (message.delivered > 0) return 'Delivered';
+  if (message.sent > 0) return 'Sent';
+  return 'Pending';
+};
+
+const truncateMessage = (message: string) => {
+  if (!message) return '';
+  if (message.length <= 200) return message;
+  return message.substring(0, 200) + '...';
 };
 
 // Expose methods for parent component
 defineExpose({
-  filterReport
+  fetchSmsReport,
+  currentPage,
+  totalPages,
+  totalItems
+});
+
+// Load data on mount
+onMounted(() => {
+  fetchSmsReport();
 });
 </script>
 
 <template>
   <div class="tab-panel">
-    <h3>Broadcast Report</h3>
-    <p class="subtitle">View broadcast analytics and reports</p>
+    <h3>SMS Report</h3>
+    <p class="subtitle">View SMS delivery analytics and reports</p>
     
-    <!-- Filters -->
-    <div class="filters-section">
-      <div class="filter-group">
-        <label for="period-filter">Time Period</label>
-        <select id="period-filter" v-model="selectedPeriod" class="form-input">
-          <option value="1d">Last 24 hours</option>
-          <option value="7d">Last 7 days</option>
-          <option value="30d">Last 30 days</option>
-          <option value="90d">Last 90 days</option>
-        </select>
-      </div>
-      
-      <div class="filter-group">
-        <label for="status-filter">Status</label>
-        <select id="status-filter" v-model="selectedStatus" class="form-input">
-          <option value="all">All Status</option>
-          <option value="completed">Completed</option>
-          <option value="pending">Pending</option>
-          <option value="failed">Failed</option>
-        </select>
-      </div>
-      
-      <button class="filter-button" @click="filterReport">
-        Apply Filters
-      </button>
-    </div>
-
-    <!-- Summary Stats -->
+    <!-- Stats Cards -->
     <div class="stats-section">
-      <div class="stat-card">
-        <div class="stat-value">{{ totalRecipients }}</div>
-        <div class="stat-label">Total Recipients</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ totalDelivered }}</div>
-        <div class="stat-label">Delivered</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ totalRead }}</div>
-        <div class="stat-label">Read</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ deliveryRate }}%</div>
-        <div class="stat-label">Delivery Rate</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ readRate }}%</div>
-        <div class="stat-label">Read Rate</div>
+      <div 
+        v-for="card in statsCards" 
+        :key="card.title"
+        class="stat-card"
+        :style="{ '--card-color': card.color, '--card-bg': card.bgColor }"
+      >
+        <div class="stat-icon">
+          <i :class="card.icon"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ card.value }}</div>
+          <div class="stat-label">{{ card.title }}</div>
+        </div>
       </div>
     </div>
 
-    <!-- Report Table -->
-    <div class="report-table">
-      <div class="table-header">
-        <div class="header-cell">Message</div>
-        <div class="header-cell">Recipients</div>
-        <div class="header-cell">Delivered</div>
-        <div class="header-cell">Read</div>
-        <div class="header-cell">Status</div>
-        <div class="header-cell">Sent At</div>
-      </div>
-      
-      <div 
-        v-for="report in filteredReports" 
-        :key="report.id"
-        class="table-row"
-      >
-        <div class="cell">{{ report.message }}</div>
-        <div class="cell">{{ report.recipients }}</div>
-        <div class="cell">{{ report.delivered }}</div>
-        <div class="cell">{{ report.read }}</div>
-        <div class="cell">
-          <span class="status-badge" :class="report.status">
-            {{ report.status }}
-          </span>
-        </div>
-        <div class="cell">{{ report.sentAt }}</div>
-      </div>
+    <!-- Messages Table -->
+    <div class="table-section">
+      <Table>
+        <TableHead>
+          <TableHeader width="80px">Status</TableHeader>
+          <TableHeader width="150px">Number</TableHeader>
+          <TableHeader width="200px">Message</TableHeader>
+          <TableHeader width="200px">Failure Reason</TableHeader>
+          <TableHeader width="80px">Sent At</TableHeader>
+        </TableHead>
+        <TableBody>
+          <!-- Loading State -->
+          <tr v-if="isLoading" v-for="i in 5" :key="`loading-${i}`">
+            <TableCell :isLoading="true" skeletonType="badge"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+          </tr>
+
+          <!-- Empty State -->
+          <tr v-else-if="!reportData?.messages?.data?.length">
+            <TableCell :noData="true" colspan="5">
+              <div class="empty-state">
+                <div class="empty-icon">
+                  <i class="pi pi-inbox"></i>
+                </div>
+                <h4>No SMS messages found</h4>
+                <p>No SMS messages have been sent yet. Start sending messages to see them here.</p>
+              </div>
+            </TableCell>
+          </tr>
+
+          <!-- Data State -->
+          <tr v-else v-for="message in reportData?.messages?.data" :key="message.id">
+            <TableCell>
+              <Badge :variant="getStatusVariant(message)" size="small">
+                {{ getStatusText(message) }}
+              </Badge>
+            </TableCell>
+            <TableCell>{{ message.number }}</TableCell>
+            <TableCell>{{ truncateMessage(message.message) }}</TableCell>
+            <TableCell>{{ message.failure_reason || '-' }}</TableCell>
+            <TableCell>{{ formatDate(message.sent_time) }}</TableCell>
+          </tr>
+        </TableBody>
+      </Table>
     </div>
   </div>
 </template>
@@ -201,63 +208,10 @@ defineExpose({
   color: var(--color-text-secondary, #6b7280);
 }
 
-.filters-section {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
-  align-items: end;
-}
-
-.filter-group {
-  flex: 1;
-}
-
-.filter-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-}
-
-.form-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-bg-tertiary, #f3f4f6);
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-  font-family: inherit;
-  transition: border-color var(--transition-normal, 0.2s ease);
-  box-sizing: border-box;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--color-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.filter-button {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-  border: none;
-  padding: 12px 16px;
-  border-radius: var(--radius-md, 8px);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background var(--transition-normal, 0.2s ease);
-}
-
-.filter-button:hover {
-  background: var(--color-primary-hover, #2563eb);
-}
-
+/* Stats Cards */
 .stats-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -266,113 +220,102 @@ defineExpose({
   background: var(--color-bg-secondary, #f9fafb);
   border: 1px solid var(--color-border, #e5e7eb);
   border-radius: var(--radius-md, 8px);
-  padding: 16px;
-  text-align: center;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all var(--transition-normal, 0.2s ease);
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full, 9999px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-bg);
+  color: var(--card-color);
+}
+
+.stat-icon i {
+  font-size: 20px;
+}
+
+.stat-content {
+  flex: 1;
 }
 
 .stat-value {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 700;
   color: var(--color-text-primary, #111827);
   margin-bottom: 4px;
+  line-height: 1;
 }
 
 .stat-label {
-  font-size: 12px;
-  color: var(--color-text-secondary, #6b7280);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.report-table {
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  overflow: hidden;
-  margin-bottom: 24px;
-}
-
-.table-header {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
-  background: var(--color-bg-tertiary, #f3f4f6);
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
-}
-
-.header-cell {
-  padding: 12px 16px;
-  font-weight: 600;
   font-size: 14px;
-  color: var(--color-text-primary, #111827);
+  color: var(--color-text-secondary, #6b7280);
+  font-weight: 500;
 }
 
-.table-row {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
-  transition: background var(--transition-normal, 0.2s ease);
+/* Table Section */
+.table-section {
+  margin-top: 24px;
 }
 
-.table-row:hover {
-  background: var(--color-bg-secondary, #f9fafb);
-}
 
-.table-row:last-child {
+
+/* Empty State */
+.empty-row {
   border-bottom: none;
 }
 
-.cell {
-  padding: 12px 16px;
-  font-size: 14px;
-  color: var(--color-text-primary, #111827);
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+}
+
+.empty-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  background: var(--color-bg-tertiary, #f3f4f6);
+  border-radius: var(--radius-full, 9999px);
   display: flex;
   align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary, #9ca3af);
 }
 
-.status-badge {
-  padding: 4px 8px;
-  border-radius: var(--radius-sm, 4px);
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: capitalize;
+.empty-icon i {
+  font-size: 24px;
 }
 
-.status-badge.completed {
-  background: var(--color-secondary, #10b981);
-  color: white;
+.empty-state h4 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
 }
 
-.status-badge.pending {
-  background: var(--color-warning, #f59e0b);
-  color: white;
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text-secondary, #6b7280);
+  line-height: 1.5;
 }
 
-.status-badge.failed {
-  background: var(--color-error, #ef4444);
-  color: white;
-}
-
+/* Responsive Design */
 @media (max-width: 768px) {
-  .filters-section {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
   .stats-section {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .report-table {
-    font-size: 12px;
-  }
-  
-  .table-header,
-  .table-row {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-  
-  .header-cell,
-  .cell {
-    padding: 8px 12px;
+    grid-template-columns: 1fr;
   }
 }
-</style> 
+</style>
