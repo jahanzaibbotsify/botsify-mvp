@@ -341,7 +341,7 @@ onUnmounted(() => {
       </div> -->
     </div>
 
-    <div class="sidebar-pricing">
+    <div v-if="roleStore.canManageBillingWithSubscription" class="sidebar-pricing">
         <button class="pricing-button" @click="handleManageBilling" :disabled="billingLoading">
           <div class="button-content">
             <span class="pricing-text">
@@ -352,7 +352,7 @@ onUnmounted(() => {
           </div>
         </button>
     </div>
-    <div class="sidebar-pricing">
+    <div v-else class="sidebar-pricing">
         <button class="pricing-button" @click="handleCalendly">
           <div class="button-content">
             <span class="pricing-text">Book Demo</span>
