@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 
 interface Props {
-  variant?: 'primary' | 'success' | 'warning' | 'error' | 'secondary';
+  variant?: 'primary' | 'success' | 'warning' | 'error' | 'secondary' | 'primary-outline' | 'success-outline' | 'warning-outline' | 'error-outline';
   size?: 'large' | 'medium' | 'small';
   type?: 'button' | 'submit' | 'reset';
   disabled?: boolean;
@@ -172,6 +172,75 @@ const handleClick = (event: MouseEvent) => {
 .ui-button--secondary:active:not(.ui-button--disabled) {
   background-color: var(--color-bg-active);
 }
+
+.ui-button--primary-outline {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+}
+
+.ui-button--primary-outline:hover:not(.ui-button--disabled) {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.ui-button--primary-outline:active:not(.ui-button--disabled) {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.ui-button--success-outline {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-success);
+  border: 1px solid var(--color-border);
+}
+
+.ui-button--success-outline:hover:not(.ui-button--disabled) {
+  background-color: var(--color-success);
+  border-color: var(--color-success);
+  color: white;
+}
+
+.ui-button--success-outline:active:not(.ui-button--disabled) {
+  background-color: var(--color-success);
+  color: white;
+}
+
+.ui-button--warning-outline {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-warning);
+  border: 1px solid var(--color-border);
+}
+
+.ui-button--warning-outline:hover:not(.ui-button--disabled) {
+  background-color: var(--color-warning);
+  border-color: var(--color-warning);
+  color: white;
+}
+
+.ui-button--warning-outline:active:not(.ui-button--disabled) {
+  background-color: var(--color-warning);
+  color: white;
+}
+
+.ui-button--error-outline {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-error);
+  border: 1px solid var(--color-border);
+}
+
+.ui-button--error-outline:hover:not(.ui-button--disabled) {
+  background-color: var(--color-error);
+  border-color: var(--color-error);
+  color: white
+}
+
+.ui-button--error-outline:active:not(.ui-button--disabled) {
+  background-color: var(--color-error);
+  color: white;
+}
+
 
 /* Sizes */
 .ui-button--small {

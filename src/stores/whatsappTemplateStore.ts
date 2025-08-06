@@ -1,11 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { usePublishStore } from './publishStore';
+import { publishApi } from '@/services/publishApi';
 
 export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
-  // Store
-  const publishStore = usePublishStore();
-
   // Views management
   const views = ref({
     fields: 'current',
@@ -19,6 +16,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     type: 'text',
     bodyIncludes: ['body'],
     header: 'text',
+    header_text: '',
     footer_text: '',
     slides: [] as any[],
     otpLength: '6',
@@ -29,19 +27,26 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
   const block = ref({
     language: 'en',
     text: '',
+    image_url: '',
+    video_url: '',
+    attachment_link: '',
     buttons: [
       {
         type: 'postback',
         text: '',
-        value: ''
+        value: '',
+        title: '',
+        url: '',
+        response: ''
       }
     ],
-    attachment_link: '',
     slides: [] as any[]
   });
 
   const errors = ref({
     body: '',
+    header: '',
+    footer: '',
     file: {} as Record<string, string>
   });
 
@@ -82,6 +87,24 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
   const isMediaType = computed(() => template.value.type === 'media');
   const isGenericType = computed(() => template.value.type === 'generic');
 
+  // Variable counting functions
+  const countVariables = (text: string): number => {
+    const regex = /\{\{(\d+)\}\}/g;
+    const matches = text.match(regex);
+    return matches ? matches.length : 0;
+  };
+
+  const canAddVariable = (section: string): boolean => {
+    const text = section === 'header' ? template.value.header_text : block.value.text;
+    const count = countVariables(text);
+    return count < 1; // Header allows only 1 variable
+  };
+
+  const getVariableCount = (section: string): number => {
+    const text = section === 'header' ? template.value.header_text : block.value.text;
+    return countVariables(text);
+  };
+
   // Methods
   const afterSelect = () => {
     // Handle after select
@@ -107,6 +130,14 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     }
   };
 
+  const onChangeHeaderType = () => {
+    // Clear previous header content when type changes
+    template.value.header_text = '';
+    block.value.image_url = '';
+    block.value.video_url = '';
+    block.value.attachment_link = '';
+  };
+
   const onChangeCta = (buttonIndex: number, fieldIndex: number) => {
     // Handle CTA change
   };
@@ -115,13 +146,34 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     // Check for variables in text
   };
 
-  const addVariable = () => {
-    const currentText = block.value.text;
+  const addVariable = (section?: string) => {
+    // Check if we can add more variables
+    if (!canAddVariable(section || 'body')) {
+      return;
+    }
+
+    const currentText = section === 'header' ? template.value.header_text : block.value.text;
     const nextVarNum = extractVariables(currentText).length + 1;
-    const cursorPos = (document.querySelector('.body-textarea') as HTMLTextAreaElement)?.selectionStart || currentText.length;
+    const cursorPos = (document.querySelector(`.${section}-textarea`) as HTMLTextAreaElement)?.selectionStart || currentText.length;
     
     const newText = currentText.slice(0, cursorPos) + `{{${nextVarNum}}}` + currentText.slice(cursorPos);
-    block.value.text = newText;
+    
+    if (section === 'header') {
+      template.value.header_text = newText;
+    } else {
+      block.value.text = newText;
+    }
+  };
+
+  const removeVariable = (section?: string) => {
+    const currentText = section === 'header' ? template.value.header_text : block.value.text;
+    const newText = currentText.replace(/\{\{\d+\}\}/g, '');
+    
+    if (section === 'header') {
+      template.value.header_text = newText;
+    } else {
+      block.value.text = newText;
+    }
   };
 
   const extractVariables = (text: string): number[] => {
@@ -168,22 +220,29 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     }
 
     try {
+      // Format buttons according to API requirements
+      const formattedButtons = block.value.buttons.map(button => ({
+        api: button.type === 'postback' ? 0 : 1,
+        type: button.type === 'postback' ? 'postback' : (button.type === 'web_url' ? 'url' : 'phone_number'),
+        url: button.type === 'web_url' ? button.url : null,
+        title: button.text || button.title || '',
+        payload: button.type === 'postback' ? button.response || '' : null
+      }));
+
       const templateData = {
         name: template.value.name || 'Template',
-        category: template.value.category,
+        text: block.value.text,
         language: block.value.language,
-        type: template.value.type,
-        body: block.value.text,
-        footer: template.value.footer_text,
-        buttons: block.value.buttons,
-        bodyIncludes: template.value.bodyIncludes,
-        slides: template.value.slides,
-        otpLength: template.value.otpLength,
-        otpExpiry: template.value.otpExpiry
+        template_specs: {
+          category: template.value.category,
+          header: template.value.header,
+          button_type: template.value.type === 'media' ? 'cta' : 'qr',
+          footer_text: template.value.footer_text,
+          variables: template.value.variables || {}
+        },
+        buttons: formattedButtons
       };
-
-      const result = await publishStore.createTemplate(templateData);
-      
+      const result = await publishApi.createTemplate(templateData);
       if (result.success) {
         window.$toast?.success('Template created successfully!');
         return { success: true, data: templateData };
@@ -205,6 +264,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
       type: 'text',
       bodyIncludes: ['body'],
       header: 'text',
+      header_text: '',
       footer_text: '',
       slides: [] as any[],
       otpLength: '6',
@@ -214,13 +274,17 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     block.value = {
       language: 'en',
       text: '',
-      buttons: [{ type: 'postback', text: '', value: '' }],
+      image_url: '',
+      video_url: '',
       attachment_link: '',
+      buttons: [{ type: 'postback', text: '', value: '', title: '', url: '', response: '' }],
       slides: [] as any[]
     };
     views.value = { fields: 'current', settings: 'hidden' };
     errors.value = {
       body: '',
+      header: '',
+      footer: '',
       file: {}
     };
   };
@@ -255,13 +319,20 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     isMediaType,
     isGenericType,
     
+    // Variable functions
+    countVariables,
+    canAddVariable,
+    getVariableCount,
+    
     // Methods
     afterSelect,
     onChangeCategory,
     onChangeTemplateType,
+    onChangeHeaderType,
     onChangeCta,
     checkForVariables,
     addVariable,
+    removeVariable,
     extractVariables,
     createSlide,
     goNext,

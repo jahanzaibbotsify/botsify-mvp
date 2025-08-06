@@ -100,7 +100,7 @@
         </div>
 
         <div class="button-footer">
-          <p class="characters-count">{{ button.title.length }}/20 characters</p>
+          <p class="characters-count">{{ (button.title || '').length }}/20 characters</p>
         </div>
 
         <!-- Button Response -->
@@ -143,7 +143,7 @@
         </div>
 
         <div v-if="button.type === 'postback'" class="button-footer">
-          <p class="characters-count">{{ button.response.length }}/20 characters</p>
+          <p class="characters-count">{{ (button.response || '').length }}/20 characters</p>
         </div>
 
         <template v-if="button.type === 'web_url'">
@@ -206,8 +206,8 @@ const ctaOptions = [
   align-items: center;
   justify-content: space-between;
   padding: var(--space-2);
-  border: 1px dashed var(--color-border);
-  background-color: var(--color-bg-secondary);
+  border: 1px dashed var(--color-border-secondary);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
 .buttons-label {
@@ -239,9 +239,8 @@ const ctaOptions = [
 }
 
 .buttons-body {
-  border: 1px dashed var(--color-border);
+  border: 1px dashed var(--color-border-secondary);
   border-bottom: none;
-  background-color: var(--color-bg-secondary);
   padding: var(--space-3);
 }
 
@@ -258,9 +257,9 @@ const ctaOptions = [
   align-items: center;
   justify-content: space-between;
   padding: var(--space-2);
-  border: 1px dashed var(--color-border);
+  border: 1px dashed var(--color-border-secondary);
   border-bottom: none;
-  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
 .button-type-label {
@@ -279,9 +278,8 @@ const ctaOptions = [
 }
 
 .button-title-container {
-  border: 1px dashed var(--color-border);
+  border: 1px dashed var(--color-border-secondary);
   border-bottom: none;
-  background-color: var(--color-bg-secondary);
 }
 
 .button-title-input {
@@ -303,16 +301,15 @@ const ctaOptions = [
 .button-footer {
   display: flex;
   justify-content: flex-end;
-  border: 1px dashed var(--color-border);
+  border: 1px dashed var(--color-border-secondary);
   border-top: none;
-  background-color: var(--color-bg-secondary);
+  border-bottom: none;
   padding: var(--space-2);
 }
 
 .button-response-container {
   border: 1px dashed var(--color-border);
   position: relative;
-  background-color: var(--color-bg-secondary);
 }
 
 .button-response-container:not(:has(textarea)) {
@@ -346,9 +343,8 @@ const ctaOptions = [
 .buttons-footer {
   display: flex;
   justify-content: flex-end;
-  border: 1px dashed var(--color-border);
-  border-top: none;
-  background-color: var(--color-bg-secondary);
+  border: 1px dashed var(--color-border-secondary);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
   padding: var(--space-2);
 }
 

@@ -27,6 +27,11 @@ const emit = defineEmits<{
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
 
+// File input refs
+const imageInput = ref<HTMLInputElement | null>(null);
+const videoInput = ref<HTMLInputElement | null>(null);
+const documentInput = ref<HTMLInputElement | null>(null);
+
 // Store
 const store = useWhatsAppTemplateStore();
 
@@ -60,6 +65,40 @@ const handleSave = async () => {
   if (result?.success) {
     emit('create-template', result.data);
     closeModal();
+  }
+};
+
+// File upload handlers
+const handleImageUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file) {
+    // Here you would typically upload the file to your server
+    // For now, we'll create a local URL
+    const url = URL.createObjectURL(file);
+    store.block.image_url = url;
+  }
+};
+
+const handleVideoUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file) {
+    // Here you would typically upload the file to your server
+    // For now, we'll create a local URL
+    const url = URL.createObjectURL(file);
+    store.block.video_url = url;
+  }
+};
+
+const handleDocumentUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file) {
+    // Here you would typically upload the file to your server
+    // For now, we'll create a local URL
+    const url = URL.createObjectURL(file);
+    store.block.attachment_link = url;
   }
 };
 
@@ -114,19 +153,91 @@ defineExpose({ openModal, closeModal, openModalWithData });
                       </div>
 
                       <!-- TEMPLATE HEADER -->
-                      <div v-if="store.template.bodyIncludes.includes('header')" class="form-group">
-                        <label>Header Type</label>
-                        <VueSelect
-                          :model-value="store.template.header"
-                          @update:model-value="(value: any) => store.template.header = value"
-                          :options="[
-                            { label: 'Text', value: 'text' },
-                            { label: 'Image', value: 'image' },
-                            { label: 'Video', value: 'video' },
-                            { label: 'Document', value: 'document' }
-                          ]"
-                          placeholder="Select header type"
-                        />
+                      <div class="form-group" v-show="store.template.type == 'media' && store.template.bodyIncludes.includes('header')">
+                        <div class="header-container">
+                          <p class="header-label">header</p>
+                          <div class="header-controls" :class="store.template.header == 'text' ? 'justify-between' : 'justify-end'">
+                            <template v-if="store.template.header == 'text'">
+                              <Button 
+                                v-if="store.canAddVariable('header')" 
+                                type="button" 
+                                @click="store.addVariable('header')"
+                                variant="primary"
+                                size="small"
+                              >
+                                Add Variable <i class="fa fa-plus"></i>
+                              </Button>
+                              <Button 
+                                v-else 
+                                type="button"
+                                variant="secondary"
+                                size="small"
+                                disabled
+                              >
+                                Add Variable <i class="fa fa-plus"></i>
+                              </Button>
+                            </template>
+                            <VueSelect
+                              @close="store.afterSelect"
+                              :clearable="false"
+                              v-model="store.template.header"
+                              :reduce="(h_type: any) => h_type.value"
+                              placeholder="Select Header Type"
+                              :options="[
+                                {label: 'Text', value: 'text'},
+                                {label: 'Video', value: 'video'},
+                                {label: 'Image', value: 'image'},
+                                {label: 'Document', value: 'document'}
+                              ]"
+                              @input="store.onChangeHeaderType"
+                            />
+                          </div>
+                        </div>
+                        <div class="header-body" :class="store.template.header != 'text' ? 'text-center' : ''">
+                          <textarea 
+                            v-if="store.template.header == 'text'" 
+                            v-model="store.template.header_text" 
+                            @input="store.checkForVariables('header')" 
+                            rows="4" 
+                            class="header-textarea" 
+                            placeholder="Type your media block header text here..."
+                          ></textarea>
+                          <div v-else-if="store.template.header == 'image'" class="file-upload">
+                            <img v-if="store.block.image_url" :src="store.block.image_url" class="header-image" alt="header-image">
+                            <div v-else class="upload-placeholder">
+                              <i class="fa fa-image"></i>
+                              <p>Click to upload image</p>
+                              <input type="file" accept="image/*" @change="handleImageUpload" style="display: none;" ref="imageInput">
+                              <Button @click="$refs.imageInput.click()" variant="secondary" size="small">Upload Image</Button>
+                            </div>
+                          </div>
+                          <div v-else-if="store.template.header == 'video'" class="file-upload">
+                            <video v-if="store.block.video_url" :src="store.block.video_url" controls class="header-video"></video>
+                            <div v-else class="upload-placeholder">
+                              <i class="fa fa-video"></i>
+                              <p>Click to upload video</p>
+                              <input type="file" accept="video/*" @change="handleVideoUpload" style="display: none;" ref="videoInput">
+                              <Button @click="$refs.videoInput.click()" variant="secondary" size="small">Upload Video</Button>
+                            </div>
+                          </div>
+                          <div v-else-if="store.template.header == 'document'" class="file-upload">
+                            <div v-if="store.block.attachment_link" class="document-preview">
+                              <i class="fa fa-file"></i>
+                              <span>Document uploaded</span>
+                            </div>
+                            <div v-else class="upload-placeholder">
+                              <i class="fa fa-file"></i>
+                              <p>Click to upload document</p>
+                              <input type="file" accept=".pdf,.doc,.docx" @change="handleDocumentUpload" style="display: none;" ref="documentInput">
+                              <Button @click="$refs.documentInput.click()" variant="secondary" size="small">Upload Document</Button>
+                            </div>
+                          </div>
+                        </div>
+                        <div v-if="store.template.header == 'text'" class="header-footer">
+                          <p class="characters-count">{{ store.template.header_text?.length || 0 }}/60 characters</p>
+                          <p class="characters-count">{{ store.getVariableCount('header') }}/1 variable</p>
+                        </div>
+                        <p class="text-danger" v-if="store.errors.header"><small>{{ store.errors.header }}</small></p>
                       </div>
 
                       <!-- TEMPLATE BODY -->
@@ -136,17 +247,27 @@ defineExpose({ openModal, closeModal, openModalWithData });
                         :error-text="store.errors.body"
                         @update:text="(val: string) => store.block.text = val"
                         @update:error-text="(val: string) => store.errors.body = val"
-                        @add-variable="() => store.addVariable()"
+                        @add-variable="() => store.addVariable('body')"
                         @check-variables="(val: string) => store.checkForVariables('body')"
                       />
 
                       <!-- TEMPLATE FOOTER -->
-                      <div v-if="store.template.bodyIncludes.includes('footer')" class="form-group">
-                        <label>Footer Text</label>
-                        <Input
-                          v-model="store.template.footer_text"
-                          placeholder="Enter footer text"
-                        />
+                      <div class="form-group" v-show="store.template.type == 'media' && store.template.bodyIncludes.includes('footer')">
+                        <div class="footer-container">
+                          <p class="footer-label">footer</p>
+                        </div>
+                        <div class="footer-body">
+                          <textarea 
+                            v-model="store.template.footer_text" 
+                            rows="4" 
+                            class="footer-textarea" 
+                            placeholder="Type your media block footer text here..."
+                          ></textarea>
+                        </div>
+                        <div class="footer-footer">
+                          <p class="characters-count">{{ store.template.footer_text?.length || 0 }}/60 characters</p>
+                        </div>
+                        <p class="text-danger" v-if="store.errors.footer"><small>{{ store.errors.footer }}</small></p>
                       </div>
 
                       <!-- TEMPLATE BUTTONS -->
@@ -281,10 +402,209 @@ defineExpose({ openModal, closeModal, openModalWithData });
   font-size: 12px;
 }
 
+/* Header Styles */
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2);
+  border: 1px dashed var(--color-border-secondary);
+  border-bottom: none;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.header-label {
+  margin: 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-primary);
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.header-controls.justify-between {
+  justify-content: space-between;
+}
+
+.header-controls.justify-end {
+  justify-content: flex-end;
+}
+
+.header-body {
+  border: 1px dashed var(--color-border-secondary);
+  border-bottom: none;
+}
+
+.header-body.text-center {
+  text-align: center;
+  padding: var(--space-3);
+  border-bottom: 1px dashed var(--color-border-secondary) !important;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.header-textarea {
+  width: 100%;
+  border: none;
+  padding: var(--space-3);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+}
+
+.header-textarea:focus {
+  outline: none;
+}
+
+.header-image {
+  max-width: 100px;
+  height: auto;
+  border-radius: var(--radius-md);
+}
+
+.header-video {
+  max-width: 100px;
+  height: auto;
+  border-radius: var(--radius-md);
+}
+
+.file-upload {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px dashed var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.file-upload:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-primary);
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.upload-placeholder i {
+  font-size: 24px;
+}
+
+.document-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  background: var(--color-bg-success);
+  border-radius: var(--radius-md);
+  color: var(--color-text-success);
+  font-size: 12px;
+}
+
+.document-preview i {
+  font-size: 18px;
+}
+
+.header-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  border: 1px dashed var(--color-border-secondary);
+  border-top: none;
+  padding: var(--space-2);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+/* Footer Styles */
+.footer-container {
+  display: flex;
+  align-items: baseline;
+  padding: var(--space-2);
+  border: 1px dashed var(--color-border-secondary);
+  border-bottom: none;
+  gap: var(--space-3);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.footer-label {
+  margin: 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-primary);
+}
+
+.footer-body {
+  border: 1px dashed var(--color-border-secondary);
+  border-bottom: none;
+}
+
+.footer-textarea {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: var(--space-3);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+}
+
+.footer-textarea:focus {
+  outline: none;
+}
+
+.footer-footer {
+  display: flex;
+  justify-content: flex-end;
+  border: 1px dashed var(--color-border-secondary);
+  border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  padding: var(--space-2);
+}
+
+.characters-count {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-border);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.text-danger {
+  color: var(--color-error);
+  margin-top: var(--space-2);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .body-header-selector {
     flex-direction: column;
+  }
+  
+  .header-controls {
+    flex-direction: column;
+    gap: var(--space-2);
   }
 }
 </style>

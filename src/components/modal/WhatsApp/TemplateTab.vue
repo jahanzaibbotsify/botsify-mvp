@@ -194,7 +194,7 @@ defineExpose({
             <TableCell>
               <div class="action-buttons">
                 <Button
-                  variant="error"
+                  variant="error-outline"
                   size="small"
                   icon="pi pi-trash"
                   iconOnly
@@ -202,7 +202,7 @@ defineExpose({
                   title="Delete template"
                 />
                 <Button
-                  variant="secondary"
+                  variant="primary-outline"
                   size="small"
                   icon="pi pi-copy"
                   iconOnly
@@ -210,7 +210,7 @@ defineExpose({
                   title="Clone template"
                 />
                 <Button
-                  variant="secondary"
+                  variant="success-outline"
                   size="small"
                   icon="pi pi-eye"
                   iconOnly
@@ -218,7 +218,7 @@ defineExpose({
                   title="Preview template"
                 />
                 <Button
-                  variant="secondary"
+                  variant="warning-outline"
                   size="small"
                   icon="pi pi-id-card"
                   iconOnly

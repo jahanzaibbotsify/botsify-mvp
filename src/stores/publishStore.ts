@@ -365,39 +365,6 @@ export const usePublishStore = defineStore('publish', () => {
     }
   };
 
-  const createTemplate = async (templateData: any) => {
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const result = await publishApi.createTemplate(templateData);
-      
-      if (result.success) {
-        // Show success toast
-        if (window.$toast) {
-          window.$toast.success('Template created successfully!');
-        }
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to create template';
-        // Show error toast
-        if (window.$toast) {
-          window.$toast.error(error.value);
-        }
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to create template';
-      // Show error toast
-      if (window.$toast) {
-        window.$toast.error(error.value);
-      }
-      return { success: false, error: error.value };
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
   const getWhatsAppBroadcastReport = async (params: {
     page?: number;
     per_page?: number;
@@ -450,7 +417,6 @@ export const usePublishStore = defineStore('publish', () => {
     getSmsReport,
     fetchTemplates,
     deleteTemplate,
-    createTemplate,
     getWhatsAppBroadcastReport
   };
 }); 
