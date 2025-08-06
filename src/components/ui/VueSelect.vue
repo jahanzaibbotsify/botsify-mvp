@@ -89,7 +89,7 @@ const handleBlur = (event: FocusEvent) => {
         :multiple="multiple"
         :searchable="searchable"
         :clearable="clearable"
-        :disabled="disabled"
+        :isDisabled="disabled"
         :readonly="readonly"
         class="vue-select-component"
         @update:model-value="handleChange"

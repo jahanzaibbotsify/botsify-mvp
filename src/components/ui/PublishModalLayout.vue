@@ -12,6 +12,7 @@ interface Props {
   tabs: Tab[];
   maxWidth?: string;
   defaultTab?: string;
+  icon?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -84,6 +85,7 @@ defineExpose({
   <ModalLayout
     ref="modalRef"
     :title="title"
+    :icon="icon"
     :max-width="maxWidth"
     @close="handleClose"
   >

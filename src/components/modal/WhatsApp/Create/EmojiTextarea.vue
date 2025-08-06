@@ -17,7 +17,7 @@
         v-model="textValue"
         :maxlength="maxlength"
         :id="computedId"
-        rows="4"
+        rows="3"
         class="emoji-textarea"
         :placeholder="placeholder"
         @input="handleInput"
@@ -215,6 +215,7 @@ onUnmounted(() => {
   border-bottom: none;
   justify-content: space-between;
   border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--color-bg-secondary);
 }
 
 .emoji-label {
@@ -229,6 +230,7 @@ onUnmounted(() => {
   position: relative;
   border: 1px dashed var(--color-border-secondary);
   border-bottom: none;
+  background: white;
 }
 
 .emoji-textarea {
@@ -240,7 +242,6 @@ onUnmounted(() => {
   font-size: 14px;
   color: var(--color-text-primary);
   resize: vertical;
-  min-height: 120px;
   outline: none;
 }
 
@@ -320,6 +321,7 @@ onUnmounted(() => {
   border-top: none;
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   padding: var(--space-2);
+  background-color: var(--color-bg-secondary);
 }
 
 .characters-count {

@@ -6,6 +6,7 @@ interface Props {
   maxWidth?: string
   showCloseButton?: boolean
   closable?: boolean
+  icon?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -85,7 +86,10 @@ defineExpose({
       @click.stop
     >
       <div class="modal-header">
-        <h2>{{ props.title }}</h2>
+        <div class="modal-header-left">
+          <img v-if="icon" :src="icon" width="28" height="28" alt="logo" class="modal-logo" />
+          <h2>{{ props.title }}</h2>
+        </div>
         <button class="modal-close" @click="closeModal">
           <i class="pi pi-times"></i>
         </button>
@@ -133,6 +137,12 @@ defineExpose({
   padding: var(--space-4);
   border-bottom: 1px solid var(--color-border);
   background: linear-gradient(to right, rgba(0, 163, 255, 0.05), transparent);
+}
+
+.modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .modal-header h2 {

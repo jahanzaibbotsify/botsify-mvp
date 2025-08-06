@@ -2,169 +2,186 @@
   <div class="form-group" v-show="show">
     <div class="buttons-header">
       <p class="buttons-label">buttons</p>
-      <div class="buttons-controls" v-if="current == null || current <= 0">
-        <Button
-          v-if="block.buttons.length < template.total_buttons"
-          type="button"
-          @click="$emit('add-button', current || null)"
-          variant="primary"
-          size="small"
-        >
-          Add Button <i class="fa fa-plus"></i>
-        </Button>
-        <Button 
-          v-else 
-          type="button" 
-          variant="secondary" 
-          size="small"
-          disabled
-        >
-          Add Button <i class="fa fa-plus"></i>
-        </Button>
+              <div class="buttons-controls" v-if="current == null || current <= 0">
+          <Button
+            type="button"
+            @click="handleAddButton"
+            variant="primary"
+            size="small"
+            :disabled="!canAddButton"
+          >
+            Add Button <i class="fa fa-plus"></i>
+          </Button>
 
-        <div class="button-type-selector" v-if="current == null || current <= 0">
-          <VueSelect
-            @close="() => $emit('after-select')"
-            label="label"
-            :clearable="false"
-            v-model="template.button_type"
-            :reduce="(b: any) => b.value"
-            placeholder="Select Button Type"
-            :options="buttonTypeOptions"
-            @input="$emit('button-type-change', current || null)"
-            :disabled="block.buttons.length > 0"
-          />
+          <div class="button-type-selector" v-if="current == null || current <= 0">
+                         <VueSelect
+               @close="store.afterSelect"
+               :clearable="false"
+               v-model="props.template.button_type"
+               :reduce="(b: any) => b.value"
+               placeholder="Select Button Type"
+               :options="buttonTypeOptions"
+               @change="() => store.onButtonTypeChange(props.slideIndex)"
+               :disabled="props.block.buttons.length > 1 || (props.slideIndex !== undefined && props.block.slides[props.slideIndex]?.buttons?.length > 1)"
+             />
 
-          <i
-            v-if="current !== null && current !== undefined"
-            class="fa fa-info-circle fa-lg text-info"
-            title="All slide buttons must have the same label length and button type (e.g., all CTA or all Postback)."
-          ></i>
+            <i
+              v-if="current !== null && current !== undefined"
+              class="fa fa-info-circle fa-lg text-info"
+              title="All slide buttons must have the same label length and button type (e.g., all CTA or all Postback)."
+            ></i>
+          </div>
         </div>
-      </div>
     </div>
 
     <div class="buttons-body">
-      <div
-        class="button-item"
-        v-for="(button, btnIndex) in block.buttons"
-        :key="btnIndex"
-      >
+              <div
+          class="button-item"
+          v-for="(button, btnIndex) in props.block.buttons"
+          :key="btnIndex"
+        >
         <div class="button-header">
-          <p class="button-type-label" v-if="(current && current > 0) || button.type == 'postback'">
-            {{ button.type == 'postback' ? 'Quick Reply' : button.type.replace(/_/g, ' ') }}
+          <p class="button-type-label" v-if="props.template.button_type === 'postback'">
+            Button {{ btnIndex + 1 }}
           </p>
 
           <template v-if="current == null || current <= 0">
-            <div v-if="template.button_type === 'cta'" class="button-controls">
-              <VueSelect
-                @close="() => $emit('after-select')"
-                label="label"
-                :clearable="false"
-                v-model="button.type"
-                :reduce="(cta: any) => cta.value"
-                placeholder="Select Call to action"
-                :options="ctaOptions"
-                :disabled="block.buttons.length > 1"
-                @input="(val: any) => $emit('cta-change', btnIndex, current || null)"
-              />
-              <Button
-                @click="$emit('remove-button', btnIndex, current || null)"
-                variant="error"
-                size="small"
-              >
-                <i class="fa fa-trash"></i>
-              </Button>
+            <div v-if="props.template.button_type === 'cta'" class="button-controls">
+                             <VueSelect
+                 @close="store.afterSelect"
+                 :clearable="false"
+                 v-model="button.type"
+                 :reduce="(cta: any) => cta.value"
+                 placeholder="Select Call to action"
+                 :options="getAvailableCtaOptions(btnIndex)"
+                 :disabled="props.block.buttons.length > 1"
+                 @change="() => store.onChangeCta(btnIndex, 0)"
+               />
+               <Button
+                 v-if="props.block.buttons.length > 1"
+                 @click="store.removeTheButton(btnIndex, props.slideIndex)"
+                 variant="error-outline"
+                 size="small"
+                 icon="pi pi-trash"
+                 iconOnly
+               >
+               </Button>
             </div>
 
-            <Button
-              v-else
-              @click="$emit('remove-button', btnIndex, current || null)"
-              variant="error"
-              size="small"
-            >
-              <i class="fa fa-trash"></i>
-            </Button>
+                         <Button
+               v-else-if="props.template.button_type === 'postback' && props.block.buttons.length > 1"
+               @click="store.removeTheButton(btnIndex, props.slideIndex)"
+               variant="error-outline"
+               size="small"
+               icon="pi pi-trash"
+               iconOnly
+             >
+             </Button>
           </template>
         </div>
 
-        <!-- Button Title -->
-        <div class="button-title-container">
-          <textarea
-            v-model="button.title"
-            rows="2"
-            maxlength="20"
-            class="button-title-input"
-            placeholder="Type your button label here..."
-          />
-        </div>
-
-        <div class="button-footer">
-          <p class="characters-count">{{ (button.title || '').length }}/20 characters</p>
-        </div>
-
-        <!-- Button Response -->
-        <div class="button-response-container">
-          <textarea
-            v-if="button.type === 'postback'"
-            v-model="button.response"
-            maxlength="20"
-            rows="2"
-            class="button-response-input"
-            placeholder="Type the response for the quick reply"
-          />
-          <template v-if="button.type === 'web_url'">
-            <Input
-              type="url"
-              v-model="button.url"
-              @input="$emit('check-url-variables', 'button', btnIndex, current || null)"
-              placeholder="URL"
-              required
-            />
-            <Button
-              v-if="!template.variables.button"
-              type="button"
-              @click="$emit('add-variable', 'button', true, btnIndex, current || null)"
-              title="Add Variable"
-              variant="primary"
-              size="small"
-              class="add-variable-btn"
-            >
-              <i class="fa fa-plus"></i>
-            </Button>
-          </template>
-          <textarea
-            v-if="button.type === 'phone_number'"
-            v-model="button.payload"
-            rows="2"
-            class="button-response-input"
-            placeholder="Phone Number .. +1 631-555-5555"
-          />
-        </div>
-
-        <div v-if="button.type === 'postback'" class="button-footer">
-          <p class="characters-count">{{ (button.response || '').length }}/20 characters</p>
-        </div>
-
-        <template v-if="button.type === 'web_url'">
-          <div class="button-footer">
-            <p class="characters-count text-danger" v-if="errors.url_btn_var !== ''">
-              {{ errors.url_btn_var }}
-            </p>
-            <p class="characters-count">{{ template.variables.button ? 1 : 0 }}/1 variable (must be at the end of text)</p>
+        <!-- Button Configuration Row -->
+        <div v-if="button.type === 'postback'" class="button-config-row">
+          <div class="button-config-section">
+            <label class="button-label">Button Label</label>
+                         <Input
+               v-model="button.title"
+               maxlength="20"
+               placeholder="e.g., Yes, I'm interested"
+               @input="store.checkForVariables('button_' + btnIndex)"
+             />
+            <p class="input-hint">Keep it short and clear (max 20 characters recommended)</p>
           </div>
-        </template>
+
+                     <div class="button-config-section">
+             <label class="button-label">Quick Reply Response</label>
+             <Input
+               v-model="button.response"
+               maxlength="20"
+               placeholder="Enter the automated response that will be sent when this button is clicked..."
+             />
+             <p class="input-hint">This message will be sent automatically when the button is pressed</p>
+           </div>
+        </div>
+
+                 <!-- CTA Button Configuration Row -->
+         <div v-else-if="button.type === 'web_url'" class="button-config-row">
+           <div class="button-config-section">
+             <label class="button-label">Button Label</label>
+                           <Input
+                v-model="button.title"
+                maxlength="20"
+                placeholder="e.g., Visit Website"
+                @input="store.checkForVariables('button_' + btnIndex)"
+              />
+             <p class="input-hint">Keep it short and clear (max 20 characters recommended)</p>
+           </div>
+
+           <div class="button-config-section">
+             <label class="button-label">
+              URL Configuration &nbsp; &nbsp;
+
+              <Button
+               v-if="store.canAddVariable(`button_${btnIndex}`)"
+               type="button"
+               @click="addVariable(btnIndex)"
+               title="Add Variable"
+               variant="primary"
+               size="small"
+               class="add-variable-btn"
+               icon="pi pi-plus"
+               iconOnly
+             >
+             </Button>
+             </label>
+                                                       <Input
+                 type="url"
+                 v-model="button.url"
+                 @input="store.checkForVariables('button_' + btnIndex)"
+                 placeholder="https://example.com"
+                 required
+               />
+             <p class="input-hint">Enter the URL that will open when the button is clicked</p>
+             <p class="text-danger" v-if="props.errors.url_btn_var !== ''">
+               {{ props.errors.url_btn_var }}
+             </p>
+           </div>
+         </div>
+
+         <div v-else-if="button.type === 'phone_number'" class="button-config-row">
+           <div class="button-config-section">
+             <label class="button-label">Button Label</label>
+                           <Input
+                v-model="button.title"
+                maxlength="20"
+                placeholder="e.g., Call Us"
+                @input="store.checkForVariables('button_' + btnIndex)"
+              />
+             <p class="input-hint">Keep it short and clear (max 20 characters recommended)</p>
+           </div>
+
+           <div class="button-config-section">
+             <label class="button-label">Phone Number</label>
+             <Input
+               v-model="button.payload"
+               placeholder="+1 631-555-5555"
+             />
+             <p class="input-hint">Enter the phone number that will be called when the button is clicked</p>
+           </div>
+         </div>
       </div>
     </div>
 
     <div class="buttons-footer">
-      <p class="characters-count">{{ block.buttons.length }}/{{ template.total_buttons }} buttons</p>
+      <p class="characters-count">{{ props.block.buttons.length }}/{{ props.template.total_buttons }} buttons</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed, watch } from 'vue';
 import { Button, Input, VueSelect } from '@/components/ui';
+import { useWhatsAppTemplateStore } from '@/stores/whatsappTemplateStore';
 
 // Props
 interface Props {
@@ -173,22 +190,16 @@ interface Props {
   template: any;
   block: any;
   errors: any;
+  slideIndex?: number;
 }
 
 const props = defineProps<Props>();
 
-// Emits
-const emit = defineEmits<{
-  'add-button': [current: number | null];
-  'remove-button': [btnIndex: number, current: number | null];
-  'after-select': [];
-  'button-type-change': [current: number | null];
-  'cta-change': [btnIndex: number, current: number | null];
-  'check-url-variables': [type: string, btnIndex: number, current: number | null];
-  'add-variable': [type: string, isButton: boolean, btnIndex: number, current: number | null];
-}>();
+
 
 // Data
+const store = useWhatsAppTemplateStore();
+
 const buttonTypeOptions = [
   { label: 'Quick Reply', value: 'postback' },
   { label: 'Call to action', value: 'cta' },
@@ -198,6 +209,67 @@ const ctaOptions = [
   { label: 'URL', value: 'web_url' },
   { label: 'Phone Number', value: 'phone_number' },
 ];
+
+// Computed properties
+const canAddButton = computed(() => {
+  const currentButtonCount = props.block.buttons.length;
+  const maxButtons = props.template.total_buttons || 0;
+  
+  // Ensure we never exceed the maximum allowed buttons
+  return currentButtonCount < maxButtons;
+});
+
+// Additional validation to prevent manipulation
+const validateButtonCount = () => {
+  const currentButtonCount = props.block.buttons.length;
+  const maxButtons = props.template.total_buttons || 0;
+  
+  if (currentButtonCount > maxButtons) {
+    // If somehow we have more buttons than allowed, remove the excess
+    const excessCount = currentButtonCount - maxButtons;
+    for (let i = 0; i < excessCount; i++) {
+      store.removeTheButton(props.block.buttons.length - 1, props.slideIndex);
+    }
+  }
+};
+
+// Methods
+const getAvailableCtaOptions = (currentButtonIndex: number) => {
+  const usedTypes = props.block.buttons
+    .map((btn: any, index: number) => ({ type: btn.type, index }))
+    .filter((item: any) => item.index !== currentButtonIndex)
+    .map((item: any) => item.type);
+
+  return ctaOptions.filter((option: any) => !usedTypes.includes(option.value));
+};
+
+const addVariable = (btnIndex: number) => {
+  console.log(btnIndex, "btnIndex")
+  store.addVariable(`button_${btnIndex}`);
+};
+
+const handleAddButton = () => {
+  // Double-check before adding to prevent manipulation
+  if (canAddButton.value) {
+    store.addTheButton(props.slideIndex);
+  }
+};
+
+// Watch for template button type changes to set default CTA type
+watch(() => props.template.button_type, (newType) => {
+  if (newType === 'cta' && props.block.buttons.length > 0) {
+    // Set the first button to web_url by default if it doesn't have a type yet
+    const firstButton = props.block.buttons[0];
+    if (firstButton && !firstButton.type) {
+      firstButton.type = 'web_url';
+    }
+  }
+}, { immediate: true });
+
+// Watch for button count changes and validate
+watch(() => props.block.buttons.length, (newCount) => {
+  validateButtonCount();
+}, { immediate: true });
 </script>
 
 <style scoped>
@@ -207,6 +279,8 @@ const ctaOptions = [
   justify-content: space-between;
   padding: var(--space-2);
   border: 1px dashed var(--color-border-secondary);
+  border-bottom: none;
+  background: var(--color-bg-secondary);
   border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
@@ -229,7 +303,6 @@ const ctaOptions = [
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 33%;
 }
 
 .button-type-selector i {
@@ -242,10 +315,14 @@ const ctaOptions = [
   border: 1px dashed var(--color-border-secondary);
   border-bottom: none;
   padding: var(--space-3);
+  background: white;
 }
 
 .button-item {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-4);  
+  border: 1px dashed var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-secondary);
 }
 
 .button-item:last-child {
@@ -257,9 +334,7 @@ const ctaOptions = [
   align-items: center;
   justify-content: space-between;
   padding: var(--space-2);
-  border: 1px dashed var(--color-border-secondary);
-  border-bottom: none;
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  border-bottom: 1px dashed var(--color-border-secondary);
 }
 
 .button-type-label {
@@ -277,67 +352,71 @@ const ctaOptions = [
   width: 100%;
 }
 
-.button-title-container {
-  border: 1px dashed var(--color-border-secondary);
-  border-bottom: none;
-}
-
-.button-title-input {
-  width: 100%;
-  border: none;
-  background: transparent;
-  padding: var(--space-3);
-  font-family: inherit;
-  font-size: 14px;
-  color: var(--color-text-primary);
-  resize: vertical;
-  min-height: 80px;
-}
-
-.button-title-input:focus {
-  outline: none;
-}
-
-.button-footer {
+.button-config-row {
   display: flex;
-  justify-content: flex-end;
-  border: 1px dashed var(--color-border-secondary);
-  border-top: none;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+}
+
+.button-config-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.button-config-section.full-width {
+  flex: 1;
+}
+
+.button-config-section .button-label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.input-hint {
+  margin: var(--space-1) 0 0 0;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.add-variable-btn{
+  position: absolute;
+  top: -5px;
+}
+
+
+.button-description {
+  /* border: 1px dashed var(--color-border-secondary);
+  border-top: none; */
   border-bottom: none;
   padding: var(--space-2);
 }
 
+.button-description .button-label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
 .button-response-container {
-  border: 1px dashed var(--color-border);
   position: relative;
 }
 
-.button-response-container:not(:has(textarea)) {
-  border-bottom: none;
-}
-
-.button-response-input {
-  width: 100%;
-  border: none;
-  background: transparent;
-  padding: var(--space-3);
-  font-family: inherit;
-  font-size: 14px;
+.button-response-container .button-label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: 0.875rem;
+  font-weight: 500;
   color: var(--color-text-primary);
-  resize: vertical;
-  min-height: 80px;
-}
-
-.button-response-input:focus {
-  outline: none;
-}
-
-.add-variable-btn {
-  position: absolute;
-  top: var(--space-1);
-  right: var(--space-1);
-  font-size: 12px;
-  padding: var(--space-1);
 }
 
 .buttons-footer {
@@ -346,16 +425,7 @@ const ctaOptions = [
   border: 1px dashed var(--color-border-secondary);
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   padding: var(--space-2);
-}
-
-.characters-count {
-  margin: 0;
-  padding: var(--space-1) var(--space-2);
-  background: var(--color-border);
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  border-radius: var(--radius-sm);
+  background-color: var(--color-bg-secondary);
 }
 
 .text-danger {

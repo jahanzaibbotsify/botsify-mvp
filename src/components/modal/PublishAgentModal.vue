@@ -101,7 +101,7 @@ defineExpose({ openModal });
   <ModalLayout
     ref="modalRef"
     title="Publish Agent"
-    max-width="600px"
+    max-width="650px"
   >
     <div class="server-grid">
       <div

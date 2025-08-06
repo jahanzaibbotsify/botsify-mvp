@@ -128,9 +128,10 @@ defineExpose({ openModal, closeModal });
 <template>
   <PublishModalLayout
     ref="modalRef"
-    title="Sms Integration"
+    title="Sms integration"
     :tabs="tabs"
-    max-width="1000px"
+    icon="/bots/sms.png"
+    max-width="1200px"
     default-tab="publish-agent"
     @back="handleBack"
     @tab-change="handleTabChange"

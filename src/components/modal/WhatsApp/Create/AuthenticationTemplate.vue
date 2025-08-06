@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Input, VueSelect } from "@/components/ui";
+import { Input } from "@/components/ui";
 import { useWhatsAppTemplateStore } from "@/stores/whatsappTemplateStore";
 
 const store = useWhatsAppTemplateStore();
@@ -15,37 +15,23 @@ const store = useWhatsAppTemplateStore();
     </div>
     
     <div class="form-group">
-      <div class="dashed-border d-flex align-items-center justify-content-between p-2">
-        <p class="mb-0 px-3 font-weight-bold py-2 text-uppercase mr-2">button</p>
-        <div class="d-flex justify-content-between align-items-center px-3">
-          <VueSelect
-            :model-value="store.block.buttons[0].type"
-            @update:model-value="(value: any) => { store.block.buttons[0].type = value; store.onChangeCta(0, 0); }"
-            :options="store.ctaOptions"
-            placeholder="Select Call to action"
-            class="form-control px-2 py-1 ml-2"
-            style="width: 180px !important; height: 33px;"
-          />
-        </div>
+      <div class="buttons-header">
+        <p class="buttons-label">Copy Code Button</p>
       </div>
       
-      <div class="dashed-border border-bottom-0 templateBodyDiv buttons-body p-4 bg-white border-top-0">
-        <div class="w-100 mb-4" v-for="(button, btnIndex) in store.block.buttons" :key="btnIndex">
-          <div class="templateBodyDiv mb-3">
-            <label class="form-label fw-semibold">Button Text</label>
-            <Input
-              v-model="button.text"
-              placeholder="Enter button text"
-              class="form-control"
-            />
-          </div>
-          <div class="templateBodyDiv mb-3">
-            <label class="form-label fw-semibold">Button Value</label>
-            <Input
-              v-model="button.value"
-              placeholder="Enter button value"
-              class="form-control"
-            />
+      <div class="buttons-body">
+        <div class="button-item">
+          
+          <div class="button-config-row">
+            <div class="button-config-section full-width">
+              <label class="button-label">Button Text</label>
+              <Input
+                v-model="store.block.buttons[0].text"
+                placeholder="e.g., Copy Code"
+                maxlength="20"
+              />
+              <p class="input-hint">Text that will appear on the copy code button</p>
+            </div>
           </div>
         </div>
       </div>
@@ -80,192 +66,67 @@ const store = useWhatsAppTemplateStore();
   line-height: 1.5;
 }
 
-.dashed-border {
-  border: 2px dashed var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-secondary);
-}
-
-.templateBodyDiv {
-  background: var(--color-bg-tertiary);
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
-}
-
-.form-group {
-  margin-bottom: var(--space-4);
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: var(--space-2);
-  font-weight: 500;
-  color: var(--color-text-primary);
-  font-size: 14px;
-}
-
-.form-control {
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-tertiary);
-  font-size: 14px;
-  color: var(--color-text-primary);
-  transition: border-color var(--transition-normal);
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-/* Utility Classes */
-.text-uppercase {
-  text-transform: uppercase;
-}
-
-.mb-0 {
-  margin-bottom: 0;
-}
-
-.mb-3 {
-  margin-bottom: var(--space-3);
-}
-
-.mb-4 {
-  margin-bottom: var(--space-4);
-}
-
-.p-2 {
-  padding: var(--space-2);
-}
-
-.p-4 {
-  padding: var(--space-4);
-}
-
-.px-2 {
-  padding-left: var(--space-2);
-  padding-right: var(--space-2);
-}
-
-.px-3 {
-  padding-left: var(--space-3);
-  padding-right: var(--space-3);
-}
-
-.py-1 {
-  padding-top: var(--space-1);
-  padding-bottom: var(--space-1);
-}
-
-.py-2 {
-  padding-top: var(--space-2);
-  padding-bottom: var(--space-2);
-}
-
-.mr-2 {
-  margin-right: var(--space-2);
-}
-
-.ml-2 {
-  margin-left: var(--space-2);
-}
-
-.w-100 {
-  width: 100%;
-}
-
-.d-flex {
+.buttons-header {
   display: flex;
-}
-
-.align-items-center {
   align-items: center;
-}
-
-.justify-content-between {
   justify-content: space-between;
-}
-
-.font-weight-bold {
-  font-weight: 600;
-}
-
-.font-weight-semibold {
-  font-weight: 500;
-}
-
-.border-bottom-0 {
+  padding: var(--space-2);
+  border: 1px dashed var(--color-border-secondary);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
   border-bottom: none;
 }
 
-.border-top-0 {
-  border-top: none;
-}
-
-.bg-white {
-  background-color: white;
-}
-
-/* VueSelect Styling */
-:deep(.vue-select) {
-  width: 100%;
-}
-
-:deep(.vue-select .vs__dropdown-toggle) {
-  background-color: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 8px 12px;
-  min-height: 40px;
-}
-
-:deep(.vue-select .vs__selected-options) {
-  padding: 0;
-}
-
-:deep(.vue-select .vs__actions) {
-  padding: 0;
-}
-
-:deep(.vue-select .vs__search) {
+.buttons-label {
   margin: 0;
-  padding: 0;
-  background: transparent;
-  border: none;
-  outline: none;
-  box-shadow: none;
-  font-size: 14px;
+  padding: var(--space-2) var(--space-3);
+  font-weight: 600;
+  text-transform: uppercase;
   color: var(--color-text-primary);
 }
 
-:deep(.vue-select .vs__dropdown-menu) {
-  background-color: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
+.buttons-body {
+  border: 1px dashed var(--color-border-secondary);
+  padding: var(--space-3);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 
-:deep(.vue-select .vs__dropdown-option) {
-  padding: 8px 12px;
+.button-item {
+  margin-bottom: var(--space-4);
+}
+
+.button-item:last-child {
+  margin-bottom: 0;
+}
+
+.button-config-row {
+  display: flex;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.button-config-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.button-config-section.full-width {
+  flex: 1;
+}
+
+.button-config-section .button-label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: 0.875rem;
+  font-weight: 600;
   color: var(--color-text-primary);
 }
 
-:deep(.vue-select .vs__dropdown-option--highlight) {
-  background-color: var(--color-primary);
-  color: white;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .d-flex {
-    flex-direction: column;
-  }
-  
-  .justify-content-between {
-    justify-content: flex-start;
-  }
+.input-hint {
+  margin: var(--space-1) 0 0 0;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
 }
 </style>

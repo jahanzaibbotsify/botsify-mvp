@@ -27,11 +27,6 @@ const emit = defineEmits<{
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
 
-// File input refs
-const imageInput = ref<HTMLInputElement | null>(null);
-const videoInput = ref<HTMLInputElement | null>(null);
-const documentInput = ref<HTMLInputElement | null>(null);
-
 // Store
 const store = useWhatsAppTemplateStore();
 
@@ -68,49 +63,16 @@ const handleSave = async () => {
   }
 };
 
-// File upload handlers
-const handleImageUpload = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file) {
-    // Here you would typically upload the file to your server
-    // For now, we'll create a local URL
-    const url = URL.createObjectURL(file);
-    store.block.image_url = url;
-  }
-};
-
-const handleVideoUpload = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file) {
-    // Here you would typically upload the file to your server
-    // For now, we'll create a local URL
-    const url = URL.createObjectURL(file);
-    store.block.video_url = url;
-  }
-};
-
-const handleDocumentUpload = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file) {
-    // Here you would typically upload the file to your server
-    // For now, we'll create a local URL
-    const url = URL.createObjectURL(file);
-    store.block.attachment_link = url;
-  }
-};
-
 defineExpose({ openModal, closeModal, openModalWithData });
 </script>
 
 <template>
   <PublishModalLayout
     ref="modalRef"
-    title="Template Editor"
+    title="Whatsapp Template"
+    icon="/bots/whatsapp.png"
     :tabs="tabs"
-    max-width="1000px"
+    max-width="1200px"
     default-tab="create"
     @back="closeModal"
     @close="handleModalClose"
@@ -198,40 +160,11 @@ defineExpose({ openModal, closeModal, openModalWithData });
                             v-if="store.template.header == 'text'" 
                             v-model="store.template.header_text" 
                             @input="store.checkForVariables('header')" 
-                            rows="4" 
+                            rows="2" 
                             class="header-textarea" 
                             placeholder="Type your media block header text here..."
                           ></textarea>
-                          <div v-else-if="store.template.header == 'image'" class="file-upload">
-                            <img v-if="store.block.image_url" :src="store.block.image_url" class="header-image" alt="header-image">
-                            <div v-else class="upload-placeholder">
-                              <i class="fa fa-image"></i>
-                              <p>Click to upload image</p>
-                              <input type="file" accept="image/*" @change="handleImageUpload" style="display: none;" ref="imageInput">
-                              <Button @click="$refs.imageInput.click()" variant="secondary" size="small">Upload Image</Button>
-                            </div>
-                          </div>
-                          <div v-else-if="store.template.header == 'video'" class="file-upload">
-                            <video v-if="store.block.video_url" :src="store.block.video_url" controls class="header-video"></video>
-                            <div v-else class="upload-placeholder">
-                              <i class="fa fa-video"></i>
-                              <p>Click to upload video</p>
-                              <input type="file" accept="video/*" @change="handleVideoUpload" style="display: none;" ref="videoInput">
-                              <Button @click="$refs.videoInput.click()" variant="secondary" size="small">Upload Video</Button>
-                            </div>
-                          </div>
-                          <div v-else-if="store.template.header == 'document'" class="file-upload">
-                            <div v-if="store.block.attachment_link" class="document-preview">
-                              <i class="fa fa-file"></i>
-                              <span>Document uploaded</span>
-                            </div>
-                            <div v-else class="upload-placeholder">
-                              <i class="fa fa-file"></i>
-                              <p>Click to upload document</p>
-                              <input type="file" accept=".pdf,.doc,.docx" @change="handleDocumentUpload" style="display: none;" ref="documentInput">
-                              <Button @click="$refs.documentInput.click()" variant="secondary" size="small">Upload Document</Button>
-                            </div>
-                          </div>
+                          <img v-else class="header-placeholder" src="/theme/images/file-cover.png" alt="no-image-found">
                         </div>
                         <div v-if="store.template.header == 'text'" class="header-footer">
                           <p class="characters-count">{{ store.template.header_text?.length || 0 }}/60 characters</p>
@@ -259,7 +192,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
                         <div class="footer-body">
                           <textarea 
                             v-model="store.template.footer_text" 
-                            rows="4" 
+                            rows="2" 
                             class="footer-textarea" 
                             placeholder="Type your media block footer text here..."
                           ></textarea>
@@ -276,13 +209,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
                         :template="store.template"
                         :block="store.block"
                         :errors="store.errors"
-                        @add-button="store.addTheButton"
-                        @remove-button="store.removeTheButton"
-                        @after-select="store.afterSelect"
-                        @button-type-change="store.onButtonTypeChange"
-                        @cta-change="store.onChangeCta"
-                        @check-url-variables="store.checkForVariables"
-                        @add-variable="store.addVariable"
+                        :slideIndex="0"
                       />
                       
                       <!-- Carousel Editor -->
@@ -317,9 +244,9 @@ defineExpose({ openModal, closeModal, openModalWithData });
         size="medium"
         @click="store.views.settings === 'current' ? handleSave() : store.goNext()"
         :loading="props.isLoading"
-        :disabled="store.isNextDisabled()"
+        :disabled="store.isNextDisabled() || props.isLoading"
       >
-        {{ store.views.settings === 'current' ? (props.isLoading ? 'Creating...' : 'Create Template') : 'Next' }}
+        {{ store.views.settings === 'current' ? (props.isLoading ? 'Saving...' : 'Create Template') : 'Next' }}
       </Button>
     </template>
   </PublishModalLayout>
@@ -410,6 +337,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
   padding: var(--space-2);
   border: 1px dashed var(--color-border-secondary);
   border-bottom: none;
+  background: var(--color-bg-secondary);
   border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
@@ -438,13 +366,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
 .header-body {
   border: 1px dashed var(--color-border-secondary);
   border-bottom: none;
-}
-
-.header-body.text-center {
-  text-align: center;
-  padding: var(--space-3);
-  border-bottom: 1px dashed var(--color-border-secondary) !important;
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  background: white;
 }
 
 .header-textarea {
@@ -455,7 +377,6 @@ defineExpose({ openModal, closeModal, openModalWithData });
   font-size: 14px;
   color: var(--color-text-primary);
   resize: vertical;
-  min-height: 80px;
   outline: none;
 }
 
@@ -473,6 +394,13 @@ defineExpose({ openModal, closeModal, openModalWithData });
   max-width: 100px;
   height: auto;
   border-radius: var(--radius-md);
+}
+
+.header-placeholder {
+  max-width: 100px;
+  height: auto;
+  border-radius: var(--radius-md);
+  opacity: 0.6;
 }
 
 .file-upload {
@@ -529,6 +457,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
   border-top: none;
   padding: var(--space-2);
   border-radius: 0 0 var(--radius-md) var(--radius-md);
+  background-color: var(--color-bg-secondary);
 }
 
 /* Footer Styles */
@@ -540,6 +469,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
   border-bottom: none;
   gap: var(--space-3);
   border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--color-bg-secondary);
 }
 
 .footer-label {
@@ -553,6 +483,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
 .footer-body {
   border: 1px dashed var(--color-border-secondary);
   border-bottom: none;
+  background: white;
 }
 
 .footer-textarea {
@@ -564,7 +495,6 @@ defineExpose({ openModal, closeModal, openModalWithData });
   font-size: 14px;
   color: var(--color-text-primary);
   resize: vertical;
-  min-height: 80px;
   outline: none;
 }
 
@@ -579,6 +509,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
   border-top: none;
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   padding: var(--space-2);
+  background-color: var(--color-bg-secondary);
 }
 
 .characters-count {

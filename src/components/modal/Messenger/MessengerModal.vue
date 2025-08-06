@@ -86,9 +86,10 @@ defineExpose({ openModal, closeModal });
 <template>
   <PublishModalLayout
     ref="modalRef"
-    title="Messenger Integration"
+    title="Messenger integration"
     :tabs="tabs"
-    max-width="650px"
+    icon="/bots/messenger.png"
+    max-width="1200px"
     default-tab="publish-bot"
     @back="handleBack"
     @tab-change="handleTabChange"

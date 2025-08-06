@@ -1,74 +1,14 @@
 <script setup lang="ts">
-import { computed } from "vue";
 import { Input } from "@/components/ui";
 import { useWhatsAppTemplateStore } from "@/stores/whatsappTemplateStore";
 import MessagePreview from "./MessagePreview.vue";
 
 const store = useWhatsAppTemplateStore();
-
-// Extract variables from different sections
-const headerVariables = computed(() => {
-  if (store.template.header !== 'text') return [];
-  const variables = store.extractVariables(store.template.header_text || '');
-  return variables.map(num => ({ id: num, section: 'header', label: `Header Variable ${num}` }));
-});
-
-const bodyVariables = computed(() => {
-  const variables = store.extractVariables(store.block.text || '');
-  return variables.map(num => ({ id: num, section: 'body', label: `Body Variable ${num}` }));
-});
-
-const buttonVariables = computed(() => {
-  const variables: any[] = [];
-  store.block.buttons.forEach((button, buttonIndex) => {
-    if (button.text) {
-      const buttonVars = store.extractVariables(button.text);
-      buttonVars.forEach(num => {
-        variables.push({ 
-          id: num, 
-          section: 'button', 
-          buttonIndex, 
-          label: `Button ${buttonIndex + 1} Variable ${num}` 
-        });
-      });
-    }
-  });
-  return variables;
-});
-
-const allVariables = computed(() => {
-  return [...headerVariables.value, ...bodyVariables.value, ...buttonVariables.value];
-});
-
-const updateVariableValue = (variable: any, value: string) => {
-  if (!store.template.variables) {
-    store.template.variables = {};
-  }
-  
-  const key = `${variable.section}_${variable.id}`;
-  if (variable.section === 'button') {
-    const buttonKey = `${key}_button_${variable.buttonIndex}`;
-    store.template.variables[buttonKey] = value;
-  } else {
-    store.template.variables[key] = value;
-  }
-};
-
-const getVariableValue = (variable: any) => {
-  if (!store.template.variables) return '';
-  
-  const key = `${variable.section}_${variable.id}`;
-  if (variable.section === 'button') {
-    const buttonKey = `${key}_button_${variable.buttonIndex}`;
-    return store.template.variables[buttonKey] || '';
-  } else {
-    return store.template.variables[key] || '';
-  }
-};
 </script>
 
 <template>
   <div class="parameter-editor">
+    <div>
     <div class="parameter-section">
       <h3>Template Name</h3>
       <Input
@@ -78,52 +18,89 @@ const getVariableValue = (variable: any) => {
       />
     </div>
 
-    <!-- Authentication Template Parameters -->
-    <div v-if="store.isAuthenticationCategory" class="parameter-section">
-      <h3>Authentication Settings</h3>
-      <div class="auth-params">
-        <div class="form-group">
-          <label>OTP Length</label>
-          <Input
-            v-model="store.template.otpLength"
-            type="number"
-            min="4"
-            max="8"
-            placeholder="6"
-          />
-        </div>
-        <div class="form-group">
-          <label>OTP Expiry (minutes)</label>
-          <Input
-            v-model="store.template.otpExpiry"
-            type="number"
-            min="1"
-            max="60"
-            placeholder="1"
-          />
-        </div>
+    <!-- HEADER FILE/URL INPUT -->
+    <div 
+      class="parameter-section"
+      v-if="store.template.type == 'media' && store.template.bodyIncludes.includes('header') && store.template.header != 'text'"
+    >
+      <h3>Header {{ store.template.header.charAt(0).toUpperCase() + store.template.header.slice(1) }}</h3>
+      <div class="form-group">
+        <label class="required-label">
+          {{ store.template.header.charAt(0).toUpperCase() + store.template.header.slice(1) }} Link
+        </label>
+        <Input
+          type="url"
+          v-model="store.block.attachment_link"
+          placeholder="Enter URL for the {{ store.template.header }}"
+          @input="store.onUpdateAttachmentLink"
+        />
+        <p class="text-danger" v-if="store.errors.file && Object.keys(store.errors.file).length > 0">
+          <small>{{ Object.values(store.errors.file)[0] }}</small>
+        </p>
       </div>
     </div>
 
-    <!-- Variable Parameters -->
-    <div v-if="allVariables.length > 0" class="parameter-section">
-      <h3>Template Variables</h3>
-      <div class="variables-list">
-        <div 
-          v-for="variable in allVariables" 
-          :key="`${variable.section}_${variable.id}${variable.buttonIndex ? '_' + variable.buttonIndex : ''}`"
-          class="variable-item"
-        >
-          <label>{{ variable.label }}</label>
-          <Input
-            :value="getVariableValue(variable)"
-            @input="(value: string) => updateVariableValue(variable, value)"
-            :placeholder="`Enter value for ${variable.label}`"
-          />
-        </div>
+    <!-- HEADER VARIABLES -->
+    <div 
+      class="parameter-section"
+      v-if="store.template.type == 'media' && store.template.bodyIncludes.includes('header') && store.template.header == 'text' && store.template.variables.header"
+    >
+      <h3>Header Variable</h3>
+      <div class="form-group">
+        <label>Header Variable - {{ store.template.variables.header.key }}</label>
+        <Input
+          v-model="store.template.variables.header.value"
+          placeholder="Enter header variable value"
+        />
+        <p class="text-danger" v-if="store.template.variables.header.value == ''">
+          <small>This is required field</small>
+        </p>
       </div>
     </div>
 
+    <!-- BODY VARIABLES -->
+    <div v-if="store.template.variables.body.length > 0" class="parameter-section">
+      <h3>Body Variables</h3>
+      <div 
+        class="form-group"
+        v-for="(variable, varIndex) in store.template.variables.body"
+        :key="varIndex"
+      >
+        <label v-if="store.template.category == 'AUTHENTICATION'">
+          Authentication Code - {{ variable.key }}
+        </label>
+        <label v-else>
+          Body Variable - {{ variable.key }}
+        </label>
+        <Input
+          v-model="variable.value"
+          :placeholder="`Enter value for ${variable.key}`"
+        />
+        <p class="text-danger" v-if="variable.value == ''">
+          <small>This is required field</small>
+        </p>
+      </div>
+    </div>
+
+    <!-- BUTTON VARIABLES -->
+    <div v-if="store.template.variables.buttons.length > 0" class="parameter-section">
+      <h3>Button Variables</h3>
+      <div 
+        class="form-group"
+        v-for="(buttonVar, varIndex) in store.template.variables.buttons"
+        :key="varIndex"
+      >
+        <label>Button {{ buttonVar.buttonIndex + 1 }} Variable - {{ buttonVar.key }}</label>
+        <Input
+          v-model="buttonVar.value"
+          :placeholder="`Enter value for ${buttonVar.key}`"
+        />
+        <p class="text-danger" v-if="buttonVar.value == ''">
+          <small>This is required field</small>
+        </p>
+      </div>
+    </div>
+  </div>
     <!-- Message Preview -->
     <div class="parameter-section">
       <h3>Message Preview</h3>
@@ -139,6 +116,9 @@ const getVariableValue = (variable: any) => {
 <style scoped>
 .parameter-editor {
   padding: var(--space-4);
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-4);
 }
 
 .parameter-section {
@@ -166,6 +146,7 @@ const getVariableValue = (variable: any) => {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .form-group label {
@@ -174,26 +155,24 @@ const getVariableValue = (variable: any) => {
   font-size: 0.875rem;
 }
 
-.variables-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.variable-item {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-secondary);
-}
-
-.variable-item label {
+.required-label {
   font-weight: 500;
   color: var(--color-text-primary);
   font-size: 0.875rem;
+}
+
+.required-label::after {
+  content: " *";
+  color: var(--color-error);
+}
+
+.text-danger {
+  color: var(--color-error);
+  margin-top: var(--space-1);
+}
+
+.text-danger small {
+  font-size: 0.75rem;
 }
 
 /* Responsive Design */

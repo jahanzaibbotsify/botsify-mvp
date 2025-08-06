@@ -244,9 +244,10 @@ defineExpose({ openModal, closeModal });
 <template>
   <PublishModalLayout
     ref="modalRef"
-    title="WhatsApp Integration"
+    title="WhatsApp integration"
     :tabs="tabs"
-    max-width="1000px"
+    icon="/bots/whatsapp.png"
+    max-width="1200px"
     default-tab="publish-agent"
     @back="handleBack"
     @tab-change="handleTabChange"

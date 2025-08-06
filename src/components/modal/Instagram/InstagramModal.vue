@@ -86,9 +86,10 @@ defineExpose({ openModal, closeModal });
 <template>
   <PublishModalLayout
     ref="modalRef"
-    title="Instagram Integration"
+    title="Instagram integration"
     :tabs="tabs"
-    max-width="650px"
+    icon="/bots/instagram.png"
+    max-width="1200px"
     default-tab="publish-bot"
     @back="handleBack"
     @tab-change="handleTabChange"
