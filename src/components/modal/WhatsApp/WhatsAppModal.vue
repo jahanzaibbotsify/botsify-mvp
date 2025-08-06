@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
-import Pagination from "@/components/ui/Pagination.vue";
-import Button from "@/components/ui/Button.vue";
 import { ref } from "vue";
+import { usePublishStore } from "@/stores/publishStore";
+import {Pagination, Button, PublishModalLayout} from "@/components/ui";
 import PublishAgentTab from "./PublishAgentTab.vue";
 import BroadcastTab from "./BroadcastTab.vue";
 import BroadcastReportTab from "./BroadcastReportTab.vue";
 import TemplateTab from "./TemplateTab.vue";
 import CatalogTab from "./CatalogTab.vue";
+import CreateTemplateModal from "./Create/CreateTemplateModal.vue";
 
 // Define tabs
 const tabs = [
@@ -21,12 +21,16 @@ const tabs = [
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
 const currentActiveTab = ref('publish-agent');
 
+// Store
+const publishStore = usePublishStore();
+
 // Tab component refs
 const publishAgentTabRef = ref<InstanceType<typeof PublishAgentTab> | null>(null);
 const broadcastTabRef = ref<InstanceType<typeof BroadcastTab> | null>(null);
 const broadcastReportTabRef = ref<InstanceType<typeof BroadcastReportTab> | null>(null);
 const templateTabRef = ref<InstanceType<typeof TemplateTab> | null>(null);
 const catalogTabRef = ref<InstanceType<typeof CatalogTab> | null>(null);
+const createTemplateModalRef = ref<InstanceType<typeof CreateTemplateModal> | null>(null);
 
 const emit = defineEmits<{
   back: [];
@@ -36,11 +40,87 @@ const emit = defineEmits<{
 const isLoading = ref(false);
 
 const openModal = () => {
+  // Fetch templates when modal opens
+  fetchTemplates();
   modalRef.value?.openModal();
 };
 
 const closeModal = () => {
   modalRef.value?.closeModal();
+};
+
+// Template methods
+const fetchTemplates = async () => {
+  try {
+    isLoading.value = true;
+    const result = await publishStore.fetchTemplates();
+    if (result.success && result.data.status === 'success') {
+      // Pass templates to TemplateTab
+      if (templateTabRef.value) {
+        templateTabRef.value.setTemplates(result.data.templates.data);
+        isLoading.value = false;
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch templates:', error);
+  }
+};
+
+const openCreateTemplateModal = () => {
+  closeModal(); // Close WhatsApp modal
+  createTemplateModalRef.value?.openModal();
+};
+
+const closeCreateTemplateModal = () => {
+  createTemplateModalRef.value?.closeModal();
+  openModal(); // Reopen WhatsApp modal
+};
+
+const handleCreateTemplate = (templateData: any) => {
+  console.log('Creating template:', templateData);
+  // Handle template creation
+  closeCreateTemplateModal();
+  fetchTemplates(); // Refresh templates
+};
+
+const handleDeleteTemplate = async (id: number) => {
+  try {
+    window.$confirm({
+      text: "Are you sure you want to delete this template?",
+    }, async () => {
+      const result = await publishStore.deleteTemplate(id);
+      if (result.success) {
+        fetchTemplates()
+      }
+    })
+  } catch (error) {
+    console.error('Failed to delete template:', error);
+  }
+};
+
+const handleCloneTemplate = (template: any) => {
+  closeModal(); // Close WhatsApp modal
+  createTemplateModalRef.value?.openModalWithData(template);
+};
+
+const handlePreviewTemplate = (template: any) => {
+  console.log('Previewing template:', template);
+  // Handle template preview using template.data.components
+};
+
+const handleCopyPayload = (template: any) => {
+  const payload = JSON.stringify(template, null, 2);
+  navigator.clipboard.writeText(payload);
+  window.$toast?.success('Payload copied to clipboard');
+};
+
+// Template Tab Events
+const handleTemplateOpenCreateModal = () => {
+  openCreateTemplateModal();
+};
+
+const handleTemplateCloseWhatsAppModal = () => {
+  closeModal();
 };
 
 const handleBack = () => {
@@ -53,61 +133,64 @@ const handleTabChange = (tabId: string) => {
 };
 
 // Publish Bot Tab Events
-const handleTestBot = () => {
+const handleTestBot = async () => {
   isLoading.value = true;
   try {
     console.log('Testing bot...');
     // Add actual test bot logic here
+    window.$toast?.success('Bot test completed successfully!');
   } catch (error) {
     console.error('Failed to test bot:', error);
+    window.$toast?.error('Failed to test bot');
   } finally {
     isLoading.value = false;
   }
 };
 
-const handleSaveMetaSettings = (settings: any) => {
+const handleSaveMetaSettings = async (settings: any) => {
   isLoading.value = true;
   try {
     console.log('Saving Meta Cloud settings:', settings);
-    // Add actual save logic here
+    const result = await publishStore.saveWhatsAppCloudSettings({
+      temporaryToken: settings.temporaryToken,
+      phoneNumber: settings.phoneNumber,
+      phoneNumberId: settings.phoneNumberId,
+      whatsappBusinessAccountId: settings.whatsappBusinessAccountId,
+      clientId: settings.clientId,
+      clientSecret: settings.clientSecret
+    });
+    
+    if (result.success) {
+      window.$toast?.success('Meta Cloud settings saved successfully!');
+    }
   } catch (error) {
     console.error('Failed to save Meta Cloud settings:', error);
+    window.$toast?.error('Failed to save Meta Cloud settings');
   } finally {
     isLoading.value = false;
   }
 };
 
-const handleSaveDialog360Settings = (settings: any) => {
+const handleSaveDialog360Settings = async (settings: any) => {
   isLoading.value = true;
   try {
     console.log('Saving Dialog360 settings:', settings);
-    // Add actual save logic here
+    const result = await publishStore.saveDialog360Settings({
+      whatsappNumber: settings.whatsappNumber,
+      apiKey: settings.apiKey,
+      phoneNumberId: settings.phoneNumberId,
+      whatsappBusinessAccountId: settings.whatsappBusinessAccountId
+    });
+    
+    if (result.success) {
+      window.$toast?.success('Dialog360 settings saved successfully!');
+    }
   } catch (error) {
     console.error('Failed to save Dialog360 settings:', error);
+    window.$toast?.error('Failed to save Dialog360 settings');
   } finally {
     isLoading.value = false;
   }
-};
-
-// Template Tab Events
-const handleCreateTemplate = (block: any) => {
-  console.log('Creating template:', block);
-  // Handle template creation
-};
-
-const handleDeleteTemplate = (id: number) => {
-  console.log('Deleting template:', id);
-  // Handle template deletion
-};
-
-const handleCloneTemplate = (block: any) => {
-  console.log('Cloning template:', block);
-  // Handle template cloning
-};
-
-const handlePreviewTemplate = (block: any) => {
-  console.log('Previewing template:', block);
-  // Handle template preview
 };
 
 // Broadcast Tab Events
@@ -118,6 +201,12 @@ const handleSendBroadcast = (data: any) => {
 
 const handleFilterReport = (filters: any) => {
   console.log('Filtering report:', filters);
+};
+
+// Message Template Tab Events
+const handleSendMessage = (data: any) => {
+  console.log('Sending message:', data);
+  window.$toast?.success('Message sent successfully!');
 };
 
 // Catalog Tab Events
@@ -136,11 +225,9 @@ const handleDeleteProduct = (id: number) => {
 const handleSaveSettings = () => {
   const selectedProvider = publishAgentTabRef.value?.selectedProvider?.();
   if (selectedProvider === 'meta') {
-    // For now, we'll call the handler without specific data
-    handleSaveMetaSettings({});
+    publishAgentTabRef.value?.saveMetaSettings();
   } else if (selectedProvider === 'dialog360') {
-    // For now, we'll call the handler without specific data
-    handleSaveDialog360Settings({});
+    publishAgentTabRef.value?.saveDialog360Settings();
   }
 };
 
@@ -195,11 +282,14 @@ defineExpose({ openModal, closeModal });
       <TemplateTab
         v-if="activeTab === 'template'"
         ref="templateTabRef"
-        :is-loading="isLoading"
+        :is-loading="publishStore.isLoading"
         @create-template="handleCreateTemplate"
         @delete-template="handleDeleteTemplate"
         @clone-template="handleCloneTemplate"
         @preview-template="handlePreviewTemplate"
+        @copy-payload="handleCopyPayload"
+        @open-create-modal="handleTemplateOpenCreateModal"
+        @close-whatsapp-modal="handleTemplateCloseWhatsAppModal"
       />
 
       <!-- Catalog Tab -->
@@ -236,6 +326,8 @@ defineExpose({ openModal, closeModal });
         {{ isLoading ? 'Saving...' : 'Save Settings' }}
       </Button>
 
+
+
       <!-- Pagination for Template Tab -->
       <Pagination
         v-if="currentActiveTab === 'template' && (templateTabRef?.totalPages || 0) > 1"
@@ -260,4 +352,11 @@ defineExpose({ openModal, closeModal });
       </Button>
     </template>
   </PublishModalLayout>
+
+  <!-- Create Template Modal -->
+  <CreateTemplateModal
+    ref="createTemplateModalRef"
+    @create-template="handleCreateTemplate"
+    @modal-closed="openModal"
+  />
 </template>

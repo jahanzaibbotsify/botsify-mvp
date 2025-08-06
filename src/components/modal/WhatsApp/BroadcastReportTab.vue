@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
+import { Input, DateRange, Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Pagination, Button } from "@/components/ui";
+import { usePublishStore } from "@/stores/publishStore";
 
 // Props
 interface Props {
@@ -14,162 +16,290 @@ const emit = defineEmits<{
   'filter-report': [filters: any];
 }>();
 
-// Reactive data
-const selectedPeriod = ref('7d');
-const selectedStatus = ref('all');
+// Store
+const publishStore = usePublishStore();
 
-// Sample report data
-const reportData = ref([
-  {
-    id: 1,
-    message: 'Welcome Campaign',
-    recipients: 150,
-    delivered: 142,
-    read: 89,
-    status: 'completed',
-    sentAt: '2024-01-15 10:30:00'
-  },
-  {
-    id: 2,
-    message: 'Product Launch',
-    recipients: 200,
-    delivered: 195,
-    read: 156,
-    status: 'completed',
-    sentAt: '2024-01-14 14:20:00'
-  },
-  {
-    id: 3,
-    message: 'Weekly Newsletter',
-    recipients: 300,
-    delivered: 287,
-    read: 201,
-    status: 'completed',
-    sentAt: '2024-01-13 09:15:00'
-  }
-]);
+// Reactive data
+const searchQuery = ref('');
+
+// Set default date range: end date as today, start date as 1 month before
+const getDefaultDateRange = () => {
+  const today = new Date();
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(today.getMonth() - 1);
+  
+  return {
+    start: oneMonthAgo.toISOString().split('T')[0],
+    end: today.toISOString().split('T')[0]
+  };
+};
+
+const dateRange = ref(getDefaultDateRange());
+const currentPage = ref(1);
+const itemsPerPage = ref(20);
+
+// API data
+const allReportData = ref<any[]>([]); // Store all data from API
+const reportData = ref<any[]>([]); // Current page data
+const pagination = ref({
+  current_page: 1,
+  total: 0,
+  per_page: 20,
+  last_page: 1
+});
+
+// Stats data
+const stats = ref({
+  sent: 0,
+  delivered: 0,
+  read: 0,
+  failed: 0
+});
 
 // Computed properties
 const filteredReports = computed(() => {
-  let filtered = reportData.value;
+  let filtered = allReportData.value;
   
-  if (selectedStatus.value !== 'all') {
-    filtered = filtered.filter(report => report.status === selectedStatus.value);
+  if (searchQuery.value) {
+    filtered = filtered.filter(report => 
+      report.template_name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      report.number?.toLowerCase().includes(searchQuery.value.toLowerCase())
+    );
+  }
+  
+  // Apply date range filter
+  if (dateRange.value.start && dateRange.value.end) {
+    filtered = filtered.filter(report => {
+      const reportDate = report.sent_time?.split(' ')[0];
+      return reportDate >= dateRange.value.start && reportDate <= dateRange.value.end;
+    });
   }
   
   return filtered;
 });
 
-const totalRecipients = computed(() => {
-  return filteredReports.value.reduce((sum, report) => sum + report.recipients, 0);
+// Computed pagination for filtered data
+const paginatedReports = computed(() => {
+  const startIndex = (currentPage.value - 1) * itemsPerPage.value;
+  const endIndex = startIndex + itemsPerPage.value;
+  return filteredReports.value.slice(startIndex, endIndex);
 });
 
-const totalDelivered = computed(() => {
-  return filteredReports.value.reduce((sum, report) => sum + report.delivered, 0);
+// Computed pagination info
+const computedPagination = computed(() => {
+  const total = filteredReports.value.length;
+  const lastPage = Math.ceil(total / itemsPerPage.value);
+  
+  return {
+    current_page: currentPage.value,
+    total: total,
+    per_page: itemsPerPage.value,
+    last_page: lastPage
+  };
 });
 
-const totalRead = computed(() => {
-  return filteredReports.value.reduce((sum, report) => sum + report.read, 0);
-});
+// Methods
+const fetchReportData = async () => {
+  try {
+    // Only fetch if we don't have data yet
+    if (allReportData.value.length === 0) {
+      const result = await publishStore.getWhatsAppBroadcastReport({});
+      
+      if (result.success && result.data.messages) {
+        allReportData.value = result.data.messages.data || [];
+        calculateStats();
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch report data:', error);
+  }
+};
 
-const readRate = computed(() => {
-  return totalDelivered.value > 0 ? ((totalRead.value / totalDelivered.value) * 100).toFixed(1) : '0';
-});
+const calculateStats = () => {
+  const today = new Date().toISOString().split('T')[0];
+  
+  stats.value = allReportData.value.reduce((acc, report) => {
+    // Only count today's stats
+    const reportDate = report.sent_time?.split(' ')[0];
+    if (reportDate === today) {
+      acc.sent += report.sent || 0;
+      acc.delivered += report.delivered || 0;
+      acc.read += report.read || 0;
+      acc.failed += report.failed || 0;
+    }
+    return acc;
+  }, { sent: 0, delivered: 0, read: 0, failed: 0 });
+};
 
+const handleFilterClick = () => {
+  currentPage.value = 1;
+  // No need to call API, just reset to first page
+};
 
+const handlePageChange = (page: number) => {
+  currentPage.value = page;
+  // No need to call API, just change page
+};
 
 const filterReport = () => {
   emit('filter-report', {
-    period: selectedPeriod.value,
-    status: selectedStatus.value
+    query: searchQuery.value,
+    dateRange: dateRange.value
   });
 };
 
 // Expose methods for parent component
 defineExpose({
-  filterReport
+  filterReport,
+  fetchReportData
+});
+
+// Fetch data on mount
+onMounted(() => {
+  fetchReportData();
 });
 </script>
 
 <template>
   <div class="tab-panel">
     <h3>Broadcast Report</h3>
-    <p class="subtitle">View broadcast analytics and reports</p>
+    <p class="subtitle">View WhatsApp broadcast analytics and reports</p>
     
     <!-- Filters -->
     <div class="filters-section">
       <div class="filter-group">
-        <label for="period-filter">Time Period</label>
-        <select id="period-filter" v-model="selectedPeriod" class="form-input">
-          <option value="1d">Last 24 hours</option>
-          <option value="7d">Last 7 days</option>
-          <option value="30d">Last 30 days</option>
-          <option value="90d">Last 90 days</option>
-        </select>
+        <Input 
+          v-model="searchQuery"
+          searchable
+          icon-position="left"
+          placeholder="Search by template name or number..."
+        />
       </div>
       
       <div class="filter-group">
-        <label for="status-filter">Status</label>
-        <select id="status-filter" v-model="selectedStatus" class="form-input">
-          <option value="all">All Status</option>
-          <option value="completed">Completed</option>
-          <option value="pending">Pending</option>
-          <option value="failed">Failed</option>
-        </select>
+        <DateRange
+          v-model="dateRange"
+          label="Date Range"
+        />
       </div>
       
-      <button class="filter-button" @click="filterReport">
-        Apply Filters
-      </button>
+      <div class="filter-group">
+        <Button
+          variant="primary"
+          size="medium"
+          :loading="publishStore.isLoading"
+          @click="handleFilterClick"
+        >
+          {{ publishStore.isLoading ? 'Filtering...' : 'Apply Filters' }}
+        </Button>
+      </div>
     </div>
 
-    <!-- Summary Stats -->
-    <div class="stats-section">
-      <div class="stat-card">
-        <div class="stat-value">{{ totalRecipients }}</div>
-        <div class="stat-label">Total Recipients</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ totalDelivered }}</div>
-        <div class="stat-label">Delivered</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ totalRead }}</div>
-        <div class="stat-label">Read</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ readRate }}%</div>
-        <div class="stat-label">Read Rate</div>
-      </div>
-    </div>
+         <!-- Summary Stats -->
+     <div class="stats-section">
+       <div class="stat-card sent-card">
+         <div class="stat-icon sent-icon">
+           <i class="pi pi-send"></i>
+         </div>
+         <div class="stat-content">
+           <div class="stat-value">{{ stats.sent }}</div>
+           <div class="stat-label">Sent (Today)</div>
+         </div>
+       </div>
+       
+       <div class="stat-card delivered-card">
+         <div class="stat-icon delivered-icon">
+           <i class="pi pi-check-circle"></i>
+         </div>
+         <div class="stat-content">
+           <div class="stat-value">{{ stats.delivered }}</div>
+           <div class="stat-label">Delivered (Today)</div>
+         </div>
+       </div>
+       
+       <div class="stat-card read-card">
+         <div class="stat-icon read-icon">
+           <i class="pi pi-eye"></i>
+         </div>
+         <div class="stat-content">
+           <div class="stat-value">{{ stats.read }}</div>
+           <div class="stat-label">Read (Today)</div>
+         </div>
+       </div>
+       
+       <div class="stat-card failed-card">
+         <div class="stat-icon failed-icon">
+           <i class="pi pi-times-circle"></i>
+         </div>
+         <div class="stat-content">
+           <div class="stat-value">{{ stats.failed }}</div>
+           <div class="stat-label">Failed (Today)</div>
+         </div>
+       </div>
+     </div>
 
     <!-- Report Table -->
-    <div class="report-table">
-      <div class="table-header">
-        <div class="header-cell">Message</div>
-        <div class="header-cell">Recipients</div>
-        <div class="header-cell">Delivered</div>
-        <div class="header-cell">Read</div>
-        <div class="header-cell">Status</div>
-        <div class="header-cell">Sent At</div>
-      </div>
+    <div class="table-section">
+      <Table>
+        <TableHead>
+          <TableHeader>Template Name</TableHeader>
+          <TableHeader>Phone Number</TableHeader>
+          <TableHeader>Sent Time</TableHeader>
+          <TableHeader>Sent</TableHeader>
+          <TableHeader>Delivered</TableHeader>
+          <TableHeader>Read</TableHeader>
+          <TableHeader>Failed</TableHeader>
+          <TableHeader>Failure Reason</TableHeader>
+        </TableHead>
+        
+        <TableBody>
+          <!-- Loading skeleton -->
+          <TableRow v-if="publishStore.isLoading" v-for="i in 5" :key="`skeleton-${i}`" skeleton>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+          </TableRow>
+          
+                     <!-- Empty state -->
+           <TableRow v-else-if="paginatedReports.length === 0" noData>
+             <TableCell noData colspan="8">
+               <div class="empty-state">
+                 <i class="pi pi-inbox"></i>
+                 <p>No broadcast reports found</p>
+               </div>
+             </TableCell>
+           </TableRow>
+          
+                     <!-- Report rows -->
+           <TableRow v-else v-for="report in paginatedReports" :key="report.id">
+             <TableCell>{{ report.template_name || 'N/A' }}</TableCell>
+             <TableCell>{{ report.number || 'N/A' }}</TableCell>
+             <TableCell>{{ report.sent_time || 'N/A' }}</TableCell>
+             <TableCell>{{ report.sent || 0 }}</TableCell>
+             <TableCell>{{ report.delivered || 0 }}</TableCell>
+             <TableCell>{{ report.read || 0 }}</TableCell>
+             <TableCell>{{ report.failed || 0 }}</TableCell>
+             <TableCell>{{ report.failure_reason || 'N/A' }}</TableCell>
+           </TableRow>
+        </TableBody>
+      </Table>
       
-      <div 
-        v-for="report in filteredReports" 
-        :key="report.id"
-        class="table-row"
-      >
-        <div class="cell">{{ report.message }}</div>
-        <div class="cell">{{ report.recipients }}</div>
-        <div class="cell">{{ report.delivered }}</div>
-        <div class="cell">{{ report.read }}</div>
-        <div class="cell">
-          <span class="status-badge" :class="report.status">
-            {{ report.status }}
-          </span>
-        </div>
-        <div class="cell">{{ report.sentAt }}</div>
-      </div>
+             <!-- Pagination -->
+       <Pagination
+         v-if="computedPagination.last_page > 1"
+         :current-page="computedPagination.current_page"
+         :total-pages="computedPagination.last_page"
+         :total-items="computedPagination.total"
+         :items-per-page="computedPagination.per_page"
+         :show-page-info="false"
+         :disabled="publishStore.isLoading"
+         @page-change="handlePageChange"
+       />
     </div>
   </div>
 </template>
@@ -204,52 +334,13 @@ defineExpose({
   flex: 1;
 }
 
-.filter-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-}
-
-.form-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-bg-tertiary, #f3f4f6);
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-  font-family: inherit;
-  transition: border-color var(--transition-normal, 0.2s ease);
-  box-sizing: border-box;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--color-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.filter-button {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-  border: none;
-  padding: 12px 16px;
-  border-radius: var(--radius-md, 8px);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background var(--transition-normal, 0.2s ease);
-}
-
-.filter-button:hover {
-  background: var(--color-primary-hover, #2563eb);
+.filter-group:last-child {
+  flex: 0 0 auto;
 }
 
 .stats-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -259,7 +350,50 @@ defineExpose({
   border: 1px solid var(--color-border, #e5e7eb);
   border-radius: var(--radius-md, 8px);
   padding: 16px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all var(--transition-normal, 0.2s ease);
+}
+
+.stat-card:hover {
+  background: var(--color-bg-hover, #f3f4f6);
+  border-color: var(--color-primary, #3b82f6);
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full, 9999px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 20px;
+}
+
+/* Sent card - Blue */
+.sent-icon {
+  background: var(--color-primary, #3b82f6);
+}
+
+/* Delivered card - Green */
+.delivered-icon {
+  background: var(--color-success, #10b981);
+}
+
+/* Read card - Purple */
+.read-icon {
+  background: var(--color-accent, #8b5cf6);
+}
+
+/* Failed card - Red */
+.failed-icon {
+  background: var(--color-error, #ef4444);
+}
+
+.stat-content {
+  flex: 1;
 }
 
 .stat-value {
@@ -276,71 +410,29 @@ defineExpose({
   letter-spacing: 0.5px;
 }
 
-.report-table {
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  overflow: hidden;
+.table-section {
   margin-bottom: 24px;
 }
 
-.table-header {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
-  background: var(--color-bg-tertiary, #f3f4f6);
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
-}
-
-.header-cell {
-  padding: 12px 16px;
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--color-text-primary, #111827);
-}
-
-.table-row {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
-  transition: background var(--transition-normal, 0.2s ease);
-}
-
-.table-row:hover {
-  background: var(--color-bg-secondary, #f9fafb);
-}
-
-.table-row:last-child {
-  border-bottom: none;
-}
-
-.cell {
-  padding: 12px 16px;
-  font-size: 14px;
-  color: var(--color-text-primary, #111827);
+.empty-state {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  padding: var(--space-8, 64px);
+  color: var(--color-text-tertiary, #9ca3af);
+  text-align: center;
 }
 
-.status-badge {
-  padding: 4px 8px;
-  border-radius: var(--radius-sm, 4px);
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: capitalize;
+.empty-state i {
+  font-size: 48px;
+  margin-bottom: var(--space-3, 12px);
+  opacity: 0.5;
 }
 
-.status-badge.completed {
-  background: var(--color-secondary, #10b981);
-  color: white;
-}
-
-.status-badge.pending {
-  background: var(--color-warning, #f59e0b);
-  color: white;
-}
-
-.status-badge.failed {
-  background: var(--color-error, #ef4444);
-  color: white;
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
 }
 
 @media (max-width: 768px) {
@@ -353,18 +445,18 @@ defineExpose({
     grid-template-columns: repeat(2, 1fr);
   }
   
-  .report-table {
-    font-size: 12px;
+  .stat-card {
+    padding: 12px;
   }
   
-  .table-header,
-  .table-row {
-    grid-template-columns: 1fr 1fr 1fr;
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
   }
   
-  .header-cell,
-  .cell {
-    padding: 8px 12px;
+  .stat-value {
+    font-size: 20px;
   }
 }
 </style> 

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { Button, Input } from "@/components/ui";
+import { usePublishStore } from "@/stores/publishStore";
 
 // Props
 interface Props {
@@ -9,6 +11,9 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   isLoading: false
 });
+
+// Store
+const publishStore = usePublishStore();
 
 // Emits
 const emit = defineEmits<{
@@ -22,10 +27,12 @@ const selectedProvider = ref<'meta' | 'dialog360' | null>(null);
 
 // Meta Cloud fields
 const metaFields = ref({
-  temporaryAccessToken: '',
+  temporaryToken: '',
   phoneNumber: '',
   phoneNumberId: '',
-  whatsappBusinessAccountId: ''
+  whatsappBusinessAccountId: '',
+  clientId: '',
+  clientSecret: ''
 });
 
 // Dialog360 fields
@@ -45,22 +52,53 @@ const testBot = () => {
   emit('test-bot');
 };
 
-const saveMetaSettings = () => {
-  if (!metaFields.value.temporaryAccessToken || !metaFields.value.phoneNumber || 
-      !metaFields.value.phoneNumberId || !metaFields.value.whatsappBusinessAccountId) {
-    console.error('All Meta Cloud fields are required');
+const saveMetaSettings = async () => {
+  if (!metaFields.value.temporaryToken || !metaFields.value.phoneNumber || 
+      !metaFields.value.phoneNumberId || !metaFields.value.whatsappBusinessAccountId ||
+      !metaFields.value.clientId || !metaFields.value.clientSecret) {
+    window.$toast?.error('All Meta Cloud fields are required');
     return;
   }
-  emit('save-meta-settings', metaFields.value);
+  
+  try {
+    const result = await publishStore.saveWhatsAppCloudSettings({
+      temporaryToken: metaFields.value.temporaryToken,
+      phoneNumber: metaFields.value.phoneNumber,
+      phoneNumberId: metaFields.value.phoneNumberId,
+      whatsappBusinessAccountId: metaFields.value.whatsappBusinessAccountId,
+      clientId: metaFields.value.clientId,
+      clientSecret: metaFields.value.clientSecret
+    });
+    
+    if (result.success) {
+      emit('save-meta-settings', metaFields.value);
+    }
+  } catch (error) {
+    console.error('Failed to save Meta Cloud settings:', error);
+  }
 };
 
-const saveDialog360Settings = () => {
+const saveDialog360Settings = async () => {
   if (!dialog360Fields.value.whatsappNumber || !dialog360Fields.value.apiKey || 
       !dialog360Fields.value.phoneNumberId || !dialog360Fields.value.whatsappBusinessAccountId) {
-    console.error('All Dialog360 fields are required');
+    window.$toast?.error('All Dialog360 fields are required');
     return;
   }
-  emit('save-dialog360-settings', dialog360Fields.value);
+  
+  try {
+    const result = await publishStore.saveDialog360Settings({
+      whatsappNumber: dialog360Fields.value.whatsappNumber,
+      apiKey: dialog360Fields.value.apiKey,
+      phoneNumberId: dialog360Fields.value.phoneNumberId,
+      whatsappBusinessAccountId: dialog360Fields.value.whatsappBusinessAccountId
+    });
+    
+    if (result.success) {
+      emit('save-dialog360-settings', dialog360Fields.value);
+    }
+  } catch (error) {
+    console.error('Failed to save Dialog360 settings:', error);
+  }
 };
 
 // Expose methods for parent component
@@ -100,42 +138,62 @@ defineExpose({
       <h4>Meta Cloud Configuration</h4>
       <div class="form-group">
         <label for="meta-token">Temporary Access Token</label>
-        <input 
+        <Input 
           id="meta-token"
-          v-model="metaFields.temporaryAccessToken"
+          v-model="metaFields.temporaryToken"
           type="text"
           placeholder="Enter your temporary access token"
-          class="form-input"
+          size="medium"
+        />
+      </div>
+      <div class="form-group">
+        <label for="meta-client-id">Client ID</label>
+        <Input 
+          id="meta-client-id"
+          v-model="metaFields.clientId"
+          type="text"
+          placeholder="Enter your client ID"
+          size="medium"
+        />
+      </div>
+      <div class="form-group">
+        <label for="meta-client-secret">Client Secret</label>
+        <Input 
+          id="meta-client-secret"
+          v-model="metaFields.clientSecret"
+          type="password"
+          placeholder="Enter your client secret"
+          size="medium"
         />
       </div>
       <div class="form-group">
         <label for="meta-phone">Phone Number</label>
-        <input 
+        <Input 
           id="meta-phone"
           v-model="metaFields.phoneNumber"
-          type="text"
+          type="tel"
           placeholder="Enter your phone number"
-          class="form-input"
+          size="medium"
         />
       </div>
       <div class="form-group">
         <label for="meta-phone-id">Phone Number ID</label>
-        <input 
+        <Input 
           id="meta-phone-id"
           v-model="metaFields.phoneNumberId"
           type="text"
           placeholder="Enter your phone number ID"
-          class="form-input"
+          size="medium"
         />
       </div>
       <div class="form-group">
         <label for="meta-business-id">WhatsApp Business Account ID</label>
-        <input 
+        <Input 
           id="meta-business-id"
           v-model="metaFields.whatsappBusinessAccountId"
           type="text"
           placeholder="Enter your WhatsApp business account ID"
-          class="form-input"
+          size="medium"
         />
       </div>
     </div>
@@ -145,42 +203,42 @@ defineExpose({
       <h4>Dialog360 Configuration</h4>
       <div class="form-group">
         <label for="dialog-whatsapp">WhatsApp Number</label>
-        <input 
+        <Input 
           id="dialog-whatsapp"
           v-model="dialog360Fields.whatsappNumber"
-          type="text"
+          type="tel"
           placeholder="Enter your WhatsApp number"
-          class="form-input"
+          size="medium"
         />
       </div>
       <div class="form-group">
         <label for="dialog-api-key">API Key</label>
-        <input 
+        <Input 
           id="dialog-api-key"
           v-model="dialog360Fields.apiKey"
-          type="text"
+          type="password"
           placeholder="Enter your API key"
-          class="form-input"
+          size="medium"
         />
       </div>
       <div class="form-group">
         <label for="dialog-phone-id">Phone Number ID</label>
-        <input 
+        <Input 
           id="dialog-phone-id"
           v-model="dialog360Fields.phoneNumberId"
           type="text"
           placeholder="Enter your phone number ID"
-          class="form-input"
+          size="medium"
         />
       </div>
       <div class="form-group">
         <label for="dialog-business-id">WhatsApp Business Account ID</label>
-        <input 
+        <Input 
           id="dialog-business-id"
           v-model="dialog360Fields.whatsappBusinessAccountId"
           type="text"
           placeholder="Enter your WhatsApp business account ID"
-          class="form-input"
+          size="medium"
         />
       </div>
     </div>
@@ -246,6 +304,25 @@ defineExpose({
 
 .provider-form {
   margin-bottom: 24px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary, #111827);
+}
+
+.form-checkbox {
+  margin-right: 8px;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary, #3b82f6);
 }
 
 @media (max-width: 640px) {

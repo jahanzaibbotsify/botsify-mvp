@@ -224,6 +224,215 @@ export const usePublishStore = defineStore('publish', () => {
     }
   };
 
+  const saveDialog360Settings = async (settings: {
+    whatsappNumber: string;
+    apiKey: string;
+    phoneNumberId: string;
+    whatsappBusinessAccountId: string;
+  }) => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const result = await publishApi.saveDialog360Settings(settings);
+      
+      if (result.success) {
+        // Show success toast
+        if (window.$toast) {
+          window.$toast.success('Dialog360 settings saved successfully!');
+        }
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to save Dialog360 settings';
+        // Show error toast
+        if (window.$toast) {
+          window.$toast.error(error.value);
+        }
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to save Dialog360 settings';
+      // Show error toast
+      if (window.$toast) {
+        window.$toast.error(error.value);
+      }
+      return { success: false, error: error.value };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const saveWhatsAppCloudSettings = async (settings: {
+    temporaryToken: string;
+    phoneNumber: string;
+    phoneNumberId: string;
+    whatsappBusinessAccountId: string;
+    clientId: string;
+    clientSecret: string;
+    isFacebook?: boolean;
+  }) => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const result = await publishApi.saveWhatsAppCloudSettings(settings);
+      
+      if (result.success) {
+        // Show success toast
+        if (window.$toast) {
+          window.$toast.success('WhatsApp Cloud settings saved successfully!');
+        }
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to save WhatsApp Cloud settings';
+        // Show error toast
+        if (window.$toast) {
+          window.$toast.error(error.value);
+        }
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to save WhatsApp Cloud settings';
+      // Show error toast
+      if (window.$toast) {
+        window.$toast.error(error.value);
+      }
+      return { success: false, error: error.value };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const fetchTemplates = async () => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const result = await publishApi.fetchTemplates();
+      
+      if (result.success) {
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to fetch templates';
+        // Show error toast
+        if (window.$toast) {
+          window.$toast.error(error.value);
+        }
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to fetch templates';
+      // Show error toast
+      if (window.$toast) {
+        window.$toast.error(error.value);
+      }
+      return { success: false, error: error.value };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const deleteTemplate = async (id: number) => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const result = await publishApi.deleteTemplate(id);
+      
+      if (result.success) {
+        // Show success toast
+        if (window.$toast) {
+          window.$toast.success('Template deleted successfully!');
+        }
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to delete template';
+        // Show error toast
+        if (window.$toast) {
+          window.$toast.error(error.value);
+        }
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to delete template';
+      // Show error toast
+      if (window.$toast) {
+        window.$toast.error(error.value);
+      }
+      return { success: false, error: error.value };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const createTemplate = async (templateData: any) => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const result = await publishApi.createTemplate(templateData);
+      
+      if (result.success) {
+        // Show success toast
+        if (window.$toast) {
+          window.$toast.success('Template created successfully!');
+        }
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to create template';
+        // Show error toast
+        if (window.$toast) {
+          window.$toast.error(error.value);
+        }
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to create template';
+      // Show error toast
+      if (window.$toast) {
+        window.$toast.error(error.value);
+      }
+      return { success: false, error: error.value };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const getWhatsAppBroadcastReport = async (params: {
+    page?: number;
+    per_page?: number;
+    query?: string;
+    start_date?: string;
+    end_date?: string;
+  }) => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const result = await publishApi.getWhatsAppBroadcastReport(params);
+      
+      if (result.success) {
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to get WhatsApp broadcast report';
+        // Show error toast
+        if (window.$toast) {
+          window.$toast.error(error.value);
+        }
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to get WhatsApp broadcast report';
+      // Show error toast
+      if (window.$toast) {
+        window.$toast.error(error.value);
+      }
+      return { success: false, error: error.value };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   return {
     // State
     isLoading,
@@ -233,9 +442,15 @@ export const usePublishStore = defineStore('publish', () => {
     saveLandingSettings,
     saveTelegramSettings,
     saveTwilioSettings,
+    saveDialog360Settings,
+    saveWhatsAppCloudSettings,
     refreshPagePermission,
     removePagePermission,
     getBotDetails,
-    getSmsReport
+    getSmsReport,
+    fetchTemplates,
+    deleteTemplate,
+    createTemplate,
+    getWhatsAppBroadcastReport
   };
 }); 

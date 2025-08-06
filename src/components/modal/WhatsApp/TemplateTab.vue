@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import Input from "@/components/ui/Input.vue";
+import { Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Input, Badge, Button } from "@/components/ui";
 import CreateTemplateModal from "./Create/CreateTemplateModal.vue";
 
 // Props
@@ -19,31 +19,14 @@ const emit = defineEmits<{
   'clone-template': [block: any];
   'preview-template': [block: any];
   'copy-payload': [block: any];
+  'open-create-modal': [];
+  'close-whatsapp-modal': [];
 }>();
 
 const createModalRef = ref<InstanceType<typeof CreateTemplateModal> | null>(null);
 
 // Local reactive data
-const templates = ref([
-  {
-    id: 1,
-    name: "Welcome Template",
-    type: "text",
-    status: "active"
-  },
-  {
-    id: 2,
-    name: "Product Catalog",
-    type: "catalog",
-    status: "active"
-  },
-  {
-    id: 3,
-    name: "Promotional Message",
-    type: "text",
-    status: "inactive"
-  }
-]);
+const templates = ref<any[]>([]);
 
 const searchQuery = ref('');
 const currentPage = ref(1);
@@ -68,8 +51,14 @@ const totalPages = computed(() => {
 });
 
 // Methods
+const setTemplates = (newTemplates: any[]) => {
+  templates.value = newTemplates;
+};
+
 const openCreateModal = () => {
-  createModalRef.value?.openModal();
+  // Emit to close WhatsApp modal and open create modal
+  emit('close-whatsapp-modal');
+  emit('open-create-modal');
 };
 
 const closeCreateModal = () => {
@@ -130,14 +119,15 @@ const handleSearch = (query: string) => {
 defineExpose({
   currentPage,
   totalPages,
-  filteredTemplates
+  filteredTemplates,
+  setTemplates
 });
 </script>
 
 <template>
   <div class="tab-panel">
-    <div class="media-header">
-      <div class="search-create-section">
+    <div class="search-section">
+      <div class="search-create-wrapper">
         <Input 
           v-model="searchQuery" 
           placeholder="Search templates..."
@@ -145,76 +135,145 @@ defineExpose({
           @search="handleSearch"
         />
         
-        <!-- Create Button moved back to search section -->
-        <button 
-          class="action-button primary"
+        <Button 
+          variant="primary"
+          icon="pi pi-plus"
           @click="openCreateModal"
         >
-          <i class="pi pi-plus"></i>
           Create
-        </button>
+        </Button>
       </div>
     </div>
 
-    <div class="media-list">
-      <div class="media-table">
-        <div class="table-header">
-          <div class="header-cell">Name</div>
-          <div class="header-cell">Type</div>
-          <div class="header-cell">Status</div>
-          <div class="header-cell">Actions</div>
-        </div>
+    <div class="table-section">
+      <Table>
+        <TableHead>
+          <TableHeader>Name</TableHeader>
+          <TableHeader>Type</TableHeader>
+          <TableHeader>Language</TableHeader>
+          <TableHeader>Status</TableHeader>
+          <TableHeader>Date</TableHeader>
+          <TableHeader>Actions</TableHeader>
+        </TableHead>
         
-        <tr v-for="block in paginatedTemplates" :key="block.id" class="table-row">
-          <td class="table-cell">{{ block.name }}</td>
-          <td class="table-cell">{{ block.type }}</td>
-          <td class="table-cell">
-            <span :class="['status-badge', block.status]">
-              {{ block.status }}
-            </span>
-          </td>
-          <td class="table-cell">
-            <div class="action-buttons">
-              <button
-                class="action-button delete"
-                @click="deleteTemplate(block.id)"
-                title="Delete template"
+        <TableBody>
+          <!-- Loading skeleton -->
+          <TableRow v-if="props.isLoading" v-for="i in 5" :key="`skeleton-${i}`" skeleton>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="badge"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="actions"></TableCell>
+          </TableRow>
+          
+          <!-- Empty state -->
+          <TableRow v-else-if="paginatedTemplates.length === 0" noData>
+            <TableCell noData colspan="6">
+              <div class="empty-state">
+                <i class="pi pi-file-o"></i>
+                <p>No templates found</p>
+              </div>
+            </TableCell>
+          </TableRow>
+          
+          <!-- Template rows -->
+          <TableRow v-else v-for="template in paginatedTemplates" :key="template.id">
+            <TableCell>{{ template.name }}</TableCell>
+            <TableCell>{{ template.type }}</TableCell>
+            <TableCell>{{ template.language }}</TableCell>
+            <TableCell>
+              <Badge 
+                :variant="template.status === 1 ? 'success' : 'warning'"
+                size="small"
               >
-                <i class="pi pi-trash"></i>
-              </button>
-              <button
-                class="action-button clone"
-                @click="cloneTemplate(block)"
-                title="Clone template"
-              >
-                <i class="pi pi-copy"></i>
-              </button>
-              <button
-                class="action-button preview"
-                @click="previewTemplate(block)"
-                title="Preview template"
-              >
-                <i class="pi pi-eye"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
-      </div>
+                {{ template.status === 1 ? 'Approved' : 'Not Approved' }}
+              </Badge>
+            </TableCell>
+            <TableCell>{{ new Date(template.created_at).toLocaleDateString() }}</TableCell>
+            <TableCell>
+              <div class="action-buttons">
+                <Button
+                  variant="error"
+                  size="small"
+                  icon="pi pi-trash"
+                  iconOnly
+                  @click="deleteTemplate(template.id)"
+                  title="Delete template"
+                />
+                <Button
+                  variant="secondary"
+                  size="small"
+                  icon="pi pi-copy"
+                  iconOnly
+                  @click="cloneTemplate(template)"
+                  title="Clone template"
+                />
+                <Button
+                  variant="secondary"
+                  size="small"
+                  icon="pi pi-eye"
+                  iconOnly
+                  @click="previewTemplate(template)"
+                  title="Preview template"
+                />
+                <Button
+                  variant="secondary"
+                  size="small"
+                  icon="pi pi-id-card"
+                  iconOnly
+                  @click="copyPayload(template)"
+                  title="Copy payload"
+                />
+              </div>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
     </div>
-
-    <!-- Create Template Modal -->
-    <CreateTemplateModal
-      ref="createModalRef"
-      @create-template="createTemplate"
-    />
   </div>
 </template>
 
 <style scoped>
-/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
+.search-section {
+  margin-bottom: var(--space-4);
+}
 
-/* Template-specific styles */
-.media-header {
-  margin-bottom: 20px;
+.search-create-wrapper {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: end;
+}
+
+.table-section {
+  flex: 1;
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+  color: var(--color-text-tertiary);
+  text-align: center;
+}
+
+.empty-state i {
+  font-size: 48px;
+  margin-bottom: var(--space-3);
+  opacity: 0.5;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
 }
 </style> 

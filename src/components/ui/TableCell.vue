@@ -38,6 +38,10 @@ const shouldShowSkeleton = computed(() => {
 
 <style scoped>
 /* Cell styles are handled by the parent Table component */
+td {
+  padding: 10px;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
 
 .skeleton-content {
   display: flex;

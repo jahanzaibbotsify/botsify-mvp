@@ -253,6 +253,222 @@ export class PublishApiService {
       };
     }
   }
+
+  /**
+   * Save Dialog360 settings
+   */
+  async saveDialog360Settings(settings: {
+    whatsappNumber: string;
+    apiKey: string;
+    phoneNumberId: string;
+    whatsappBusinessAccountId: string;
+  }): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.post('/v1/bot/dialog360/connect', {
+        whatsapp_number: settings.whatsappNumber,
+        api_key: settings.apiKey,
+        phone_number_id: settings.phoneNumberId,
+        whatsapp_business_account_id: settings.whatsappBusinessAccountId,
+        apikey: apiKey
+      }, {
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Save Dialog360 settings response:', response.data);
+
+      return {
+        success: true,
+        message: 'Dialog360 settings saved successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error saving Dialog360 settings:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to save Dialog360 settings',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Save WhatsApp Cloud settings
+   */
+  async saveWhatsAppCloudSettings(settings: {
+    temporaryToken: string;
+    phoneNumber: string;
+    phoneNumberId: string;
+    whatsappBusinessAccountId: string;
+    clientId: string;
+    clientSecret: string;
+    isFacebook?: boolean;
+  }): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.post('/v1/cloud-whatsapp-publish', {
+        temporary_token: settings.temporaryToken,
+        whatsapp: settings.phoneNumber,
+        whatsapp_phone_id: settings.phoneNumberId,
+        whatsapp_account_id: settings.whatsappBusinessAccountId,
+        client_id: settings.clientId,
+        client_secret: settings.clientSecret,
+        is_facebook: settings.isFacebook || false,
+        apikey: apiKey
+      }, {
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Save WhatsApp Cloud settings response:', response.data);
+
+      return {
+        success: true,
+        message: 'WhatsApp Cloud settings saved successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error saving WhatsApp Cloud settings:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to save WhatsApp Cloud settings',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Fetch templates
+   */
+  async fetchTemplates(): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.get('/v1/media-block/fetch', {
+        params: {
+          apikey: apiKey
+        },
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Fetch templates response:', response.data);
+
+      return {
+        success: true,
+        message: 'Templates fetched successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error fetching templates:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to fetch templates',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Delete template
+   */
+  async deleteTemplate(id: number): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.post('/v1/media-block/delete', {
+        apikey: apiKey,
+        id: id
+      }, {
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Delete template response:', response.data);
+
+      return {
+        success: true,
+        message: 'Template deleted successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error deleting template:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to delete template',
+        data: error.response?.data
+      };
+    }
+  }
+
+  async createTemplate(templateData: any): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.post('/v1/media-block/create', {
+        apikey: apiKey,
+        ...templateData
+      }, {
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Create template response:', response.data);
+
+      return {
+        success: true,
+        message: 'Template created successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error creating template:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to create template',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Get WhatsApp broadcast report
+   */
+  async getWhatsAppBroadcastReport(params: {
+    page?: number;
+    per_page?: number;
+    query?: string;
+    start_date?: string;
+    end_date?: string;
+  }): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.get('/v1/whatsapp-broadcast-report', {
+        params: {
+          apikey: apiKey,
+          page: params.page || 1,
+          per_page: params.per_page || 20,
+          ...(params.query && { query: params.query }),
+          ...(params.start_date && { start_date: params.start_date }),
+          ...(params.end_date && { end_date: params.end_date })
+        },
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Get WhatsApp broadcast report response:', response.data);
+
+      return {
+        success: true,
+        message: 'WhatsApp broadcast report retrieved successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error getting WhatsApp broadcast report:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to get WhatsApp broadcast report',
+        data: error.response?.data
+      };
+    }
+  }
 }
 
 export const publishApi = PublishApiService.getInstance(); 

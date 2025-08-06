@@ -218,6 +218,7 @@ const handleManageBilling = async () => {
       window.$toast?.error('Unable to open billing portal. Please try again later.')
     }
   } catch (e) {
+    console.log(e)
     window.$toast?.error('Unable to open billing portal. Please try again later.')
   } finally {
     billingLoading.value = false
@@ -340,7 +341,7 @@ onUnmounted(() => {
       </div> -->
     </div>
 
-    <div v-if="roleStore.canManageBillingWithSubscription" class="sidebar-pricing">
+    <div class="sidebar-pricing">
         <button class="pricing-button" @click="handleManageBilling" :disabled="billingLoading">
           <div class="button-content">
             <span class="pricing-text">
@@ -351,7 +352,7 @@ onUnmounted(() => {
           </div>
         </button>
     </div>
-    <div v-else class="sidebar-pricing">
+    <div class="sidebar-pricing">
         <button class="pricing-button" @click="handleCalendly">
           <div class="button-content">
             <span class="pricing-text">Book Demo</span>

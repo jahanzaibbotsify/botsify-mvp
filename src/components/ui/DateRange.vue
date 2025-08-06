@@ -147,7 +147,7 @@ const handleBlur = (event: FocusEvent) => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  background-color: var(--color-bg-tertiary);
+  background-color: white;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   transition: all var(--transition-normal);

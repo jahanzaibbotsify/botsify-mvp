@@ -22,6 +22,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   back: [];
   'tab-change': [tabId: string];
+  close: [];
 }>();
 
 
@@ -60,6 +61,10 @@ const handleBack = () => {
   emit('back');
 };
 
+const handleClose = () => {
+  emit('close');
+};
+
 const handleTabChange = (tabId: string) => {
   if (activeTab.value !== tabId) {
     activeTab.value = tabId;
@@ -80,6 +85,7 @@ defineExpose({
     ref="modalRef"
     :title="title"
     :max-width="maxWidth"
+    @close="handleClose"
   >
     <div class="bot-modal-content">
       <!-- Tabs Header - Only show when there are multiple tabs -->
