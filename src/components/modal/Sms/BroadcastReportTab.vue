@@ -117,7 +117,7 @@ onMounted(() => {
 
 <template>
   <div class="tab-panel">
-    <h3>SMS Report</h3>
+    <h3>SMS report</h3>
     <p class="subtitle">View SMS delivery analytics and reports</p>
     
     <!-- Stats Cards -->
@@ -145,8 +145,8 @@ onMounted(() => {
           <TableHeader width="80px">Status</TableHeader>
           <TableHeader width="150px">Number</TableHeader>
           <TableHeader width="200px">Message</TableHeader>
-          <TableHeader width="200px">Failure Reason</TableHeader>
-          <TableHeader width="80px">Sent At</TableHeader>
+          <TableHeader width="200px">Failure reason</TableHeader>
+          <TableHeader width="80px">Sent at</TableHeader>
         </TableHead>
         <TableBody>
           <!-- Loading State -->

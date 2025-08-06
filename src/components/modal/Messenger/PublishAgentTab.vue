@@ -126,7 +126,7 @@ defineExpose({
 
 <template>
   <div class="tab-panel">
-    <h3>Messenger Integration</h3>
+    <h3>Messenger integration</h3>
     <p class="subtitle">Connect your Facebook pages to enable Messenger bot functionality</p>
 
     <!-- Empty State -->
@@ -135,7 +135,7 @@ defineExpose({
         <div class="empty-icon">
           <i class="pi pi-facebook"></i>
         </div>
-        <h4>No Facebook Pages Found</h4>
+        <h4>No Facebook pages found</h4>
         <p>Connect your Facebook account to manage your pages and enable Messenger bot functionality.</p>
         <button 
           class="connect-account-btn"
@@ -143,7 +143,7 @@ defineExpose({
           :disabled="isLoading"
         >
           <i class="pi pi-link"></i>
-          Connect Facebook Account
+          Connect Facebook account
         </button>
       </div>
     </div>
@@ -166,7 +166,7 @@ defineExpose({
           :disabled="isLoading"
         >
           <i class="pi pi-plus"></i>
-          Create New Page
+          Create new page
         </button>
       </div>
 

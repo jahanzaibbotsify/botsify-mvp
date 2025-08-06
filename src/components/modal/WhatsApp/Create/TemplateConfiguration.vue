@@ -8,7 +8,7 @@ const store = useWhatsAppTemplateStore();
 <template>
   <div class="template-config">
     <div class="config-header">
-      <p class="config-label">Template Configuration</p>
+      <p class="config-label">Template configuration</p>
     </div>
     
     <div class="config-body">
@@ -19,7 +19,7 @@ const store = useWhatsAppTemplateStore();
             :model-value="store.template.category"
             @update:model-value="(value: any) => { store.template.category = value; store.onChangeCategory(); }"
             :options="store.categories"
-            placeholder="Select Template Category"
+            placeholder="Select category"
           />
         </div>
         
@@ -29,18 +29,18 @@ const store = useWhatsAppTemplateStore();
             :model-value="store.block.language"
             @update:model-value="(value: any) => store.block.language = value"
             :options="store.languages"
-            placeholder="Select Template Language"
+            placeholder="Select language"
           />
         </div>
       </div>
 
       <div class="config-section" v-if="store.template.category != 'AUTHENTICATION'">
-        <label class="config-field-label">Media Block Type</label>
+        <label class="config-field-label">Template type</label>
         <VueSelect
           :model-value="store.template.type"
           @update:model-value="(value: any) => { store.template.type = value; store.onChangeTemplateType(); }"
           :options="store.template_types"
-          placeholder="Select Template Type"
+          placeholder="Select type"
         />
       </div>
     </div>

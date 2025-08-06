@@ -10,7 +10,7 @@ const store = useWhatsAppTemplateStore();
   <div class="parameter-editor">
     <div>
     <div class="parameter-section">
-      <h3>Template Name</h3>
+      <h3>Template name</h3>
       <Input
         v-model="store.template.name"
         placeholder="Enter template name"
@@ -45,9 +45,9 @@ const store = useWhatsAppTemplateStore();
       class="parameter-section"
       v-if="store.template.type == 'media' && store.template.bodyIncludes.includes('header') && store.template.header == 'text' && store.template.variables.header"
     >
-      <h3>Header Variable</h3>
+      <h3>Header variable</h3>
       <div class="form-group">
-        <label>Header Variable - {{ store.template.variables.header.key }}</label>
+        <label>Header variable - {{ store.template.variables.header.key }}</label>
         <Input
           v-model="store.template.variables.header.value"
           placeholder="Enter header variable value"
@@ -60,17 +60,17 @@ const store = useWhatsAppTemplateStore();
 
     <!-- BODY VARIABLES -->
     <div v-if="store.template.variables.body.length > 0" class="parameter-section">
-      <h3>Body Variables</h3>
+      <h3>Body variables</h3>
       <div 
         class="form-group"
         v-for="(variable, varIndex) in store.template.variables.body"
         :key="varIndex"
       >
         <label v-if="store.template.category == 'AUTHENTICATION'">
-          Authentication Code - {{ variable.key }}
+          Authentication code - {{ variable.key }}
         </label>
         <label v-else>
-          Body Variable - {{ variable.key }}
+          Body variable - {{ variable.key }}
         </label>
         <Input
           v-model="variable.value"
@@ -84,7 +84,7 @@ const store = useWhatsAppTemplateStore();
 
     <!-- BUTTON VARIABLES -->
     <div v-if="store.template.variables.buttons.length > 0" class="parameter-section">
-      <h3>Button Variables</h3>
+      <h3>Button variables</h3>
       <div 
         class="form-group"
         v-for="(buttonVar, varIndex) in store.template.variables.buttons"
@@ -103,7 +103,7 @@ const store = useWhatsAppTemplateStore();
   </div>
     <!-- Message Preview -->
     <div class="parameter-section">
-      <h3>Message Preview</h3>
+      <h3>Message preview</h3>
       <MessagePreview 
         :template="store.template"
         :block="store.block"

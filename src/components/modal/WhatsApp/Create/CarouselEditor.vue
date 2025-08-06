@@ -39,7 +39,7 @@ const afterSelect = () => {
 <template>
   <div class="form-group">
     <div class="carousel-header">
-      <p class="carousel-label">Media Template</p>
+      <p class="carousel-label">Media template</p>
     </div>
 
     <div class="carousel-body">
@@ -103,7 +103,7 @@ const afterSelect = () => {
             @click="addSlide"
             :disabled="store.template.slides.length >= 10"
           >
-            Add Slide
+            Add slide
           </Button>
           <Button
             v-if="store.template.slides.length > 1"
@@ -112,7 +112,7 @@ const afterSelect = () => {
             size="small"
             @click="removeSlide(index)"
           >
-            Remove Slide
+            Remove slide
           </Button>
         </div>
       </div>

@@ -10,7 +10,7 @@
             size="small"
             :disabled="!canAddButton"
           >
-            Add Button <i class="fa fa-plus"></i>
+            Add button <i class="fa fa-plus"></i>
           </Button>
 
           <div class="button-type-selector" v-if="current == null || current <= 0">
@@ -83,7 +83,7 @@
         <!-- Button Configuration Row -->
         <div v-if="button.type === 'postback'" class="button-config-row">
           <div class="button-config-section">
-            <label class="button-label">Button Label</label>
+            <label class="button-label">Button label</label>
                          <Input
                v-model="button.title"
                maxlength="20"
@@ -94,7 +94,7 @@
           </div>
 
                      <div class="button-config-section">
-             <label class="button-label">Quick Reply Response</label>
+             <label class="button-label">Quick reply response</label>
              <Input
                v-model="button.response"
                maxlength="20"
@@ -107,7 +107,7 @@
                  <!-- CTA Button Configuration Row -->
          <div v-else-if="button.type === 'web_url'" class="button-config-row">
            <div class="button-config-section">
-             <label class="button-label">Button Label</label>
+             <label class="button-label">Button label</label>
                            <Input
                 v-model="button.title"
                 maxlength="20"
@@ -150,7 +150,7 @@
 
          <div v-else-if="button.type === 'phone_number'" class="button-config-row">
            <div class="button-config-section">
-             <label class="button-label">Button Label</label>
+             <label class="button-label">Button label</label>
                            <Input
                 v-model="button.title"
                 maxlength="20"
@@ -161,7 +161,7 @@
            </div>
 
            <div class="button-config-section">
-             <label class="button-label">Phone Number</label>
+             <label class="button-label">Phone number</label>
              <Input
                v-model="button.payload"
                placeholder="+1 631-555-5555"

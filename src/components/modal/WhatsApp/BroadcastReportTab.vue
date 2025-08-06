@@ -162,7 +162,7 @@ onMounted(() => {
 
 <template>
   <div class="tab-panel">
-    <h3>Broadcast Report</h3>
+    <h3>Broadcast report</h3>
     <p class="subtitle">View WhatsApp broadcast analytics and reports</p>
     
     <!-- Filters -->
@@ -190,7 +190,7 @@ onMounted(() => {
           :loading="publishStore.isLoading"
           @click="handleFilterClick"
         >
-          {{ publishStore.isLoading ? 'Filtering...' : 'Apply Filters' }}
+          {{ publishStore.isLoading ? 'Filtering...' : 'Apply filters' }}
         </Button>
       </div>
     </div>
@@ -203,7 +203,7 @@ onMounted(() => {
          </div>
          <div class="stat-content">
            <div class="stat-value">{{ stats.sent }}</div>
-           <div class="stat-label">Sent (Today)</div>
+           <div class="stat-label">Sent (today)</div>
          </div>
        </div>
        
@@ -213,7 +213,7 @@ onMounted(() => {
          </div>
          <div class="stat-content">
            <div class="stat-value">{{ stats.delivered }}</div>
-           <div class="stat-label">Delivered (Today)</div>
+           <div class="stat-label">Delivered (today)</div>
          </div>
        </div>
        
@@ -223,7 +223,7 @@ onMounted(() => {
          </div>
          <div class="stat-content">
            <div class="stat-value">{{ stats.read }}</div>
-           <div class="stat-label">Read (Today)</div>
+           <div class="stat-label">Read (today)</div>
          </div>
        </div>
        
@@ -233,7 +233,7 @@ onMounted(() => {
          </div>
          <div class="stat-content">
            <div class="stat-value">{{ stats.failed }}</div>
-           <div class="stat-label">Failed (Today)</div>
+           <div class="stat-label">Failed (today)</div>
          </div>
        </div>
      </div>
@@ -242,14 +242,14 @@ onMounted(() => {
     <div class="table-section">
       <Table>
         <TableHead>
-          <TableHeader>Template Name</TableHeader>
-          <TableHeader>Phone Number</TableHeader>
-          <TableHeader>Sent Time</TableHeader>
+          <TableHeader>Template name</TableHeader>
+          <TableHeader>Phone number</TableHeader>
+          <TableHeader>Sent time</TableHeader>
           <TableHeader>Sent</TableHeader>
           <TableHeader>Delivered</TableHeader>
           <TableHeader>Read</TableHeader>
           <TableHeader>Failed</TableHeader>
-          <TableHeader>Failure Reason</TableHeader>
+          <TableHeader>Failure reason</TableHeader>
         </TableHead>
         
         <TableBody>

@@ -8,7 +8,7 @@ const store = useWhatsAppTemplateStore();
 <template>
   <div class="auth-template-section">
     <div class="auth-info">
-      <h4>Authentication Template</h4>
+      <h4>Authentication template</h4>
       <p class="auth-description">
         This template will be used for OTP verification. The body should contain {{1}} placeholder for the verification code.
       </p>
@@ -16,7 +16,7 @@ const store = useWhatsAppTemplateStore();
     
     <div class="form-group">
       <div class="buttons-header">
-        <p class="buttons-label">Copy Code Button</p>
+        <p class="buttons-label">Copy code button</p>
       </div>
       
       <div class="buttons-body">
@@ -24,10 +24,10 @@ const store = useWhatsAppTemplateStore();
           
           <div class="button-config-row">
             <div class="button-config-section full-width">
-              <label class="button-label">Button Text</label>
+              <label class="button-label">Button text</label>
               <Input
                 v-model="store.block.buttons[0].text"
-                placeholder="e.g., Copy Code"
+                placeholder="e.g., Copy code"
                 maxlength="20"
               />
               <p class="input-hint">Text that will appear on the copy code button</p>

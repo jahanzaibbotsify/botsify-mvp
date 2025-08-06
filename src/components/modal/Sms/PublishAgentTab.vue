@@ -41,16 +41,16 @@ defineExpose({
 
 <template>
   <div class="tab-panel">
-    <h3>Publish Your Agent</h3>
+    <h3>Publish your agent</h3>
     <p class="subtitle">Choose your SMS provider and configure settings</p>
 
     <div class="form-group">
-      <label for="twilio-account-sid">Twilio Account SID</label>
+      <label for="twilio-account-sid">Twilio account SID</label>
       <Input 
         id="twilio-account-sid"
         v-model="smsFields.twilioAccountSid"
         type="text"
-        placeholder="Enter your Twilio Account SID"
+        placeholder="Enter your Twilio account SID"
         size="medium"
       />
       <small class="help-text">
@@ -59,12 +59,12 @@ defineExpose({
     </div>
     
     <div class="form-group">
-      <label for="twilio-auth-token">Twilio Auth Token</label>
+      <label for="twilio-auth-token">Twilio auth token</label>
       <Input 
         id="twilio-auth-token"
         v-model="smsFields.twilioAuthToken"
         type="password"
-        placeholder="Enter your Twilio Auth Token"
+        placeholder="Enter your Twilio auth token"
         size="medium"
       />
       <small class="help-text">
@@ -73,7 +73,7 @@ defineExpose({
     </div>
     
     <div class="form-group">
-      <label for="twilio-sms-number">Twilio SMS Number</label>
+      <label for="twilio-sms-number">Twilio SMS number</label>
       <Input 
         id="twilio-sms-number"
         v-model="smsFields.twilioSmsNumber"
@@ -87,7 +87,7 @@ defineExpose({
     </div>
     
     <div class="form-group">
-      <label for="twilio-sender-id">Twilio Sender ID</label>
+      <label for="twilio-sender-id">Twilio sender ID</label>
       <Input 
         id="twilio-sender-id"
         v-model="smsFields.twilioSenderId"

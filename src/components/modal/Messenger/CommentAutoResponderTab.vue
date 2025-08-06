@@ -139,7 +139,7 @@ defineExpose({
 
 <template>
   <div class="tab-panel">
-    <h3>Comment Auto Responder</h3>
+    <h3>Comment auto responder</h3>
     <p class="subtitle">Automatically respond to comments based on keywords</p>
 
     <!-- Empty State -->
@@ -148,14 +148,14 @@ defineExpose({
         <div class="empty-icon">
           <i class="pi pi-comments"></i>
         </div>
-        <h4>No Auto Responders</h4>
+        <h4>No auto responders</h4>
         <p>Create your first auto responder to automatically reply to comments.</p>
         <button 
           class="add-new-btn"
           @click="startAddingNew"
         >
           <i class="pi pi-plus"></i>
-          Create Auto Responder
+          Create auto responder
         </button>
       </div>
     </div>
@@ -163,7 +163,7 @@ defineExpose({
     <!-- Add New Form -->
     <div v-if="isAddingNew" class="add-form">
       <div class="form-header">
-        <h4>Create New Auto Responder</h4>
+        <h4>Create new auto responder</h4>
         <button class="close-btn" @click="cancelAddingNew">
           <i class="pi pi-times"></i>
         </button>
@@ -181,7 +181,7 @@ defineExpose({
       </div>
 
       <div class="form-group">
-        <label>Select Post</label>
+        <label>Select post</label>
         <select 
           v-model="newResponder.selectedPost"
           class="form-input"
@@ -193,7 +193,7 @@ defineExpose({
       </div>
 
       <div class="form-group">
-        <label>Response Message</label>
+        <label>Response message</label>
         <textarea 
           v-model="newResponder.message"
           placeholder="Enter your auto-response message"
@@ -214,7 +214,7 @@ defineExpose({
           @click="saveNewAutoResponder"
           :disabled="!newResponder.keywords || !newResponder.selectedPost || !newResponder.message"
         >
-          Create Auto Responder
+          Create auto responder
         </button>
       </div>
     </div>
@@ -222,7 +222,7 @@ defineExpose({
     <!-- Auto Responders List -->
     <div v-if="autoResponders.length > 0" class="responders-section">
       <div class="section-header">
-        <h4>Auto Responders ({{ autoResponders.length }})</h4>
+        <h4>Auto responders ({{ autoResponders.length }})</h4>
         <button 
           v-if="!isAddingNew"
           class="add-new-btn"

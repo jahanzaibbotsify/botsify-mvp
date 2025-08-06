@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import { Button, Input, VueSelect } from "@/components/ui";
 import FileUpload from "@/components/ui/FileUpload.vue";
+import MessagePreview from "./Create/MessagePreview.vue";
+import { useWhatsAppTemplateStore } from "@/stores/whatsappTemplateStore";
 
 // Props
 interface Props {
@@ -15,6 +18,9 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   'send-broadcast': [data: any];
 }>();
+
+// Store
+const store = useWhatsAppTemplateStore();
 
 // Reactive data
 const broadcastForm = ref({
@@ -44,14 +50,6 @@ const userSegments = [
   { value: 'single', label: 'Single User' }
 ];
 
-// Preview data
-const previewData = ref({
-  image: '',
-  text: '',
-  buttons: [] as string[],
-  description: ''
-});
-
 // Computed properties
 const showFileUpload = computed(() => broadcastForm.value.userSegment === 'upload');
 const showPhoneNumber = computed(() => broadcastForm.value.userSegment === 'single');
@@ -61,37 +59,20 @@ const handleTemplateChange = () => {
   // Load template content based on selection
   switch (broadcastForm.value.template) {
     case 'welcome':
-      broadcastForm.value.message = 'Welcome to our service! We\'re excited to have you on board.';
+      store.block.text = 'Welcome to our service! We\'re excited to have you on board.';
       break;
     case 'promotion':
-      broadcastForm.value.message = '🎉 Special Offer! Get 20% off your next purchase. Limited time only!';
+      store.block.text = '🎉 Special Offer! Get 20% off your next purchase. Limited time only!';
       break;
     case 'reminder':
-      broadcastForm.value.message = '⏰ Reminder: You have an appointment scheduled for tomorrow.';
+      store.block.text = '⏰ Reminder: You have an appointment scheduled for tomorrow.';
       break;
     case 'newsletter':
-      broadcastForm.value.message = '📰 Our monthly newsletter is here! Check out the latest updates.';
+      store.block.text = '📰 Our monthly newsletter is here! Check out the latest updates.';
       break;
     default:
-      broadcastForm.value.message = '';
+      store.block.text = '';
   }
-  
-  // Update preview
-  updatePreview();
-};
-
-const updatePreview = () => {
-  // Generate dummy preview data based on form
-  previewData.value = {
-    image: broadcastForm.value.mediaType === 'image' ? 'https://via.placeholder.com/300x200' : '',
-    text: broadcastForm.value.message,
-    buttons: broadcastForm.value.message.includes('offer') ? ['Shop Now', 'Learn More'] : [],
-    description: broadcastForm.value.message.length > 100 ? broadcastForm.value.message.substring(0, 100) + '...' : broadcastForm.value.message
-  };
-};
-
-const handleMessageChange = () => {
-  updatePreview();
 };
 
 const handleFileUpload = (attachments: any[]) => {
@@ -101,7 +82,7 @@ const handleFileUpload = (attachments: any[]) => {
 };
 
 const sendBroadcast = () => {
-  if (!broadcastForm.value.message) {
+  if (!store.block.text) {
     console.error('Message is required');
     return;
   }
@@ -123,6 +104,7 @@ const sendBroadcast = () => {
   
   emit('send-broadcast', {
     ...broadcastForm.value,
+    message: store.block.text,
     type: broadcastForm.value.userSegment
   });
 };
@@ -134,110 +116,111 @@ defineExpose({
 </script>
 
 <template>
-  <div class="tab-panel">
-    <h3>Broadcast</h3>
-    <p class="subtitle">Send broadcast messages to your audience</p>
-    
-    <div class="broadcast-form">
-      <!-- Message Template -->
-      <div class="form-group">
-        <label for="broadcast-template">Message Template</label>
-        <select 
-          id="broadcast-template" 
-          v-model="broadcastForm.template" 
-          class="form-input"
-          @change="handleTemplateChange"
-        >
-          <option v-for="template in messageTemplates" :key="template.value" :value="template.value">
-            {{ template.label }}
-          </option>
-        </select>
+  <div class="broadcast-layout">
+    <!-- Main Content -->
+    <div class="main-content">
+      <h3>Broadcast</h3>
+      <p class="subtitle">Send broadcast messages to your audience</p>
+      
+      <div class="broadcast-form">
+        <!-- Message Template -->
+        <div class="form-group">
+          <label for="broadcast-template">Message template</label>
+          <VueSelect
+            id="broadcast-template"
+            v-model="broadcastForm.template"
+            :options="messageTemplates"
+            :reduce="(template: any) => template.value"
+            placeholder="Select a template"
+            @input="handleTemplateChange"
+          />
+        </div>
+        
+        <!-- User Segment -->
+        <div class="form-group">
+          <label for="broadcast-segment">User segment</label>
+          <VueSelect
+            id="broadcast-segment"
+            v-model="broadcastForm.userSegment"
+            :options="userSegments"
+            :reduce="(segment: any) => segment.value"
+            placeholder="Select user segment"
+          />
+        </div>
+        
+        <!-- File Upload (Upload user only) -->
+        <div v-if="showFileUpload" class="form-group">
+          <label>Upload user file</label>
+          <FileUpload
+            v-model="broadcastForm.uploadedFile"
+            accept=".csv,.txt"
+            :multiple="false"
+            :max-size-m-b="10"
+            text="Upload CSV or TXT file with phone numbers"
+            @upload="handleFileUpload"
+          />
+          <small class="help-text">
+            Upload a CSV or TXT file containing phone numbers to send messages to.
+          </small>
+        </div>
+        
+        <!-- Phone Number (Single user only) -->
+        <div v-if="showPhoneNumber" class="form-group">
+          <label for="broadcast-phone">Phone number</label>
+          <Input
+            id="broadcast-phone"
+            v-model="broadcastForm.phoneNumber"
+            type="tel"
+            placeholder="Enter phone number"
+          />
+        </div>
       </div>
       
-      <!-- User Segment -->
-      <div class="form-group">
-        <label for="broadcast-segment">User Segment</label>
-        <select id="broadcast-segment" v-model="broadcastForm.userSegment" class="form-input">
-          <option v-for="segment in userSegments" :key="segment.value" :value="segment.value">
-            {{ segment.label }}
-          </option>
-        </select>
-      </div>
-      
-      <!-- File Upload (Upload user only) -->
-      <div v-if="showFileUpload" class="form-group">
-        <label>Upload User File</label>
-        <FileUpload
-          v-model="broadcastForm.uploadedFile"
-          accept=".csv,.txt"
-          :multiple="false"
-          :max-size-m-b="10"
-          text="Upload CSV or TXT file with phone numbers"
-          @upload="handleFileUpload"
-        />
-        <small class="help-text">
-          Upload a CSV or TXT file containing phone numbers to send messages to.
-        </small>
-      </div>
-      
-      <!-- Phone Number (Single user only) -->
-      <div v-if="showPhoneNumber" class="form-group">
-        <label for="broadcast-phone">Phone Number</label>
-        <input 
-          id="broadcast-phone"
-          v-model="broadcastForm.phoneNumber"
-          type="tel"
-          placeholder="Enter phone number"
-          class="form-input"
-        />
-      </div>
+             <!-- Message Editor -->
+       <div class="message-editor">
+         <h4>Message content</h4>
+         
+         <!-- Simple textarea for message body -->
+         <div class="form-group">
+           <label for="broadcast-message">Message</label>
+           <textarea
+             id="broadcast-message"
+             v-model="store.block.text"
+             placeholder="Enter your broadcast message here..."
+             class="message-textarea"
+             rows="6"
+           ></textarea>
+         </div>
+       </div>
     </div>
     
-    <!-- Preview Section -->
-    <div class="preview-section">
-      <h4>Preview</h4>
-      <div class="preview-container">
-        <!-- Image Preview -->
-        <div v-if="previewData.image" class="preview-image">
-          <img :src="previewData.image" alt="Preview" />
-        </div>
-        
-        <!-- Text Preview -->
-        <div v-if="previewData.text" class="preview-text">
-          {{ previewData.text }}
-        </div>
-        
-        <!-- Buttons Preview -->
-        <div v-if="previewData.buttons.length > 0" class="preview-buttons">
-          <button 
-            v-for="button in previewData.buttons" 
-            :key="button"
-            class="preview-button"
-          >
-            {{ button }}
-          </button>
-        </div>
-        
-        <!-- Description Preview -->
-        <div v-if="previewData.description" class="preview-description">
-          {{ previewData.description }}
-        </div>
-        
-        <!-- Empty State -->
-        <div v-if="!previewData.text && !previewData.image && previewData.buttons.length === 0" class="preview-empty">
-          <p>No preview available. Add a message to see the preview.</p>
-        </div>
+    <!-- Side Panel -->
+    <div class="side-panel">
+      <div class="preview-header">
+        <h4>Message preview</h4>
       </div>
+      <MessagePreview 
+        :template="store.template"
+        :block="store.block"
+        :variables="store.template.variables"
+      />
     </div>
   </div>
 </template>
 
 <style scoped>
-.tab-panel {
+.broadcast-layout {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: var(--space-4);
+  height: 100%;
+}
+
+.main-content {
   padding: 0;
 }
 
-.tab-panel h3 {
+.main-content h3 {
   margin: 0 0 8px 0;
   font-size: 20px;
   font-weight: 600;
@@ -255,9 +238,16 @@ defineExpose({
   margin-top: 20px;
 }
 
-textarea.form-input {
-  resize: vertical;
-  min-height: 80px;
+.form-group {
+  margin-bottom: var(--space-4);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
 }
 
 .help-text {
@@ -266,124 +256,80 @@ textarea.form-input {
   margin-top: 4px;
 }
 
-/* Toggle Group */
-.toggle-group {
-  display: flex;
-  gap: 8px;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  padding: 4px;
-  background: var(--color-bg-tertiary, #f3f4f6);
+.message-editor {
+  margin-top: var(--space-6);
 }
 
-.toggle-btn {
-  flex: 1;
-  padding: 8px 16px;
-  border: none;
-  border-radius: var(--radius-sm, 4px);
-  background: transparent;
-  color: var(--color-text-secondary, #6b7280);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal, 0.2s ease);
-}
-
-.toggle-btn.active {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.toggle-btn:hover:not(.active) {
-  background: var(--color-bg-secondary, #f9fafb);
-  color: var(--color-text-primary, #111827);
-}
-
-/* Preview Section */
-.preview-section {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--color-border, #e5e7eb);
-}
-
-.preview-section h4 {
-  margin: 0 0 12px 0;
+.message-editor h4 {
+  margin: 0 0 var(--space-3) 0;
   font-size: 16px;
   font-weight: 600;
   color: var(--color-text-primary, #111827);
 }
 
-.preview-container {
-  background: var(--color-bg-secondary, #f9fafb);
+.message-textarea {
+  width: 100%;
+  padding: var(--space-3);
   border: 1px solid var(--color-border, #e5e7eb);
   border-radius: var(--radius-md, 8px);
-  padding: 16px;
-  min-height: 120px;
-}
-
-.preview-image {
-  margin-bottom: 12px;
-}
-
-.preview-image img {
-  max-width: 100%;
-  height: auto;
-  border-radius: var(--radius-sm, 4px);
-}
-
-.preview-text {
-  margin-bottom: 12px;
+  font-family: inherit;
   font-size: 14px;
   line-height: 1.5;
   color: var(--color-text-primary, #111827);
+  background-color: var(--color-bg-tertiary, #f3f4f6);
+  resize: vertical;
+  min-height: 120px;
 }
 
-.preview-buttons {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
+.message-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.preview-button {
-  padding: 6px 12px;
-  border: 1px solid var(--color-primary, #3b82f6);
-  border-radius: var(--radius-sm, 4px);
-  background: var(--color-primary, #3b82f6);
-  color: white;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.preview-description {
-  font-size: 12px;
-  color: var(--color-text-secondary, #6b7280);
-  line-height: 1.4;
-}
-
-.preview-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 80px;
+.message-textarea::placeholder {
   color: var(--color-text-tertiary, #9ca3af);
-  font-size: 14px;
-  text-align: center;
+}
+
+.side-panel {
+  background: var(--color-bg-secondary, #f9fafb);
+  border-left: 1px solid var(--color-border, #e5e7eb);
+  padding: var(--space-4);
+  overflow-y: auto;
+  height: 100%;
+}
+
+.preview-header {
+  margin-bottom: var(--space-4);
+}
+
+.preview-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .broadcast-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .side-panel {
+    border-left: none;
+    border-top: 1px solid var(--color-border, #e5e7eb);
+    padding-top: var(--space-4);
+  }
 }
 
 @media (max-width: 768px) {
-  .toggle-group {
-    flex-direction: column;
+  .broadcast-layout {
+    gap: var(--space-3);
   }
   
-  .preview-buttons {
-    flex-direction: column;
-  }
-  
-  .preview-button {
-    width: 100%;
-    text-align: center;
+  .side-panel {
+    padding: var(--space-3);
   }
 }
 </style> 

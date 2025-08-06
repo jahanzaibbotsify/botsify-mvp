@@ -112,7 +112,7 @@ defineExpose({
 
 <template>
   <div class="tab-panel">
-    <h3>Publish Your Agent</h3>
+    <h3>Publish your agent</h3>
     <p class="subtitle">Choose your WhatsApp provider and configure settings</p>
     
     <!-- Provider Selection -->
@@ -122,7 +122,7 @@ defineExpose({
         :class="{ active: selectedProvider === 'meta' }"
         @click="selectProvider('meta')"
       >
-        Official Meta Cloud
+        Official Meta cloud
       </button>
       <button 
         class="provider-button"
@@ -135,9 +135,9 @@ defineExpose({
 
     <!-- Meta Cloud Form -->
     <div v-if="selectedProvider === 'meta'" class="provider-form">
-      <h4>Meta Cloud Configuration</h4>
+      <h4>Meta cloud configuration</h4>
       <div class="form-group">
-        <label for="meta-token">Temporary Access Token</label>
+        <label for="meta-token">Temporary access token</label>
         <Input 
           id="meta-token"
           v-model="metaFields.temporaryToken"
@@ -157,7 +157,7 @@ defineExpose({
         />
       </div>
       <div class="form-group">
-        <label for="meta-client-secret">Client Secret</label>
+        <label for="meta-client-secret">Client secret</label>
         <Input 
           id="meta-client-secret"
           v-model="metaFields.clientSecret"
@@ -167,7 +167,7 @@ defineExpose({
         />
       </div>
       <div class="form-group">
-        <label for="meta-phone">Phone Number</label>
+        <label for="meta-phone">Phone number</label>
         <Input 
           id="meta-phone"
           v-model="metaFields.phoneNumber"
@@ -177,7 +177,7 @@ defineExpose({
         />
       </div>
       <div class="form-group">
-        <label for="meta-phone-id">Phone Number ID</label>
+        <label for="meta-phone-id">Phone number ID</label>
         <Input 
           id="meta-phone-id"
           v-model="metaFields.phoneNumberId"
@@ -187,7 +187,7 @@ defineExpose({
         />
       </div>
       <div class="form-group">
-        <label for="meta-business-id">WhatsApp Business Account ID</label>
+        <label for="meta-business-id">WhatsApp business account ID</label>
         <Input 
           id="meta-business-id"
           v-model="metaFields.whatsappBusinessAccountId"
@@ -200,9 +200,9 @@ defineExpose({
 
     <!-- Dialog360 Form -->
     <div v-if="selectedProvider === 'dialog360'" class="provider-form">
-      <h4>Dialog360 Configuration</h4>
+      <h4>Dialog360 configuration</h4>
       <div class="form-group">
-        <label for="dialog-whatsapp">WhatsApp Number</label>
+        <label for="dialog-whatsapp">WhatsApp number</label>
         <Input 
           id="dialog-whatsapp"
           v-model="dialog360Fields.whatsappNumber"
@@ -222,7 +222,7 @@ defineExpose({
         />
       </div>
       <div class="form-group">
-        <label for="dialog-phone-id">Phone Number ID</label>
+        <label for="dialog-phone-id">Phone number ID</label>
         <Input 
           id="dialog-phone-id"
           v-model="dialog360Fields.phoneNumberId"
@@ -232,7 +232,7 @@ defineExpose({
         />
       </div>
       <div class="form-group">
-        <label for="dialog-business-id">WhatsApp Business Account ID</label>
+        <label for="dialog-business-id">WhatsApp business account ID</label>
         <Input 
           id="dialog-business-id"
           v-model="dialog360Fields.whatsappBusinessAccountId"

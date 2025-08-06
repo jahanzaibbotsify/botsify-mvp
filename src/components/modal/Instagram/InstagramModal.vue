@@ -8,8 +8,8 @@ import BroadcastTab from "./BroadcastTab.vue";
 
 // Define tabs
 const tabs = [
-  { id: 'publish-bot', label: 'Publish Agent' },
-  { id: 'comment-auto-responder', label: 'Comment Auto Responder' },
+  { id: 'publish-bot', label: 'Publish agent' },
+  { id: 'comment-auto-responder', label: 'Comment auto responder' },
   { id: 'broadcast', label: 'Broadcast' },
 ];
 

@@ -23,13 +23,13 @@ const botDetails = ref<any>(null);
 const isLoading = ref(false);
 
 const agents = ref([
+  { icon: 'portable-agent-icon.svg', label: 'Portable Agent', status: 'inactive' },
   { icon: 'website.png', label: 'Website', status: 'inactive' },
   { icon: 'whatsapp.png', label: 'WhatsApp', status: 'inactive' },
   { icon: 'instagram.png', label: 'Instagram', status: 'inactive' },
   { icon: 'messenger.png', label: 'Messenger', status: 'inactive' },
   { icon: 'telegram.png', label: 'Telegram', status: 'inactive' },
   { icon: 'sms.png', label: 'SMS', status: 'inactive' },
-  { icon: 'portable-agent-icon.svg', label: 'Portable Agent', status: 'inactive' },
 ]);
 
 const fetchBotDetails = async () => {
@@ -100,7 +100,7 @@ defineExpose({ openModal });
   <!-- Main Agent Selection Modal -->
   <ModalLayout
     ref="modalRef"
-    title="Publish Agent"
+    title="Publish agent"
     max-width="650px"
   >
     <div class="server-grid">

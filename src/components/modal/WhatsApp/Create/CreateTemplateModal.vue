@@ -69,7 +69,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
 <template>
   <PublishModalLayout
     ref="modalRef"
-    title="Whatsapp Template"
+    title="Whatsapp template"
     icon="/bots/whatsapp.png"
     :tabs="tabs"
     max-width="1200px"
@@ -127,7 +127,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
                                 variant="primary"
                                 size="small"
                               >
-                                Add Variable <i class="fa fa-plus"></i>
+                                Add variable <i class="fa fa-plus"></i>
                               </Button>
                               <Button 
                                 v-else 
@@ -136,7 +136,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
                                 size="small"
                                 disabled
                               >
-                                Add Variable <i class="fa fa-plus"></i>
+                                Add variable <i class="fa fa-plus"></i>
                               </Button>
                             </template>
                             <VueSelect

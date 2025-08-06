@@ -9,7 +9,7 @@ import { usePublishStore } from "@/stores/publishStore";
 
 // Define tabs
 const tabs = [
-  { id: 'publish-agent', label: 'Publish Agent' },
+  { id: 'publish-agent', label: 'Publish agent' },
   { id: 'template', label: 'Template' },
   { id: 'broadcast', label: 'Broadcast' },
   { id: 'broadcast-report', label: 'Broadcast Report' },

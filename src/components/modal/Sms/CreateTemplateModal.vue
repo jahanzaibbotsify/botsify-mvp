@@ -94,8 +94,9 @@ defineExpose({ openModal, closeModal });
 <template>
   <PublishModalLayout
     ref="modalRef"
-    title="Create Template"
+    title="Create template"
     :tabs="tabs"
+    icon="/bots/sms.png"
     max-width="650px"
     default-tab="create"
   >
@@ -114,7 +115,7 @@ defineExpose({ openModal, closeModal });
         
         <!-- Button Management -->
         <div class="form-group">
-          <label>Buttons (Max 3)</label>
+          <label>Buttons (max 3)</label>
           
           <!-- Existing Buttons -->
           <div v-if="createForm.buttons.length > 0" class="existing-buttons">

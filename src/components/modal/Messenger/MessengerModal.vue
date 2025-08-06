@@ -8,7 +8,7 @@ import BroadcastTab from "./BroadcastTab.vue";
 
 // Define tabs
 const tabs = [
-  { id: 'publish-bot', label: 'Publish Agent' },
+  { id: 'publish-bot', label: 'Publish agent' },
   { id: 'comment-auto-responder', label: 'Comment Auto Responder' },
   { id: 'broadcast', label: 'Broadcast' },
 ];
@@ -146,7 +146,7 @@ defineExpose({ openModal, closeModal });
         @click="broadcastTabRef?.noTestUser()"
         :disabled="isLoading"
       >
-        No Test User
+        No test user
       </button>
 
       <!-- Send Message Button for Broadcast Tab -->
@@ -156,7 +156,7 @@ defineExpose({ openModal, closeModal });
         @click="broadcastTabRef?.sendMessage()"
         :disabled="isLoading"
       >
-        {{ isLoading ? 'Sending...' : 'Send Message' }}
+        {{ isLoading ? 'Sending...' : 'Send message' }}
       </button>
     </template>
   </PublishModalLayout>

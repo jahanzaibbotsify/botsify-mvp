@@ -8,7 +8,7 @@
         variant="primary"
         size="small"
       >
-        Add Variable <i class="fa fa-plus"></i>
+        Add variable <i class="fa fa-plus"></i>
       </Button>
     </div>
 

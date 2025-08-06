@@ -107,7 +107,7 @@ defineExpose({ openModal, closeModal });
 <template>
   <PublishModalLayout
     ref="modalRef"
-    title="Website Integration"
+    title="Website integration"
     :tabs="tabs"
     icon="/bots/website.png"
     max-width="1200px"
@@ -118,7 +118,7 @@ defineExpose({ openModal, closeModal });
     <template #default="{ activeTab }">
       <!-- Install Code Tab -->
       <div v-if="activeTab === 'install-code'" class="tab-panel">
-        <h3>Iframe Based Web Widget</h3>
+        <h3>Iframe based web widget</h3>
         <p class="subtitle">Paste before ending body tags</p>
         <p class="description">
           Iframe would be loaded as an external document element, the widget would not be affected by your Page CSS
@@ -126,7 +126,7 @@ defineExpose({ openModal, closeModal });
         
         <div class="code-block">
           <div class="code-header">
-            <span class="code-title">HTML Code</span>
+            <span class="code-title">HTML code</span>
             <Button size="small" variant="secondary" @click="copyToClipboard(installCode)">
               Copy
             </Button>
@@ -137,10 +137,10 @@ defineExpose({ openModal, closeModal });
 
       <!-- Inline Widget Tab -->
       <div v-if="activeTab === 'inline-widget'" class="tab-panel">
-        <h3>Inline Embed Code</h3>
+        <h3>Inline embed code</h3>
         
         <div class="form-section">
-          <label class="form-label">Select Background Color</label>
+          <label class="form-label">Select background color</label>
           <div class="color-picker-container">
             <div 
               class="color-preview" 
@@ -161,7 +161,7 @@ defineExpose({ openModal, closeModal });
 
         <div v-if="generatedInlineCode" class="code-block">
           <div class="code-header">
-            <span class="code-title">Generated Code</span>
+            <span class="code-title">Generated code</span>
             <Button size="small" variant="secondary" @click="copyToClipboard(generatedInlineCode)">
               Copy
             </Button>
@@ -172,7 +172,7 @@ defineExpose({ openModal, closeModal });
 
       <!-- Landing Bot Tab -->
       <div v-if="activeTab === 'landing-bot'" class="tab-panel">
-              <h3>Landing Agent</h3>
+              <h3>Landing agent</h3>
       <p>Use this URL to send the user to the landing page agent.</p>
         
         <div class="url-section">
@@ -189,7 +189,7 @@ defineExpose({ openModal, closeModal });
         </div>
 
         <div class="form-section">
-          <label class="form-label">Background Style</label>
+          <label class="form-label">Background style</label>
           <div class="radio-group">
             <label class="radio-option">
               <input 
@@ -205,7 +205,7 @@ defineExpose({ openModal, closeModal });
                 v-model="backgroundStyle" 
                 value="plain-primary"
               />
-              <span class="radio-label">Plain Primary</span>
+              <span class="radio-label">Plain primary</span>
             </label>
             <label class="radio-option">
               <input 
@@ -213,7 +213,7 @@ defineExpose({ openModal, closeModal });
                 v-model="backgroundStyle" 
                 value="plain-secondary"
               />
-              <span class="radio-label">Plain Secondary</span>
+              <span class="radio-label">Plain secondary</span>
             </label>
           </div>
         </div>
@@ -230,7 +230,7 @@ defineExpose({ openModal, closeModal });
         size="medium"
         @click="generateInlineCode"
       >
-        Generate Code
+        Generate code
       </Button>
       
       <!-- Send Instructions Button for Email Developer Tab -->

@@ -91,7 +91,7 @@ defineExpose({ openModal, closeModal });
 <template>
   <PublishModalLayout
     ref="modalRef"
-    title="Telegram Integration"
+    title="Telegram integration"
     :tabs="tabs"
     icon="/bots/telegram.png"
     max-width="1200px"
@@ -102,12 +102,12 @@ defineExpose({ openModal, closeModal });
     <template #default="{ activeTab }">
       <!-- Publish Tab -->
       <div v-if="activeTab === 'publish'" class="tab-panel">
-        <h3>Telegram Agent Configuration</h3>
+        <h3>Telegram agent configuration</h3>
         <p class="subtitle">Configure your Telegram bot settings</p>
         
         <div class="form-section">
           <div class="form-group">
-            <label for="access-token">Access Token</label>
+            <label for="access-token">Access token</label>
             <Input 
               id="access-token"
               v-model="telegramForm.accessToken"
@@ -121,7 +121,7 @@ defineExpose({ openModal, closeModal });
           </div>
           
           <div class="form-group">
-            <label for="bot-name">Agent Name</label>
+            <label for="bot-name">Agent name</label>
             <Input 
               id="bot-name"
               v-model="telegramForm.botName"
@@ -132,7 +132,7 @@ defineExpose({ openModal, closeModal });
           </div>
           
           <div class="form-group">
-            <label for="telegram-number">Telegram Number</label>
+            <label for="telegram-number">Telegram number</label>
             <Input 
               id="telegram-number"
               v-model="telegramForm.telegramNumber"
@@ -146,7 +146,7 @@ defineExpose({ openModal, closeModal });
           </div>
           
           <div class="form-group">
-            <label for="chatbot-url">Telegram Agent URL</label>
+            <label for="chatbot-url">Telegram agent URL</label>
             <Input 
               id="chatbot-url"
               v-model="telegramForm.telegramChatbotUrl"

@@ -134,7 +134,7 @@ defineExpose({
     <div class="broadcast-form">
       <!-- Message Template -->
       <div class="form-group">
-        <label for="broadcast-template">Message Template</label>
+        <label for="broadcast-template">Message template</label>
         <select 
           id="broadcast-template" 
           v-model="broadcastForm.template" 
@@ -149,7 +149,7 @@ defineExpose({
       
       <!-- User Segment -->
       <div class="form-group">
-        <label for="broadcast-segment">User Segment</label>
+        <label for="broadcast-segment">User segment</label>
         <select id="broadcast-segment" v-model="broadcastForm.userSegment" class="form-input">
           <option v-for="segment in userSegments" :key="segment.value" :value="segment.value">
             {{ segment.label }}
@@ -159,7 +159,7 @@ defineExpose({
       
       <!-- File Upload (Upload user only) -->
       <div v-if="showFileUpload" class="form-group">
-        <label>Upload User File</label>
+        <label>Upload user file</label>
         <FileUpload
           v-model="broadcastForm.uploadedFile"
           accept=".csv,.txt"
