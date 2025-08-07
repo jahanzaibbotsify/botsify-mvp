@@ -616,8 +616,8 @@ onUnmounted(() => {
             </h2>
           </div>
 
-          <!-- Create Agent Button -->
-          <div class="create-agent-wrapper">
+          <!-- Create Agent Button - Only show on My Agents tab -->
+          <div v-if="activeTab === 'my-agents'" class="create-agent-wrapper">
             <button @click="createAgent" class="create-agent-btn">
               <i class="pi pi-plus"></i>
               <span>Create Agent</span>
@@ -634,22 +634,25 @@ onUnmounted(() => {
         <!-- No Results State -->
         <div v-else-if="filteredAgents.length === 0" class="no-results">
           <div class="no-results-icon">
-            <i class="pi pi-plus"></i>
+            <i v-if="activeTab === 'my-agents'" class="pi pi-plus"></i>
+            <i v-else class="pi pi-globe"></i>
           </div>
           <h3 v-if="searchQuery">No agents found</h3>
           <h3 v-else-if="isLoadingAgents">Loading agents...</h3>
+          <h3 v-else-if="activeTab === 'shared-agents'">No shared agents</h3>
           <h3 v-else>No agents available</h3>
           <p v-if="searchQuery">Try adjusting your search to find more agents</p>
           <p v-else-if="isLoadingAgents">Please wait while we load your agents</p>
+          <p v-else-if="activeTab === 'shared-agents'">There are no shared agents available at the moment.</p>
           <p v-else>Get started by adding your first agent</p>
 
           <button v-if="searchQuery" @click="searchQuery = ''" class="reset-filters-btn">
             <i class="pi pi-refresh"></i>
             <span>Reset Search</span>
           </button>
-          <button v-else-if="!isLoadingAgents" @click="addAgent" class="add-agent-btn">
+          <button v-else-if="!isLoadingAgents && activeTab === 'my-agents'" @click="createAgent" class="add-agent-btn">
             <i class="pi pi-plus"></i>
-            <span>Add Agent</span>
+            <span>Create Agent</span>
           </button>
         </div>
 
