@@ -19,6 +19,12 @@
   --color-primary: #6D3ADB;
   --color-primary-hover: #6430d6;
   --color-primary-active: #713ce4;
+  --vs-option-selected-background-color: #e7e4e4 !important; 
+  --vs-option-hover-background-color:  #e7e4e4 !important; 
+  --vs-outline-color: #6D3ADB !important;
+  --vs-outline-width: 0px !important;
+  /* --vs-outline-color: transparent !important; */
+
   
   --color-secondary: #10B981;
   --color-accent: #8B5CF6;

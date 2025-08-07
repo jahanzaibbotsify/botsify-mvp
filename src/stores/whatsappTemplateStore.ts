@@ -58,7 +58,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
   const template_types = [
     { label: 'Standard (text only)', value: 'text' },
     { label: 'Media & Interactive', value: 'media' },
-    // { label: 'Media Carousel', value: 'generic' }
+    { label: 'Media Carousel', value: 'generic' }
   ];
 
   const categories = [

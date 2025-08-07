@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch, nextTick } from "vue";
 import { Button, Input, VueSelect } from "@/components/ui";
 import FileUpload from "@/components/ui/FileUpload.vue";
 import MessagePreview from "./Create/MessagePreview.vue";
 import { useWhatsAppTemplateStore } from "@/stores/whatsappTemplateStore";
+import { usePublishStore } from "@/stores/publishStore";
 
 // Props
 interface Props {
@@ -19,8 +20,9 @@ const emit = defineEmits<{
   'send-broadcast': [data: any];
 }>();
 
-// Store
+// Stores
 const store = useWhatsAppTemplateStore();
+const publishStore = usePublishStore();
 
 // Reactive data
 const broadcastForm = ref({
@@ -32,15 +34,31 @@ const broadcastForm = ref({
   uploadedFile: null as any | null
 });
 
-// Message templates
-const messageTemplates = [
-  { value: '', label: 'Select a template' },
-  { value: 'welcome', label: 'Welcome Message' },
-  { value: 'promotion', label: 'Promotional Offer' },
-  { value: 'reminder', label: 'Appointment Reminder' },
-  { value: 'newsletter', label: 'Newsletter Update' },
-  { value: 'custom', label: 'Custom Message' }
-];
+// Template data
+const templates = ref<any[]>([]);
+const selectedTemplate = ref<any>(null);
+const isLoadingTemplates = ref(false);
+const templateData = ref({
+  name: '',
+  category: 'MARKETING',
+  type: 'text',
+  bodyIncludes: ['body'],
+  header: 'text',
+  header_text: '',
+  footer_text: '',
+  body_text: '',
+  slides: [] as any[],
+  button_type: 'postback',
+  total_buttons: 3,
+  variables: {
+    header: null as any,
+    body: [] as any[],
+    button: null as any,
+    buttons: [] as any[]
+  },
+  attachment_link: '',
+  buttons: []
+});
 
 // User segments
 const userSegments = [
@@ -53,25 +71,316 @@ const userSegments = [
 // Computed properties
 const showFileUpload = computed(() => broadcastForm.value.userSegment === 'upload');
 const showPhoneNumber = computed(() => broadcastForm.value.userSegment === 'single');
+const showVariableFields = computed(() => selectedTemplate.value && selectedTemplate.value.params);
+const showMessageEditor = computed(() => {
+  return selectedTemplate.value && (
+    templateData.value.variables.body.length > 0 ||
+    templateData.value.variables.header ||
+    templateData.value.variables.button ||
+    (templateData.value.type === 'generic' && templateData.value.slides.length > 0)
+  );
+});
 
 // Methods
+const fetchTemplates = async () => {
+  // Check if templates are already loaded in the store
+  if (publishStore.isLoadingTemplates) return;
+  
+  // If templates are already loaded in store, use them
+  if (publishStore.templatesLoaded && publishStore.templatesCache.length > 0) {
+    templates.value = publishStore.templatesCache.map((template: any) => ({
+      ...template,
+      label: template.name || template.id || `Template ${template.id}`,
+      value: template
+    }));
+    return;
+  }
+  
+  // If templates are already loaded locally, use them
+  if (templates.value.length > 0) return;
+  
+  isLoadingTemplates.value = true;
+  try {
+    const result = await publishStore.fetchTemplates();
+    if (result.success && result.data && result.data.templates && result.data.templates.data && Array.isArray(result.data.templates.data)) {
+      templates.value = result.data.templates.data.map((template: any) => ({
+        ...template,
+        label: template.name || template.id || `Template ${template.id}`,
+        value: template
+      }));
+    } else {
+      console.warn('No templates data or invalid format:', result);
+      templates.value = [];
+    }
+  } catch (error) {
+    console.error('Error fetching templates:', error);
+    templates.value = [];
+  } finally {
+    isLoadingTemplates.value = false;
+  }
+};
+
 const handleTemplateChange = () => {
-  // Load template content based on selection
-  switch (broadcastForm.value.template) {
-    case 'welcome':
-      store.block.text = 'Welcome to our service! We\'re excited to have you on board.';
-      break;
-    case 'promotion':
-      store.block.text = '🎉 Special Offer! Get 20% off your next purchase. Limited time only!';
-      break;
-    case 'reminder':
-      store.block.text = '⏰ Reminder: You have an appointment scheduled for tomorrow.';
-      break;
-    case 'newsletter':
-      store.block.text = '📰 Our monthly newsletter is here! Check out the latest updates.';
-      break;
-    default:
-      store.block.text = '';
+  // Add a small delay to ensure DOM is ready
+  nextTick(() => {
+    if (selectedTemplate.value) {
+      setTemplateVariable();
+    }
+  });
+};
+
+const setTemplateVariable = () => {
+  if (!selectedTemplate.value) return;
+
+  try {
+    // Reset template data
+    templateData.value = {
+    name: '',
+    category: 'MARKETING',
+    type: 'text',
+    bodyIncludes: [],
+    header: 'text',
+    header_text: '',
+    footer_text: '',
+    body_text: '',
+    slides: [],
+    button_type: 'postback',
+    total_buttons: 3,
+    variables: {
+      header: null,
+      body: [],
+      button: null,
+      buttons: []
+    },
+    attachment_link: '',
+    buttons: []
+  };
+
+  const currTemplate = selectedTemplate.value;
+  console.log('Current template:', currTemplate);
+  
+  // Parse params if they exist
+  let params = [];
+  if (currTemplate.params) {
+    try {
+      params = typeof currTemplate.params === 'string' ? JSON.parse(currTemplate.params) : currTemplate.params;
+    } catch (e) {
+      console.warn('Failed to parse template params:', e);
+      params = [];
+    }
+  }
+  
+     if (currTemplate.category === 'AUTHENTICATION') {
+     // Parse and assign params for AUTHENTICATION category
+     templateData.value.category = 'AUTHENTICATION';
+     
+     // Find the body parameter and use its text
+     const bodyParam = params.find((param: any) => param.type === 'body');
+     if (bodyParam && bodyParam.parameters && bodyParam.parameters.length > 0) {
+       const bodyVariable = bodyParam.parameters[0];
+       if (bodyVariable.type === 'text') {
+         templateData.value.body_text = bodyVariable.text || "{{1}} is your verification code. For security do not share this code.";
+       } else {
+         templateData.value.body_text = "{{1}} is your verification code. For security do not share this code.";
+       }
+     } else {
+       templateData.value.body_text = "{{1}} is your verification code. For security do not share this code.";
+     }
+     
+     templateData.value.footer_text = "This code will expire in 1 minutes.";
+    
+    templateData.value.variables.body = [];
+    const newBodyVar: any[] = [];
+    
+         params.forEach((param: any) => {
+       if (param.type === 'body') {
+         templateData.value.bodyIncludes.push('body');
+         param.parameters.forEach((variable: any) => {
+           // Handle different parameter types
+           if (variable.type === 'text') {
+             // For text parameters, use the text as the key
+             newBodyVar.push({
+               key: variable.text || '{{1}}',
+               value: ''
+             });
+           } else {
+             // For other parameter types, use default key
+             newBodyVar.push({
+               key: '{{1}}',
+               value: ''
+             });
+           }
+         });
+       }
+
+       if (param.type === 'button') {
+         templateData.value.bodyIncludes.push('buttons');
+         param.parameters.forEach((variable: any) => {
+           if (variable.type === 'text') {
+             templateData.value.variables.button = {
+               index: 0,
+               key: variable.text || '{{1}}',
+               value: ''
+             };
+           } else {
+             templateData.value.variables.button = {
+               index: 0,
+               key: '{{1}}',
+               value: ''
+             };
+           }
+         });
+       }
+     });
+    
+    templateData.value.variables.body = newBodyVar;
+    templateData.value.bodyIncludes.push('buttons');
+    
+    // Get buttons from components if available
+    if (currTemplate.components && currTemplate.components[1] && currTemplate.components[1].buttons) {
+      templateData.value.buttons = currTemplate.components[1].buttons;
+    }
+  } else {
+    // Handle other template types
+    if (currTemplate.components) {
+      currTemplate.components.forEach((component: any) => {
+        if (component.type === 'HEADER') {
+          templateData.value.bodyIncludes.push('header');
+          const componentType = component.format ? component.format.toLowerCase() : 'text';
+          templateData.value.type = componentType;
+          
+          if (componentType === 'text') {
+            templateData.value.header_text = component.text || '';
+            if (component.text && component.text.includes('{{1}}')) {
+              templateData.value.variables.header = {
+                key: '{{1}}',
+                value: ''
+              };
+            }
+          } else {
+            templateData.value.variables.header = null;
+            templateData.value.header_text = '';
+          }
+        }
+
+        if (component.type === 'BODY') {
+          templateData.value.bodyIncludes.push('body');
+          templateData.value.body_text = component.text || '';
+          const result = component.text ? component.text.match(/{{\d+}}/g) : null;
+          
+          if (result) {
+            const newBodyVar: any[] = [];
+            const alreadyAdded: string[] = [];
+            
+            result.forEach((variable: string) => {
+              if (!alreadyAdded.includes(variable)) {
+                alreadyAdded.push(variable);
+                newBodyVar.push({
+                  key: variable,
+                  value: ''
+                });
+              }
+            });
+
+            templateData.value.variables.body = newBodyVar;
+          } else {
+            templateData.value.variables.body = [];
+          }
+        }
+
+        if (component.type === 'FOOTER') {
+          templateData.value.bodyIncludes.push('footer');
+          templateData.value.footer_text = component.text || '';
+        }
+
+        if (component.type === 'BUTTONS') {
+          templateData.value.bodyIncludes.push('buttons');
+          templateData.value.buttons = component.buttons || [];
+          
+          component.buttons.forEach((btn: any, index: number) => {
+            if (btn.type === 'URL' && btn.url && btn.url.includes('{{1}}')) {
+              templateData.value.variables.button = {
+                key: '{{1}}',
+                value: '',
+              };
+            }
+          });
+        }
+
+        if (component.type === 'CAROUSEL') {
+          templateData.value.type = 'generic';
+          
+          component.cards.forEach((card: any, index: number) => {
+            card.components.forEach((comp: any) => {
+              if (!templateData.value.slides[index]) {
+                const slide = {
+                  id: index + 1,
+                  title: 'Slide Title',
+                  subtitle: 'Subtitle',
+                  attachment_link: '',
+                  header: 'image',
+                  buttons: [],
+                  variables: {
+                    body: [],
+                    button: null
+                  }
+                };
+                templateData.value.slides[index] = slide;
+              }
+              
+              if (comp.type === 'HEADER') {
+                const componentType = comp.format ? comp.format.toLowerCase() : 'image';
+                templateData.value.slides[index].header = componentType;
+              }
+              
+              if (comp.type === 'BODY') {
+                templateData.value.slides[index].title = comp.text || '';
+                const result = comp.text ? comp.text.match(/{{\d+}}/g) : null;
+                
+                if (result) {
+                  const newBodyVar: any[] = [];
+                  const alreadyAdded: string[] = [];
+                  
+                  result.forEach((variable: string) => {
+                    if (!alreadyAdded.includes(variable)) {
+                      alreadyAdded.push(variable);
+                      newBodyVar.push({
+                        key: variable,
+                        value: ''
+                      });
+                    }
+                  });
+
+                  templateData.value.slides[index].variables.body = newBodyVar;
+                } else {
+                  templateData.value.slides[index].variables.body = [];
+                }
+              } else if (comp.type === 'BUTTONS') {
+                templateData.value.slides[index].buttons = comp.buttons || [];
+                
+                comp.buttons.forEach((btn: any, btnIndex: number) => {
+                  if (btn.type === 'url' && btn.url && btn.url.includes('{{1}}')) {
+                    templateData.value.slides[index].variables.button = {
+                      key: '{{1}}',
+                      value: ''
+                    };
+                  }
+                });
+              }
+            });
+          });
+        }
+      });
+    }
+  }
+  
+  console.log('Template data after parsing:', templateData.value);
+  
+  // Update store with template data
+  store.template = { ...templateData.value };
+  store.block.text = templateData.value.body_text || '';
+  } catch (error) {
+    console.error('Error setting template variable:', error);
   }
 };
 
@@ -109,9 +418,39 @@ const sendBroadcast = () => {
   });
 };
 
+// Initialize templates when component is mounted
+// This will be called when the broadcast tab becomes active
+const initializeTemplates = () => {
+  // Add a small delay to ensure component is fully mounted
+  nextTick(() => {
+    // Check if templates are already loaded in store
+    if (publishStore.templatesLoaded && publishStore.templatesCache.length > 0) {
+      templates.value = publishStore.templatesCache.map((template: any) => ({
+        ...template,
+        label: template.name || template.id || `Template ${template.id}`,
+        value: template
+      }));
+      return;
+    }
+    
+    // Only fetch if not already loaded locally
+    if (templates.value.length === 0) {
+      fetchTemplates();
+    }
+  });
+};
+
+// Watch for template data changes
+watch(templateData, (newValue) => {
+  // Update store with template data
+  store.template = { ...newValue };
+  store.block.text = newValue.body_text || '';
+}, { deep: true });
+
 // Expose methods for parent component
 defineExpose({
-  sendBroadcast
+  sendBroadcast,
+  initializeTemplates
 });
 </script>
 
@@ -126,14 +465,17 @@ defineExpose({
         <!-- Message Template -->
         <div class="form-group">
           <label for="broadcast-template">Message template</label>
-          <VueSelect
-            id="broadcast-template"
-            v-model="broadcastForm.template"
-            :options="messageTemplates"
-            :reduce="(template: any) => template.value"
-            placeholder="Select a template"
-            @input="handleTemplateChange"
-          />
+                     <VueSelect
+             id="broadcast-template"
+             v-model="selectedTemplate"
+             :options="templates"
+             :reduce="(template: any) => template"
+             placeholder="Select a template"
+             :loading="isLoadingTemplates"
+             :disabled="isLoadingTemplates"
+             @input="handleTemplateChange"
+             :clearable="false"
+           />
         </div>
         
         <!-- User Segment -->
@@ -176,22 +518,84 @@ defineExpose({
         </div>
       </div>
       
-             <!-- Message Editor -->
-       <div class="message-editor">
-         <h4>Message content</h4>
-         
-         <!-- Simple textarea for message body -->
-         <div class="form-group">
-           <label for="broadcast-message">Message</label>
-           <textarea
-             id="broadcast-message"
-             v-model="store.block.text"
-             placeholder="Enter your broadcast message here..."
-             class="message-textarea"
-             rows="6"
-           ></textarea>
+                     
+
+                 <!-- Message Editor -->
+         <div v-if="showMessageEditor" class="message-editor">
+           <h4>Message content</h4>
+           
+           <!-- Variable input fields instead of textarea -->
+           <div v-if="templateData.variables.body.length > 0" class="form-group">
+             <div v-for="(variable, varIndex) in templateData.variables.body" :key="varIndex">
+               <label class="required-label">
+                 {{ templateData.category === 'AUTHENTICATION' ? 'Authentication Code' : 'Body Variable' }} - {{ variable.key }}
+               </label>
+               <Input
+                 v-model="variable.value"
+                 :placeholder="`Enter value for ${variable.key}`"
+               />
+             </div>
+           </div>
+           
+           <!-- Header Variables -->
+           <div v-if="templateData.variables.header" class="form-group">
+             <label class="required-label">Header Variable - {{ templateData.variables.header.key }}</label>
+             <Input
+               v-model="templateData.variables.header.value"
+               placeholder="Enter header variable value"
+             />
+           </div>
+
+           <!-- Button Variables -->
+           <div v-if="templateData.variables.button && templateData.category !== 'AUTHENTICATION'" class="form-group">
+             <label class="required-label">URL Button Variable - {{ templateData.variables.button.key }}</label>
+             <Input
+               v-model="templateData.variables.button.value"
+               placeholder="Enter button variable value"
+             />
+           </div>
+           
+           <!-- Generic Template Slides -->
+           <div v-if="templateData.type === 'generic' && templateData.slides.length > 0" class="slides-section">
+             <h5>Template Slides</h5>
+             <div class="slides-container">
+               <div v-for="(slide, index) in templateData.slides" :key="index" class="slide-card">
+                 <h6>Slide {{ index + 1 }}</h6>
+                 
+                 <!-- Slide Body Variables -->
+                 <div v-if="slide.variables.body.length > 0" class="form-group">
+                   <div v-for="(variable, varIndex) in slide.variables.body" :key="varIndex">
+                     <label>Body Variable - {{ variable.key }}</label>
+                     <Input
+                       v-model="variable.value"
+                       placeholder="Enter variable value"
+                     />
+                   </div>
+                 </div>
+
+                 <!-- Slide Button Variable -->
+                 <div v-if="slide.variables.button" class="form-group">
+                   <label class="required-label">Button Variable - {{ slide.variables.button.key }}</label>
+                   <Input
+                     v-model="slide.variables.button.value"
+                     placeholder="Enter button variable value"
+                   />
+                 </div>
+
+                 <!-- Slide Attachment Link -->
+                 <div class="form-group">
+                   <label class="required-label">
+                     {{ slide.header.charAt(0).toUpperCase() + slide.header.slice(1) }} Link
+                   </label>
+                   <Input
+                     v-model="slide.attachment_link"
+                     :placeholder="`Enter ${slide.header} link`"
+                   />
+                 </div>
+               </div>
+             </div>
+           </div>
          </div>
-       </div>
     </div>
     
     <!-- Side Panel -->
@@ -200,6 +604,7 @@ defineExpose({
         <h4>Message preview</h4>
       </div>
       <MessagePreview 
+        v-if="store.template && store.block"
         :template="store.template"
         :block="store.block"
         :variables="store.template.variables"
@@ -289,6 +694,62 @@ defineExpose({
 
 .message-textarea::placeholder {
   color: var(--color-text-tertiary, #9ca3af);
+}
+
+.variable-fields {
+  margin-top: var(--space-6);
+}
+
+.variable-fields h4 {
+  margin: 0 0 var(--space-3) 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+}
+
+.required-label {
+  font-weight: 500;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+}
+
+.required-label::after {
+  content: " *";
+  color: var(--color-error);
+}
+
+.slides-section {
+  margin-top: var(--space-4);
+}
+
+.slides-section h5 {
+  margin: 0 0 var(--space-3) 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+}
+
+.slides-container {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+}
+
+.slide-card {
+  background: white;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-3);
+  min-width: 300px;
+  flex-shrink: 0;
+}
+
+.slide-card h6 {
+  margin: 0 0 var(--space-3) 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
 }
 
 .side-panel {

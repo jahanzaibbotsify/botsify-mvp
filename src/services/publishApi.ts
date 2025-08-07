@@ -22,7 +22,7 @@ export class PublishApiService {
   /**
    * Save landing settings
    */
-  async saveLandingSettings(backgroundStyle: 'primary' | 'gradient' | 'secondary'): Promise<PublishResponse> {
+  async saveLandingSettings(backgroundStyle: 'primary' | 'gradient' | 'secondary' | 'plain-primary' | 'plain-secondary'): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post('/bot/settings', {
@@ -97,15 +97,13 @@ export class PublishApiService {
     twilioAccountSid: string;
     twilioAuthToken: string;
     twilioSmsNumber: string;
-    twilioSenderId: string;
   }): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post('/v1/twilio/save-configuration', {
-        twilio_account_sid: settings.twilioAccountSid,
-        twilio_auth_token: settings.twilioAuthToken,
-        twilio_sms_number: settings.twilioSmsNumber,
-        twilio_sender_id: settings.twilioSenderId,
+        sid: settings.twilioAccountSid,
+        auth_token: settings.twilioAuthToken,
+        number: settings.twilioSmsNumber,
         apikey: apiKey
       }, {
         timeout: 30000 // 30 seconds timeout
@@ -162,6 +160,66 @@ export class PublishApiService {
   }
 
   /**
+   * Get Facebook pages
+   */
+  async getFacebookPages(): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.get('/v1/get-facebook-page', {
+        params: {
+          apikey: apiKey
+        },
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Get Facebook pages response:', response.data);
+
+      return {
+        success: true,
+        message: 'Facebook pages retrieved successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error getting Facebook pages:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to get Facebook pages',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Get Instagram pages
+   */
+  async getInstagramPages(): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.get('/v1/get-instagram-page', {
+        params: {
+          apikey: apiKey
+        },
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      return {
+        success: true,
+        message: 'Instagram pages retrieved successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error getting Instagram pages:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to get Instagram pages',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
    * Get bot details
    */
   async getBotDetails(): Promise<PublishResponse> {
@@ -193,47 +251,136 @@ export class PublishApiService {
   }
 
   /**
-   * Refresh page permissions
+   * Get publish status
    */
-  async refreshPagePermission(pageId: string): Promise<PublishResponse> {
+  async getPublishStatus(): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
-      const response = await axiosInstance.post('/bot/page/refresh-permissions', {
-        pageId,
-        apikey: apiKey
-      }, {
+      const response = await axiosInstance.get('/v1/get-publish-status', {
+        params: {
+          apikey: apiKey
+        },
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Refresh page permissions response:', response.data);
+      console.log('Get publish status response:', response.data);
 
       return {
         success: true,
-        message: 'Page permissions refreshed successfully',
+        message: 'Publish status fetched successfully',
         data: response.data
       };
     } catch (error: any) {
-      console.error('Error refreshing page permissions:', error);
+      console.error('Error getting publish status:', error);
 
       return {
         success: false,
-        message: error.response?.data?.message || error.message || 'Failed to refresh page permissions',
+        message: error.response?.data?.message || error.message || 'Failed to get publish status',
         data: error.response?.data
       };
     }
   }
 
   /**
-   * Remove page permissions
+   * Get third-party configurations
    */
-  async removePagePermission(pageId: string): Promise<PublishResponse> {
+  async getThirdPartyConfig(): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
-      const response = await axiosInstance.post('/bot/page/remove-permissions', {
-        pageId,
+      const response = await axiosInstance.get('/v1/bot/get-third-party-conf', {
+        params: {
+          apikey: apiKey
+        },
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Get third-party config response:', response.data);
+
+      return {
+        success: true,
+        message: 'Third-party configurations fetched successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error getting third-party configurations:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to get third-party configurations',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Refresh page permissions
+   */
+  async refreshFbPagePermission(instagram?: boolean): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.get('/v1/refresh-page-permissions', {
+        params: { 
+          apikey: apiKey,
+          instagram: instagram || false,
+          redirect: '/publish-bot?currentView=connect_to_instagram'
+        },
+        timeout: 30000
+      });
+      return { success: true, message: 'Page permissions refreshed successfully', data: response.data };
+    } catch (error: any) {
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to refresh page permissions', data: error.response?.data };
+    }
+  }
+
+  async connectionFbPage(type: string, pageId: string, pageName: string, accessToken: string): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.post(`/v1/facebook-connection`, {
+        page_id: pageId,
+        type,
+        pageName,
+        access_token: accessToken,
         apikey: apiKey
       }, {
-        timeout: 30000 // 30 seconds timeout
+        timeout: 30000
+      });
+      return { success: true, message: 'Page reconnected successfully', data: response.data };
+    } catch (error: any) {
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to reconnect page', data: error.response?.data };
+    }
+  }
+
+  
+  async connectionInstaPage(type: string, pageId: string, page_name: string, accessToken: string): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.post(`/v1/instagram-connection`, {
+        page_id: pageId,
+        instagram_id: pageId,
+        type,
+        page_name,
+        access_token: accessToken,
+        apikey: apiKey
+      }, {
+        timeout: 30000
+      });
+      return { success: true, message: 'Page reconnected successfully', data: response.data };
+    } catch (error: any) {
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to reconnect page', data: error.response?.data };
+    }
+  }
+
+  /**
+   * Remove page permissions
+   */
+  async removeFbPagePermission(instagram?: boolean): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.get('/v1/remove-page-permissions', {
+        params: {
+          apikey: apiKey,
+          instagram: instagram || false
+        }
       });
 
       console.log('Remove page permissions response:', response.data);
@@ -440,17 +587,14 @@ export class PublishApiService {
   }): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
-      const response = await axiosInstance.get('/v1/whatsapp-broadcast-report', {
-        params: {
+      const response = await axiosInstance.post('/v1/whatsapp-broadcast-report', {
           apikey: apiKey,
           page: params.page || 1,
           per_page: params.per_page || 20,
           ...(params.query && { query: params.query }),
           ...(params.start_date && { start_date: params.start_date }),
           ...(params.end_date && { end_date: params.end_date })
-        },
-        timeout: 30000 // 30 seconds timeout
-      });
+        });
 
       console.log('Get WhatsApp broadcast report response:', response.data);
 
@@ -465,6 +609,200 @@ export class PublishApiService {
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to get WhatsApp broadcast report',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Fetch Facebook comment auto responders
+   */
+  async fetchFbCommentResponder(): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.get('/v1/bot/growth-tools/aquire-users-from-comments', {
+        params: {
+          apikey: apiKey
+        },
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Fetch Facebook comment responder response:', response.data);
+
+      return {
+        success: true,
+        message: 'Facebook comment responders fetched successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error fetching Facebook comment responders:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to fetch Facebook comment responders',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Delete comment auto responder
+   */
+  async deleteCommentResponder(id: string): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.delete(`/v1/bot/comment-optin/delete/${id}`, {
+        params: {
+          apikey: apiKey
+        },
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Delete comment responder response:', response.data);
+
+      return {
+        success: true,
+        message: 'Comment responder deleted successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error deleting comment responder:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to delete comment responder',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Create comment auto responder
+   */
+  async createCommentResponder(data: {
+    message: string;
+    post_id: string;
+    keywords: string;
+  }): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.post('/v1/bot/comment-optin/store', {
+        apikey: apiKey,
+        message: data.message,
+        post_id: data.post_id,
+        keywords: data.keywords
+      }, {
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Create comment responder response:', response.data);
+
+      return {
+        success: true,
+        message: 'Comment responder created successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error creating comment responder:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to create comment responder',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Update comment auto responder
+   */
+  async updateCommentResponder(id: string, data: {
+    message: string;
+    post_id: string;
+    keywords: string;
+  }): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.post(`/v1/bot/comment-optin/update/${id}`, {
+        apikey: apiKey,
+        message: data.message,
+        post_id: data.post_id,
+        keywords: data.keywords
+      }, {
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Update comment responder response:', response.data);
+
+      return {
+        success: true,
+        message: 'Comment responder updated successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error updating comment responder:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to update comment responder',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Load data for plugins (optin templates and posts)
+   */
+  async loadDataForPlugins(data: string): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.post('/v1/load-data-for-plugins', {
+        apikey: apiKey,
+        data
+      }, {
+        timeout: 30000 // 30 seconds timeout
+      });
+      console.log('Load data for plugins response:', response.data);
+      return { success: true, message: 'Data for plugins loaded successfully', data: response.data };
+    } catch (error: any) {
+      console.error('Error loading data for plugins:', error);
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to load data for plugins', data: error.response?.data };
+    }
+  }
+
+  /**
+   * Create broadcast task
+   */
+  async createBroadcastTask(payload: {
+    description: string;
+    fall_back: boolean;
+    response: string;
+    tag: string;
+    type: number;
+    user_segment: string;
+  }): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.post('/v1/schedule/task/broadcast/create', {
+        apikey: apiKey,
+        ...payload
+      }, {
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Create broadcast task response:', response.data);
+
+      return {
+        success: true,
+        message: 'Broadcast task created successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error creating broadcast task:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to create broadcast task',
         data: error.response?.data
       };
     }

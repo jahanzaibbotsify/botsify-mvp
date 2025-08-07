@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {Button, Input, PublishModalLayout} from "@/components/ui";
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useBotStore } from "@/stores/botStore";
 import { usePublishStore } from "@/stores/publishStore";
 import { getWebUrl } from "@/utils";
@@ -26,7 +26,7 @@ const isLoading = ref(false);
 const selectedColor = ref('#3b82f6');
 const showColorPicker = ref(false);
 const generatedInlineCode = ref('');
-const backgroundStyle = ref<'primary' | 'gradient' | 'secondary'>('gradient');
+const backgroundStyle = ref<'gradient' | 'plain-primary' | 'plain-secondary'>('gradient');
 const landingUrl = `${getWebUrl()}/landing/${apikey}`;
 
 // Install code content - fixed template literal
@@ -37,8 +37,33 @@ const installCode = `&lt;script&gt;!function() {
   }(); webbot.load('${apikey}');
 &lt;/script&gt;`;
 
-const openModal = () => {
+const loadBotDetails = async () => {
+  try {
+    const result = await publishStore.getBotDetails();
+    
+    if (result.success && result.data) {
+      // Extract wizard_config from the response
+      const wizardConfig = result.data.wizard_config;
+      
+      if (wizardConfig && wizardConfig['landing-bot-bg-style']) {
+        const savedStyle = wizardConfig['landing-bot-bg-style'];
+        
+        // Validate that the saved style is one of the allowed values
+        if (['gradient', 'plain-primary', 'plain-secondary'].includes(savedStyle)) {
+          backgroundStyle.value = savedStyle as 'gradient' | 'plain-primary' | 'plain-secondary';
+          console.log('Loaded background style from bot details:', backgroundStyle.value);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load bot details:', error);
+  }
+};
+
+const openModal = async () => {
   modalRef.value?.openModal();
+  // Load bot details when modal opens
+  await loadBotDetails();
 };
 
 const closeModal = () => {
@@ -56,13 +81,14 @@ const handleTabChange = (tabId: string) => {
 
 // Methods
 const copyToClipboard = async (text: string) => {
-  try {
-    await navigator.clipboard.writeText(text);
-    console.log('Copied to clipboard!');
-    // You can add a toast notification here
-  } catch (err) {
-    console.error('Failed to copy: ', err);
-  }
+ const textarea = document.createElement('textarea');
+  // Decode HTML entities like &lt; and &gt; into < and >
+  textarea.innerHTML = text;
+  const decoded = textarea.value;
+
+  // Copy decoded value
+  await navigator.clipboard.writeText(decoded);
+  window.$toast.success('Copied!');
 };
 
 const generateInlineCode = () => {
@@ -75,7 +101,7 @@ const generateInlineCode = () => {
 var t; if (t = window.botsify_embed = window.botsify_embed = window.botsify_embed || [], !t.init) return t.invoked ? void (window.console && console.error && console.error("Botsify snippet included twice.")) : (
 t.load =function(e,s,bg){ var o,n;  o=document.createElement("script"); e.type="text/javscript"; o.async=!0; o.crossorigin="anonymous";
 o.src="${getWebUrl()}/web-bot/script/embed/"+e+"/"+s+"/"+bg+"/botsify.js"; n=document.getElementsByTagName("script")[0]; n.parentNode.insertBefore(o,n); });
-}(); botsify_embed.load('${apikey}','null','${selectedColor}');
+}(); botsify_embed.load('${apikey}','null','${selectedColor.value}');
 &lt;/script&gt;`;
 };
 
@@ -100,6 +126,11 @@ const saveLandingSettings = async () => {
 const copyLandingUrl = () => {
   copyToClipboard(landingUrl);
 };
+
+// Load bot details on component mount
+onMounted(() => {
+  loadBotDetails();
+});
 
 defineExpose({ openModal, closeModal });
 </script>
@@ -181,10 +212,8 @@ defineExpose({ openModal, closeModal });
               :model-value="landingUrl" 
               readonly 
               size="medium"
+              @click="copyLandingUrl"
             />
-            <Button size="small" variant="secondary" @click="copyLandingUrl">
-              Copy
-            </Button>
           </div>
         </div>
 

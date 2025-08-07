@@ -6,8 +6,58 @@ export const usePublishStore = defineStore('publish', () => {
   // State
   const isLoading = ref(false);
   const error = ref<string | null>(null);
+  
+  // Template cache
+  const templatesCache = ref<any[]>([]);
+  const templatesLoaded = ref(false);
+  const isLoadingTemplates = ref(false);
+  
+  // Bot details cache
+  const botDetailsCache = ref<any>(null);
+  const botDetailsLoaded = ref(false);
+  const isLoadingBotDetails = ref(false);
+  
+  // Broadcast report cache
+  const broadcastReportCache = ref<any>(null);
+  const broadcastReportLoaded = ref(false);
+  const isLoadingBroadcastReport = ref(false);
+  
+  // SMS report cache
+  const smsReportCache = ref<any>(null);
+  const smsReportLoaded = ref(false);
+  const isLoadingSmsReport = ref(false);
+  
+  // Third-party config cache
+  const thirdPartyConfigCache = ref<any>(null);
+  const thirdPartyConfigLoaded = ref(false);
+  const isLoadingThirdPartyConfig = ref(false);
+  
+  // Facebook pages cache
+  const facebookPagesCache = ref<any>(null);
+  const facebookPagesLoaded = ref(false);
+  const isLoadingFacebookPages = ref(false);
 
-  const saveLandingSettings = async (backgroundStyle: 'primary' | 'gradient' | 'secondary') => {
+  // Instagram pages cache
+  const instagramPagesCache = ref<any>(null);
+  const instagramPagesLoaded = ref(false);
+  const isLoadingInstagramPages = ref(false);
+
+  // Publish status cache
+  const publishStatusCache = ref<any>(null);
+  const publishStatusLoaded = ref(false);
+  const isLoadingPublishStatus = ref(false);
+
+  // Comment responder cache
+  const commentResponderCache = ref<any>(null);
+  const commentResponderLoaded = ref(false);
+  const isLoadingCommentResponder = ref(false);
+
+  // Plugin data cache (optin templates and posts)
+  const pluginDataCache = ref<any>(null);
+  const pluginDataLoaded = ref(false);
+  const isLoadingPluginData = ref(false);
+
+  const saveLandingSettings = async (backgroundStyle: 'primary' | 'gradient' | 'secondary' | 'plain-primary' | 'plain-secondary') => {
     isLoading.value = true;
     error.value = null;
     
@@ -82,7 +132,6 @@ export const usePublishStore = defineStore('publish', () => {
     twilioAccountSid: string;
     twilioAuthToken: string;
     twilioSmsNumber: string;
-    twilioSenderId: string;
   }) => {
     isLoading.value = true;
     error.value = null;
@@ -116,66 +165,76 @@ export const usePublishStore = defineStore('publish', () => {
     }
   };
 
-  const refreshPagePermission = async (pageId: string) => {
+  const getInstagramPages = async () => {
+    // Return cached pages if already loaded
+    if (instagramPagesLoaded.value && instagramPagesCache.value) {
+      return { success: true, data: instagramPagesCache.value };
+    }
+
+    // Prevent multiple simultaneous calls
+    if (isLoadingInstagramPages.value) {
+      return { success: false, error: 'Instagram pages are already being loaded' };
+    }
+    
+    isLoadingInstagramPages.value = true;
+    error.value = null;
+
+    try {
+      const result = await publishApi.getInstagramPages();
+      
+      if (result.success) {
+        // Cache the pages
+        instagramPagesCache.value = result.data.pagesData;
+        instagramPagesLoaded.value = true;
+        return { success: true, data: result.data.pagesData };
+      } else {
+        error.value = result.message || 'Failed to get Instagram pages';
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to get Instagram pages';
+      return { success: false, error: error.value };
+    } finally {
+      isLoadingInstagramPages.value = false;
+    }
+  };
+
+  const refreshFbPagePermission = async (instagram?: boolean) => {
     isLoading.value = true;
     error.value = null;
     
     try {
-      const result = await publishApi.refreshPagePermission(pageId);
+      const result = await publishApi.refreshFbPagePermission(instagram);
       
       if (result.success) {
-        // Show success toast
-        if (window.$toast) {
-          window.$toast.success('Page permissions refreshed successfully!');
-        }
         return { success: true, data: result.data };
       } else {
-        error.value = result.message || 'Failed to refresh page permissions';
-        // Show error toast
-        if (window.$toast) {
-          window.$toast.error(error.value);
-        }
+        error.value = result.message || 'Failed to refresh Facebook page permissions';
         return { success: false, error: error.value };
       }
     } catch (err: any) {
-      error.value = err.message || 'Failed to refresh page permissions';
-      // Show error toast
-      if (window.$toast) {
-        window.$toast.error(error.value);
-      }
+      error.value = err.message || 'Failed to refresh Facebook page permissions';
       return { success: false, error: error.value };
     } finally {
       isLoading.value = false;
     }
   };
 
-  const removePagePermission = async (pageId: string) => {
+  const removeFbPagePermission = async (instagram?: boolean) => {
     isLoading.value = true;
     error.value = null;
     
     try {
-      const result = await publishApi.removePagePermission(pageId);
+      const result = await publishApi.removeFbPagePermission(instagram);
       
       if (result.success) {
-        // Show success toast
-        if (window.$toast) {
-          window.$toast.success('Page permissions removed successfully!');
-        }
         return { success: true, data: result.data };
       } else {
-        error.value = result.message || 'Failed to remove page permissions';
-        // Show error toast
-        if (window.$toast) {
-          window.$toast.error(error.value);
-        }
+        error.value = result.message || 'Failed to remove Facebook page permissions';
         return { success: false, error: error.value };
       }
     } catch (err: any) {
-      error.value = err.message || 'Failed to remove page permissions';
-      // Show error toast
-      if (window.$toast) {
-        window.$toast.error(error.value);
-      }
+      error.value = err.message || 'Failed to remove Facebook page permissions';
       return { success: false, error: error.value };
     } finally {
       isLoading.value = false;
@@ -183,13 +242,26 @@ export const usePublishStore = defineStore('publish', () => {
   };
 
   const getBotDetails = async () => {
-    isLoading.value = true;
+    // Return cached bot details if already loaded
+    if (botDetailsLoaded.value && botDetailsCache.value) {
+      return { success: true, data: botDetailsCache.value };
+    }
+    
+    // Prevent multiple simultaneous calls
+    if (isLoadingBotDetails.value) {
+      return { success: false, error: 'Bot details are already being loaded' };
+    }
+    
+    isLoadingBotDetails.value = true;
     error.value = null;
     
     try {
       const result = await publishApi.getBotDetails();
       
       if (result.success) {
+        // Cache the bot details
+        botDetailsCache.value = result.data;
+        botDetailsLoaded.value = true;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to get bot details';
@@ -199,18 +271,102 @@ export const usePublishStore = defineStore('publish', () => {
       error.value = err.message || 'Failed to get bot details';
       return { success: false, error: error.value };
     } finally {
-      isLoading.value = false;
+      isLoadingBotDetails.value = false;
+    }
+  };
+
+  const getPublishStatus = async () => {
+    // Return cached status if already loaded
+    if (publishStatusLoaded.value && publishStatusCache.value) {
+      return { success: true, data: publishStatusCache.value };
+    }
+    
+    // Prevent multiple simultaneous calls
+    if (isLoadingPublishStatus.value) {
+      return { success: false, error: 'Publish status is already being loaded' };
+    }
+    
+    isLoadingPublishStatus.value = true;
+    error.value = null;
+    
+    try {
+      const result = await publishApi.getPublishStatus();
+      
+      if (result.success) {
+        // Cache the publish status
+        publishStatusCache.value = result.data;
+        publishStatusLoaded.value = true;
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to get publish status';
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to get publish status';
+      return { success: false, error: error.value };
+    } finally {
+      isLoadingPublishStatus.value = false;
+    }
+  };
+
+  const getThirdPartyConfig = async () => {
+    // Return cached config if already loaded
+    if (thirdPartyConfigLoaded.value && thirdPartyConfigCache.value) {
+      return { success: true, data: thirdPartyConfigCache.value };
+    }
+    
+    // Prevent multiple simultaneous calls
+    if (isLoadingThirdPartyConfig.value) {
+      return { success: false, error: 'Third-party config is already being loaded' };
+    }
+    
+    isLoadingThirdPartyConfig.value = true;
+    error.value = null;
+    
+    try {
+      const result = await publishApi.getThirdPartyConfig();
+      
+      if (result.success) {
+        // Cache the config
+        thirdPartyConfigCache.value = result.data;
+        thirdPartyConfigLoaded.value = true;
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to get third-party config';
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to get third-party config';
+      return { success: false, error: error.value };
+    } finally {
+      isLoadingThirdPartyConfig.value = false;
     }
   };
 
   const getSmsReport = async (page: number = 1) => {
-    isLoading.value = true;
+    // Return cached SMS report if already loaded for the same page
+    if (smsReportLoaded.value && smsReportCache.value && smsReportCache.value.page === page) {
+      return { success: true, data: smsReportCache.value.data };
+    }
+    
+    // Prevent multiple simultaneous calls
+    if (isLoadingSmsReport.value) {
+      return { success: false, error: 'SMS report is already being loaded' };
+    }
+    
+    isLoadingSmsReport.value = true;
     error.value = null;
     
     try {
       const result = await publishApi.getSmsReport(page);
       
       if (result.success) {
+        // Cache the SMS report with page info
+        smsReportCache.value = {
+          data: result.data,
+          page: page
+        };
+        smsReportLoaded.value = true;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to get SMS report';
@@ -220,7 +376,7 @@ export const usePublishStore = defineStore('publish', () => {
       error.value = err.message || 'Failed to get SMS report';
       return { success: false, error: error.value };
     } finally {
-      isLoading.value = false;
+      isLoadingSmsReport.value = false;
     }
   };
 
@@ -304,13 +460,26 @@ export const usePublishStore = defineStore('publish', () => {
   };
 
   const fetchTemplates = async () => {
-    isLoading.value = true;
+    // Return cached templates if already loaded
+    if (templatesLoaded.value && templatesCache.value.length > 0) {
+      return { success: true, data: { templates: { data: templatesCache.value } } };
+    }
+    
+    // Prevent multiple simultaneous calls
+    if (isLoadingTemplates.value) {
+      return { success: false, error: 'Templates are already being loaded' };
+    }
+    
+    isLoadingTemplates.value = true;
     error.value = null;
     
     try {
       const result = await publishApi.fetchTemplates();
       
       if (result.success) {
+        // Cache the templates
+        templatesCache.value = result.data.templates?.data || [];
+        templatesLoaded.value = true;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to fetch templates';
@@ -328,7 +497,7 @@ export const usePublishStore = defineStore('publish', () => {
       }
       return { success: false, error: error.value };
     } finally {
-      isLoading.value = false;
+      isLoadingTemplates.value = false;
     }
   };
 
@@ -372,13 +541,32 @@ export const usePublishStore = defineStore('publish', () => {
     start_date?: string;
     end_date?: string;
   }) => {
-    isLoading.value = true;
+    // Create a cache key based on params
+    const cacheKey = JSON.stringify(params);
+    
+    // Return cached broadcast report if already loaded with same params
+    if (broadcastReportLoaded.value && broadcastReportCache.value && broadcastReportCache.value.key === cacheKey) {
+      return { success: true, data: broadcastReportCache.value.data };
+    }
+    
+    // Prevent multiple simultaneous calls
+    if (isLoadingBroadcastReport.value) {
+      return { success: false, error: 'Broadcast report is already being loaded' };
+    }
+    
+    isLoadingBroadcastReport.value = true;
     error.value = null;
     
     try {
       const result = await publishApi.getWhatsAppBroadcastReport(params);
       
       if (result.success) {
+        // Cache the broadcast report with params key
+        broadcastReportCache.value = {
+          data: result.data,
+          key: cacheKey
+        };
+        broadcastReportLoaded.value = true;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to get WhatsApp broadcast report';
@@ -396,6 +584,284 @@ export const usePublishStore = defineStore('publish', () => {
       }
       return { success: false, error: error.value };
     } finally {
+      isLoadingBroadcastReport.value = false;
+    }
+  };
+
+  const getFbPages = async () => {
+    // Return cached pages if already loaded
+    if (facebookPagesLoaded.value && facebookPagesCache.value) {
+      return { success: true, data: facebookPagesCache.value };
+    }
+    
+    // Prevent multiple simultaneous calls
+    if (isLoadingFacebookPages.value) {
+      return { success: false, error: 'Facebook pages are already being loaded' };
+    }
+    
+    isLoadingFacebookPages.value = true;
+    error.value = null;
+    
+    try {
+      const result = await publishApi.getFacebookPages();
+      
+      if (result.success) {
+        // Cache the pages
+        facebookPagesCache.value = result.data;
+        facebookPagesLoaded.value = true;
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to get Facebook pages';
+        // Show error toast
+        if (window.$toast) {
+          window.$toast.error(error.value);
+        }
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to get Facebook pages';
+      // Show error toast
+      if (window.$toast) {
+        window.$toast.error(error.value);
+      }
+      return { success: false, error: error.value };
+    } finally {
+      isLoadingFacebookPages.value = false;
+    }
+  };
+
+  const connectionFbPage = async (type: string, pageId: string, pageName: string, accessToken: string) => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const result = await publishApi.connectionFbPage(type, pageId, pageName, accessToken);
+      
+      if (result.success) {
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to reconnect Facebook page';
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to reconnect Facebook page';
+      return { success: false, error: error.value };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const connectionInstaPage = async (type: string, pageId: string, pageName: string, accessToken: string) => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const result = await publishApi.connectionInstaPage(type, pageId, pageName, accessToken);
+      
+      if (result.success) {
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to reconnect Facebook page';
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to reconnect Facebook page';
+      return { success: false, error: error.value };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const getFbCommentResponder = async () => {
+    // Return cached comment responder if already loaded
+    if (commentResponderLoaded.value && commentResponderCache.value) {
+      return { success: true, data: commentResponderCache.value.data };
+    }
+    
+    // Prevent multiple simultaneous calls
+    if (isLoadingCommentResponder.value) {
+      return { success: false, error: 'Comment responder is already being loaded' };
+    }
+    
+    isLoadingCommentResponder.value = true;
+    error.value = null;
+    
+    try {
+      const result = await publishApi.fetchFbCommentResponder();
+      
+      if (result.success) {
+        // Cache the comment responder
+        commentResponderCache.value = {
+          data: result.data
+        };
+        commentResponderLoaded.value = true;
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to get Facebook comment responder';
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to get Facebook comment responder';
+      return { success: false, error: error.value };
+    } finally {
+      isLoadingCommentResponder.value = false;
+    }
+  };
+
+  const deleteCommentResponder = async (id: string) => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const result = await publishApi.deleteCommentResponder(id);
+      
+      if (result.success) {
+        // Clear cache
+        commentResponderCache.value = null;
+        commentResponderLoaded.value = false;
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to delete Facebook comment responder';
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to delete Facebook comment responder';
+      return { success: false, error: error.value };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const createCommentResponder = async (data: {
+    message: string;
+    post_id: string;
+    keywords: string;
+  }) => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const result = await publishApi.createCommentResponder(data);
+      
+      if (result.success) {
+        // Clear cache
+        commentResponderCache.value = null;
+        commentResponderLoaded.value = false;
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to create Facebook comment responder';
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to create Facebook comment responder';
+      return { success: false, error: error.value };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const updateCommentResponder = async (id: string, data: {
+    message: string;
+    post_id: string;
+    keywords: string;
+  }) => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const result = await publishApi.updateCommentResponder(id, data);
+      
+      if (result.success) {
+        // Clear cache
+        commentResponderCache.value = null;
+        commentResponderLoaded.value = false;
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to update Facebook comment responder';
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to update Facebook comment responder';
+      return { success: false, error: error.value };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const loadDataForPlugins = async (data: string) => {
+    // Return cached plugin data if already loaded
+    if (pluginDataLoaded.value && pluginDataCache.value) {
+      return { success: true, data: pluginDataCache.value };
+    }
+
+    // Prevent multiple simultaneous calls
+    if (isLoadingPluginData.value) {
+      return { success: false, error: 'Plugin data is already being loaded' };
+    }
+
+    isLoadingPluginData.value = true;
+    error.value = null;
+
+    try {
+      const result = await publishApi.loadDataForPlugins(data);
+
+      if (result.success) {
+        // Cache the plugin data
+        pluginDataCache.value = result.data;
+        pluginDataLoaded.value = true;
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to load plugin data';
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to load plugin data';
+      return { success: false, error: error.value };
+    } finally {
+      isLoadingPluginData.value = false;
+    }
+  };
+
+
+  const clearFbPagesCache = () => {
+    facebookPagesCache.value = null;
+    facebookPagesLoaded.value = false;
+  };
+
+  const clearInstaPagesCache = () => {
+    instagramPagesCache.value = null;
+    instagramPagesLoaded.value = false;
+  };
+
+  const clearPublishStatusCache = () => {
+    publishStatusCache.value = null;
+    publishStatusLoaded.value = false;
+  };
+
+  const createBroadcastTask = async (payload: {
+    description: string;
+    fall_back: boolean;
+    response: string;
+    tag: string;
+    type: number;
+    user_segment: string;
+  }) => {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      const result = await publishApi.createBroadcastTask(payload);
+
+      if (result.success) {
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to create broadcast task';
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to create broadcast task';
+      return { success: false, error: error.value };
+    } finally {
       isLoading.value = false;
     }
   };
@@ -404,6 +870,36 @@ export const usePublishStore = defineStore('publish', () => {
     // State
     isLoading,
     error,
+    templatesCache,
+    templatesLoaded,
+    isLoadingTemplates,
+    botDetailsCache,
+    botDetailsLoaded,
+    isLoadingBotDetails,
+    broadcastReportCache,
+    broadcastReportLoaded,
+    isLoadingBroadcastReport,
+    smsReportCache,
+    smsReportLoaded,
+    isLoadingSmsReport,
+    thirdPartyConfigCache,
+    thirdPartyConfigLoaded,
+    isLoadingThirdPartyConfig,
+    facebookPagesCache,
+    facebookPagesLoaded,
+    isLoadingFacebookPages,
+    publishStatusCache,
+    publishStatusLoaded,
+    isLoadingPublishStatus,
+    commentResponderCache,
+    commentResponderLoaded,
+    isLoadingCommentResponder,
+    instagramPagesCache,
+    instagramPagesLoaded,
+    isLoadingInstagramPages,
+    pluginDataCache,
+    pluginDataLoaded,
+    isLoadingPluginData,
     
     // Actions
     saveLandingSettings,
@@ -411,12 +907,27 @@ export const usePublishStore = defineStore('publish', () => {
     saveTwilioSettings,
     saveDialog360Settings,
     saveWhatsAppCloudSettings,
-    refreshPagePermission,
-    removePagePermission,
+    refreshFbPagePermission,
+    removeFbPagePermission,
     getBotDetails,
+    getPublishStatus,
+    getThirdPartyConfig,
     getSmsReport,
     fetchTemplates,
     deleteTemplate,
-    getWhatsAppBroadcastReport
+    getWhatsAppBroadcastReport,
+    getFbPages,
+    connectionFbPage,
+    getFbCommentResponder,
+    deleteCommentResponder,
+    createCommentResponder,
+    updateCommentResponder,
+    loadDataForPlugins,
+    clearFbPagesCache,
+    clearPublishStatusCache,
+    getInstagramPages,
+    createBroadcastTask,
+    connectionInstaPage,
+    clearInstaPagesCache
   };
 }); 

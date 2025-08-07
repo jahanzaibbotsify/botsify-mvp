@@ -6,7 +6,6 @@ import type { Attachment } from '@/types';
 import FileUpload from '@/components/ui/FileUpload.vue';
 import { botsifyApi } from '@/services/botsifyApi';
 import McpConnectionModal from "@/components/chat/mcp/MCPConnectionModal.vue";
-import CalendlyModal from "@/components/modal/CalendlyModal.vue";
 import PublishAgentModal from "@/components/modal/PublishAgentModal.vue";
 import FileSearchModal from "@/components/modal/FileSearchModal.vue";
 import WebSearchModal from "@/components/modal/WebSearchModal.vue";
@@ -327,7 +326,7 @@ const hideLoading = () => {
           </button>
 
           <!-- Chain Icon with New Dropdown -->
-          <div class="mcp-dropdown-container" @click.stop v-if="props.hasPromptContent">
+          <div class="mcp-dropdown-container" @click.stop >
             <button 
               class="icon-button mcp-icon-button" 
               @click="toggleMCPDropdown" 

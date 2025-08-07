@@ -19,11 +19,10 @@ const messengerModalRef = ref<InstanceType<typeof MessengerModal> | null>(null);
 const instagramModalRef = ref<InstanceType<typeof InstagramModal> | null>(null);
 
 const publishStore = usePublishStore();
-const botDetails = ref<any>(null);
 const isLoading = ref(false);
 
 const agents = ref([
-  { icon: 'portable-agent-icon.svg', label: 'Portable Agent', status: 'inactive' },
+  { icon: 'portable-agent-icon.svg', label: 'Portable agent', status: 'inactive' },
   { icon: 'website.png', label: 'Website', status: 'inactive' },
   { icon: 'whatsapp.png', label: 'WhatsApp', status: 'inactive' },
   { icon: 'instagram.png', label: 'Instagram', status: 'inactive' },
@@ -32,34 +31,58 @@ const agents = ref([
   { icon: 'sms.png', label: 'SMS', status: 'inactive' },
 ]);
 
-const fetchBotDetails = async () => {
+const fetchPublishStatus = async () => {
+  // Only fetch if not already loaded
+  if (publishStore.publishStatusLoaded && publishStore.publishStatusCache) {
+    updateAgentStatus(publishStore.publishStatusCache);
+    return;
+  }
+  
   isLoading.value = true;
   try {
-    const result = await publishStore.getBotDetails();
+    const result = await publishStore.getPublishStatus();
+    
     if (result.success && result.data) {
-      botDetails.value = result.data;
-      updateAgentStatus();
+      updateAgentStatus(result.data);
     }
   } catch (error) {
-    console.error('Failed to fetch bot details:', error);
+    console.error('Failed to fetch publish status:', error);
   } finally {
     isLoading.value = false;
   }
 };
 
-const updateAgentStatus = () => {
-  if (!botDetails.value) return;
+const updateAgentStatus = (publishStatus: any) => {
+  if (!publishStatus || !publishStatus.data) return;
 
-  // Update status based on API response
+  const statusData = publishStatus.data;
+
+  // Update status based on publish status API response
   agents.value.forEach(agent => {
     switch (agent.label) {
       case 'Telegram':
-        agent.status = botDetails.value.telegramConf ? 'active' : 'inactive';
+        agent.status = statusData.telegram ? 'active' : 'inactive';
         break;
       case 'SMS':
-        agent.status = botDetails.value.twilioConf ? 'active' : 'inactive';
+        agent.status = statusData.twilio ? 'active' : 'inactive';
         break;
-      // Add other agents as needed
+      case 'WhatsApp':
+        agent.status = statusData.whatsapp ? 'active' : 'inactive';
+        break;
+      case 'Messenger':
+        agent.status = statusData.facebook ? 'active' : 'inactive';
+        break;
+      case 'Instagram':
+        agent.status = statusData.instagram ? 'active' : 'inactive';
+        break;
+      case 'Website':
+        // Website status might be handled differently
+        agent.status = 'inactive';
+        break;
+      case 'Portable agent':
+        // Portable agent status might be handled differently
+        agent.status = 'inactive';
+        break;
       default:
         agent.status = 'inactive';
     }
@@ -68,7 +91,13 @@ const updateAgentStatus = () => {
 
 const openModal = () => {
   modalRef.value?.openModal();
-  fetchBotDetails(); // Fetch bot details when modal opens
+  // Only fetch if not already cached
+  if (!publishStore.publishStatusLoaded || !publishStore.publishStatusCache) {
+    fetchPublishStatus();
+  } else {
+    // Use cached data
+    updateAgentStatus(publishStore.publishStatusCache);
+  }
 };
 
 const handleAgentClick = (agentLabel: string) => {
@@ -90,7 +119,10 @@ const handleAgentClick = (agentLabel: string) => {
 
 const handleBackToMain = () => {
   modalRef.value?.openModal();
-  fetchBotDetails(); // Refresh bot details when returning to main modal
+  // Only fetch if not already cached
+  if (!publishStore.publishStatusLoaded || !publishStore.publishStatusCache) {
+    fetchPublishStatus();
+  }
 };
 
 defineExpose({ openModal });
@@ -186,8 +218,7 @@ defineExpose({ openModal });
 .status-badge {
   position: absolute;
   top: 8px;
-  right: 8px;
-  padding: 4px 8px;
+  padding: 4px 7px;
   border-radius: var(--radius-sm, 4px);
   font-size: 11px;
   font-weight: 500;
@@ -197,6 +228,7 @@ defineExpose({ openModal });
   background: var(--color-secondary, #10b981);
   color: white;
   z-index: 1;
+  right: 10px;
 }
 
 .status-badge.active {

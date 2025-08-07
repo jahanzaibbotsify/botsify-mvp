@@ -265,26 +265,30 @@ const handleBlur = (event: FocusEvent) => {
   z-index: 1000;
 }
 
-.vue-select-container:deep(.menu .option) {
+/* .vue-select-component .menu .menu-option.selected {
+  background-color: var(--color-bg-hover);
+}
+
+.vue-select-container:deep(.menu .menu-option) {
   padding: var(--space-2) var(--space-3);
   cursor: pointer;
   transition: background-color var(--transition-normal);
 }
 
-.vue-select-container:deep(.menu .option:hover) {
+.vue-select-container:deep(.menu .menu-option:hover) {
   background-color: var(--color-bg-hover);
 }
 
-.vue-select-container:deep(.menu .option.selected) {
+.vue-select-container:deep(.menu .menu-option.selected) {
   background-color: var(--color-primary);
   color: white;
 }
 
-.vue-select-container:deep(.menu .option.focused) {
+.vue-select-container:deep(.menu .menu-option.focused) {
   background-color: var(--color-bg-hover);
-}
+} */
 
-.vue-select-container:deep(.menu .option.disabled) {
+.vue-select-container:deep(.menu .menu-option.disabled) {
   opacity: 0.5;
   cursor: not-allowed;
 }

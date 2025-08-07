@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
+import {PublishModalLayout, Button} from "@/components/ui";
 import Pagination from "@/components/ui/Pagination.vue";
 import { ref } from "vue";
 import PublishAgentTab from "./PublishAgentTab.vue";
@@ -30,6 +30,10 @@ const isLoading = ref(false);
 
 const openModal = () => {
   modalRef.value?.openModal();
+  // Load Facebook pages when modal opens (store handles caching)
+  if (publishAgentTabRef.value) {
+    publishAgentTabRef.value.loadFbPages();
+  }
 };
 
 const closeModal = () => {
@@ -43,23 +47,15 @@ const handleBack = () => {
 const handleTabChange = (tabId: string) => {
   console.log('Tab changed to:', tabId);
   currentActiveTab.value = tabId;
-};
-
-// Publish Bot Tab Events
-const handleCreateNewPage = () => {
-  console.log('Creating new page');
-};
-
-const handleRefreshPagePermission = () => {
-  console.log('Refreshing page permission');
-};
-
-const handleRemovePagePermission = () => {
-  console.log('Removing page permission');
-};
-
-const handleConnectAccount = () => {
-  console.log('Connecting account');
+  
+  // Load data based on the selected tab
+  if (tabId === 'comment-auto-responder' && commentAutoResponderTabRef.value) {
+    // Load comment responders when the tab is selected
+    commentAutoResponderTabRef.value.loadCommentResponders();
+  }
+  
+  // No need to reload Facebook pages on tab change since store handles caching
+  // The data will be available from the store cache
 };
 
 // Comment Auto Responder Tab Events
@@ -67,17 +63,30 @@ const handleSaveAutoResponder = (settings: any) => {
   console.log('Saving auto responder settings:', settings);
 };
 
-const handleNoTestUser = () => {
-  console.log('No test user action');
-};
-
-const handleSendMessage = (message: any) => {
-  console.log('Sending message:', message);
-};
-
 // Broadcast Tab Events
 const handleSendBroadcast = (data: any) => {
   console.log('Sending broadcast:', data);
+};
+
+const handleSendMessage = async () => {
+  if (currentActiveTab.value === 'broadcast' && broadcastTabRef.value) {
+    await broadcastTabRef.value.sendMessage();
+  } else {
+    console.log('Sending message');
+  }
+};
+
+const handleNoTestUser = () => {
+  if (currentActiveTab.value === 'broadcast' && broadcastTabRef.value) {
+    broadcastTabRef.value.noTestUser();
+  } else {
+    console.log('No test user action');
+  }
+};
+
+// Handle loading state from BroadcastTab
+const handleLoadingChange = (loading: boolean) => {
+  isLoading.value = loading;
 };
 
 defineExpose({ openModal, closeModal });
@@ -97,18 +106,14 @@ defineExpose({ openModal, closeModal });
     <template #default="{ activeTab }">
       <!-- Publish Agent Tab -->
       <PublishAgentTab 
-        v-if="activeTab === 'publish-bot'"
+        v-show="activeTab === 'publish-bot'"
         ref="publishAgentTabRef"
         :is-loading="isLoading"
-        @create-new-page="handleCreateNewPage"
-        @refresh-page-permission="handleRefreshPagePermission"
-        @remove-page-permission="handleRemovePagePermission"
-        @connect-account="handleConnectAccount"
       />
 
       <!-- Comment Auto Responder Tab -->
       <CommentAutoResponderTab 
-        v-if="activeTab === 'comment-auto-responder'"
+        v-show="activeTab === 'comment-auto-responder'"
         ref="commentAutoResponderTabRef"
         :is-loading="isLoading"
         @save-settings="handleSaveAutoResponder"
@@ -118,46 +123,37 @@ defineExpose({ openModal, closeModal });
 
       <!-- Broadcast Tab -->
       <BroadcastTab 
-        v-if="activeTab === 'broadcast'"
+        v-show="activeTab === 'broadcast'"
         ref="broadcastTabRef"
         :is-loading="isLoading"
         @send-broadcast="handleSendBroadcast"
         @no-test-user="handleNoTestUser"
         @send-message="handleSendMessage"
+        @loading-change="handleLoadingChange"
       />
 
     </template>
     
     <template #actions>
-      <!-- Send Message Button for Comment Auto Responder Tab -->
-      <button 
-        v-if="currentActiveTab === 'comment-auto-responder'" 
-        class="action-button primary"
-        @click="commentAutoResponderTabRef?.sendMessage()"
-        :disabled="isLoading"
-      >
-        {{ isLoading ? 'Sending...' : 'Send Message' }}
-      </button>
-
       <!-- No Test User Button for Broadcast Tab -->
-      <button 
+      <Button 
         v-if="currentActiveTab === 'broadcast'" 
-        class="action-button"
-        @click="broadcastTabRef?.noTestUser()"
+        variant="secondary"
+        @click="handleNoTestUser"
         :disabled="isLoading"
       >
         No test user
-      </button>
+      </Button>
 
       <!-- Send Message Button for Broadcast Tab -->
-      <button 
+      <Button 
         v-if="currentActiveTab === 'broadcast'" 
-        class="action-button primary"
-        @click="broadcastTabRef?.sendMessage()"
+        variant="primary"
+        @click="handleSendMessage"
         :disabled="isLoading"
       >
-        {{ isLoading ? 'Sending...' : 'Send message' }}
-      </button>
+        {{ isLoading ? 'Sending...' : 'Send Broadcast' }}
+      </Button>
     </template>
   </PublishModalLayout>
 </template>

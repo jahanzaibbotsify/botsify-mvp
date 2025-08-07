@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
-import Pagination from "@/components/ui/Pagination.vue";
+import {PublishModalLayout} from "@/components/ui";
 import { ref } from "vue";
 import PublishAgentTab from "./PublishAgentTab.vue";
-import CommentAutoResponderTab from "./CommentAutoResponderTab.vue";
-import BroadcastTab from "./BroadcastTab.vue";
+// import BroadcastTab from "./BroadcastTab.vue";
 
 // Define tabs
 const tabs = [
   { id: 'publish-bot', label: 'Publish agent' },
-  { id: 'comment-auto-responder', label: 'Comment auto responder' },
-  { id: 'broadcast', label: 'Broadcast' },
+  // { id: 'broadcast', label: 'Broadcast' },
 ];
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
@@ -18,8 +15,7 @@ const currentActiveTab = ref('publish-bot');
 
 // Tab component refs
 const publishAgentTabRef = ref<InstanceType<typeof PublishAgentTab> | null>(null);
-const commentAutoResponderTabRef = ref<InstanceType<typeof CommentAutoResponderTab> | null>(null);
-const broadcastTabRef = ref<InstanceType<typeof BroadcastTab> | null>(null);
+// const broadcastTabRef = ref<InstanceType<typeof BroadcastTab> | null>(null);
 
 const emit = defineEmits<{
   back: [];
@@ -30,6 +26,10 @@ const isLoading = ref(false);
 
 const openModal = () => {
   modalRef.value?.openModal();
+  // Load Facebook pages when modal opens (store handles caching)
+  if (publishAgentTabRef.value) {
+    publishAgentTabRef.value.loadInstaPages();
+  }
 };
 
 const closeModal = () => {
@@ -38,46 +38,6 @@ const closeModal = () => {
 
 const handleBack = () => {
   emit('back');
-};
-
-const handleTabChange = (tabId: string) => {
-  console.log('Tab changed to:', tabId);
-  currentActiveTab.value = tabId;
-};
-
-// Publish Bot Tab Events
-const handleCreateNewPage = () => {
-  console.log('Creating new page');
-};
-
-const handleRefreshPagePermission = () => {
-  console.log('Refreshing page permission');
-};
-
-const handleRemovePagePermission = () => {
-  console.log('Removing page permission');
-};
-
-const handleConnectAccount = () => {
-  console.log('Connecting account');
-};
-
-// Comment Auto Responder Tab Events
-const handleSaveAutoResponder = (settings: any) => {
-  console.log('Saving auto responder settings:', settings);
-};
-
-const handleNoTestUser = () => {
-  console.log('No test user action');
-};
-
-const handleSendMessage = (message: any) => {
-  console.log('Sending message:', message);
-};
-
-// Broadcast Tab Events
-const handleSendBroadcast = (data: any) => {
-  console.log('Sending broadcast:', data);
 };
 
 defineExpose({ openModal, closeModal });
@@ -92,73 +52,50 @@ defineExpose({ openModal, closeModal });
     max-width="1200px"
     default-tab="publish-bot"
     @back="handleBack"
-    @tab-change="handleTabChange"
   >
     <template #default="{ activeTab }">
       <!-- Publish Agent Tab -->
       <PublishAgentTab 
-        v-if="activeTab === 'publish-bot'"
+        v-show="activeTab === 'publish-bot'"
         ref="publishAgentTabRef"
         :is-loading="isLoading"
-        @create-new-page="handleCreateNewPage"
-        @refresh-page-permission="handleRefreshPagePermission"
-        @remove-page-permission="handleRemovePagePermission"
-        @connect-account="handleConnectAccount"
-      />
-
-      <!-- Comment Auto Responder Tab -->
-      <CommentAutoResponderTab 
-        v-if="activeTab === 'comment-auto-responder'"
-        ref="commentAutoResponderTabRef"
-        :is-loading="isLoading"
-        @save-settings="handleSaveAutoResponder"
-        @no-test-user="handleNoTestUser"
-        @send-message="handleSendMessage"
       />
 
       <!-- Broadcast Tab -->
-      <BroadcastTab 
-        v-if="activeTab === 'broadcast'"
+      <!-- <BroadcastTab 
+        v-show="activeTab === 'broadcast'"
         ref="broadcastTabRef"
         :is-loading="isLoading"
         @send-broadcast="handleSendBroadcast"
         @no-test-user="handleNoTestUser"
         @send-message="handleSendMessage"
-      />
+      /> -->
 
     </template>
     
-    <template #actions>
-      <!-- Send Message Button for Comment Auto Responder Tab -->
-      <button 
-        v-if="currentActiveTab === 'comment-auto-responder'" 
-        class="action-button primary"
-        @click="commentAutoResponderTabRef?.sendMessage()"
-        :disabled="isLoading"
-      >
-        {{ isLoading ? 'Sending...' : 'Send Message' }}
-      </button>
-
+    <!-- <template #actions> -->
+      <!-- No actions needed for Comment Auto Responder Tab -->
+      
       <!-- No Test User Button for Broadcast Tab -->
-      <button 
+      <!-- <Button 
         v-if="currentActiveTab === 'broadcast'" 
-        class="action-button"
-        @click="broadcastTabRef?.noTestUser()"
+        variant="secondary"
+        @click="handleNoTestUser"
         :disabled="isLoading"
       >
-        No Test User
-      </button>
+        No test user
+      </Button> -->
 
       <!-- Send Message Button for Broadcast Tab -->
-      <button 
+      <!-- <Button 
         v-if="currentActiveTab === 'broadcast'" 
-        class="action-button primary"
-        @click="broadcastTabRef?.sendMessage()"
+        variant="primary"
+        @click="handleSendMessage"
         :disabled="isLoading"
       >
-        {{ isLoading ? 'Sending...' : 'Send Message' }}
-      </button>
-    </template>
+        {{ isLoading ? 'Sending...' : 'Send message' }}
+      </Button> -->
+    <!-- </template> -->
   </PublishModalLayout>
 </template>
 

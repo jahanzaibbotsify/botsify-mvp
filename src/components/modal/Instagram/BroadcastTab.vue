@@ -115,25 +115,3 @@ defineExpose({
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
-
-/* VueSelect Styling */
-.form-group :deep(.vue3-select-component) {
-  font-size: 14px;
-  height: 44px;
-}
-
-.form-group :deep(.vue3-select-component input) {
-  height: 44px;
-  padding: 12px 16px;
-  font-size: 14px;
-}
-
-@media (max-width: 640px) {
-  .form-group {
-    margin-bottom: 16px;
-  }
-}
-</style> 

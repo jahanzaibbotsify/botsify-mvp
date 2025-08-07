@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
+import { useBotStore } from "@/stores/botStore";
+import Button from "@/components/ui/Button.vue";
 
 // Props
 interface Props {
@@ -20,82 +22,138 @@ const emit = defineEmits<{
 }>();
 
 const publishStore = usePublishStore();
+const botStore = useBotStore();
 
-// Page data - this would come from API in real implementation
-const pages = ref([
-  {
-    id: '123456789',
-    name: 'My Business Page',
-    is_bot_page: true,
-    status: 'connected',
-    botName: 'agent1'
-  },
-  {
-    id: '987654321',
-    name: 'Marketing Page',
-    is_bot_page: false,
-    status: 'disconnected',
-    botName: null
+// Computed properties to sync with store state
+const storePages = computed(() => publishStore.facebookPagesCache);
+const storePagesLoaded = computed(() => publishStore.facebookPagesLoaded);
+const storeIsLoadingPages = computed(() => publishStore.isLoadingFacebookPages);
+
+// Computed pages data from store
+const pages = computed(() => {
+  if (!storePages.value) {
+    return [];
   }
-]);
+  
+  // Check if we have pagesData structure (API response format)
+  if (storePages.value.pagesData && storePages.value.pagesData.data) {
+    const pagesData = storePages.value.pagesData.data;
+    if (Array.isArray(pagesData) && pagesData.length > 0) {
+      return pagesData.map((page: any) => ({
+        id: page.id,
+        name: page.name,
+        is_bot_page: !!page.connected_page_bot,
+        status: page.connected_page_bot ? 'connected' : 'disconnected',
+        botName: page.connected_page_bot || null,
+        accessToken: page.access_token || null,
+        category: page.category,
+        profile_picture_url: page.profile_picture_url || null
+      }));
+    }
+  } else if (Array.isArray(storePages.value) && storePages.value.length > 0) {
+    // Direct array structure (fallback)
+    return storePages.value.map((page: any) => ({
+      id: page.id,
+      name: page.name,
+      is_bot_page: page.is_bot_page || false,
+      status: page.status || 'disconnected',
+      botName: page.botName || null,
+      category: page.category,
+      profile_picture_url: page.profile_picture_url || null
+    }));
+  }
+  
+  return [];
+});
+
+// Computed show connect button
+const showConnectButton = computed(() => {
+  return !storePagesLoaded.value || pages.value.length === 0;
+});
 
 const isLoading = ref(false);
 
+// Load Facebook pages
+const loadFbPages = async () => {
+  // Check if we're already loading
+  if (storeIsLoadingPages.value) {
+    return;
+  }
+  
+  try {
+    await publishStore.getFbPages();
+    // The computed pages will automatically update when store data changes
+  } catch (error) {
+    console.error('Failed to load Facebook pages:', error);
+  }
+};
+
 // Actions
 const createNewPage = () => {
-  // Redirect to Facebook new tab
-  window.open('https://www.facebook.com/pages/create', '_blank');
+  // Redirect to Facebook new page creation
+  window.open('https://www.facebook.com/pages', '_blank');
   emit('create-new-page');
 };
 
-const connectPage = async (pageId: string) => {
+const connectAccount = async () => {
   isLoading.value = true;
   try {
-    console.log('Connecting page:', pageId);
-    // Add actual connect logic here
-    // Update page status to connected
-    const page = pages.value.find(p => p.id === pageId);
-    if (page) {
-      page.is_bot_page = true;
-      page.status = 'connected';
-      page.botName = 'agent1';
+    const result = await publishStore.refreshFbPagePermission();
+    if (result.success && result.data?.redirect) {
+      // Redirect to the URL provided by the API
+      window.open(result.data.redirect, '_blank');
+    } else {
+      console.error('Failed to get redirect URL:', result.error);
     }
   } catch (error) {
-    console.error('Failed to connect page:', error);
+    console.error('Failed to connect account:', error);
   } finally {
     isLoading.value = false;
   }
 };
 
-const disconnectPage = async (pageId: string) => {
+const connectionPage = async (type: string, page: any) => {
   isLoading.value = true;
   try {
-    console.log('Disconnecting page:', pageId);
-    // Add actual disconnect logic here
-    // Update page status to disconnected
-    const page = pages.value.find(p => p.id === pageId);
-    if (page) {
-      page.is_bot_page = false;
-      page.status = 'disconnected';
-      page.botName = null;
+    const result = await publishStore.connectionFbPage(type, page.id, page.name, page.accessToken);
+    if (result.success) {
+      // Clear cache and reload pages to update the status
+      publishStore.clearFbPagesCache();
+      await loadFbPages();
+      if (window.$toast) {
+        window.$toast.success('Page disconnected successfully!');
+      }
+    } else {
+      console.error('Failed to disconnect page:', result.error);
+      if (window.$toast) {
+        window.$toast.error(result.error || 'Failed to disconnect page');
+      }
     }
   } catch (error) {
     console.error('Failed to disconnect page:', error);
+    if (window.$toast) {
+      window.$toast.error('Failed to disconnect page');
+    }
   } finally {
     isLoading.value = false;
   }
 };
 
-const refreshPagePermissions = async () => {
+
+const openFacebookPage = (pageId: string) => {
+  // Open Facebook page in new tab
+  window.open(`https://facebook.com/${pageId}`, '_blank');
+};
+
+const refreshFbPagePermissions = async () => {
   isLoading.value = true;
   try {
-    console.log('Refreshing page permissions');
-    const result = await publishStore.refreshPagePermission('all');
-    
-    if (result.success) {
-      console.log('Page permissions refreshed successfully');
+    const result = await publishStore.refreshFbPagePermission();
+    if (result.success && result.data?.redirect) {
+      // Redirect to the URL provided by the API
+      window.open(result.data.redirect, '_blank');
     } else {
-      console.error('Failed to refresh page permissions:', result.error);
+      console.error('Failed to get redirect URL:', result.error);
     }
   } catch (error) {
     console.error('Failed to refresh page permissions:', error);
@@ -103,6 +161,25 @@ const refreshPagePermissions = async () => {
     isLoading.value = false;
   }
 };
+
+
+const removeFbPagePermissions = async () => {
+  isLoading.value = true;
+  try {
+    const result = await publishStore.removeFbPagePermission();
+    if (result.success && result.data?.redirect) {
+      // Redirect to the URL provided by the API
+      window.open(result.data.redirect, '_blank');
+    } else {
+      console.error('Failed to get redirect URL:', result.error);
+    }
+  } catch (error) {
+    console.error('Failed to refresh page permissions:', error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -117,10 +194,28 @@ const getStatusColor = (status: string) => {
   }
 };
 
+// Get initials from page name
+const getInitials = (name: string) => {
+  return name
+    .split(' ')
+    .map(word => word.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+};
+
+// Load data when component mounts
+onMounted(() => {
+  // Only load if not already loaded in store
+  if (!storePagesLoaded.value) {
+    loadFbPages();
+  }
+});
+
 // Expose methods for parent component
 defineExpose({
-  pages,
-  isLoading
+  isLoading,
+  loadFbPages
 });
 </script>
 
@@ -129,22 +224,30 @@ defineExpose({
     <h3>Messenger integration</h3>
     <p class="subtitle">Connect your Facebook pages to enable Messenger bot functionality</p>
 
-    <!-- Empty State -->
-    <div v-if="pages.length === 0" class="empty-state">
+    <!-- Loading State -->
+    <div v-if="storeIsLoadingPages" class="loading-state">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p>Loading Facebook pages...</p>
+      </div>
+    </div>
+
+    <!-- Empty State / Connect Button -->
+    <div v-else-if="showConnectButton || pages.length === 0" class="empty-state">
       <div class="empty-content">
         <div class="empty-icon">
           <i class="pi pi-facebook"></i>
         </div>
         <h4>No Facebook pages found</h4>
         <p>Connect your Facebook account to manage your pages and enable Messenger bot functionality.</p>
-        <button 
-          class="connect-account-btn"
-          @click="emit('connect-account')"
-          :disabled="isLoading"
+        <Button 
+          variant="primary"
+          :loading="isLoading"
+          icon="pi pi-link"
+          @click="connectAccount"
         >
-          <i class="pi pi-link"></i>
-          Connect Facebook account
-        </button>
+          {{ isLoading ? 'Connecting...' : 'Connect Facebook account' }}
+        </Button>
       </div>
     </div>
 
@@ -152,22 +255,30 @@ defineExpose({
     <div v-else>
       <!-- Header Actions -->
       <div class="header-actions">
-        <button 
-          class="refresh-btn"
-          @click="refreshPagePermissions"
-          :disabled="isLoading"
+        <Button 
+          variant="primary"
+          :loading="isLoading"
+          icon="pi pi-refresh"
+          @click="refreshFbPagePermissions"
         >
-          <i class="pi pi-refresh"></i>
-          {{ isLoading ? 'Refreshing...' : 'Refresh Pages' }}
-        </button>
-        <button 
-          class="create-page-btn"
+          {{ isLoading ? 'Refreshing...' : 'Refresh Permission' }}
+        </Button>
+        <Button 
+          variant="warning"
+          :loading="isLoading"
+          icon="pi pi-trash"
+          @click="removeFbPagePermissions"
+        >
+          {{ isLoading ? 'Updating...' : 'Remove Permission' }}
+        </Button>
+        <Button 
+          variant="secondary"
+          :loading="isLoading"
+          icon="pi pi-plus"
           @click="createNewPage"
-          :disabled="isLoading"
         >
-          <i class="pi pi-plus"></i>
           Create new page
-        </button>
+        </Button>
       </div>
 
       <!-- Pages List -->
@@ -177,43 +288,80 @@ defineExpose({
           :key="page.id"
           class="page-card"
         >
-          <div class="page-info">
-            <div class="page-name">{{ page.name }}</div>
-            <div class="page-id">ID: {{ page.id }}</div>
-            <div v-if="page.is_bot_page && page.botName" class="bot-connection">
-              Connected to {{ page.botName }}
+          <div class="page-main">
+            <div class="page-avatar">
+              <img 
+                v-if="page.profile_picture_url" 
+                :src="page.profile_picture_url" 
+                :alt="page.name"
+                class="avatar-image"
+                @error="(event) => { const target = event.target as HTMLImageElement; if (target) target.style.display = 'none'; }"
+              />
+              <div v-else class="avatar-fallback">
+                {{ getInitials(page.name) }}
+              </div>
+            </div>
+            
+            <div class="page-content">
+              <div class="page-header">
+                <div class="page-title">
+                  <h4 class="page-name">{{ page.name }}</h4>
+                  <span v-if="page.category" class="page-category">{{ page.category }}</span>
+                </div>
+              </div>
             </div>
           </div>
           
-          <div class="page-status">
-            <span 
-              class="status-badge"
-              :style="{ backgroundColor: getStatusColor(page.status) }"
-            >
-              {{ page.status }}
-            </span>
-          </div>
-          
           <div class="page-actions">
-            <button 
-              v-if="!page.is_bot_page"
-              class="action-btn primary"
-              @click="connectPage(page.id)"
-              :disabled="isLoading"
-            >
-              <i class="pi pi-link"></i>
-              Connect
-            </button>
+            <div class="action-buttons">
+              <Button 
+                v-if="!page.is_bot_page"
+                variant="primary"
+                size="small"
+                :loading="isLoading"
+                icon="pi pi-link"
+                @click="connectionPage('connect', page)"
+              >
+                Connect
+              </Button>
+              
+              <div v-else-if="page.botName === botStore.botName" class="connected-actions">
+                <Button 
+                  variant="success"
+                  size="small"
+                  :loading="isLoading"
+                  icon="pi pi-refresh"
+                  @click="connectionPage('connect', page)"
+                >
+                  Reconnect
+                </Button>
+                
+                <Button 
+                  variant="error"
+                  size="small"
+                  :loading="isLoading"
+                  icon="pi pi-times"
+                  @click="connectionPage('disconnect', page)"
+                >
+                  Disconnect
+                </Button>
+              </div>
+              
+              <span 
+                v-else
+                class="connected-text"
+              >
+                Connected to {{ page.botName }}
+              </span>
+            </div>
             
-            <button 
-              v-else
-              class="action-btn secondary"
-              @click="disconnectPage(page.id)"
-              :disabled="isLoading"
-            >
-              <i class="pi pi-unlink"></i>
-              Disconnect
-            </button>
+            <Button 
+              variant="secondary"
+              size="small"
+              icon="pi pi-external-link"
+              @click="openFacebookPage(page.id)"
+              title="Open Facebook page"
+            />
           </div>
         </div>
       </div>
@@ -229,6 +377,38 @@ defineExpose({
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-secondary, #6b7280);
+}
+
+/* Loading State */
+.loading-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.loading-content {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-bg-tertiary, #f3f4f6);
+  border-top: 3px solid var(--color-primary, #3b82f6);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-state p {
+  margin: 0;
+  font-size: 14px;
 }
 
 /* Empty State */
@@ -262,35 +442,6 @@ defineExpose({
   line-height: 1.5;
 }
 
-.connect-account-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 auto;
-  padding: 12px 24px;
-  border: none;
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-primary, #3b82f6);
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color var(--transition-normal, 0.2s ease);
-}
-
-.connect-account-btn:hover:not(:disabled) {
-  background: var(--color-primary-hover, #2563eb);
-}
-
-.connect-account-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.connect-account-btn i {
-  font-size: 12px;
-}
-
 /* Header Actions */
 .header-actions {
   display: flex;
@@ -298,133 +449,125 @@ defineExpose({
   margin-bottom: 24px;
 }
 
-.refresh-btn,
-.create-page-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-bg-secondary, #f9fafb);
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal, 0.2s ease);
-}
-
-.refresh-btn:hover:not(:disabled),
-.create-page-btn:hover:not(:disabled) {
-  background: var(--color-bg-tertiary, #f3f4f6);
-  border-color: var(--color-primary, #3b82f6);
-}
-
-.refresh-btn:disabled,
-.create-page-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.refresh-btn i,
-.create-page-btn i {
-  font-size: 12px;
-}
-
 /* Pages List */
 .pages-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .page-card {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px;
+  justify-content: space-between;
+  padding: 20px;
   background: var(--color-bg-secondary, #f9fafb);
   border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  transition: border-color var(--transition-normal, 0.2s ease);
+  border-radius: var(--radius-lg, 12px);
+  transition: all var(--transition-normal, 0.2s ease);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
 }
 
 .page-card:hover {
   border-color: var(--color-primary, #3b82f6);
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06));
+  transform: translateY(-1px);
 }
 
-.page-info {
+.page-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   flex: 1;
+}
+
+.page-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: var(--color-bg-tertiary, #f3f4f6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 2px solid var(--color-border, #e5e7eb);
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-fallback {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+  background-color: var(--color-bg-tertiary, #f3f4f6);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-content {
+  flex: 1;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.page-title {
+  display: grid;
+  align-items: center;
+  gap: 5px;
 }
 
 .page-name {
   font-weight: 600;
   color: var(--color-text-primary, #111827);
   font-size: 16px;
-  margin-bottom: 4px;
+  margin: 0;
 }
 
-.page-id {
-  font-size: 12px;
+.page-category {
   color: var(--color-text-secondary, #6b7280);
-  margin-bottom: 4px;
-}
-
-.bot-connection {
-  font-size: 12px;
-  color: var(--color-primary, #3b82f6);
   font-weight: 500;
-}
-
-.page-status {
-  margin-right: 16px;
+  font-size: 12px;
+  font-style: italic;
 }
 
 .page-actions {
   display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.action-buttons {
+  display: flex;
   gap: 8px;
 }
 
-.action-btn {
+.connected-actions {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: none;
-  border-radius: var(--radius-md, 8px);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal, 0.2s ease);
+  gap: 8px;
 }
 
-.action-btn.primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.action-btn.primary:hover:not(:disabled) {
-  background: var(--color-primary-hover, #2563eb);
-}
-
-.action-btn.secondary {
-  background: var(--color-bg-tertiary, #f3f4f6);
-  color: var(--color-text-primary, #111827);
-  border: 1px solid var(--color-border, #e5e7eb);
-}
-
-.action-btn.secondary:hover:not(:disabled) {
-  background: var(--color-bg-hover, #f1f5f9);
-  border-color: var(--color-primary, #3b82f6);
-}
-
-.action-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.action-btn i {
+.connected-text {
   font-size: 12px;
+  color: var(--color-text-secondary, #6b7280);
+  font-style: italic;
+  padding: 8px 12px;
+  background: var(--color-bg-tertiary, #f3f4f6);
+  border-radius: var(--radius-sm, 4px);
+  border: 1px solid var(--color-border, #e5e7eb);
 }
 
 @media (max-width: 768px) {
@@ -438,11 +581,23 @@ defineExpose({
     gap: 12px;
   }
   
-  .page-status {
-    margin-right: 0;
-  }
-  
   .page-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .action-buttons {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .connected-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .page-external-link {
+    margin-left: 0; /* Reset margin for smaller screens */
     width: 100%;
     justify-content: flex-end;
   }

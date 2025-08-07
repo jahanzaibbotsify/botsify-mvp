@@ -46,7 +46,7 @@ const handleTabChange = (tabId: string) => {
 // Load existing Telegram settings
 const loadTelegramSettings = async () => {
   try {
-    const result = await publishStore.getBotDetails();
+    const result = await publishStore.getThirdPartyConfig();
     if (result.success && result.data?.telegramConf?.setting) {
       const settings = result.data.telegramConf.setting;
       telegramForm.value = {

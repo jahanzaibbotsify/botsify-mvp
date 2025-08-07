@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {Input} from "@/components/ui";
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 
 // Props
 interface Props {
@@ -16,22 +16,46 @@ const emit = defineEmits<{
   'save-settings': [settings: any];
 }>();
 
+import { usePublishStore } from "@/stores/publishStore";
+
 // Twilio fields
 const smsFields = ref({
   twilioAccountSid: '',
   twilioAuthToken: '',
   twilioSmsNumber: '',
-  twilioSenderId: '',
 });
+
+const publishStore = usePublishStore();
+
+// Load existing Twilio settings
+const loadTwilioSettings = async () => {
+  try {
+    const result = await publishStore.getThirdPartyConfig();
+    if (result.success && result.data?.twilioConf) {
+      const twilioConfig = result.data.twilioConf;
+      smsFields.value = {
+        twilioAccountSid: twilioConfig.sid || '',
+        twilioAuthToken: twilioConfig.auth_token || '',
+        twilioSmsNumber: twilioConfig.number || '',
+      };
+    }
+  } catch (error) {
+    console.error('Failed to load Twilio settings:', error);
+  }
+};
 
 const saveSettings = () => {
   if (!smsFields.value.twilioAccountSid || !smsFields.value.twilioAuthToken || 
-      !smsFields.value.twilioSmsNumber || !smsFields.value.twilioSenderId) {
+      !smsFields.value.twilioSmsNumber) {
     console.error('All Twilio fields are required');
     return;
   }
   emit('save-settings', smsFields.value);
 };
+
+onMounted(() => {
+  loadTwilioSettings();
+});
 
 // Expose methods for parent component
 defineExpose({
@@ -83,20 +107,6 @@ defineExpose({
       />
       <small class="help-text">
         The phone number you purchased from Twilio
-      </small>
-    </div>
-    
-    <div class="form-group">
-      <label for="twilio-sender-id">Twilio sender ID</label>
-      <Input 
-        id="twilio-sender-id"
-        v-model="smsFields.twilioSenderId"
-        type="text"
-        placeholder="Enter your sender ID (optional)"
-        size="medium"
-      />
-      <small class="help-text">
-        The name that appears as the sender (if supported in your region)
       </small>
     </div>
   </div>

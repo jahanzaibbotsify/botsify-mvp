@@ -126,7 +126,7 @@ defineExpose({
   border-radius: var(--radius-lg);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   border: 1px solid var(--color-border);
-  max-height: 80vh;
+  max-height: 90vh;
   overflow-y: auto;
 }
 

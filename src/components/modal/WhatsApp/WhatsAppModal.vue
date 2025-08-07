@@ -40,8 +40,6 @@ const emit = defineEmits<{
 const isLoading = ref(false);
 
 const openModal = () => {
-  // Fetch templates when modal opens
-  fetchTemplates();
   modalRef.value?.openModal();
 };
 
@@ -58,11 +56,12 @@ const fetchTemplates = async () => {
       // Pass templates to TemplateTab
       if (templateTabRef.value) {
         templateTabRef.value.setTemplates(result.data.templates.data);
-        isLoading.value = false;
       }
     }
   } catch (error) {
     console.error('Failed to fetch templates:', error);
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -130,6 +129,16 @@ const handleBack = () => {
 const handleTabChange = (tabId: string) => {
   console.log('Tab changed to:', tabId);
   currentActiveTab.value = tabId;
+  
+  // Initialize templates when broadcast tab is selected
+  if (tabId === 'broadcast' && broadcastTabRef.value) {
+    broadcastTabRef.value.initializeTemplates();
+  }
+  
+  // Initialize templates when template tab is selected
+  if (tabId === 'template') {
+    fetchTemplates();
+  }
 };
 
 // Publish Bot Tab Events
@@ -253,55 +262,55 @@ defineExpose({ openModal, closeModal });
     @tab-change="handleTabChange"
   >
     <template #default="{ activeTab }">
-      <!-- Publish Agent Tab -->
-      <PublishAgentTab 
-        v-if="activeTab === 'publish-agent'"
-        ref="publishAgentTabRef"
-        :is-loading="isLoading"
-        @test-bot="handleTestBot"
-        @save-meta-settings="handleSaveMetaSettings"
-        @save-dialog360-settings="handleSaveDialog360Settings"
-      />
+             <!-- Publish Agent Tab -->
+       <PublishAgentTab 
+         v-show="activeTab === 'publish-agent'"
+         ref="publishAgentTabRef"
+         :is-loading="isLoading"
+         @test-bot="handleTestBot"
+         @save-meta-settings="handleSaveMetaSettings"
+         @save-dialog360-settings="handleSaveDialog360Settings"
+       />
 
-      <!-- Broadcast Tab -->
-      <BroadcastTab 
-        v-if="activeTab === 'broadcast'"
-        ref="broadcastTabRef"
-        :is-loading="isLoading"
-        @send-broadcast="handleSendBroadcast"
-      />
+       <!-- Broadcast Tab -->
+       <BroadcastTab 
+         v-show="activeTab === 'broadcast'"
+         ref="broadcastTabRef"
+         :is-loading="isLoading"
+         @send-broadcast="handleSendBroadcast"
+       />
 
-      <!-- Broadcast Report Tab -->
-      <BroadcastReportTab 
-        v-if="activeTab === 'broadcast-report'"
-        ref="broadcastReportTabRef"
-        :is-loading="isLoading"
-        @filter-report="handleFilterReport"
-      />
+       <!-- Broadcast Report Tab -->
+       <BroadcastReportTab 
+         v-show="activeTab === 'broadcast-report'"
+         ref="broadcastReportTabRef"
+         :is-loading="isLoading"
+         @filter-report="handleFilterReport"
+       />
 
-      <!-- Template Tab -->
-      <TemplateTab
-        v-if="activeTab === 'template'"
-        ref="templateTabRef"
-        :is-loading="publishStore.isLoading"
-        @create-template="handleCreateTemplate"
-        @delete-template="handleDeleteTemplate"
-        @clone-template="handleCloneTemplate"
-        @preview-template="handlePreviewTemplate"
-        @copy-payload="handleCopyPayload"
-        @open-create-modal="handleTemplateOpenCreateModal"
-        @close-whatsapp-modal="handleTemplateCloseWhatsAppModal"
-      />
+       <!-- Template Tab -->
+       <TemplateTab
+         v-show="activeTab === 'template'"
+         ref="templateTabRef"
+         :is-loading="publishStore.isLoading"
+         @create-template="handleCreateTemplate"
+         @delete-template="handleDeleteTemplate"
+         @clone-template="handleCloneTemplate"
+         @preview-template="handlePreviewTemplate"
+         @copy-payload="handleCopyPayload"
+         @open-create-modal="handleTemplateOpenCreateModal"
+         @close-whatsapp-modal="handleTemplateCloseWhatsAppModal"
+       />
 
-      <!-- Catalog Tab -->
-      <CatalogTab 
-        v-if="activeTab === 'catalog'"
-        ref="catalogTabRef"
-        :is-loading="isLoading"
-        @create-product="handleCreateProduct"
-        @update-product="handleUpdateProduct"
-        @delete-product="handleDeleteProduct"
-      />
+       <!-- Catalog Tab -->
+       <CatalogTab 
+         v-show="activeTab === 'catalog'"
+         ref="catalogTabRef"
+         :is-loading="isLoading"
+         @create-product="handleCreateProduct"
+         @update-product="handleUpdateProduct"
+         @delete-product="handleDeleteProduct"
+       />
     </template>
     
     <template #actions>
