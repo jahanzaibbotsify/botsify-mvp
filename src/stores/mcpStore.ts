@@ -32,6 +32,21 @@ export const useMCPStore = defineStore('mcp', () => {
       server_url: '/api/mcp',
     },
     {
+      id: 'google-sheet',
+      name: 'Google Sheet',
+      description: 'Read and write to Google Sheets',
+      icon: 'google-sheet.svg',
+      apiKeyRequired: true,
+      isPopular: true,
+      authMethod: 'oauth',
+      authLabel: 'Google OAuth Token',
+      server_url: 'https://mcp.botsify.com/google-sheet-mcp',
+      externalData: {
+        link: 'https://docs.robomotion.io/how-to-guides/authentication/google/service-account',
+        label: 'Get google service account'
+      }
+    },
+    {
       id: 'paypal',
       name: 'PayPal',
       description: 'Manage PayPal payments and transactions',
@@ -40,7 +55,28 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: true,
       authMethod: 'oauth',
       authLabel: 'PayPal OAuth Token',
-      server_url: 'https://mcp.paypal.com/sse',
+      server_url: 'https://mcp.paypal.com/sse'
+    },
+    {
+      id: 'hubspot',
+      name: 'HubSpot',
+      description: 'Manage CRM contacts, deals, and marketing',
+      icon: 'hubspot.svg',
+      apiKeyRequired: true,
+      isPopular: true,
+      authMethod: 'api_key',
+      authLabel: 'HubSpot API Key',
+      server_url: 'https://app.hubspot.com/mcp/v1/http'
+    },
+    {
+      id: 'zoho',
+      name: 'Zoho',
+      description: 'Access Zoho CRM and business tools',
+      icon: 'zoho.svg',
+      apiKeyRequired: true,
+      isPopular: true,
+      authMethod: 'api_key',
+      authLabel: 'Zoho API Key',
       comingSoon: true,
     },
     {
@@ -98,40 +134,6 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'Zendesk API Key',
-      comingSoon: true,
-    },
-    {
-      id: 'hubspot',
-      name: 'HubSpot',
-      description: 'Manage CRM contacts, deals, and marketing',
-      icon: 'hubspot.svg',
-      apiKeyRequired: true,
-      isPopular: true,
-      authMethod: 'api_key',
-      authLabel: 'HubSpot API Key',
-      server_url: 'https://app.hubspot.com/mcp/v1/http',
-      comingSoon: true,
-    },
-    {
-      id: 'zoho',
-      name: 'Zoho',
-      description: 'Access Zoho CRM and business tools',
-      icon: 'zoho.svg',
-      apiKeyRequired: true,
-      isPopular: true,
-      authMethod: 'api_key',
-      authLabel: 'Zoho API Key',
-      comingSoon: true,
-    },
-    {
-      id: 'google-sheet',
-      name: 'Google Sheet',
-      description: 'Read and write to Google Sheets',
-      icon: 'google-sheet.svg',
-      apiKeyRequired: true,
-      isPopular: true,
-      authMethod: 'oauth',
-      authLabel: 'Google OAuth Token',
       comingSoon: true,
     }
   ]);
