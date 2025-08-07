@@ -134,72 +134,59 @@ function getBotDetails(apikey: string) {
 
 // Router is imported from router/index.ts
 
-let isBotDataLoaded = false;
-router.beforeEach(async (to, from, next) => {
-  // Handle Unauthenticated route - allow it to render without any checks
-  if (to.name === 'Unauthenticated') {
-    return next();
-  }
-
-  // Handle NotFound route - allow it to render without any checks
-  if (to.name === 'NotFound') {
-    return next();
-  }
-
-  if (isBotDataLoaded) {
-    return next();
-  }
-
-  const paramKey = to.name === 'agent' ? to.params.id as string : '';
-  const roleStore = useRoleStore();
-  const localApiKey = getCurrentApiKey();
-
-  let apikey = paramKey || localApiKey || '';
-  if (apikey && apikey !== 'undefined' && apikey !== 'null') {
-    if (typeof to.name === 'undefined') {
-      return next({ name: 'agent', params: { id: apikey } });
-    }
-    try {
-      const data = await getBotDetails(apikey);
-      isBotDataLoaded = true;
-      if (data) {
-        roleStore.setCurrentUser(data.user);
-
-        const chatStore = useChatStore();
-        const conversationStore = useConversationStore();
-
-        // Role-based restriction for live chat agents
-        if (roleStore.isLiveChatAgent) {
-          if (to.name !== 'conversation') {
-            return next({ name: 'conversation' });
-          }
-        }
-
-        // Load chat data if not already loaded or if navigating to a different page
-        if (!chatStore.chats.length || from.name !== to.name) {
-          chatStore.loadFromStorage(data.bot.chat_flow, data.versions);
-        }
-
-        // Initialize Firebase if not already connected
-        if (!conversationStore.isFirebaseConnected) {
-          try {
-            conversationStore.initializeFirebase();
-          } catch (error) {
-            console.error('❌ Error initializing Firebase:', error);
-          }
-        }
-        return next();
-      } else {
-        return next({ name: 'Unauthenticated' });
-      }
-    } catch (error) {
-      return next({ name: 'Unauthenticated' });
-    }
-  } else {
-    console.error('❌ No API key found');
-    return next({ name: 'Unauthenticated' });
-  }
-});
+// let isBotDataLoaded = false;
+// router.beforeEach(async (to, from, next) => {
+//
+//   const paramKey = to.name === 'agent' ? to.params.id as string : '';
+//   const roleStore = useRoleStore();
+//   const localApiKey = getCurrentApiKey();
+//
+//   let apikey = paramKey || localApiKey || '';
+//   if (apikey && apikey !== 'undefined' && apikey !== 'null') {
+//     if (typeof to.name === 'undefined') {
+//       return next({ name: 'agent', params: { id: apikey } });
+//     }
+//     try {
+//       const data = await getBotDetails(apikey);
+//       isBotDataLoaded = true;
+//       if (data) {
+//         roleStore.setCurrentUser(data.user);
+//
+//         const chatStore = useChatStore();
+//         const conversationStore = useConversationStore();
+//
+//         // Role-based restriction for live chat agents
+//         if (roleStore.isLiveChatAgent) {
+//           if (to.name !== 'conversation') {
+//             return next({ name: 'conversation' });
+//           }
+//         }
+//
+//         // Load chat data if not already loaded or if navigating to a different page
+//         if (!chatStore.chats.length || from.name !== to.name) {
+//           chatStore.loadFromStorage(data.bot.chat_flow, data.versions);
+//         }
+//
+//         // Initialize Firebase if not already connected
+//         if (!conversationStore.isFirebaseConnected) {
+//           try {
+//             conversationStore.initializeFirebase();
+//           } catch (error) {
+//             console.error('❌ Error initializing Firebase:', error);
+//           }
+//         }
+//         return next();
+//       } else {
+//         return next({ name: 'Unauthenticated' });
+//       }
+//     } catch (error) {
+//       return next({ name: 'Unauthenticated' });
+//     }
+//   } else {
+//     console.error('❌ No API key found');
+//     return next({ name: 'Unauthenticated' });
+//   }
+// });
 
 
 

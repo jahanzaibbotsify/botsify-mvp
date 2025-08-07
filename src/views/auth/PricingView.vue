@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import type { PricingPlan } from '@/types/auth'
+import {axiosInstance} from "@/utils/axiosInstance.ts";
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -44,24 +45,13 @@ const formatPrice = (price: number) => {
 }
 
 const handlePlanSelect = async (plan: PricingPlan) => {
-  selectedPlanId.value = plan.id
-  
-  const success = await authStore.selectPlan(plan)
-  
-  if (success) {
-    window.$toast?.success(`${plan.name} plan selected successfully!`)
-    router.push('/select-agent')
-  } else {
-    window.$toast?.error('Failed to select plan. Please try again.')
-    selectedPlanId.value = null
-  }
-}
+  selectedPlanId.value = plan.id;
+  const priceId = plan.prices ? plan.prices[billingCycle.value] : null
 
-const skipForNow = () => {
-  // Select free plan and continue
-  const freePlan = authStore.pricingPlans.find(plan => plan.id === 'free')
-  if (freePlan) {
-    handlePlanSelect(freePlan)
+  const response = await axiosInstance.get(`v1/stripe/checkout-session/${priceId}`);
+
+  if (response.data.redirect) {
+    window.open(response.data.redirect)
   }
 }
 
@@ -427,10 +417,17 @@ const contactSupport = () => {
             >
               <span v-if="authStore.isLoading && selectedPlanId === plan.id" class="loading-spinner"></span>
               <template v-else>
-                <span class="button-text">
-                  Book A Demo
-                </span>
-                <i class="pi pi-arrow-right button-icon"></i>
+                <div v-if="plan.prices">
+                   <span class="button-text">
+                    Subscribe
+                  </span>
+                </div>
+                <div v-else>
+                  <span class="button-text">
+                    Book A Demo
+                  </span>
+                  <i class="pi pi-arrow-right button-icon"></i>
+                </div>
               </template>
             </button>
           </div>

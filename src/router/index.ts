@@ -9,42 +9,43 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/auth',
     component: AuthLayout,
+    meta: { requiresAuth: false },
     children: [
       {
         path: 'login',
         name: 'login',
         component: () => import('../views/auth/LoginView.vue'),
-        meta: { requiresGuest: true }
+        meta: { requiresAuth: false }
       },
       {
         path: 'signup',
         name: 'signup',
         component: () => import('../views/auth/SignupView.vue'),
-        meta: { requiresGuest: true }
+        meta: { requiresAuth: false }
       },
       {
         path: 'forgot-password',
         name: 'forgot-password',
         component: () => import('../views/auth/ForgotPasswordView.vue'),
-        meta: { requiresGuest: true }
+        meta: { requiresAuth: false }
       },
       {
         path: 'reset-password',
         name: 'reset-password',
         component: () => import('../views/auth/ResetPasswordView.vue'),
-        meta: { requiresGuest: true }
+        meta: { requiresAuth: false }
       },
       {
         path: 'verify-email',
         name: 'verify-email',
         component: () => import('../views/auth/VerifyEmailView.vue'),
-        meta: { requiresGuest: true }
+        meta: { requiresAuth: false }
       },
       {
         path: 'set-password',
         name: 'set-password',
         component: () => import('../views/auth/SetPasswordView.vue'),
-        meta: { requiresGuest: true }
+        meta: { requiresAuth: false }
       },
       {
         path: 'agentic-home',
@@ -56,16 +57,22 @@ const routes: RouteRecordRaw[] = [
   },
   // Standalone Routes (without AuthLayout)
   {
-    path: '/pricing',
-    name: 'pricing',
+    path: '/choose-plan',
+    name: 'choose-plan',
     component: () => import('../views/auth/PricingView.vue'),
-    meta: { requiresAuth: false }
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/subscription/success/:planId',
+    name: 'subscription-success',
+    component: () => import('@/views/auth/SubscriptionSuccessView.vue'),
+    meta: { requiresAuth: true }
   },
   {
     path: '/select-agent',
     name: 'agent-selection',
     component: () => import('../views/auth/AgentSelectionView.vue'),
-    meta: { requiresAuth: false }
+    meta: { requiresAuth: true }
   },
   {
     path: '/agent-landing',
@@ -83,23 +90,27 @@ const routes: RouteRecordRaw[] = [
         path: '/agent/:id',
         name: 'agent',
         component: () => import('../views/ChatView.vue'),
-        props: true
+        props: true,
+        meta: { requiresAuth: true }
       },
       {
         path: '/conversation/:id?',
         name: 'conversation',
         component: () => import('../views/ConversationView.vue'),
-        props: true
+        props: true,
+        meta: { requiresAuth: true }
       },
       {
         path: '/conversations',
         name: 'conversations',
-        component: () => import('../views/ConversationView.vue')
+        component: () => import('../views/ConversationView.vue'),
+        meta: { requiresAuth: true }
       },
       {
         path: '/users',
         name: 'users',
-        component: () => import('../views/UserView.vue')
+        component: () => import('../views/UserView.vue'),
+        meta: { requiresAuth: true }
       }
     ]
   },
@@ -139,10 +150,34 @@ const router = createRouter({
   routes
 })
 
-// Navigation guards (temporarily disabled for development)
+// Navigation guards
 router.beforeEach(async (to, from, next) => {
-  // Allow access to all routes for now
-  next()
+  try {
+    const { checkAuthFlow } = await import('@/utils/authFlow')
+
+    const requiresAuth = to.meta?.requiresAuth;
+
+    if (!requiresAuth) {
+      return next()
+    }
+
+    const authFlow = checkAuthFlow();
+    
+    // Prevent infinite redirects by checking if we're already going to the redirect path
+    // Also prevent redirecting from subscription-success to choose-plan
+    if (
+      authFlow.shouldRedirect && 
+      authFlow.redirectPath !== to.path &&
+      !(to.name === 'subscription-success' && authFlow.redirectPath === '/choose-plan')
+    ) {
+      return next({ path: authFlow.redirectPath, replace: true })
+    }
+    
+    next()
+  } catch (error) {
+    console.error('Error in navigation guard:', error)
+    next()
+  }
 })
 
 export default router

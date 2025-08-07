@@ -1,140 +1,198 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/authStore'
-import type { Agent, AgentCategory } from '@/types/auth'
+import {ref, computed, onMounted, onUnmounted, nextTick, watch} from 'vue'
+import {useRouter} from 'vue-router'
+import {useAuthStore} from '@/stores/authStore'
+import {axiosInstance} from "@/utils/axiosInstance.ts"
+import {useBotStore} from "@/stores/botStore.ts";
 
 const router = useRouter()
 const authStore = useAuthStore()
 
+// Reactive state
 const searchQuery = ref('')
-const selectedCategory = ref<string>('all')
 const selectedAgentId = ref<string | null>(null)
-const showAgentDetails = ref(false)
-const selectedAgentForDetails = ref<Agent | null>(null)
 const activeTab = ref<'my-agents' | 'shared-agents'>('my-agents')
 const activeMenuId = ref<string | null>(null)
 
-// Edit agent modal state
-const showEditModal = ref(false)
-const editingAgent = ref<Agent | null>(null)
-const editAgentNameValue = ref('')
+// Agent modal state (for both create and edit)
+const showAgentModal = ref(false)
+const modalMode = ref<'create' | 'edit'>('edit')
+const editingAgent = ref<object | null>(null)
+const agentNameValue = ref('')
 const agentNameInput = ref<HTMLInputElement | null>(null)
+const isSavingAgent = ref(false)
 
-// Filter agents based on search, category, and tab
+// API state
+const isLoadingAgents = ref(false)
+const isLoadingMore = ref(false)
+const agentsError = ref<string | null>(null)
+const agentsData = ref<object[]>([])
+const sharedAgentsData = ref<object[]>([])
+const botUsers = ref<Record<string, number>>({})
+
+// Pagination state
+const currentPage = ref(1)
+const totalPages = ref(1)
+const totalAgents = ref(0)
+const hasMoreAgents = ref(false)
+const agentsPerPage = ref(20)
+
+
+/**
+ * Fetch agents from API
+ * @param page - Page number to fetch (default: 1)
+ * @param append - Whether to append to existing data or replace
+ * @returns Promise<void>
+ */
+const getAgents = async (page: number = 1, append: boolean = false): Promise<void> => {
+  if (page === 1) {
+    isLoadingAgents.value = true
+  } else {
+    isLoadingMore.value = true
+  }
+  agentsError.value = null
+
+  try {
+    const response = await axiosInstance.get('v1/list-agents', {
+      params: {
+        page: page,
+        query: searchQuery.value.trim() || undefined,
+        tab: activeTab.value === 'my-agents' ? 'my' : 'shared'
+      }
+    })
+
+    if (response.data && response.data.bots) {
+      const botsData = response.data.bots
+
+      // Update pagination info
+      currentPage.value = botsData.current_page || page
+      totalPages.value = botsData.last_page || 1
+      totalAgents.value = botsData.total || 0
+      agentsPerPage.value = botsData.per_page || 20
+      hasMoreAgents.value = currentPage.value < totalPages.value
+
+      if (botsData.data) {
+        const agentsWithAvatar = botsData.data.map((agent: any) => ({
+          ...agent,
+          avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${agent.id}&backgroundColor=3b82f6`
+        }))
+
+        if (append) {
+          // Append to existing data
+          agentsData.value = [...agentsData.value, ...agentsWithAvatar]
+        } else {
+          // Replace existing data
+          agentsData.value = agentsWithAvatar
+        }
+      }
+    }
+
+    if (response.data && response.data.sharedBots) {
+      // Add avatar to shared bots
+      sharedAgentsData.value = response.data.sharedBots.map((agent: any) => ({
+        ...agent,
+        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${agent.id}&backgroundColor=3b82f6`
+      }))
+    }
+
+    // Store bot_users data
+    if (response.data && response.data.bot_users) {
+      botUsers.value = response.data.bot_users
+    }
+
+  } catch (error: any) {
+    console.error('Failed to fetch agents:', error)
+    agentsError.value = error?.response?.data?.message || 'Failed to load agents. Please try again.'
+  } finally {
+    isLoadingAgents.value = false
+    isLoadingMore.value = false
+  }
+}
+
+/**
+ * Get filtered agents based on current tab
+ */
 const filteredAgents = computed(() => {
-  let agents = authStore.agents
-
-  // Filter by tab (My Agents vs Shared Agents)
+  // Return agents based on current tab
   if (activeTab.value === 'my-agents') {
-    // Filter to show only user's agents (for now, show agents created by botsify as "my agents")
-    agents = agents.filter(agent => agent.createdBy === 'botsify')
+    return agentsData.value
   } else {
-    // Show community/shared agents
-    agents = agents.filter(agent => agent.createdBy === 'community')
+    return sharedAgentsData.value
   }
-
-
-
-  // Filter by search query
-  if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase()
-    agents = agents.filter(agent =>
-      agent.name.toLowerCase().includes(query) ||
-      agent.description.toLowerCase().includes(query) ||
-      agent.capabilities.some(cap => cap.toLowerCase().includes(query)) ||
-      agent.tags.some(tag => tag.toLowerCase().includes(query))
-    )
-  }
-
-  return agents
 })
 
-const popularAgents = computed(() => {
-  return authStore.getPopularAgents().slice(0, 3)
-})
-
-const categories = computed(() => {
-  return [
-    { id: 'all', name: 'All Categories', description: 'Browse all available agents', icon: 'pi-th-large', agentCount: authStore.agents.length },
-    ...authStore.agentCategories
-  ]
-})
-
-const handleAgentSelect = async (agent: Agent) => {
-  selectedAgentId.value = agent.id
-  
-  const success = await authStore.selectAgent(agent)
-  
-  if (success) {
-    window.$toast?.success(`${agent.name} selected successfully! Redirecting to agentic platform...`)
-    // Redirect to agentic platform with agent ID
-    router.push(`/agent/${agent.id}`)
-  } else {
-    window.$toast?.error('Failed to select agent. Please try again.')
-    selectedAgentId.value = null
-  }
-}
-
-const showDetails = (agent: Agent) => {
-  selectedAgentForDetails.value = agent
-  showAgentDetails.value = true
-}
-
-const closeDetails = () => {
-  showAgentDetails.value = false
-  selectedAgentForDetails.value = null
-}
-
-const skipSelection = () => {
-  // Continue without selecting an agent
-  authStore.updateOnboardingStep('completed')
-  router.push('/auth/agentic-home')
-}
-
+/**
+ * Switch between tabs
+ * @param tab - Tab to switch to
+ */
 const switchTab = (tab: 'my-agents' | 'shared-agents') => {
   activeTab.value = tab
   // Reset search when switching tabs
   searchQuery.value = ''
+
+  // Reset pagination when switching to my-agents tab
+  if (tab === 'my-agents') {
+    currentPage.value = 1
+    hasMoreAgents.value = false
+    // Reload agents with new tab parameter
+    getAgents(1, false)
+  }
 }
 
-const formatRating = (rating: number) => {
-  return rating.toFixed(1)
+/**
+ * Debounced search function
+ */
+let searchTimeout: NodeJS.Timeout | null = null
+const performSearch = () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+
+  searchTimeout = setTimeout(() => {
+    if (activeTab.value === 'my-agents') {
+      currentPage.value = 1
+      hasMoreAgents.value = false
+      getAgents(1, false)
+    }
+  }, 500) // 500ms debounce
 }
 
-const getRatingStars = (rating: number) => {
-  const stars = []
-  const fullStars = Math.floor(rating)
-  const hasHalfStar = rating % 1 >= 0.5
+// Watch for search query changes
+watch(searchQuery, () => {
+  performSearch()
+})
 
-  for (let i = 0; i < fullStars; i++) {
-    stars.push('full')
+// Watch for tab changes
+watch(activeTab, () => {
+  if (activeTab.value === 'my-agents') {
+    currentPage.value = 1
+    hasMoreAgents.value = false
+    getAgents(1, false)
   }
+})
 
-  if (hasHalfStar) {
-    stars.push('half')
-  }
-
-  while (stars.length < 5) {
-    stars.push('empty')
-  }
-
-  return stars
-}
-
+/**
+ * Toggle agent menu dropdown
+ * @param agentId - Agent ID to toggle menu for
+ */
 const toggleAgentMenu = (agentId: string) => {
   activeMenuId.value = activeMenuId.value === agentId ? null : agentId
 }
 
+/**
+ * Edit agent name
+ * @param agent - Agent to edit
+ */
 const editAgentName = (agent: Agent) => {
+  modalMode.value = 'edit'
   editingAgent.value = agent
-  editAgentNameValue.value = agent.name
-  showEditModal.value = true
+  agentNameValue.value = agent.name || 'Unnamed Agent'
+  showAgentModal.value = true
   activeMenuId.value = null
-  
+
   // Add keyboard event listener
   document.addEventListener('keydown', handleModalKeydown)
-  
+
   // Focus the input after modal opens
   nextTick(() => {
     if (agentNameInput.value) {
@@ -144,77 +202,294 @@ const editAgentName = (agent: Agent) => {
   })
 }
 
-const cloneAgent = (agent: Agent) => {
-  console.log('Clone agent:', agent.name)
+/**
+ * Clone agent
+ * @param agent - Agent to clone
+ */
+const cloneAgent = async (agent: Agent) => {
   activeMenuId.value = null
+
+  try {
+    const response = await axiosInstance.get(`v1/clone-agent/${agent.id}`)
+
+    if (response.data && response.data.status === true) {
+      // Show the message from API response
+      const message = response.data.message || 'Agent cloned successfully!'
+      window.$toast?.success(message)
+
+      // Log the cloned bot details
+      if (response.data.bot) {
+        console.log('Cloned bot details:', response.data.bot)
+      }
+
+      // Refresh the agents list to show the new cloned agent
+      await getAgents(1, false)
+    } else {
+      window.$toast?.error(response.data?.message || 'Failed to clone agent. Please try again.')
+    }
+  } catch (error: any) {
+    console.error('Failed to clone agent:', error)
+    window.$toast?.error(error?.response?.data?.message || 'Failed to clone agent. Please try again.')
+  }
 }
 
+/**
+ * Delete agent
+ * @param agent - Agent to delete
+ */
 const deleteAgent = (agent: Agent) => {
-  console.log('Delete agent:', agent.name)
   activeMenuId.value = null
+
+  window.$confirm({
+    text: `Are you sure you want to delete "${agent.name || 'Unnamed Agent'}"? This action cannot be undone.`,
+  }, async () => {
+    try {
+      const response = await axiosInstance.delete(`v1/delete-agent/${agent.id}`)
+
+      if (response.data && response.data.status) {
+        window.$toast?.success('Agent deleted successfully!')
+        agentsData.value = agentsData.value.filter(a => {
+          return a.id.toString() !== agent.id.toString()
+        })
+
+        if (totalAgents.value > 0) {
+          totalAgents.value--
+        }
+      } else {
+        window.$toast?.error(response.data?.message || 'Failed to delete agent. Please try again.')
+      }
+    } catch (error: any) {
+      console.error('Failed to delete agent:', error)
+      window.$toast?.error(error?.response?.data?.message || 'Failed to delete agent. Please try again.')
+    }
+  })
 }
 
-const copyPayload = (agent: Agent) => {
-  console.log('Copy payload for:', agent.name)
+/**
+ * Copy agent payload (bot ID)
+ * @param agent - Agent to copy payload for
+ */
+const copyPayload = async (agent: Agent) => {
   activeMenuId.value = null
+  try {
+    await navigator.clipboard.writeText(agent.id.toString())
+    window.$toast?.success('Payload copied to clipboard!')
+  } catch (error: any) {
+    try {
+      const textArea = document.createElement('textarea')
+      textArea.value = agent.id.toString()
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+
+      window.$toast?.success('Payload copied to clipboard!')
+    } catch (fallbackError) {
+      console.error('Fallback copy failed:', fallbackError)
+      window.$toast?.error('Failed to copy Payload. Please try again.')
+    }
+  }
 }
 
+/**
+ * Export agent data
+ * @param agent - Agent to export data for
+ */
 const exportData = (agent: Agent) => {
-  console.log('Export data for:', agent.name)
   activeMenuId.value = null
+
+  window.$confirm({
+    text: 'Please Confirm\nYour Bot Data will be exported and then will be sent you via email.',
+    cancelButtonText: 'No',
+    confirmButtonText: 'Yes'
+  }, async () => {
+    try {
+      const response = await axiosInstance.get(`v1/agent-export/${agent.token}`)
+
+      if (response.data && response.data.status === 'success') {
+        window.$toast?.success('Bot data export initiated! Check your email for the export.')
+      } else {
+        window.$toast?.error(response.data?.message || 'Failed to export bot data. Please try again.')
+      }
+    } catch (error: any) {
+      console.error('Failed to export bot data:', error)
+      window.$toast?.error(error?.response?.data?.message || 'Failed to export bot data. Please try again.')
+    }
+  })
 }
 
+/**
+ * Add new agent (placeholder function)
+ */
 const addAgent = () => {
   console.log('Add new agent')
-  // Redirect to agent creation page or open modal
+  window.$toast?.info('Add agent functionality coming soon!')
 }
 
+/**
+ * Create new agent
+ */
 const createAgent = () => {
-  console.log('Create new agent')
-  // Redirect to agent creation page or open modal
-  // router.push('/create-agent')
+  modalMode.value = 'create'
+  editingAgent.value = null
+  agentNameValue.value = ''
+  showAgentModal.value = true
+  activeMenuId.value = null
+
+  // Add keyboard event listener
+  document.addEventListener('keydown', handleModalKeydown)
+
+  // Focus the input after modal opens
+  nextTick(() => {
+    if (agentNameInput.value) {
+      agentNameInput.value.focus()
+    }
+  })
 }
 
-// Modal functions
-const closeEditModal = () => {
-  showEditModal.value = false
+/**
+ * Close agent modal
+ */
+const closeAgentModal = () => {
+  showAgentModal.value = false
   editingAgent.value = null
-  editAgentNameValue.value = ''
+  agentNameValue.value = ''
+  modalMode.value = 'edit'
   // Remove keyboard event listener
   document.removeEventListener('keydown', handleModalKeydown)
 }
 
-// Handle keyboard events in modal
+/**
+ * Handle keyboard events in modal
+ * @param event - Keyboard event
+ */
 const handleModalKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Escape') {
-    closeEditModal()
+    closeAgentModal()
   }
 }
 
-const saveAgentName = () => {
-  const trimmedName = editAgentNameValue.value.trim()
-  
-  if (editingAgent.value && trimmedName && trimmedName.length >= 2) {
-    // Check if name has actually changed
-    if (trimmedName === editingAgent.value.name) {
-      closeEditModal()
-      return
-    }
-    
-    // Update the agent name in the store
-    editingAgent.value.name = trimmedName
-    console.log('Agent name updated:', trimmedName)
-    
-    // Show success message
-    window.$toast?.success('Agent name updated successfully!')
-    
-    closeEditModal()
-  } else if (trimmedName.length < 2) {
+/**
+ * Save agent (create or edit)
+ */
+const saveAgent = async () => {
+  const trimmedName = agentNameValue.value.trim()
+
+  if (!trimmedName || trimmedName.length < 2) {
     window.$toast?.error('Agent name must be at least 2 characters long.')
+    return
+  }
+
+  isSavingAgent.value = true
+
+  try {
+    if (modalMode.value === 'edit' && editingAgent.value) {
+      // Check if name has actually changed
+      if (trimmedName === editingAgent.value.name) {
+        closeAgentModal()
+        return
+      }
+
+      // Call API to update bot name
+      const response = await axiosInstance.post('v1/update-bot-name', {
+        bot_name: trimmedName,
+        bot_id: editingAgent.value.id
+      });
+
+      if (response.data && response.data.status === 'success') {
+        // Update the agent name in the store
+        editingAgent.value.name = trimmedName;
+
+        // Show success message
+        window.$toast?.success('Agent name updated successfully!')
+
+        closeAgentModal()
+      } else {
+        window.$toast?.error(response.data?.message || 'Failed to update agent name. Please try again.')
+      }
+    } else if (modalMode.value === 'create') {
+      const response = await axiosInstance.post('v1/create-bot', {
+        bot_name: trimmedName
+      });
+
+      if (response.data && response.data.bot_id) {
+        window.$toast?.success('Agent created successfully!')
+
+        // Refresh the agents list to show the new agent
+        await getAgents(1, false)
+
+        closeAgentModal()
+      } else {
+        window.$toast?.error(response.data?.message || 'Failed to create agent. Please try again.')
+      }
+    }
+  } catch (error: any) {
+    console.error('Failed to save agent:', error)
+    const errorMessage = modalMode.value === 'create' 
+      ? 'Failed to create agent. Please try again.'
+      : 'Failed to update agent name. Please try again.'
+    window.$toast?.error(error?.response?.data?.message || errorMessage)
+  } finally {
+    isSavingAgent.value = false
   }
 }
 
-// Click outside to close dropdown
+/**
+ * Load more agents (pagination) - optimized for speed
+ */
+const loadMoreAgents = async () => {
+  if (isLoadingMore.value || !hasMoreAgents.value) return
+
+  const nextPage = currentPage.value + 1
+  isLoadingMore.value = true
+
+  try {
+    const response = await axiosInstance.get('v1/list-agents', {
+      params: {
+        page: nextPage,
+        query: searchQuery.value.trim() || undefined,
+        client: true,
+        tab: activeTab.value === 'my-agents' ? 'my' : 'shared'
+      }
+    })
+
+    if (response.data && response.data.bots && response.data.bots.data) {
+      const botsData = response.data.bots
+
+      // Update pagination info
+      currentPage.value = botsData.current_page || nextPage
+      totalPages.value = botsData.last_page || 1
+      totalAgents.value = botsData.total || 0
+      agentsPerPage.value = botsData.per_page || 20
+      hasMoreAgents.value = currentPage.value < totalPages.value
+
+      // Add new agents with avatar
+      const newAgents = botsData.data.map((agent: any) => ({
+        ...agent,
+        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${agent.id}&backgroundColor=3b82f6`
+      }))
+
+      // Append to existing data
+      agentsData.value = [...agentsData.value, ...newAgents]
+    }
+
+    // Update bot_users if available
+    if (response.data && response.data.bot_users) {
+      botUsers.value = {...botUsers.value, ...response.data.bot_users}
+    }
+
+  } catch (error: any) {
+    console.error('Failed to load more agents:', error)
+    window.$toast?.error('Failed to load more agents. Please try again.')
+  } finally {
+    isLoadingMore.value = false
+  }
+}
+
+/**
+ * Handle clicks outside dropdown to close it
+ * @param event - Click event
+ */
 const handleClickOutside = (event: Event) => {
   const target = event.target as HTMLElement
   if (!target.closest('.agent-menu')) {
@@ -222,16 +497,41 @@ const handleClickOutside = (event: Event) => {
   }
 }
 
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-  // Set first popular agent as suggested
-  if (popularAgents.value.length > 0) {
-    // Could pre-select or highlight first popular agent
+/**
+ * Select bot and redirect
+ * @param agent - Agent to select
+ */
+const selectBot = async (agent: Agent) => {
+  try {
+    const response = await axiosInstance.get(`v1/bot/select/${agent.token}`)
+    if (response.data && response.data.bot) {
+      useBotStore().setApiKey(agent.apikey)
+      router.push(`/agent/${agent.apikey}`)
+    } else {
+      window.$toast?.error(response.data?.message || 'Failed to select agent. Please try again.')
+    }
+  } catch (error: any) {
+    window.$toast?.error(error?.response?.data?.message || 'Failed to select agent. Please try again.')
   }
+}
+
+onMounted(() => {
+  // Fetch agents on component mount
+  getAgents()
+
+  // Add click outside listener
+  document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
+  // Clean up event listeners
   document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('keydown', handleModalKeydown)
+
+  // Clean up search timeout
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
 })
 </script>
 
@@ -257,25 +557,24 @@ onUnmounted(() => {
         <!-- Left: Agent Tabs -->
         <div class="tab-switcher">
           <button
-            @click="switchTab('my-agents')"
-            class="tab-button"
-            :class="{ active: activeTab === 'my-agents' }"
+              @click="switchTab('my-agents')"
+              class="tab-button"
+              :class="{ active: activeTab === 'my-agents' }"
           >
             <i class="pi pi-user"></i>
             <span>My Agents</span>
-            <span class="tab-count">{{ authStore.agents.filter(a => a.createdBy === 'botsify').length }}</span>
+            <span class="tab-count">{{ totalAgents || agentsData.length }}</span>
           </button>
           <button
-            @click="switchTab('shared-agents')"
-            class="tab-button"
-            :class="{ active: activeTab === 'shared-agents' }"
+              @click="switchTab('shared-agents')"
+              class="tab-button"
+              :class="{ active: activeTab === 'shared-agents' }"
           >
             <i class="pi pi-globe"></i>
             <span>Shared Agents</span>
-            <span class="tab-count">{{ authStore.agents.filter(a => a.createdBy === 'community').length }}</span>
+            <span class="tab-count">{{ sharedAgentsData.length }}</span>
           </button>
         </div>
-
 
 
         <!-- Right: Search Bar -->
@@ -283,10 +582,10 @@ onUnmounted(() => {
           <div class="search-input-container">
             <i class="pi pi-search search-icon"></i>
             <input
-              v-model="searchQuery"
-              type="text"
-              class="search-input"
-              placeholder="Search agents by name, capability, or use case..."
+                v-model="searchQuery"
+                type="text"
+                class="search-input"
+                placeholder="Search agents by name, capability, or use case..."
             />
             <button v-if="searchQuery" @click="searchQuery = ''" class="clear-search">
               <i class="pi pi-times"></i>
@@ -297,10 +596,10 @@ onUnmounted(() => {
     </div>
 
     <!-- Error Display -->
-    <div v-if="authStore.error" class="error-alert">
+    <div v-if="agentsError" class="error-alert">
       <div class="error-content">
         <i class="pi pi-exclamation-circle"></i>
-        <span>{{ authStore.error }}</span>
+        <span>{{ agentsError }}</span>
       </div>
     </div>
 
@@ -311,10 +610,12 @@ onUnmounted(() => {
           <div class="section-title-wrapper">
             <h2 class="section-title">
               {{ activeTab === 'my-agents' ? 'My Agents' : 'Shared Agents' }}
-              <span class="results-count">({{ filteredAgents.length }} available)</span>
+              <span class="results-count">
+                ({{ activeTab === 'my-agents' ? (totalAgents || filteredAgents.length) : filteredAgents.length }} available)
+              </span>
             </h2>
           </div>
-          
+
           <!-- Create Agent Button -->
           <div class="create-agent-wrapper">
             <button @click="createAgent" class="create-agent-btn">
@@ -322,49 +623,60 @@ onUnmounted(() => {
               <span>Create Agent</span>
             </button>
           </div>
-          
-
         </div>
-        <div v-if="filteredAgents.length === 0" class="no-results">
-            <div class="no-results-icon">
-              <i class="pi pi-plus"></i>
-            </div>
-            <h3 v-if="searchQuery">No agents found</h3>
-            <h3 v-else>No agents available</h3>
-            <p v-if="searchQuery">Try adjusting your search to find more agents</p>
-            <p v-else>Get started by adding your first agent</p>
-            
-            <button v-if="searchQuery" @click="searchQuery = ''" class="reset-filters-btn">
-              <i class="pi pi-refresh"></i>
-              <span>Reset Search</span>
-            </button>
-            <button v-else @click="addAgent" class="add-agent-btn">
-              <i class="pi pi-plus"></i>
-              <span>Add Agent</span>
-            </button>
+
+        <!-- Loading State -->
+        <div v-if="isLoadingAgents" class="loading-state">
+          <div class="loading-spinner-large"></div>
+          <p>Loading agents...</p>
+        </div>
+
+        <!-- No Results State -->
+        <div v-else-if="filteredAgents.length === 0" class="no-results">
+          <div class="no-results-icon">
+            <i class="pi pi-plus"></i>
           </div>
-        <div v-if="filteredAgents.length > 0" class="agents-grid">
+          <h3 v-if="searchQuery">No agents found</h3>
+          <h3 v-else-if="isLoadingAgents">Loading agents...</h3>
+          <h3 v-else>No agents available</h3>
+          <p v-if="searchQuery">Try adjusting your search to find more agents</p>
+          <p v-else-if="isLoadingAgents">Please wait while we load your agents</p>
+          <p v-else>Get started by adding your first agent</p>
+
+          <button v-if="searchQuery" @click="searchQuery = ''" class="reset-filters-btn">
+            <i class="pi pi-refresh"></i>
+            <span>Reset Search</span>
+          </button>
+          <button v-else-if="!isLoadingAgents" @click="addAgent" class="add-agent-btn">
+            <i class="pi pi-plus"></i>
+            <span>Add Agent</span>
+          </button>
+        </div>
+
+        <!-- Agents Grid -->
+        <div v-else class="agents-grid">
           <div
-            v-for="(agent, index) in filteredAgents"
-            :key="agent.id"
-            class="agent-card"
-            :class="{ 
+              v-for="(agent, index) in filteredAgents"
+              :key="agent.id"
+              class="agent-card"
+              :class="{
               premium: agent.isPremium,
               popular: agent.isPopular,
               selected: selectedAgentId === agent.id,
-              loading: authStore.isLoading && selectedAgentId === agent.id
+              loading: isLoadingAgents && selectedAgentId === agent.id
             }"
-            :style="{ '--card-delay': index * 0.05 + 's' }"
+              :style="{ '--card-delay': index * 0.02 + 's' }"
           >
             <!-- Agent Card -->
             <div class="agent-card-content">
               <!-- Agent Menu (Top Right Corner) -->
-              <div class="agent-menu">
+              <div class="agent-menu" v-if="activeTab === 'my-agents'">
                 <button @click="toggleAgentMenu(agent.id)" class="menu-trigger">
                   <i class="pi pi-ellipsis-v"></i>
                 </button>
-                
+
                 <div v-if="activeMenuId === agent.id" class="menu-dropdown" @click.stop>
+                  <!-- My Agents Menu -->
                   <button @click="editAgentName(agent)" class="menu-item">
                     <i class="pi pi-pencil"></i>
                     <span>Edit Name</span>
@@ -392,129 +704,96 @@ onUnmounted(() => {
               <div class="agent-info-column">
                 <!-- Agent Avatar -->
                 <div class="agent-avatar-section">
-                  <img :src="agent.avatar" :alt="agent.name" class="agent-avatar" />
+                  <img :src="agent.avatar" :alt="agent.name" class="agent-avatar" @click="selectBot(agent)"
+                       style="cursor:pointer"/>
                 </div>
-                
+
                 <!-- Agent Details -->
                 <div class="agent-details">
-                  <h3 class="agent-title">{{ agent.name }}</h3>
-                  <p class="agent-users">{{ agent.reviewCount.toLocaleString() }} users</p>
-                  <p class="agent-role">{{ categories.find(c => c.id === agent.category)?.name }}</p>
+                  <h3 class="agent-title" @click="selectBot(agent)" style="cursor:pointer">
+                    {{ agent.name || 'Unnamed Agent' }}</h3>
+                  <p class="agent-users">{{ botUsers[agent.id] !== undefined ? botUsers[agent.id] : 0 }} users</p>
+                  <p class="agent-role">General</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Agent Details Modal -->
-    <div v-if="showAgentDetails && selectedAgentForDetails" class="modal-overlay" @click="closeDetails">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <div class="modal-agent-info">
-            <img :src="selectedAgentForDetails.avatar" :alt="selectedAgentForDetails.name" class="modal-avatar" />
-            <div>
-              <h2>{{ selectedAgentForDetails.name }}</h2>
-              <p>{{ selectedAgentForDetails.description }}</p>
-            </div>
-          </div>
-          <button @click="closeDetails" class="close-btn">
-            <i class="pi pi-times"></i>
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <div class="capabilities-section">
-            <h3>Capabilities</h3>
-            <ul class="capabilities-full">
-              <li v-for="capability in selectedAgentForDetails.capabilities" :key="capability">
-                <i class="pi pi-check"></i>
-                <span>{{ capability }}</span>
-              </li>
-            </ul>
-          </div>
-
-          <div class="tags-section">
-            <h3>Tags</h3>
-            <div class="tags-grid">
-              <span v-for="tag in selectedAgentForDetails.tags" :key="tag" class="tag">
-                {{ tag }}
-              </span>
-            </div>
-          </div>
-
-          <div v-if="selectedAgentForDetails.template" class="template-section">
-            <h3>Template Preview</h3>
-            <div class="template-preview">
-              <p><strong>Welcome Message:</strong> {{ selectedAgentForDetails.template.welcomeMessage }}</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button @click="closeDetails" class="cancel-btn">
-            Close
-          </button>
+        <!-- Load More Button -->
+        <div v-if="activeTab === 'my-agents' && hasMoreAgents && !isLoadingAgents" class="load-more-section">
           <button
-            v-if="selectedAgentForDetails"
-            @click="handleAgentSelect(selectedAgentForDetails)"
-            class="select-btn primary"
-            :disabled="authStore.isLoading"
+              @click="loadMoreAgents"
+              class="load-more-btn"
+              :disabled="isLoadingMore"
           >
-            <span v-if="authStore.isLoading" class="loading-spinner"></span>
-            <i v-else class="pi pi-check"></i>
-            <span>{{ authStore.isLoading ? 'Selecting...' : 'Select This Agent' }}</span>
+            <span v-if="isLoadingMore" class="loading-spinner"></span>
+            <i v-else class="pi pi-plus"></i>
+            <span>{{
+                isLoadingMore ? 'Loading more agents...' : `Load More (${totalAgents - agentsData.length} remaining)`
+              }}</span>
           </button>
+        </div>
+
+        <!-- Pagination Info -->
+        <div v-if="activeTab === 'my-agents' && totalAgents > 0" class="pagination-info">
+          <p class="pagination-text">
+            Showing {{ agentsData.length }} of {{ totalAgents }} agents
+            <span v-if="totalPages > 1">(Page {{ currentPage }} of {{ totalPages }})</span>
+          </p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Edit Agent Name Modal -->
-  <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
-    <div class="modal-content edit-modal" @click.stop role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+  <!-- Agent Modal (Create/Edit) -->
+  <div v-if="showAgentModal" class="modal-overlay" @click="closeAgentModal">
+    <div class="modal-content edit-modal" @click.stop role="dialog" aria-modal="true"
+         :aria-labelledby="modalMode === 'create' ? 'create-modal-title' : 'edit-modal-title'">
       <div class="modal-header">
-        <h3 id="edit-modal-title" class="modal-title">Edit Agent Name</h3>
-        <button @click="closeEditModal" class="modal-close" aria-label="Close modal">
+        <h3 :id="modalMode === 'create' ? 'create-modal-title' : 'edit-modal-title'" class="modal-title">
+          {{ modalMode === 'create' ? 'Create New Agent' : 'Edit Agent Name' }}
+        </h3>
+        <button @click="closeAgentModal" class="modal-close" aria-label="Close modal">
           <i class="pi pi-times"></i>
         </button>
       </div>
-      
+
       <div class="modal-body">
         <div class="form-group">
           <label for="agentName" class="form-label">Agent Name</label>
           <input
-            id="agentName"
-            v-model="editAgentNameValue"
-            type="text"
-            class="form-input"
-            placeholder="Enter a descriptive name for your agent"
-            @keyup.enter="saveAgentName"
-            @keyup.escape="closeEditModal"
-            maxlength="50"
-            autocomplete="off"
-            spellcheck="false"
-            ref="agentNameInput"
+              id="agentName"
+              v-model="agentNameValue"
+              type="text"
+              class="form-input"
+              :placeholder="modalMode === 'create' ? 'Enter a name for your new agent' : 'Enter a descriptive name for your agent'"
+              @keyup.enter="saveAgent"
+              @keyup.escape="closeAgentModal"
+              maxlength="50"
+              autocomplete="off"
+              spellcheck="false"
+              ref="agentNameInput"
           />
-          <div class="char-count" :class="{ 'text-warning': editAgentNameValue.length > 40 }">
-            {{ editAgentNameValue.length }}/50
+          <div class="char-count" :class="{ 'text-warning': agentNameValue.length > 40 }">
+            {{ agentNameValue.length }}/50
           </div>
         </div>
       </div>
-      
+
       <div class="modal-footer">
-        <button @click="closeEditModal" class="btn cancel-btn" type="button">
+        <button @click="closeAgentModal" class="btn cancel-btn" type="button">
           Cancel
         </button>
-        <button 
-          @click="saveAgentName" 
-          class="btn save-btn"
-          type="button"
-          :disabled="!editAgentNameValue.trim() || editAgentNameValue.trim().length < 2"
+        <button
+            @click="saveAgent"
+            class="btn save-btn"
+            type="button"
+            :disabled="!agentNameValue.trim() || agentNameValue.trim().length < 2 || isSavingAgent"
         >
-          <i class="pi pi-check"></i>
-          Save Changes
+          <span v-if="isSavingAgent" class="loading-spinner"></span>
+          <i v-else class="pi pi-check"></i>
+          <span>{{ isSavingAgent ? 'Saving...' : (modalMode === 'create' ? 'Create Agent' : 'Save Changes') }}</span>
         </button>
       </div>
     </div>
@@ -525,6 +804,7 @@ onUnmounted(() => {
 .app-container {
   overflow: scroll !important;
 }
+
 /* Global Styles */
 .agent-selection-view {
   min-height: 100vh;
@@ -548,12 +828,12 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   background: conic-gradient(
-    from 180deg,
-    #ff0080,
-    #7928ca,
-    #2afadf,
-    #7928ca,
-    #ff0080
+      from 180deg,
+      #ff0080,
+      #7928ca,
+      #2afadf,
+      #7928ca,
+      #ff0080
   );
   filter: blur(60px);
   opacity: 0.6;
@@ -765,7 +1045,6 @@ onUnmounted(() => {
 }
 
 
-
 /* Error Alert */
 .error-alert {
   background: rgba(239, 68, 68, 0.1);
@@ -824,6 +1103,84 @@ onUnmounted(() => {
   font-size: 1rem;
   margin-left: var(--space-2);
   white-space: nowrap;
+}
+
+/* Loading State */
+.loading-state {
+  text-align: center;
+  padding: var(--space-8);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+}
+
+.loading-spinner-large {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--color-border);
+  border-radius: 50%;
+  border-top-color: var(--color-primary);
+  animation: spin 0.6s linear infinite;
+  margin: 0 auto var(--space-4);
+}
+
+.loading-state p {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* Load More Section */
+.load-more-section {
+  text-align: center;
+  padding: var(--space-6);
+  margin-top: var(--space-4);
+}
+
+.load-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  box-shadow: 0 2px 4px rgba(0, 163, 255, 0.2);
+}
+
+.load-more-btn:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 163, 255, 0.3);
+}
+
+.load-more-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Pagination Info */
+.pagination-info {
+  text-align: center;
+  padding: var(--space-4);
+  margin-top: var(--space-2);
+}
+
+.pagination-text {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.pagination-text span {
+  color: var(--color-text-tertiary);
+  font-size: 0.8rem;
 }
 
 /* No Results */
@@ -913,9 +1270,9 @@ onUnmounted(() => {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  animation: slideUp 0.6s ease-out;
+  animation: slideUp 0.3s ease-out;
   animation-delay: var(--card-delay);
   animation-fill-mode: both;
 }
@@ -923,7 +1280,7 @@ onUnmounted(() => {
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -1206,7 +1563,7 @@ onUnmounted(() => {
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   border-top-color: white;
-  animation: spin 1s linear infinite;
+  animation: spin 0.6s linear infinite;
 }
 
 @keyframes spin {
@@ -1600,11 +1957,11 @@ onUnmounted(() => {
 }
 
 @keyframes fadeIn {
-  from { 
-    opacity: 0; 
+  from {
+    opacity: 0;
   }
-  to { 
-    opacity: 1; 
+  to {
+    opacity: 1;
   }
 }
 
@@ -1686,7 +2043,6 @@ onUnmounted(() => {
   .search-input {
     font-size: 1rem; /* Better for mobile */
   }
-
 
 
   .agents-grid {

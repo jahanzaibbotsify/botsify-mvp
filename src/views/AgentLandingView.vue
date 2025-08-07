@@ -30,7 +30,7 @@
         <div class="navbar-menu" :class="{ 'is-active': showMobileMenu }">
         
           <div class="navbar-end">
-            <a href="/pricing" class="navbar-item">Pricing</a>
+            <a href="/choose-plan" class="navbar-item">Pricing</a>
             <a href="/login" class="navbar-item">Login</a>
           </div>
         </div>

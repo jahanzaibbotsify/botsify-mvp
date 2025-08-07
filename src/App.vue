@@ -15,7 +15,8 @@ const shouldShowLoading = computed(() => {
   if (route.name === 'Unauthenticated' || route.name === 'NotFound') {
     return false;
   }
-  return !isAuthenticated.value;
+  return false
+  // return !isAuthenticated.value;
 });
 
 const showStorageWarning = ref(false);

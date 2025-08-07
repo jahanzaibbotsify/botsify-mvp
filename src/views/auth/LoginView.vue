@@ -2,7 +2,8 @@
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
-import type { LoginCredentials, FormValidation, SocialAuthProvider } from '@/types/auth'
+import type { LoginCredentials, FormValidation } from '@/types/auth'
+import {handlePostAuthRedirect} from "@/utils/authFlow.ts";
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -72,42 +73,16 @@ const handleSubmit = async () => {
   
   authStore.clearError()
   
-  const response = await authStore.login(form)
+  const response = await authStore.login(form);
+  console.log(response)
   
-  if (response.success) {
-    window.$toast?.success('Welcome back! Login successful.')
-    
-    // Redirect based on onboarding step
-    if (authStore.onboardingStep === 'completed') {
-      router.push('/agent/' + authStore.user?.id)
-    } else if (authStore.onboardingStep === 'pricing') {
-      router.push('/pricing')
-    } else if (authStore.onboardingStep === 'agent-selection') {
-      router.push('/select-agent')
-    } else {
-      router.push('/auth/agentic-home')
-    }
+  if (response.user) {
+    const redirectPath = handlePostAuthRedirect()
+    router.push(redirectPath)
   } else {
-    window.$toast?.error(response.message)
+    window.$toast?.error(response?.data.error)
   }
 }
-
-const handleSocialLogin = async (provider: SocialAuthProvider) => {
-  authStore.clearError()
-  
-  const response = await authStore.socialLogin(provider)
-  
-  if (response.success) {
-    window.$toast?.success(`Welcome! Logged in with ${provider.name}.`)
-    
-    // Redirect to pricing for new social users
-    router.push('/pricing')
-  } else {
-    window.$toast?.error(response.message)
-  }
-}
-
-
 
 const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value

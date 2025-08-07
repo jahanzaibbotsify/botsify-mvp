@@ -62,7 +62,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
-import type { AuthUser } from '@/types/auth'
 
 interface Props {
   isVisible: boolean
@@ -72,7 +71,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   close: []
-  updated: [user: AuthUser]
+  updated: [user: object]
 }>()
 
 const authStore = useAuthStore()
@@ -109,7 +108,7 @@ const handleSubmit = async () => {
     await new Promise(resolve => setTimeout(resolve, 1000))
     
     // Update user in auth store
-    const updatedUser: AuthUser = {
+    const updatedUser = {
       ...authStore.user,
       firstName: formData.value.firstName,
       lastName: formData.value.lastName,

@@ -2,8 +2,15 @@
  * Extracts API key from URL path or localStorage
  * @returns The API key if found, empty string otherwise
  */
-export function extractApiKey(): string {
+export function extractApiKey(): string|null {
   const pathname = window.location.pathname;
+
+  const match = pathname.match(/^\/agent\/([a-zA-Z0-9]+)$/);
+
+  if (!match) {
+    return null;
+  }
+
   const segments = pathname.split('/').filter(segment => segment.length > 0);
   
   // Try to get from localStorage first

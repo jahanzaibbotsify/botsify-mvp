@@ -119,15 +119,10 @@ const handleSubmit = async () => {
     if (success) {
       window.$toast?.success('Password set successfully!')
       
-      // Redirect to login or dashboard based on context
-      const redirectTo = route.query.redirect as string
-      if (redirectTo) {
-        router.push(redirectTo)
-      } else if (authStore.user) {
-        router.push('/auth/agentic-home')
-      } else {
-        router.push('/auth/login')
-      }
+      // Use the new authentication flow for redirect
+      const { handlePostAuthRedirect } = await import('@/utils/authFlow')
+      const redirectPath = handlePostAuthRedirect()
+      router.push(redirectPath)
     } else {
       window.$toast?.error('Failed to set password. Please try again.')
     }
