@@ -211,7 +211,7 @@ defineExpose({ openModal, closeModal });
             <Input 
               :model-value="landingUrl" 
               readonly 
-              size="medium"
+              size="large"
               @click="copyLandingUrl"
             />
           </div>
@@ -404,11 +404,8 @@ defineExpose({ openModal, closeModal });
 }
 
 .url-display {
-  display: flex;
-  gap: 8px;
+  max-width: 700px;
 }
-
-
 
 .radio-group {
   display: flex;

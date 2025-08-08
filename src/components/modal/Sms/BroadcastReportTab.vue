@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 import { Table, TableHead, TableBody, TableHeader, TableCell, Badge } from "@/components/ui";
+import { formatTime } from "@/utils";
 
 
 defineEmits<{
@@ -41,19 +42,6 @@ const statsCards = ref([
     bgColor: 'rgba(239, 68, 68, 0.1)'
   }
 ]);
-
-// Date format utility function
-const formatDate = (dateString: string) => {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-};
 
 // Fetch SMS report data
 const fetchSmsReport = async (page: number = 1) => {
@@ -181,7 +169,7 @@ onMounted(() => {
             <TableCell>{{ message.number }}</TableCell>
             <TableCell>{{ truncateMessage(message.message) }}</TableCell>
             <TableCell>{{ message.failure_reason || '-' }}</TableCell>
-            <TableCell>{{ formatDate(message.sent_time) }}</TableCell>
+            <TableCell>{{ formatTime(message.sent_time) }}</TableCell>
           </tr>
         </TableBody>
       </Table>

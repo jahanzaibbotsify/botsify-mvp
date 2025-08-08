@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import ModalLayout from "@/components/ui/ModalLayout.vue";
-import { ref, defineAsyncComponent, onMounted } from "vue";
+import { ref, defineAsyncComponent } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 
 const WhatsAppModal = defineAsyncComponent(() => import('./WhatsApp/WhatsAppModal.vue'));
@@ -9,6 +9,7 @@ const MessengerModal = defineAsyncComponent(() => import('./Messenger/MessengerM
 const InstagramModal = defineAsyncComponent(() => import('./Instagram/InstagramModal.vue'));
 const TelegramModal = defineAsyncComponent(() => import('./TelegramModal.vue'));
 const WebsiteModal = defineAsyncComponent(() => import('./WebsiteModal.vue'));
+const PortableAgentModal = defineAsyncComponent(() => import('./PortableAgentModal.vue'));
 
 const modalRef = ref<InstanceType<typeof ModalLayout> | null>(null);
 const websiteModalRef = ref<InstanceType<typeof WebsiteModal> | null>(null);
@@ -17,6 +18,7 @@ const telegramModalRef = ref<InstanceType<typeof TelegramModal> | null>(null);
 const smsModalRef = ref<InstanceType<typeof SmsModal> | null>(null);
 const messengerModalRef = ref<InstanceType<typeof MessengerModal> | null>(null);
 const instagramModalRef = ref<InstanceType<typeof InstagramModal> | null>(null);
+const portableAgentModalRef = ref<InstanceType<typeof PortableAgentModal> | null>(null);
 
 const publishStore = usePublishStore();
 const isLoading = ref(false);
@@ -25,8 +27,8 @@ const agents = ref([
   { icon: 'portable-agent-icon.svg', label: 'Portable agent', status: 'inactive' },
   { icon: 'website.png', label: 'Website', status: 'inactive' },
   { icon: 'whatsapp.png', label: 'WhatsApp', status: 'inactive' },
-  { icon: 'instagram.png', label: 'Instagram', status: 'inactive' },
   { icon: 'messenger.png', label: 'Messenger', status: 'inactive' },
+  { icon: 'instagram.png', label: 'Instagram', status: 'inactive' },
   { icon: 'telegram.png', label: 'Telegram', status: 'inactive' },
   { icon: 'sms.png', label: 'SMS', status: 'inactive' },
 ]);
@@ -113,6 +115,8 @@ const handleAgentClick = (agentLabel: string) => {
     messengerModalRef.value?.openModal();
   } else if (agentLabel === 'Instagram'){
     instagramModalRef.value?.openModal();
+  } else if (agentLabel === 'Portable agent'){
+    portableAgentModalRef.value?.openModal();
   }
   modalRef.value?.closeModal();
 };
@@ -190,6 +194,11 @@ defineExpose({ openModal });
 
   <InstagramModal 
     ref="instagramModalRef" 
+    @back="handleBackToMain" 
+  />
+
+  <PortableAgentModal 
+    ref="portableAgentModalRef" 
     @back="handleBackToMain" 
   />
 </template>

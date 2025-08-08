@@ -8,7 +8,14 @@ export const usePublishStore = defineStore('publish', () => {
   const error = ref<string | null>(null);
   
   // Template cache
-  const templatesCache = ref<any[]>([]);
+  const templatesCache = ref<{
+    data: any[];
+    page: number;
+    perPage: number;
+    total: number;
+    to: number;
+    prev_page_url: string | null;
+  } | null>(null);
   const templatesLoaded = ref(false);
   const isLoadingTemplates = ref(false);
   
@@ -184,9 +191,9 @@ export const usePublishStore = defineStore('publish', () => {
       
       if (result.success) {
         // Cache the pages
-        instagramPagesCache.value = result.data.pagesData;
+        instagramPagesCache.value = result.data;
         instagramPagesLoaded.value = true;
-        return { success: true, data: result.data.pagesData };
+        return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to get Instagram pages';
         return { success: false, error: error.value };
@@ -459,10 +466,81 @@ export const usePublishStore = defineStore('publish', () => {
     }
   };
 
-  const fetchTemplates = async () => {
-    // Return cached templates if already loaded
-    if (templatesLoaded.value && templatesCache.value.length > 0) {
-      return { success: true, data: { templates: { data: templatesCache.value } } };
+  const saveWebhookSettings = async (settings: {
+    business_id: string;
+    catalog_access_token: string;
+    order_webhook?: string;
+    catalog_id?: string | null;
+  }) => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const result = await publishApi.saveWebhookSettings(settings);
+      
+      if (result.success) {
+        // Clear cache to force refresh
+        botDetailsCache.value = null;
+        botDetailsLoaded.value = false;
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to save webhook settings';
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to save webhook settings';
+      return { success: false, error: error.value };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const connectCatalog = async (url: string) => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const result = await publishApi.connectCatalog(url);
+      
+      if (result.success) {
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to connect catalog';
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to connect catalog';
+      return { success: false, error: error.value };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const getCatalog = async () => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const result = await publishApi.getCatalog();
+      
+      if (result.success) {
+        return { success: true, data: result.data };
+      } else {
+        error.value = result.message || 'Failed to get catalog data';
+        return { success: false, error: error.value };
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to get catalog data';
+      return { success: false, error: error.value };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const fetchTemplates = async (page: number = 1, perPage: number = 20) => {
+    // Return cached templates if already loaded for the same page and per_page
+    if (templatesLoaded.value && templatesCache.value && templatesCache.value.page === page && templatesCache.value.perPage === perPage) {
+      return { success: true, data: { status: 'success', templates: templatesCache.value } };
     }
     
     // Prevent multiple simultaneous calls
@@ -474,11 +552,18 @@ export const usePublishStore = defineStore('publish', () => {
     error.value = null;
     
     try {
-      const result = await publishApi.fetchTemplates();
+      const result = await publishApi.fetchTemplates(page, perPage);
       
       if (result.success) {
-        // Cache the templates
-        templatesCache.value = result.data.templates?.data || [];
+        // Cache the templates with pagination info
+        templatesCache.value = {
+          data: result.data.templates?.data || [],
+          page: page,
+          perPage: perPage,
+          total: result.data.templates?.total || 0,
+          to: result.data.templates?.to || 0,
+          prev_page_url: result.data.templates?.prev_page_url || null
+        };
         templatesLoaded.value = true;
         return { success: true, data: result.data };
       } else {
@@ -907,6 +992,7 @@ export const usePublishStore = defineStore('publish', () => {
     saveTwilioSettings,
     saveDialog360Settings,
     saveWhatsAppCloudSettings,
+    saveWebhookSettings,
     refreshFbPagePermission,
     removeFbPagePermission,
     getBotDetails,
@@ -928,6 +1014,8 @@ export const usePublishStore = defineStore('publish', () => {
     getInstagramPages,
     createBroadcastTask,
     connectionInstaPage,
-    clearInstaPagesCache
+    clearInstaPagesCache,
+    connectCatalog,
+    getCatalog
   };
 }); 

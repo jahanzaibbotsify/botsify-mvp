@@ -216,6 +216,7 @@ const handleBlur = (event: FocusEvent) => {
   padding: 0;
   margin: 0;
   line-height: 1;
+  overflow-y: visible;
 }
 
 .vue-select-container:deep(.control .multi-value) {
@@ -265,15 +266,15 @@ const handleBlur = (event: FocusEvent) => {
   z-index: 1000;
 }
 
+.vue-select-container:deep(.menu .menu-option) {
+  white-space: normal !important;
+}
+
 /* .vue-select-component .menu .menu-option.selected {
   background-color: var(--color-bg-hover);
 }
 
-.vue-select-container:deep(.menu .menu-option) {
-  padding: var(--space-2) var(--space-3);
-  cursor: pointer;
-  transition: background-color var(--transition-normal);
-}
+
 
 .vue-select-container:deep(.menu .menu-option:hover) {
   background-color: var(--color-bg-hover);

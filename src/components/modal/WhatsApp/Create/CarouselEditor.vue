@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { Input, Button, VueSelect } from "@/components/ui";
 import { useWhatsAppTemplateStore } from "@/stores/whatsappTemplateStore";
 import EmojiTextarea from "./EmojiTextarea.vue";
@@ -11,29 +12,14 @@ const headerTypes = [
   { label: 'Image', value: 'image' }
 ];
 
-const addSlide = () => {
-  if (store.template.slides.length < 10) {
-    store.template.slides.push(store.createSlide());
-  }
-};
-
-const removeSlide = (index: number) => {
-  if (store.template.slides.length > 1) {
-    store.template.slides.splice(index, 1);
-  }
-};
-
-const addVariable = (section: string) => {
-  store.addVariable(section);
-};
-
-const checkForVariables = (section: string) => {
-  store.checkForVariables(section);
-};
-
 const afterSelect = () => {
   store.afterSelect();
 };
+
+// Computed property to check if controls should be disabled
+const shouldDisableControls = computed(() => {
+  return store.template.slides.length > 1;
+});
 </script>
 
 <template>
@@ -59,6 +45,7 @@ const afterSelect = () => {
               placeholder="Select Header Type"
               :options="headerTypes"
               @close="afterSelect"
+              :disabled="shouldDisableControls"
             />
           </div>
           
@@ -80,8 +67,8 @@ const afterSelect = () => {
           :maxlength="store.template.type == 'generic' ? 150 : 1024"
           @update:text="val => slide.body = val"
           @update:error-text="val => store.errors.body = val"
-          @add-variable="() => addVariable('body_slide')"
-          @check-variables="val => checkForVariables('body_slide')"
+          @add-variable="() => store.addVariable('body_slide', true, null, index)"
+          @check-variables="val => store.checkForVariables('body_slide', null, index)"
         />
 
         <!-- Buttons for the slide -->
@@ -92,6 +79,7 @@ const afterSelect = () => {
           :errors="store.errors"
           :current="index"
           :slide-index="index"
+          :disable-controls="shouldDisableControls"
         />
 
         <!-- Slide Actions -->
@@ -100,7 +88,7 @@ const afterSelect = () => {
             type="button"
             variant="primary"
             size="small"
-            @click="addSlide"
+            @click="store.addSlide"
             :disabled="store.template.slides.length >= 10"
           >
             Add slide
@@ -110,7 +98,7 @@ const afterSelect = () => {
             type="button"
             variant="error"
             size="small"
-            @click="removeSlide(index)"
+            @click="store.removeSlide(index)"
           >
             Remove slide
           </Button>

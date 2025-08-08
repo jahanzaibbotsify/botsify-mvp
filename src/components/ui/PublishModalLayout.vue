@@ -5,6 +5,7 @@ import { ref, watch, readonly } from "vue";
 interface Tab {
   id: string;
   label: string;
+  disabled?: boolean;
 }
 
 interface Props {
@@ -67,6 +68,12 @@ const handleClose = () => {
 };
 
 const handleTabChange = (tabId: string) => {
+  // Check if the tab is disabled
+  const tab = props.tabs.find(t => t.id === tabId);
+  if (tab?.disabled) {
+    return; // Don't allow switching to disabled tabs
+  }
+  
   if (activeTab.value !== tabId) {
     activeTab.value = tabId;
     emit('tab-change', tabId);
@@ -96,9 +103,13 @@ defineExpose({
           v-for="tab in tabs"
           :key="tab.id"
           class="tab-button"
-          :class="{ active: activeTab === tab.id }"
+          :class="{ 
+            active: activeTab === tab.id,
+            disabled: tab.disabled 
+          }"
           @click="handleTabChange(tab.id)"
           :aria-selected="activeTab === tab.id"
+          :disabled="tab.disabled"
           role="tab"
         >
           {{ tab.label }}
@@ -184,7 +195,7 @@ defineExpose({
   border-radius: 0;
 }
 
-.tab-button:hover {
+.tab-button:hover:not(.disabled) {
   color: var(--color-text-primary);
   background: var(--color-bg-secondary);
   border-radius: 6px 6px 0 0;
@@ -208,6 +219,17 @@ defineExpose({
 .tab-button.active:hover {
   background: transparent;
   color: var(--color-primary);
+}
+
+.tab-button.disabled {
+  color: var(--color-text-tertiary, #9ca3af);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.tab-button.disabled:hover {
+  background: transparent;
+  color: var(--color-text-tertiary, #9ca3af);
 }
 
 .tab-content {
@@ -325,7 +347,7 @@ defineExpose({
     border: 1px solid transparent;
   }
   
-  .tab-button:hover,
+  .tab-button:hover:not(.disabled),
   .tab-button.active {
     border-color: currentColor;
   }

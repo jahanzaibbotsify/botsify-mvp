@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import {PublishModalLayout, Button} from "@/components/ui";
 import Pagination from "@/components/ui/Pagination.vue";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import PublishAgentTab from "./PublishAgentTab.vue";
 import CommentAutoResponderTab from "./CommentAutoResponderTab.vue";
 import BroadcastTab from "./BroadcastTab.vue";
+import { usePublishStore } from "@/stores/publishStore";
+import { useBotStore } from "@/stores/botStore";
 
 // Define tabs
 const tabs = [
@@ -15,6 +17,10 @@ const tabs = [
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
 const currentActiveTab = ref('publish-bot');
+
+// Stores
+const publishStore = usePublishStore();
+const botStore = useBotStore();
 
 // Tab component refs
 const publishAgentTabRef = ref<InstanceType<typeof PublishAgentTab> | null>(null);
@@ -27,6 +33,31 @@ const emit = defineEmits<{
 
 // Reactive data
 const isLoading = ref(false);
+const isMessengerConfigured = ref(false);
+
+// Check if Messenger is configured (has connected pages)
+const checkMessengerConfiguration = () => {
+  const pages = publishStore.facebookPagesCache;
+  console.log('pages', pages);
+  if (pages && pages.pagesData && pages.pagesData.data) {
+    console.log('pagesData', pages.pagesData.data);
+    const pagesData = pages.pagesData.data;
+    // Check if any page is connected to the current bot
+    isMessengerConfigured.value = pagesData.some((page: any) => 
+      page.connected_page_bot === botStore.botName
+    );
+  } else {
+    isMessengerConfigured.value = false;
+  }
+};
+
+// Computed tabs with disabled state
+const computedTabs = computed(() => {
+  return tabs.map(tab => ({
+    ...tab,
+    disabled: tab.id !== 'publish-bot' && !isMessengerConfigured.value
+  }));
+});
 
 const openModal = () => {
   modalRef.value?.openModal();
@@ -46,16 +77,11 @@ const handleBack = () => {
 
 const handleTabChange = (tabId: string) => {
   console.log('Tab changed to:', tabId);
-  currentActiveTab.value = tabId;
   
-  // Load data based on the selected tab
-  if (tabId === 'comment-auto-responder' && commentAutoResponderTabRef.value) {
-    // Load comment responders when the tab is selected
-    commentAutoResponderTabRef.value.loadCommentResponders();
+  // Only allow tab change if Messenger is configured or if it's the publish agent tab
+  if (tabId === 'publish-bot' || isMessengerConfigured.value) {
+    currentActiveTab.value = tabId;
   }
-  
-  // No need to reload Facebook pages on tab change since store handles caching
-  // The data will be available from the store cache
 };
 
 // Comment Auto Responder Tab Events
@@ -96,7 +122,7 @@ defineExpose({ openModal, closeModal });
   <PublishModalLayout
     ref="modalRef"
     title="Messenger integration"
-    :tabs="tabs"
+    :tabs="computedTabs"
     icon="/bots/messenger.png"
     max-width="1200px"
     default-tab="publish-bot"
@@ -109,11 +135,12 @@ defineExpose({ openModal, closeModal });
         v-show="activeTab === 'publish-bot'"
         ref="publishAgentTabRef"
         :is-loading="isLoading"
+        @page-connection-change="checkMessengerConfiguration"
       />
 
       <!-- Comment Auto Responder Tab -->
       <CommentAutoResponderTab 
-        v-show="activeTab === 'comment-auto-responder'"
+        v-show="activeTab === 'comment-auto-responder' && isMessengerConfigured"
         ref="commentAutoResponderTabRef"
         :is-loading="isLoading"
         @save-settings="handleSaveAutoResponder"
@@ -123,7 +150,7 @@ defineExpose({ openModal, closeModal });
 
       <!-- Broadcast Tab -->
       <BroadcastTab 
-        v-show="activeTab === 'broadcast'"
+        v-show="activeTab === 'broadcast' && isMessengerConfigured"
         ref="broadcastTabRef"
         :is-loading="isLoading"
         @send-broadcast="handleSendBroadcast"
@@ -132,12 +159,20 @@ defineExpose({ openModal, closeModal });
         @loading-change="handleLoadingChange"
       />
 
+      <!-- Configuration Required Message -->
+      <div v-if="activeTab !== 'publish-bot' && !isMessengerConfigured" class="configuration-required">
+        <div class="configuration-message">
+          <i class="pi pi-exclamation-triangle"></i>
+          <h3>Configuration Required</h3>
+          <p>Please connect a Facebook page in the "Publish agent" tab before accessing other features.</p>
+        </div>
+      </div>
     </template>
     
     <template #actions>
       <!-- No Test User Button for Broadcast Tab -->
       <Button 
-        v-if="currentActiveTab === 'broadcast'" 
+        v-if="currentActiveTab === 'broadcast' && isMessengerConfigured" 
         variant="secondary"
         @click="handleNoTestUser"
         :disabled="isLoading"
@@ -147,7 +182,7 @@ defineExpose({ openModal, closeModal });
 
       <!-- Send Message Button for Broadcast Tab -->
       <Button 
-        v-if="currentActiveTab === 'broadcast'" 
+        v-if="currentActiveTab === 'broadcast' && isMessengerConfigured" 
         variant="primary"
         @click="handleSendMessage"
         :disabled="isLoading"
@@ -159,5 +194,36 @@ defineExpose({ openModal, closeModal });
 </template>
 
 <style scoped>
-/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
+.configuration-required {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: 40px;
+}
+
+.configuration-message {
+  text-align: center;
+  max-width: 400px;
+}
+
+.configuration-message i {
+  font-size: 48px;
+  color: var(--color-warning, #f59e0b);
+  margin-bottom: 16px;
+}
+
+.configuration-message h3 {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+}
+
+.configuration-message p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text-secondary, #6b7280);
+  line-height: 1.5;
+}
 </style> 

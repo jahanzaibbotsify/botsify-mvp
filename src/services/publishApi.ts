@@ -364,9 +364,9 @@ export class PublishApiService {
       }, {
         timeout: 30000
       });
-      return { success: true, message: 'Page reconnected successfully', data: response.data };
+      return { success: true, message: 'Instagram page reconnected successfully', data: response.data };
     } catch (error: any) {
-      return { success: false, message: error.response?.data?.message || error.message || 'Failed to reconnect page', data: error.response?.data };
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to reconnect Instagram page', data: error.response?.data };
     }
   }
 
@@ -488,12 +488,14 @@ export class PublishApiService {
   /**
    * Fetch templates
    */
-  async fetchTemplates(): Promise<PublishResponse> {
+  async fetchTemplates(page: number = 1, perPage: number = 20): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.get('/v1/media-block/fetch', {
         params: {
-          apikey: apiKey
+          apikey: apiKey,
+          page: page,
+          per_page: perPage
         },
         timeout: 30000 // 30 seconds timeout
       });
@@ -803,6 +805,103 @@ export class PublishApiService {
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to create broadcast task',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Save webhook settings
+   */
+  async saveWebhookSettings(settings: {
+    business_id: string;
+    catalog_access_token: string;
+    order_webhook?: string;
+    catalog_id?: string | null;
+  }): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.post('/v1/bot/whatsapp/webhook/update', {
+        apikey: apiKey,
+        ...settings
+      }, {
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Save webhook settings response:', response.data);
+
+      return {
+        success: true,
+        message: 'Webhook settings saved successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error saving webhook settings:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to save webhook settings',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Connect/disconnect catalog
+   */
+  async connectCatalog(url: string): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.post(url, {
+        apikey: apiKey
+      }, {
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Connect catalog response:', response.data);
+
+      return {
+        success: true,
+        message: 'Catalog operation completed successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error connecting catalog:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to connect catalog',
+        data: error.response?.data
+      };
+    }
+  }
+
+  /**
+   * Get catalog data
+   */
+  async getCatalog(): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.get('/v1/bot/whatsapp/catalog', {
+        params: {
+          apikey: apiKey
+        },
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Get catalog response:', response.data);
+
+      return {
+        success: true,
+        message: 'Catalog data retrieved successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error getting catalog data:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to get catalog data',
         data: error.response?.data
       };
     }

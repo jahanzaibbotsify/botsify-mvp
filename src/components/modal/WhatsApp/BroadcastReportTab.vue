@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
-import { Input, DateRange, Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Pagination, Button } from "@/components/ui";
+import { Input, Badge, DateRange, Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Pagination, Button } from "@/components/ui";
 import { usePublishStore } from "@/stores/publishStore";
+import { formatTime } from "@/utils";
 
 // Props
 interface Props {
@@ -99,11 +100,11 @@ const computedPagination = computed(() => {
 });
 
 // Methods
-const fetchReportData = async () => {
+const fetchReportData = async (forceRefresh = false) => {
   try {
-    // Only fetch if we don't have data yet
-    if (allReportData.value.length === 0) {
-      const result = await publishStore.getWhatsAppBroadcastReport({});
+    // Only fetch if we don't have data yet or if force refresh is requested
+    if (allReportData.value.length === 0 || forceRefresh) {
+      const result = await publishStore.getWhatsAppBroadcastReport({ page: currentPage.value, per_page: itemsPerPage.value, query: searchQuery.value, start_date: dateRange.value.start, end_date: dateRange.value.end });
       
       if (result.success && result.data.messages) {
         allReportData.value = result.data.messages.data || [];
@@ -115,18 +116,23 @@ const fetchReportData = async () => {
   }
 };
 
+const refreshData = async () => {
+  console.log('Refreshing broadcast report data...');
+  await fetchReportData(true);
+};
+
 const calculateStats = () => {
   const today = new Date().toISOString().split('T')[0];
   
   stats.value = allReportData.value.reduce((acc, report) => {
     // Only count today's stats
-    const reportDate = report.sent_time?.split(' ')[0];
-    if (reportDate === today) {
+    // const reportDate = report.sent_time?.split(' ')[0];
+    // if (reportDate === today) {
       acc.sent += report.sent || 0;
       acc.delivered += report.delivered || 0;
       acc.read += report.read || 0;
       acc.failed += report.failed || 0;
-    }
+    // }
     return acc;
   }, { sent: 0, delivered: 0, read: 0, failed: 0 });
 };
@@ -151,7 +157,8 @@ const filterReport = () => {
 // Expose methods for parent component
 defineExpose({
   filterReport,
-  fetchReportData
+  fetchReportData,
+  refreshData
 });
 
 // Fetch data on mount
@@ -245,11 +252,8 @@ onMounted(() => {
           <TableHeader>Template name</TableHeader>
           <TableHeader>Phone number</TableHeader>
           <TableHeader>Sent time</TableHeader>
-          <TableHeader>Sent</TableHeader>
-          <TableHeader>Delivered</TableHeader>
-          <TableHeader>Read</TableHeader>
-          <TableHeader>Failed</TableHeader>
-          <TableHeader>Failure reason</TableHeader>
+          <TableHeader>Status</TableHeader>
+          <TableHeader width="350px">Failure reason</TableHeader>
         </TableHead>
         
         <TableBody>
@@ -279,11 +283,8 @@ onMounted(() => {
            <TableRow v-else v-for="report in paginatedReports" :key="report.id">
              <TableCell>{{ report.template_name || 'N/A' }}</TableCell>
              <TableCell>{{ report.number || 'N/A' }}</TableCell>
-             <TableCell>{{ report.sent_time || 'N/A' }}</TableCell>
-             <TableCell>{{ report.sent || 0 }}</TableCell>
-             <TableCell>{{ report.delivered || 0 }}</TableCell>
-             <TableCell>{{ report.read || 0 }}</TableCell>
-             <TableCell>{{ report.failed || 0 }}</TableCell>
+             <TableCell>{{ report.sent_time ? formatTime(report.sent_time) : 'N/A' }}</TableCell>
+             <TableCell><Badge :variant="report.sent ? 'success' : 'error'">{{ report.sent ? 'Sent' : 'Failed' }}</Badge></TableCell>
              <TableCell>{{ report.failure_reason || 'N/A' }}</TableCell>
            </TableRow>
         </TableBody>

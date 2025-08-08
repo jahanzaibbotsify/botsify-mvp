@@ -3,6 +3,12 @@ import { ref, onMounted, computed, watch } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 import Button from "@/components/ui/Button.vue";
 import VueSelect from "@/components/ui/VueSelect.vue";
+import Table from "@/components/ui/Table.vue";
+import TableHead from "@/components/ui/TableHead.vue";
+import TableBody from "@/components/ui/TableBody.vue";
+import TableRow from "@/components/ui/TableRow.vue";
+import TableCell from "@/components/ui/TableCell.vue";
+import TableHeader from "@/components/ui/TableHeader.vue";
 
 // Props
 interface Props {
@@ -114,17 +120,17 @@ const loadPluginData = async () => {
 };
 
 const setPluginData = () => {
-  if (!storePluginData.value || !storePluginData.value.posts) {
+  if (!storePluginData.value || !storePluginData.value.facebook_posts) {
     return;
   }
   
   // Set posts from API response
-  posts.value = storePluginData.value.posts.data || [];
+  posts.value = storePluginData.value.facebook_posts.data || [];
   
   // Transform optin templates to auto responders if needed
-  if (storePluginData.value.optin_templates) {
-    transformOptinTemplates();
-  }
+  // if (storePluginData.value.optin_templates) {
+  //   transformOptinTemplates();
+  // }
 };
 
 const transformOptinTemplates = () => {
@@ -580,49 +586,59 @@ defineExpose({
         </Button>
       </div>
       
-      <div class="responders-list">
-        <div 
-          v-for="responder in autoResponders" 
-          :key="responder.id"
-          class="responder-card"
-        >
-          <div class="responder-header">
-            <div class="responder-info">
-              <div class="keywords-display">
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableHeader>Keywords</TableHeader>
+            <TableHeader>Post</TableHeader>
+            <TableHeader>Message</TableHeader>
+            <TableHeader>Actions</TableHeader>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          <TableRow v-for="responder in autoResponders" :key="responder.id">
+            <TableCell>
+              <div class="keywords-cell">
                 <span v-for="keyword in responder.keywords" :key="keyword" class="keyword-badge">
                   {{ keyword }}
                 </span>
               </div>
-              <div class="post-display">
+            </TableCell>
+            <TableCell>
+              <div class="post-cell">
                 {{ posts.find(p => p.id === responder.selectedPost)?.message || 'Unknown post' }}
               </div>
-            </div>
-            <div class="responder-actions">
-              <Button 
-                v-if="!isEditing"
-                variant="primary-outline"
-                size="small"
-                icon="pi pi-pencil"
-                iconOnly
-                @click="startEditing(responder)"
-                title="Edit"
-              />
-              <Button 
-                variant="error-outline"
-                size="small"
-                :loading="isLoading"
-                icon="pi pi-trash"
-                iconOnly
-                @click="deleteAutoResponder(responder.id)"
-                title="Delete"
-              />
-            </div>
-          </div>
-          <div class="responder-message">
-            {{ responder.message }}
-          </div>
-        </div>
-      </div>
+            </TableCell>
+            <TableCell>
+              <div class="message-cell">
+                {{ responder.message }}
+              </div>
+            </TableCell>
+            <TableCell>
+              <div class="actions-cell">
+                <Button 
+                  v-if="!isEditing"
+                  variant="primary-outline"
+                  size="small"
+                  icon="pi pi-pencil"
+                  iconOnly
+                  @click="startEditing(responder)"
+                  title="Edit"
+                />
+                <Button 
+                  variant="error-outline"
+                  size="small"
+                  :loading="isLoading"
+                  icon="pi pi-trash"
+                  iconOnly
+                  @click="deleteAutoResponder(responder.id)"
+                  title="Delete"
+                />
+              </div>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
     </div>
   </div>
 </template>
@@ -753,44 +769,16 @@ defineExpose({
   color: var(--color-text-primary, #111827);
 }
 
-/* Responders List */
-.responders-list {
+/* Table Styles */
+.keywords-cell {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.responder-card {
-  background: var(--color-bg-secondary, #f9fafb);
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  padding: 16px;
-  transition: border-color var(--transition-normal, 0.2s ease);
-}
-
-.responder-card:hover {
-  border-color: var(--color-primary, #3b82f6);
-}
-
-.responder-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-}
-
-.responder-info {
-  flex: 1;
-}
-
-.keywords-display {
-  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 .keyword-badge {
   display: inline-block;
   padding: 4px 8px;
-  margin: 2px;
   background: var(--color-primary, #3b82f6);
   color: white;
   border-radius: var(--radius-sm, 4px);
@@ -798,24 +786,28 @@ defineExpose({
   font-weight: 500;
 }
 
-.post-display {
-  font-size: 14px;
-  color: var(--color-text-secondary, #6b7280);
-  font-weight: 500;
-}
-
-.responder-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.responder-message {
+.post-cell {
   font-size: 14px;
   color: var(--color-text-primary, #111827);
-  line-height: 1.5;
-  padding: 12px;
-  background: var(--color-bg-tertiary, #f3f4f6);
-  border-radius: var(--radius-sm, 4px);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.message-cell {
+  font-size: 14px;
+  color: var(--color-text-primary, #111827);
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
 }
 
 @media (max-width: 768px) {
@@ -825,17 +817,18 @@ defineExpose({
     gap: 12px;
   }
   
-  .responder-header {
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .responder-actions {
-    align-self: flex-end;
-  }
-  
   .form-actions {
     flex-direction: column;
+  }
+  
+  .keywords-cell {
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .actions-cell {
+    flex-direction: column;
+    gap: 4px;
   }
 }
 </style> 

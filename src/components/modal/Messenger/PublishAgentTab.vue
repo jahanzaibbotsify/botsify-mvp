@@ -19,6 +19,7 @@ const emit = defineEmits<{
   'refresh-page-permission': [];
   'remove-page-permission': [];
   'connect-account': [];
+  'page-connection-change': [];
 }>();
 
 const publishStore = usePublishStore();
@@ -82,6 +83,8 @@ const loadFbPages = async () => {
   
   try {
     await publishStore.getFbPages();
+      emit('page-connection-change');
+
     // The computed pages will automatically update when store data changes
   } catch (error) {
     console.error('Failed to load Facebook pages:', error);

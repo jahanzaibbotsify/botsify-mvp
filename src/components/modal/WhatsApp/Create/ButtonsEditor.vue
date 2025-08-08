@@ -8,7 +8,7 @@
             @click="handleAddButton"
             variant="primary"
             size="small"
-            :disabled="!canAddButton"
+            :disabled="!canAddButton || props.disableControls"
           >
             Add button <i class="fa fa-plus"></i>
           </Button>
@@ -22,7 +22,7 @@
                placeholder="Select Button Type"
                :options="buttonTypeOptions"
                @change="() => store.onButtonTypeChange(props.slideIndex)"
-               :disabled="props.block.buttons.length > 1 || (props.slideIndex !== undefined && props.block.slides[props.slideIndex]?.buttons?.length > 1)"
+               :disabled="shouldDisableButtonType || props.disableControls"
              />
 
             <i
@@ -54,11 +54,11 @@
                  :reduce="(cta: any) => cta.value"
                  placeholder="Select Call to action"
                  :options="getAvailableCtaOptions(btnIndex)"
-                 :disabled="props.block.buttons.length > 1"
-                 @change="() => store.onChangeCta(btnIndex, 0)"
+                 :disabled="shouldDisableButtonType || props.disableControls"
+                 @change="() => store.onChangeCta(btnIndex, props.slideIndex || 0)"
                />
                <Button
-                 v-if="props.block.buttons.length > 1"
+                 v-if="shouldShowRemoveButton"
                  @click="store.removeTheButton(btnIndex, props.slideIndex)"
                  variant="error-outline"
                  size="small"
@@ -69,7 +69,7 @@
             </div>
 
                          <Button
-               v-else-if="props.template.button_type === 'postback' && props.block.buttons.length > 1"
+               v-else-if="props.template.button_type === 'postback' && shouldShowRemoveButton"
                @click="store.removeTheButton(btnIndex, props.slideIndex)"
                variant="error-outline"
                size="small"
@@ -88,7 +88,7 @@
                v-model="button.title"
                maxlength="20"
                placeholder="e.g., Yes, I'm interested"
-               @input="store.checkForVariables('button_' + btnIndex)"
+               @input="store.checkForVariables('button_' + btnIndex, null, props.slideIndex || 0)"
              />
             <p class="input-hint">Keep it short and clear (max 20 characters recommended)</p>
           </div>
@@ -112,7 +112,7 @@
                 v-model="button.title"
                 maxlength="20"
                 placeholder="e.g., Visit Website"
-                @input="store.checkForVariables('button_' + btnIndex)"
+                @input="store.checkForVariables('button_' + btnIndex, null, props.slideIndex || 0)"
               />
              <p class="input-hint">Keep it short and clear (max 20 characters recommended)</p>
            </div>
@@ -137,7 +137,7 @@
                                                        <Input
                  type="url"
                  v-model="button.url"
-                 @input="store.checkForVariables('button_' + btnIndex)"
+                 @input="store.checkForVariables('button_' + btnIndex, null, props.slideIndex || 0)"
                  placeholder="https://example.com"
                  required
                />
@@ -155,7 +155,7 @@
                 v-model="button.title"
                 maxlength="20"
                 placeholder="e.g., Call Us"
-                @input="store.checkForVariables('button_' + btnIndex)"
+                @input="store.checkForVariables('button_' + btnIndex, null, props.slideIndex || 0)"
               />
              <p class="input-hint">Keep it short and clear (max 20 characters recommended)</p>
            </div>
@@ -191,6 +191,7 @@ interface Props {
   block: any;
   errors: any;
   slideIndex?: number;
+  disableControls?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -212,11 +213,27 @@ const ctaOptions = [
 
 // Computed properties
 const canAddButton = computed(() => {
-  const currentButtonCount = props.block.buttons.length;
-  const maxButtons = props.template.total_buttons || 0;
-  
-  // Ensure we never exceed the maximum allowed buttons
-  return currentButtonCount < maxButtons;
+  return store.canAddButton(props.slideIndex);
+});
+
+// Check if we should disable button type changes based on button count
+const shouldDisableButtonType = computed(() => {
+  // For carousel slides, check if this slide has more than 1 button
+  if (props.slideIndex !== undefined) {
+    return props.block.buttons.length > 1;
+  }
+  // For regular templates, check the main block buttons
+  return props.block.buttons.length > 1;
+});
+
+// Check if we should show remove button
+const shouldShowRemoveButton = computed(() => {
+  // For carousel slides, show remove button if more than 1 button
+  if (props.slideIndex !== undefined) {
+    return props.block.buttons.length > 1;
+  }
+  // For regular templates, show remove button if more than 1 button
+  return props.block.buttons.length > 1;
 });
 
 // Additional validation to prevent manipulation
@@ -245,10 +262,15 @@ const getAvailableCtaOptions = (currentButtonIndex: number) => {
 
 const addVariable = (btnIndex: number) => {
   console.log(btnIndex, "btnIndex")
-  store.addVariable(`button_${btnIndex}`);
+  store.addVariable(`button_${btnIndex}`, true, null, props.slideIndex || 0);
 };
 
 const handleAddButton = () => {
+  // Don't add button if controls are disabled
+  if (props.disableControls) {
+    return;
+  }
+  
   // Double-check before adding to prevent manipulation
   if (canAddButton.value) {
     store.addTheButton(props.slideIndex);

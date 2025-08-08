@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { Input, Button, VueSelect, Badge } from "@/components/ui";
+import { ref, computed, onMounted } from "vue";
+import { Input, Button, Table, TableHead, TableBody, TableRow, TableCell, TableHeader } from "@/components/ui";
+import { usePublishStore } from "@/stores/publishStore";
 
 // Props
 interface Props {
@@ -11,366 +12,387 @@ const props = withDefaults(defineProps<Props>(), {
   isLoading: false
 });
 
-// Emits
-const emit = defineEmits<{
-  'create-product': [product: any];
-  'update-product': [product: any];
-  'delete-product': [id: number];
-}>();
+// Store
+const publishStore = usePublishStore();
 
 // Reactive data
-const searchQuery = ref('');
-const selectedCategory = ref('all');
+const loading = ref(false);
+const saving = ref(false);
+const catalogData = ref<any>(null);
 
-// Sample catalog data
-const catalogProducts = ref([
-  {
-    id: 1,
-    name: 'Premium Widget',
-    description: 'High-quality widget for all your needs',
-    price: 29.99,
-    category: 'electronics',
-    stock: 50,
-    status: 'active',
-    image: '/products/widget.jpg'
-  },
-  {
-    id: 2,
-    name: 'Smart Gadget',
-    description: 'Intelligent gadget with advanced features',
-    price: 89.99,
-    category: 'electronics',
-    stock: 25,
-    status: 'active',
-    image: '/products/gadget.jpg'
-  },
-  {
-    id: 3,
-    name: 'Organic Tea',
-    description: 'Natural organic tea blend',
-    price: 12.99,
-    category: 'beverages',
-    stock: 100,
-    status: 'active',
-    image: '/products/tea.jpg'
-  }
-]);
-
-// Computed properties
-const filteredProducts = computed(() => {
-  let filtered = catalogProducts.value;
-  
-  if (searchQuery.value) {
-    filtered = filtered.filter(product => 
-      product.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchQuery.value.toLowerCase())
-    );
-  }
-  
-  if (selectedCategory.value !== 'all') {
-    filtered = filtered.filter(product => product.category === selectedCategory.value);
-  }
-  
-  return filtered;
+// Form data
+const webhookDetails = ref({
+  business_id: '',
+  catalog_access_token: '',
+  order_webhook: '',
+  catalog_id: null as string | null
 });
 
-const categories = computed(() => {
-  const cats = [...new Set(catalogProducts.value.map(product => product.category))];
-  return [
-    { label: 'All Categories', value: 'all' },
-    ...cats.map(cat => ({ 
-      label: cat.charAt(0).toUpperCase() + cat.slice(1), 
-      value: cat 
-    }))
-  ];
+// Computed properties
+const whatsappCloudData = computed(() => {
+  if (publishStore.botDetailsCache?.dialog360) {
+    return publishStore.botDetailsCache.dialog360;
+  } else if (publishStore.botDetailsCache?.whatsapp_cloud) {
+    return publishStore.botDetailsCache.whatsapp_cloud;
+  }
+  return null;
+});
+
+const hasAccessToken = computed(() => {
+  return whatsappCloudData.value?.catalog_access_token;
+});
+
+const hasCatalogData = computed(() => {
+  return catalogData.value?.data && catalogData.value.data.length > 0;
 });
 
 // Methods
-const createProduct = (product: any) => {
-  const newProduct = {
-    id: Date.now(),
-    ...product,
-    status: 'active'
-  };
-  catalogProducts.value.unshift(newProduct);
-  emit('create-product', newProduct);
-};
-
-const updateProduct = (product: any) => {
-  const index = catalogProducts.value.findIndex(p => p.id === product.id);
-  if (index !== -1) {
-    catalogProducts.value[index] = { ...catalogProducts.value[index], ...product };
-    emit('update-product', catalogProducts.value[index]);
+const getWhatsAppCloudDetails = async () => {
+  loading.value = true;
+  try {
+    const result = await publishStore.getBotDetails();
+    if (result.success && result.data) {
+      // Populate form with existing data
+      if (whatsappCloudData.value) {
+        webhookDetails.value.business_id = whatsappCloudData.value.business_id || '';
+        webhookDetails.value.catalog_access_token = whatsappCloudData.value.catalog_access_token || '';
+        webhookDetails.value.order_webhook = whatsappCloudData.value.order_webhook || '';
+        webhookDetails.value.catalog_id = whatsappCloudData.value.catalog_id || null;
+      }
+      
+      // Load catalog data if we have access token
+      if (hasAccessToken.value) {
+        await loadCatalogData();
+      }
+    }
+  } catch (error) {
+    console.error('Failed to get WhatsApp cloud details:', error);
+  } finally {
+    loading.value = false;
   }
 };
 
-const deleteProduct = (id: number) => {
-  catalogProducts.value = catalogProducts.value.filter(product => product.id !== id);
-  emit('delete-product', id);
-};
-
-const handleSearch = (query: string) => {
-  searchQuery.value = query;
-};
-
-const handleCategoryChange = (value: any) => {
-  selectedCategory.value = value;
-};
-
-const handleAddProduct = () => {
-  // TODO: Implement add product functionality
-  console.log('Add product clicked');
-};
-
-const handleEditProduct = (product: any) => {
-  // TODO: Implement edit product functionality
-  console.log('Edit product:', product);
-};
-
-const handleDeleteProduct = (product: any) => {
-  if (confirm(`Are you sure you want to delete "${product.name}"?`)) {
-    deleteProduct(product.id);
+const loadCatalogData = async () => {
+  if (!hasAccessToken.value) return;
+  
+  try {
+    const result = await publishStore.getCatalog();
+    if (result.success) {
+      catalogData.value = result.data;
+    }
+  } catch (error) {
+    console.error('Failed to load catalog data:', error);
   }
 };
 
-const handleViewProduct = (product: any) => {
-  // TODO: Implement view product functionality
-  console.log('View product:', product);
+const handleSaveSettings = async (event: Event) => {
+  event.preventDefault();
+  
+  saving.value = true;
+  try {
+    const result = await publishStore.saveWebhookSettings(webhookDetails.value);
+    
+    if (result.success) {
+      // Refresh bot details
+      await getWhatsAppCloudDetails();
+      window.$toast?.success('Settings saved successfully!');
+    } else {
+      window.$toast?.error(result.error || 'Failed to save settings');
+    }
+  } catch (error) {
+    console.error('Failed to save settings:', error);
+    window.$toast?.error('Failed to save settings');
+  } finally {
+    saving.value = false;
+  }
 };
 
-// Expose methods for parent component
-defineExpose({
-  createProduct,
-  updateProduct,
-  deleteProduct,
+const openFacebookCommerce = () => {
+  window.open('https://business.facebook.com/commerce', '_blank');
+};
+
+const openFacebookExplorer = () => {
+  window.open('https://developers.facebook.com/tools/explorer?method=GET&path=%7BcatalogID%7D%2Fproducts&version=v15.0', '_blank');
+};
+
+// Lifecycle
+onMounted(() => {
+  getWhatsAppCloudDetails();
 });
 </script>
 
 <template>
   <div class="tab-panel">
     <h3>Catalog</h3>
-    <p class="subtitle">Manage your product catalog</p>
+    <p class="subtitle">Manage your WhatsApp catalog settings</p>
     
-    <!-- Search and Filters -->
-    <div class="catalog-header">
-      <div class="search-filters">
-        <Input 
-          v-model="searchQuery" 
-          placeholder="Search catalog..."
-          searchable
-          iconPosition="left"
-          @search="handleSearch"
-        />
-        
-        <VueSelect
-          v-model="selectedCategory"
-          :options="categories"
-          placeholder="Select category"
-          @change="handleCategoryChange"
-        />
-        
-        <Button variant="primary" @click="handleAddProduct">
-          <i class="pi pi-plus"></i>
-          Add Product
-        </Button>
-      </div>
+    <!-- Loading state -->
+    <div v-if="loading" class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Loading catalog data...</p>
     </div>
 
-    <!-- Products Grid -->
-    <div class="products-grid">
-      <div 
-        v-for="product in filteredProducts" 
-        :key="product.id"
-        class="product-card"
-      >
-        <div class="product-image">
-          <img :src="product.image" :alt="product.name" />
-        </div>
-        
-        <div class="product-info">
-          <h4 class="product-name">{{ product.name }}</h4>
-          <p class="product-description">{{ product.description }}</p>
+    <!-- Main content when not loading -->
+    <div v-else class="catalog-layout">
+      <!-- Table Section -->
+      <div class="table-section">
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableHeader>Catalog Name</TableHeader>
+              <TableHeader>Status</TableHeader>
+              <TableHeader>Actions</TableHeader>
+            </TableRow>
+          </TableHead>
           
-          <div class="product-meta">
-            <span class="product-price">${{ product.price }}</span>
-            <span class="product-stock">Stock: {{ product.stock }}</span>
-          </div>
-          
-          <div class="product-category">
-            <Badge variant="info" size="small">{{ product.category }}</Badge>
-          </div>
-          
-          <div class="product-status">
-            <Badge 
-              variant="success" 
-              icon="pi pi-check" 
-              size="small"
-            >
-              {{ product.status }}
-            </Badge>
-          </div>
-        </div>
-        
-        <div class="product-actions">
-          <Button 
-            variant="primary" 
-            size="small" 
-            icon="pi pi-pencil"
-            icon-only
-            @click="handleEditProduct(product)"
-            title="Edit"
-          />
-          <Button 
-            variant="error" 
-            size="small" 
-            icon="pi pi-trash"
-            icon-only
-            @click="handleDeleteProduct(product)"
-            title="Delete"
-          />
-          <Button 
-            variant="secondary" 
-            size="small" 
-            icon="pi pi-eye"
-            icon-only
-            @click="handleViewProduct(product)"
-            title="View"
-          />
-        </div>
+          <TableBody>
+            <!-- Loading skeleton -->
+            <TableRow v-if="loading" v-for="i in 3" :key="`skeleton-${i}`" skeleton>
+              <TableCell :isLoading="true" skeletonType="text"></TableCell>
+              <TableCell :isLoading="true" skeletonType="badge"></TableCell>
+              <TableCell :isLoading="true" skeletonType="actions"></TableCell>
+            </TableRow>
+            
+            <!-- No access token - Show info message -->
+            <TableRow v-else-if="!hasAccessToken" noData>
+              <TableCell noData colspan="3">
+                <div class="empty-state">
+                  <i class="pi pi-info-circle"></i>
+                  <h4>Connect to Meta Business</h4>
+                  <p>To manage your product catalog, you need to connect your Meta Business account and generate an access token.</p>
+                  <Button
+                    variant="primary"
+                    size="medium"
+                    @click="openFacebookCommerce"
+                  >
+                    Connect to Meta Business
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+            
+            <!-- No catalog data message -->
+            <TableRow v-else-if="!hasCatalogData" noData>
+              <TableCell noData colspan="3">
+                <div class="empty-state">
+                  <i class="pi pi-shopping-cart"></i>
+                  <h4>No Catalogs Found</h4>
+                  <p>No catalogs were found with your current settings. Please generate an access token to view your catalogs.</p>
+                  <Button
+                    variant="primary"
+                    size="medium"
+                    @click="openFacebookExplorer"
+                  >
+                    Generate Access Token
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+            
+            <!-- Catalog rows -->
+            <TableRow v-else v-for="catalog in catalogData.data" :key="catalog.id">
+              <TableCell>{{ catalog.name }}</TableCell>
+              <TableCell>
+                <span v-if="whatsappCloudData?.catalog_id === catalog.id" class="status-connected">
+                  Connected
+                </span>
+                <span v-else class="status-disconnected">
+                  Disconnected
+                </span>
+              </TableCell>
+              <TableCell>
+                <div class="action-buttons">
+                  <Button
+                    v-if="whatsappCloudData?.catalog_id === catalog.id"
+                    variant="error"
+                    size="small"
+                    @click="publishStore.connectCatalog('/v1/bot/whatsapp/catalog/disconnect')"
+                  >
+                    Disconnect
+                  </Button>
+                  <Button
+                    v-else
+                    variant="primary"
+                    size="small"
+                    @click="publishStore.connectCatalog(`/v1/bot/whatsapp/catalog/connect/${catalog.id}`)"
+                  >
+                    Connect
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
       </div>
+
+      
+      <!-- Settings Section -->
+      <div class="settings-section">
+        <h4>Catalog Settings</h4>
+        <form @submit="handleSaveSettings">
+          <div class="form-group">
+            <label for="catalog_access_token">Access Token <span class="required">*</span></label>
+            <Input
+              id="catalog_access_token"
+              v-model="webhookDetails.catalog_access_token"
+              placeholder="Enter your catalog access token"
+              required
+            />
+          </div>
+          
+          <div class="form-actions">
+            <Button
+              variant="primary"
+              type="submit"
+              :loading="saving"
+            >
+              {{ saving ? 'Saving...' : 'Save Settings' }}
+            </Button>
+          </div>
+        </form>
+      </div>
+
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
-
-.catalog-header {
-  margin-bottom: 24px;
+.tab-panel {
+  padding: var(--space-4);
 }
 
-.search-filters {
+.subtitle {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+.loading-state {
   display: flex;
-  gap: 16px;
-  align-items: center;
-}
-
-.search-filters > * {
-  flex: 1;
-  min-width: 0;
-}
-
-.search-filters .ui-button {
-  flex-shrink: 0;
-}
-
-.products-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-  margin-bottom: 24px;
-}
-
-.product-card {
-  background: var(--color-bg-secondary, #f9fafb);
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-lg, 12px);
-  overflow: hidden;
-  transition: all var(--transition-normal, 0.2s ease);
-  position: relative;
-}
-
-.product-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
-}
-
-.product-image {
-  width: 100%;
-  height: 160px;
-  background: var(--color-bg-tertiary, #f3f4f6);
-  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  min-height: 200px;
+  gap: var(--space-4);
 }
 
-.product-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--color-border);
+  border-top: 4px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
-.product-info {
-  padding: 16px;
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-.product-name {
-  margin: 0 0 8px 0;
+.catalog-layout {
+  display: flex;
+  gap: var(--space-6);
+}
+
+.settings-section {
+  flex: 3;
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+}
+
+.settings-section h4 {
+  margin: 0 0 var(--space-4) 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--color-text-primary, #111827);
+  color: var(--color-text-primary);
 }
 
-.product-description {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  color: var(--color-text-secondary, #6b7280);
-  line-height: 1.4;
+.form-group {
+  margin-bottom: var(--space-4);
 }
 
-.product-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
+.form-group label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-weight: 500;
+  color: var(--color-text-primary);
 }
 
-.product-price {
-  font-size: 18px;
+.required {
+  color: var(--color-error);
+}
+
+.form-actions {
+  margin-top: var(--space-4);
+}
+
+.table-section {
+  flex: 4;
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+}
+
+.table-section h4 {
+  margin: 0 0 var(--space-4) 0;
+  font-size: 16px;
   font-weight: 600;
-  color: var(--color-primary, #3b82f6);
+  color: var(--color-text-primary);
 }
 
-.product-stock {
-  font-size: 12px;
-  color: var(--color-text-secondary, #6b7280);
+.status-connected {
+  color: var(--color-success);
+  font-weight: 500;
 }
 
-.product-category {
-  margin-bottom: 8px;
+.status-disconnected {
+  color: var(--color-text-secondary);
+  font-weight: 500;
 }
 
-.product-status {
-  margin-bottom: 12px;
-}
-
-.product-actions {
-  position: absolute;
-  top: 12px;
-  right: 12px;
+.action-buttons {
   display: flex;
-  gap: 4px;
-  opacity: 0;
-  transition: opacity var(--transition-normal, 0.2s ease);
+  gap: var(--space-2);
 }
 
-.product-card:hover .product-actions {
-  opacity: 1;
+.empty-state {
+  text-align: center;
+  padding: var(--space-6);
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.empty-state i {
+  font-size: 48px;
+  color: var(--color-primary);
+  margin-bottom: var(--space-4);
+}
+
+.empty-state h4 {
+  margin: 0 0 var(--space-3) 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.empty-state p {
+  margin: 0 0 var(--space-4) 0;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
 }
 
 @media (max-width: 768px) {
-  .search-filters {
-    flex-direction: column;
-    align-items: stretch;
+  .tab-panel {
+    padding: var(--space-3);
   }
   
-  .products-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .export-section {
+  .catalog-layout {
     flex-direction: column;
+    gap: var(--space-4);
   }
 }
 </style> 

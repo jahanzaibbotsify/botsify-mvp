@@ -5,7 +5,7 @@
       <!-- Media / Text Section -->
       <div class="body">
         <template v-if="template.bodyIncludes?.includes('header')">
-          <p v-if="template.type === 'text' || block?.type === 'button'" class="header-text">
+          <p v-if="template.header === 'text'" class="header-text">
             <strong>{{ headerText }}</strong>
           </p>
 
@@ -38,7 +38,7 @@
             <img
               v-if="isDocument"
               class="media-document"
-              src="/theme/images/file-cover.png"
+              :src="mediaSrc"
               alt="document-preview"
             />
           </div>
@@ -79,7 +79,7 @@
 
       <!-- Generic Template Slides -->
       <div
-        v-if="template.type === 'generic' && slides?.length"
+        v-if="template.type === 'generic' && slides.length > 0"
         class="slides-container"
       >
         <div class="slides-wrapper">
@@ -104,9 +104,15 @@
                 poster="/theme/images/play-poster.png"
                 controls
               >
-                <source :src="slide.attachment_link" type="video/mp4" />
+                <source :src="getSlideVideo(index)" type="video/mp4" />
                 Your browser does not support HTML5 video.
               </video>
+              <img
+                v-else-if="template.slides[index].header === 'document'"
+                class="slide-document"
+                :src="getSlideDocument(index)"
+                alt="document-preview"
+              />
             </div>
 
             <!-- Slide Title -->
@@ -120,14 +126,14 @@
             >
               <a
                 v-if="btn.type === 'web_url'"
-                :href="btn.url"
+                :href="slideButtonUrl(index, idx)"
                 class="slide-button-link"
                 target="_blank"
               >
-                {{ btn.text ?? btn.title }}
+                {{ slideButtonText(index, idx) }}
               </a>
               <strong v-else class="slide-button-text">
-                {{ btn.text ?? btn.title }}
+                {{ slideButtonText(index, idx) }}
               </strong>
             </div>
           </div>
@@ -144,7 +150,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
+import axios from 'axios';
 
 // Props
 interface Props {
@@ -171,34 +178,90 @@ const emit = defineEmits<{
   'onImageFailed': [index: number];
 }>();
 
+// Reactive data for media handling
+const mediaCache = ref<{ [key: string]: string }>({});
+const slidesMediaCache = ref<{ [key: string]: string }>({});
+
 // Computed properties
 const headerText = computed(() => {
+  let result = props.template.header_text || '';
   const variable = props.template.variables?.header;
+  
+  console.log('MessagePreview - headerText computed:', {
+    originalText: result,
+    headerVar: variable,
+    templateHeaderText: props.template.header_text
+  });
+  
   if (variable && variable.value !== '') {
-    return props.template.header_text.replace(variable.key, variable.value);
+    // Replace the variable placeholder with the actual value
+    const beforeReplace = result;
+    result = result.replace(variable.key, variable.value);
+    console.log('MessagePreview - replaced header variable:', {
+      key: variable.key,
+      value: variable.value,
+      before: beforeReplace,
+      after: result
+    });
   }
-  return props.template.header_text;
+  
+  return result;
 });
 
 const bodyText = computed(() => {
   let result = props.block?.text || props.template.body_text || '';
   const bodyVars = props.template.variables?.body || [];
+  
+  console.log('MessagePreview - bodyText computed:', {
+    originalText: result,
+    bodyVars: bodyVars,
+    templateBodyText: props.template.body_text,
+    blockText: props.block?.text
+  });
+  
+  // Replace each body variable with its value
   bodyVars.forEach((item: any) => {
     if (item.value !== '') {
-      result = result.replace(item.key, item.value + item.key);
-      result = result.replace(item.key, '');
+      const beforeReplace = result;
+      result = result.replace(item.key, item.value);
+      console.log('MessagePreview - replaced body variable:', {
+        key: item.key,
+        value: item.value,
+        before: beforeReplace,
+        after: result
+      });
     }
   });
+  
   return result;
 });
 
 const mediaSrc = computed(() => {
-  const link = props.block?.attachment_link;
+  const link = props.block?.attachment_link || props.template.attachment_link;
+  
+  console.log('MessagePreview - mediaSrc computed:', {
+    blockAttachmentLink: props.block?.attachment_link,
+    templateAttachmentLink: props.template.attachment_link,
+    finalLink: link,
+    templateType: props.template.type,
+    templateHeader: props.template.header,
+    bodyIncludes: props.template.bodyIncludes
+  });
+  
+  // Check if we have a cached version
+  if (mediaCache.value[link]) {
+    return mediaCache.value[link];
+  }
 
   // Check if link is a valid URL
   const isValidUrl = typeof link === 'string' && /^https?:\/\/.+/.test(link);
 
-  return isValidUrl ? link : props.default_image || '/theme/images/file-cover.png';
+  if (isValidUrl) {
+    return link;
+  }
+
+  // Return fallback image
+  return props.default_image || '/theme/images/file-cover.png';
 });
 
 const isImage = computed(() => {
@@ -218,12 +281,71 @@ const showButtons = computed(() => {
 });
 
 const buttons = computed(() => {
-  return props.block?.buttons || props.template.buttons || [];
+  const buttons = props.block?.buttons || props.template.buttons || [];
+  
+  console.log('MessagePreview - buttons computed:', {
+    buttons: buttons,
+    templateVariables: props.template.variables,
+    buttonUrlVar: props.template.variables?.buttonUrl,
+    buttonTextVar: props.template.variables?.buttonText
+  });
+  
+  // Replace variables in button URLs and text
+  return buttons.map((button: any) => {
+    let updatedButton = { ...button };
+    
+    // Replace variables in button URL
+    if (button.url) {
+      let url = button.url;
+      const buttonUrlVar = props.template.variables?.buttonUrl;
+      
+      console.log('MessagePreview - processing button URL:', {
+        originalUrl: button.url,
+        buttonUrlVar: buttonUrlVar,
+        buttonType: button.type
+      });
+      
+      if (buttonUrlVar && buttonUrlVar.value !== '') {
+        url = url.replace(buttonUrlVar.key, buttonUrlVar.value);
+        console.log('MessagePreview - replaced URL:', {
+          originalUrl: button.url,
+          newUrl: url,
+          key: buttonUrlVar.key,
+          value: buttonUrlVar.value
+        });
+      }
+      updatedButton.url = url;
+    }
+    
+    // Replace variables in button text
+    if (button.text || button.title) {
+      let text = button.text || button.title || '';
+      const buttonTextVar = props.template.variables?.buttonText;
+      
+      console.log('MessagePreview - processing button text:', {
+        originalText: text,
+        buttonTextVar: buttonTextVar
+      });
+      
+      if (buttonTextVar && buttonTextVar.value !== '') {
+        text = text.replace(buttonTextVar.key, buttonTextVar.value);
+        console.log('MessagePreview - replaced text:', {
+          originalText: button.text || button.title,
+          newText: text,
+          key: buttonTextVar.key,
+          value: buttonTextVar.value
+        });
+      }
+      updatedButton.text = text;
+      updatedButton.title = text;
+    }
+    
+    return updatedButton;
+  });
 });
 
 const slides = computed(() => {
-  console.log(props.template.slides, "this.template.slides");
-  return props.block?.slides || props.template.slides || [];
+  return props.template.slides || [];
 });
 
 // Methods
@@ -231,26 +353,177 @@ const handleImageError = (event: Event) => {
   (event.target as HTMLImageElement).src = '/theme/images/file-cover.png';
 };
 
+const retrieveMedia = async (attachmentLink: string, slideIndex?: number) => {
+  const FALLBACK_IMAGE = '/theme/images/file-cover.png';
+  const isGeneric = props.template.type === 'generic' && props.template.slides.length > 0;
+  const isUrl = attachmentLink?.startsWith('http://') || attachmentLink?.startsWith('https://');
+
+  if (isUrl) {
+    if (isGeneric && slideIndex !== undefined) {
+      slidesMediaCache.value[`${slideIndex}_${attachmentLink}`] = attachmentLink;
+    } else {
+      mediaCache.value[attachmentLink] = attachmentLink;
+    }
+    return;
+  }
+
+  if (!attachmentLink || attachmentLink === FALLBACK_IMAGE) {
+    return;
+  }
+
+  try {
+    // For now, we'll use the attachment link directly
+    // In a real implementation, you might want to make an API call here
+    if (isGeneric && slideIndex !== undefined) {
+      slidesMediaCache.value[`${slideIndex}_${attachmentLink}`] = attachmentLink;
+    } else {
+      mediaCache.value[attachmentLink] = attachmentLink;
+    }
+  } catch (error) {
+    console.error('Failed to retrieve media:', error);
+    if (isGeneric && slideIndex !== undefined) {
+      slidesMediaCache.value[`${slideIndex}_${attachmentLink}`] = FALLBACK_IMAGE;
+    } else {
+      mediaCache.value[attachmentLink] = FALLBACK_IMAGE;
+    }
+  }
+};
+
 const slideBodyText = (index = 0) => {
-  let result = props.block?.slides?.[index]?.title || props.template.slides?.[index]?.title || '';
-  const vars = props.template.slides?.[index]?.variables?.body || [];
+  const slide = props.template.slides?.[index];
+  if (!slide) return '';
+  
+  let result = slide.body || '';
+  const vars = slide.variables?.body || [];
+  
   vars.forEach((item: any) => {
     if (item.value !== '') {
-      result = result.replace(item.key, item.value + item.key);
-      result = result.replace(item.key, '');
+      result = result.replace(item.key, item.value);
     }
   });
   return result;
 };
 
-const getSlideImage = (index: number) => {
-  const defaultImage = props.slides_default?.[index];
-  const link = slides.value?.[index]?.attachment_link;
-
-  const isValidUrl = typeof link === 'string' && /^https?:\/\/.+/.test(link);
-
-  return defaultImage || (isValidUrl ? link : '/theme/images/file-cover.png');
+const slideButtonText = (slideIndex: number, buttonIndex: number) => {
+  const slide = props.template.slides?.[slideIndex];
+  if (!slide) return '';
+  
+  const button = slide.buttons?.[buttonIndex];
+  if (!button) return '';
+  
+  let result = button.title || button.text || '';
+  
+  // Check for button text variables in slide
+  const buttonTextVar = slide.variables?.buttonText;
+  if (buttonTextVar && buttonTextVar.value !== '') {
+    result = result.replace(buttonTextVar.key, buttonTextVar.value);
+    console.log('MessagePreview - replaced slide button text:', {
+      slideIndex,
+      buttonIndex,
+      originalText: button.title || button.text,
+      newText: result,
+      key: buttonTextVar.key,
+      value: buttonTextVar.value
+    });
+  }
+  
+  return result;
 };
+
+const slideButtonUrl = (slideIndex: number, buttonIndex: number) => {
+  const slide = props.template.slides?.[slideIndex];
+  if (!slide) return '';
+  
+  const button = slide.buttons?.[buttonIndex];
+  if (!button || !button.url) return '';
+  
+  let url = button.url;
+  
+  // Check for button URL variables in slide
+  const buttonUrlVar = slide.variables?.buttonUrl;
+  if (buttonUrlVar && buttonUrlVar.value !== '') {
+    url = url.replace(buttonUrlVar.key, buttonUrlVar.value);
+    console.log('MessagePreview - replaced slide button URL:', {
+      slideIndex,
+      buttonIndex,
+      originalUrl: button.url,
+      newUrl: url,
+      key: buttonUrlVar.key,
+      value: buttonUrlVar.value
+    });
+  }
+  
+  return url;
+};
+
+const getSlideImage = (index: number) => {
+  const slide = props.template.slides?.[index];
+  const attachmentLink = slide?.attachment_link || props.block?.slides?.[index]?.attachment_link;
+  
+  const cacheKey = `${index}_${attachmentLink}`;
+  if (slidesMediaCache.value[cacheKey]) {
+    return slidesMediaCache.value[cacheKey];
+  }
+
+  const isValidUrl = typeof attachmentLink === 'string' && /^https?:\/\/.+/.test(attachmentLink);
+  return isValidUrl ? attachmentLink : '/theme/images/file-cover.png';
+};
+
+const getSlideVideo = (index: number) => {
+  const slide = props.template.slides?.[index];
+  const attachmentLink = slide?.attachment_link || props.block?.slides?.[index]?.attachment_link;
+  
+  const cacheKey = `${index}_${attachmentLink}`;
+  if (slidesMediaCache.value[cacheKey]) {
+    return slidesMediaCache.value[cacheKey];
+  }
+
+  const isValidUrl = typeof attachmentLink === 'string' && /^https?:\/\/.+/.test(attachmentLink);
+  return isValidUrl ? attachmentLink : '/theme/images/file-cover.png';
+};
+
+const getSlideDocument = (index: number) => {
+  const slide = props.template.slides?.[index];
+  const attachmentLink = slide?.attachment_link || props.block?.slides?.[index]?.attachment_link;
+  
+  const cacheKey = `${index}_${attachmentLink}`;
+  if (slidesMediaCache.value[cacheKey]) {
+    return slidesMediaCache.value[cacheKey];
+  }
+
+  const isValidUrl = typeof attachmentLink === 'string' && /^https?:\/\/.+/.test(attachmentLink);
+  return isValidUrl ? attachmentLink : '/theme/images/file-cover.png';
+};
+
+// Watch for template changes to retrieve media
+watch(() => props.template.attachment_link, (newLink) => {
+  if (newLink) {
+    retrieveMedia(newLink);
+  }
+});
+
+watch(() => props.template.slides, (newSlides) => {
+  if (newSlides && props.template.type === 'generic') {
+    newSlides.forEach((slide: any, index: number) => {
+      if (slide.attachment_link) {
+        retrieveMedia(slide.attachment_link, index);
+      }
+    });
+  }
+}, { deep: true });
+
+// Initialize media retrieval on mount
+onMounted(() => {
+  if (props.template.type === 'generic' && Array.isArray(props.template.slides)) {
+    props.template.slides.forEach((slide: any, index: number) => {
+      if (slide.attachment_link) {
+        retrieveMedia(slide.attachment_link, index);
+      }
+    });
+  } else if (props.template.attachment_link) {
+    retrieveMedia(props.template.attachment_link);
+  }
+});
 </script>
 
 <style scoped>

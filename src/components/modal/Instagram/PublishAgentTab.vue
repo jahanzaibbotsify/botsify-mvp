@@ -23,45 +23,30 @@ const storeIsLoadingPages = computed(() => publishStore.isLoadingInstagramPages)
 
 // Computed pages data from store
 const pages = computed(() => {
-  if (!storePages.value) {
+  const pagesData = storePages.value?.pagesData || [];
+  const currentPageId = storePages.value?.pageId;
+
+  if (!Array.isArray(pagesData) || pagesData.length === 0) {
     return [];
   }
-  
-  // Check if we have pagesData structure (API response format)
-  if (storePages.value.pagesData && storePages.value.pagesData.data) {
-    const pagesData = storePages.value.pagesData.data;
-    if (Array.isArray(pagesData) && pagesData.length > 0) {
-      return pagesData.map((page: any) => ({
-        id: page.id,
-        name: page.instagram_business_account.name,
-        username: page.instagram_business_account.username,
-        profile_picture_url: page.instagram_business_account.profile_picture_url,
-        followers_count: page.instagram_business_account.followers_count,
-        follows_count: page.instagram_business_account.follows_count,
-        is_bot_page: !!page.connected_page_bot,
-        status: page.connected_page_bot ? 'connected' : 'disconnected',
-        botName: page.connected_page_bot || null,
-        accessToken: page.access_token || null,
-      }));
-    }
-  } else if (Array.isArray(storePages.value) && storePages.value.length > 0) {
-    // Direct array structure (fallback)
-    return storePages.value.map((page: any) => ({
+  return pagesData.map((page: any) => {
+    const ig = page.instagram_business_account || {};
+
+    return {
       id: page.id,
-      name: page.name,
-      accessToken: page.access_token,
-      username: page.instagram_business_account.username,
-      profile_picture_url: page.instagram_business_account.profile_picture_url,
-      followers_count: page.instagram_business_account.followers_count,
-      follows_count: page.instagram_business_account.follows_count,
-      is_bot_page: page.is_bot_page || false,
-      status: page.status || 'disconnected',
-      botName: page.botName || null,
-    }));
-  }
-  
-  return [];
+      name: ig.name || page.name || 'Untitled',
+      username: ig.username || '',
+      profile_picture_url: ig.profile_picture_url || '',
+      followers_count: ig.followers_count || 0,
+      follows_count: ig.follows_count || 0,
+      accessToken: page.access_token || '',
+      is_bot_page: page.id === currentPageId,
+      status: page.id === currentPageId ? 'connected' : 'disconnected',
+      botName: page.connected_page_bot || null
+    };
+  });
 });
+
 
 // Computed show connect button
 const showConnectButton = computed(() => {
@@ -302,18 +287,7 @@ defineExpose({
           
           <div class="page-actions">
             <div class="action-buttons">
-              <Button 
-                v-if="!page.is_bot_page"
-                variant="primary"
-                size="small"
-                :loading="isLoading"
-                icon="pi pi-link"
-                @click="connectionPage('connect', page)"
-              >
-                Connect
-              </Button>
-              
-              <div v-else-if="page.botName === botStore.botName" class="connected-actions">
+              <div v-if="page.is_bot_page" class="connected-actions">
                 <Button 
                   variant="success"
                   size="small"
@@ -333,14 +307,23 @@ defineExpose({
                 >
                   Disconnect
                 </Button>
+                
+                <!-- <span class="connected-text">
+                  Connected to {{ page.botName }}
+                </span> -->
               </div>
               
-              <span 
+              <Button 
                 v-else
-                class="connected-text"
+                variant="primary"
+                size="small"
+                :loading="isLoading"
+                icon="pi pi-link"
+                @click="connectionPage('connect', page)"
               >
-                Connected to {{ page.botName }}
-              </span>
+                Connect
+              </Button>
+              
             </div>
             
             <Button 

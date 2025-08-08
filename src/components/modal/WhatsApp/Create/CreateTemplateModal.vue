@@ -13,10 +13,12 @@ import ButtonsEditor from "./ButtonsEditor.vue";
 // Props
 interface Props {
   isLoading?: boolean;
+  botService?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  isLoading: false
+  isLoading: false,
+  botService: 'facebookAPI'
 });
 
 // Emits
@@ -224,7 +226,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
 
         <!-- Step 2: Parameters and Preview -->
         <div v-if="store.views.settings === 'current'" class="step-content">
-          <ParameterEditor />
+          <ParameterEditor :bot-service="props.botService" />
         </div>
       </div>
     </template>
@@ -378,6 +380,11 @@ defineExpose({ openModal, closeModal, openModalWithData });
   color: var(--color-text-primary);
   resize: vertical;
   outline: none;
+}
+
+.header-body.text-center {
+  text-align: center;
+  border-bottom: 1px dashed var(--color-border-secondary);
 }
 
 .header-textarea:focus {
