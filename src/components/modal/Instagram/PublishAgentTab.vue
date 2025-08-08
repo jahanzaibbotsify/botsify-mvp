@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
-import { useBotStore } from "@/stores/botStore";
 import Button from "@/components/ui/Button.vue";
 
 // Props
@@ -9,12 +8,11 @@ interface Props {
   isLoading?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   isLoading: false
 });
 
 const publishStore = usePublishStore();
-const botStore = useBotStore();
 
 // Computed properties to sync with store state
 const storePages = computed(() => publishStore.instagramPagesCache);

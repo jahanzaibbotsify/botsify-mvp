@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from "vue";
-import { Button, Input, VueSelect } from "@/components/ui";
-import FileUpload from "@/components/ui/FileUpload.vue";
+import { ref, computed, watch, nextTick } from "vue";
+import { Input, VueSelect } from "@/components/ui";
+// import FileUpload from "@/components/ui/FileUpload.vue";
 import MessagePreview from "./Create/MessagePreview.vue";
 import { useWhatsAppTemplateStore } from "@/stores/whatsappTemplateStore";
 import { usePublishStore } from "@/stores/publishStore";
@@ -12,7 +12,7 @@ interface Props {
   isLoading?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   isLoading: false
 });
 
@@ -47,8 +47,8 @@ const validationErrors = ref({
 
 // Media handling
 const uploadingMedia = ref(false);
-const mediaFile = ref<File | null>(null);
-const mediaUrl = ref('');
+// const mediaFile = ref<File | null>(null);
+// const mediaUrl = ref('');
 const csvData = ref<{ headers: string[], data: any[] }>({ headers: [], data: [] });
 const csvFile = ref<File | null>(null);
 
@@ -106,13 +106,13 @@ const showMediaHeader = computed(() => {
   
   return result;
 });
-const showCsvUpload = computed(() => broadcastForm.value.userSegment === 'upload');
-const showVariableFields = computed(() => selectedTemplate.value && (
-  templateData.value.variables.body.length > 0 ||
-  templateData.value.variables.header ||
-  templateData.value.variables.button ||
-  (templateData.value.type === 'generic' && templateData.value.slides.length > 0)
-));
+// const showCsvUpload = computed(() => broadcastForm.value.userSegment === 'upload');
+// const showVariableFields = computed(() => selectedTemplate.value && (
+//   templateData.value.variables.body.length > 0 ||
+//   templateData.value.variables.header ||
+//   templateData.value.variables.button ||
+//   (templateData.value.type === 'generic' && templateData.value.slides.length > 0)
+// ));
 const showMessageEditor = computed(() => {
   return selectedTemplate.value && (
     templateData.value.variables.body.length > 0 ||
@@ -122,64 +122,64 @@ const showMessageEditor = computed(() => {
   );
 });
 
-const canSendBroadcast = computed(() => {
-  if (!selectedTemplate.value || !broadcastForm.value.userSegment) {
-    return false;
-  }
+// const canSendBroadcast = computed(() => {
+//   if (!selectedTemplate.value || !broadcastForm.value.userSegment) {
+//     return false;
+//   }
   
-  // Check if all required variables are filled
-  const allVariablesFilled = () => {
-    // Check body variables
-    if (templateData.value.variables.body.length > 0) {
-      const bodyFilled = templateData.value.variables.body.every((variable: any) => variable.value && variable.value.trim() !== '');
-      if (!bodyFilled) return false;
-    }
+//   // Check if all required variables are filled
+//   const allVariablesFilled = () => {
+//     // Check body variables
+//     if (templateData.value.variables.body.length > 0) {
+//       const bodyFilled = templateData.value.variables.body.every((variable: any) => variable.value && variable.value.trim() !== '');
+//       if (!bodyFilled) return false;
+//     }
     
-    // Check header variable
-    if (templateData.value.variables.header && !templateData.value.variables.header.value) {
-      return false;
-    }
+//     // Check header variable
+//     if (templateData.value.variables.header && !templateData.value.variables.header.value) {
+//       return false;
+//     }
     
-    // Check media header attachment
-    if (showMediaHeader.value && !templateData.value.attachment_link) {
-      return false;
-    }
+//     // Check media header attachment
+//     if (showMediaHeader.value && !templateData.value.attachment_link) {
+//       return false;
+//     }
     
-    // Check button variable
-    if (templateData.value.variables.button && !templateData.value.variables.button.value) {
-      return false;
-    }
+//     // Check button variable
+//     if (templateData.value.variables.button && !templateData.value.variables.button.value) {
+//       return false;
+//     }
     
-    // Check carousel slides
-    if (templateData.value.type === 'generic' && templateData.value.slides.length > 0) {
-      for (const slide of templateData.value.slides) {
-        if (slide.variables.body.length > 0) {
-          const slideBodyFilled = slide.variables.body.every((variable: any) => variable.value && variable.value.trim() !== '');
-          if (!slideBodyFilled) return false;
-        }
-        if (slide.variables.button && !slide.variables.button.value) {
-          return false;
-        }
-        if (!slide.attachment_link) {
-          return false;
-        }
-      }
-    }
+//     // Check carousel slides
+//     if (templateData.value.type === 'generic' && templateData.value.slides.length > 0) {
+//       for (const slide of templateData.value.slides) {
+//         if (slide.variables.body.length > 0) {
+//           const slideBodyFilled = slide.variables.body.every((variable: any) => variable.value && variable.value.trim() !== '');
+//           if (!slideBodyFilled) return false;
+//         }
+//         if (slide.variables.button && !slide.variables.button.value) {
+//           return false;
+//         }
+//         if (!slide.attachment_link) {
+//           return false;
+//         }
+//       }
+//     }
     
-    return true;
-  };
+//     return true;
+//   };
   
-  // Check user segment specific requirements
-  if (broadcastForm.value.userSegment === 'single' && !broadcastForm.value.phoneNumber) {
-    return false;
-  }
+//   // Check user segment specific requirements
+//   if (broadcastForm.value.userSegment === 'single' && !broadcastForm.value.phoneNumber) {
+//     return false;
+//   }
   
-  if (broadcastForm.value.userSegment === 'upload' && !broadcastForm.value.uploadedFile) {
-    return false;
-  }
+//   if (broadcastForm.value.userSegment === 'upload' && !broadcastForm.value.uploadedFile) {
+//     return false;
+//   }
   
-  return allVariablesFilled();
-});
+//   return allVariablesFilled();
+// });
 
 // Methods
 const fetchTemplates = async () => {
@@ -526,7 +526,7 @@ const setTemplateVariable = () => {
           templateData.value.buttons = component.buttons || [];
           
           // Check for button variables in URLs
-          component.buttons.forEach((btn: any, index: number) => {
+          component.buttons.forEach((btn: any) => {
             if (btn.type === 'URL' && btn.url) {
               // Check if URL contains variables like {{1}}, {{2}}, etc.
               const urlVariables = btn.url.match(/{{\d+}}/g);
@@ -604,7 +604,7 @@ const setTemplateVariable = () => {
                 templateData.value.slides[index].buttons = comp.buttons || [];
                 
                 // Check for button variables in slide URLs
-                comp.buttons.forEach((btn: any, btnIndex: number) => {
+                comp.buttons.forEach((btn: any) => {
                   if (btn.type === 'url' && btn.url) {
                     // Check if URL contains variables like {{1}}, {{2}}, etc.
                     const urlVariables = btn.url.match(/{{\d+}}/g);
@@ -685,7 +685,7 @@ const setTemplateVariable = () => {
           templateData.value.buttons = component.buttons || [];
           
           // Check for button variables in URLs
-          component.buttons.forEach((btn: any, index: number) => {
+          component.buttons.forEach((btn: any) => {
             if (btn.type === 'URL' && btn.url) {
               // Check if URL contains variables like {{1}}, {{2}}, etc.
               const urlVariables = btn.url.match(/{{\d+}}/g);
@@ -763,7 +763,7 @@ const setTemplateVariable = () => {
                 templateData.value.slides[index].buttons = comp.buttons || [];
                 
                 // Check for button variables in slide URLs
-                comp.buttons.forEach((btn: any, btnIndex: number) => {
+                comp.buttons.forEach((btn: any) => {
                   if (btn.type === 'url' && btn.url) {
                     // Check if URL contains variables like {{1}}, {{2}}, etc.
                     const urlVariables = btn.url.match(/{{\d+}}/g);
@@ -805,11 +805,11 @@ const setTemplateVariable = () => {
   }
 };
 
-const handleFileUpload = (attachments: any[]) => {
-  if (attachments && attachments.length > 0) {
-    broadcastForm.value.uploadedFile = attachments[0];
-  }
-};
+// const handleFileUpload = (attachments: any[]) => {
+//   if (attachments && attachments.length > 0) {
+//     broadcastForm.value.uploadedFile = attachments[0];
+//   }
+// };
 
 // Media handling methods
 const acceptedFileTypes = (headerType: string) => {

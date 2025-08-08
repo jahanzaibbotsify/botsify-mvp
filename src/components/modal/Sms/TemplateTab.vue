@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import ModalLayout from "@/components/ui/ModalLayout.vue";
-import Pagination from "@/components/ui/Pagination.vue";
+// import ModalLayout from "@/components/ui/ModalLayout.vue";
+// import Pagination from "@/components/ui/Pagination.vue";
 import Input from "@/components/ui/Input.vue";
 import CreateTemplateModal from "./CreateTemplateModal.vue";
 
@@ -10,7 +10,7 @@ interface Props {
   isLoading?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   isLoading: false
 });
 
@@ -74,9 +74,9 @@ const openCreateModal = () => {
   createModalRef.value?.openModal();
 };
 
-const closeCreateModal = () => {
-  createModalRef.value?.closeModal();
-};
+// const closeCreateModal = () => {
+//   createModalRef.value?.closeModal();
+// };
 
 const createTemplate = (block: any) => {
   const newBlock = {
@@ -114,16 +114,16 @@ const previewTemplate = (block: any) => {
   emit('preview-template', block);
 };
 
-const copyPayload = (block: any) => {
-  const payload = JSON.stringify(block, null, 2);
-  navigator.clipboard.writeText(payload);
-  console.log('Payload copied to clipboard');
-  emit('copy-payload', block);
-};
+// const copyPayload = (block: any) => {
+//   const payload = JSON.stringify(block, null, 2);
+//   navigator.clipboard.writeText(payload);
+//   console.log('Payload copied to clipboard');
+//   emit('copy-payload', block);
+// };
 
-const handlePageChange = (page: number) => {
-  currentPage.value = page;
-};
+// const handlePageChange = (page: number) => {
+//   currentPage.value = page;
+// };
 
 const handleSearch = (query: string) => {
   searchQuery.value = query;

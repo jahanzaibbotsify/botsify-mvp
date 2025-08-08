@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
-import { Button, Input, VueSelect } from "@/components/ui";
+import { Button, VueSelect } from "@/components/ui";
 import { useWhatsAppTemplateStore } from "@/stores/whatsappTemplateStore";
 import TemplateConfiguration from "./TemplateConfiguration.vue";
 import AuthenticationTemplate from "./AuthenticationTemplate.vue";
@@ -44,6 +44,7 @@ const openModal = () => {
 
 const openModalWithData = (templateData: any) => {
   modalRef.value?.openModal();
+  console.log(templateData)
   // Populate with template data
   // Implementation for cloning
 };
@@ -183,7 +184,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
                         @update:text="(val: string) => store.block.text = val"
                         @update:error-text="(val: string) => store.errors.body = val"
                         @add-variable="() => store.addVariable('body')"
-                        @check-variables="(val: string) => store.checkForVariables('body')"
+                        @check-variables="() => store.checkForVariables('body')"
                       />
 
                       <!-- TEMPLATE FOOTER -->

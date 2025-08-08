@@ -9,7 +9,7 @@ interface Props {
   isLoading?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   isLoading: false
 });
 
@@ -41,13 +41,6 @@ const itemsPerPage = ref(20);
 
 // API data
 const allReportData = ref<any[]>([]); // Store all data from API
-const reportData = ref<any[]>([]); // Current page data
-const pagination = ref({
-  current_page: 1,
-  total: 0,
-  per_page: 20,
-  last_page: 1
-});
 
 // Stats data
 const stats = ref({
@@ -122,7 +115,6 @@ const refreshData = async () => {
 };
 
 const calculateStats = () => {
-  const today = new Date().toISOString().split('T')[0];
   
   stats.value = allReportData.value.reduce((acc, report) => {
     // Only count today's stats

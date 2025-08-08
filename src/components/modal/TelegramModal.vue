@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {Button, Input, PublishModalLayout} from "@/components/ui";
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 
 // Define tabs

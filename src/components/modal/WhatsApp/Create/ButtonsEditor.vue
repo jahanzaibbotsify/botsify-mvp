@@ -289,7 +289,7 @@ watch(() => props.template.button_type, (newType) => {
 }, { immediate: true });
 
 // Watch for button count changes and validate
-watch(() => props.block.buttons.length, (newCount) => {
+watch(() => props.block.buttons.length, () => {
   validateButtonCount();
 }, { immediate: true });
 </script>

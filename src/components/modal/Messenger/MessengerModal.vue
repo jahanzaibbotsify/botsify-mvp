@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {PublishModalLayout, Button} from "@/components/ui";
-import Pagination from "@/components/ui/Pagination.vue";
 import { ref, computed } from "vue";
 import PublishAgentTab from "./PublishAgentTab.vue";
 import CommentAutoResponderTab from "./CommentAutoResponderTab.vue";

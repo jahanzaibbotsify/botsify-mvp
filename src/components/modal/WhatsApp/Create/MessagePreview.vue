@@ -151,7 +151,6 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue';
-import axios from 'axios';
 
 // Props
 interface Props {
@@ -174,7 +173,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 // Emits
-const emit = defineEmits<{
+defineEmits<{
   'onImageFailed': [index: number];
 }>();
 

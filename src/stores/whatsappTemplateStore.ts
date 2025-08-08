@@ -252,6 +252,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
   };
 
   const checkForVariables = (section?: string, btnIndex = null, slideIndex = 0) => {
+    console.log(btnIndex)
     // Check for variables in text and update variables structure
     if (section === 'header') {
       const variables = extractVariables(template.value.header_text || '');
@@ -368,7 +369,8 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     }
   };
 
-  const addVariable = (section?: string, addNew = true, btnIndex = null, slideIndex = 0) => {
+  const addVariable = (section?: string,  addNew = true, btnIndex = null, slideIndex = 0) => {
+    console.log(addNew, btnIndex)
     // Check if we can add more variables
     if (!canAddVariable(section || 'body')) {
       return;
@@ -521,8 +523,6 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
   };
 
   const createSlide = () => {
-    const slideIndex = block.value.slides.length;
-    
     // Get the current button type from the first slide if it exists
     const firstSlide = template.value.slides[0];
     const currentButtonType = firstSlide?.button_type || 'postback';
@@ -624,7 +624,6 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
       // Check if all slides have required content
       for (let i = 0; i < template.value.slides.length; i++) {
         const slide = template.value.slides[i];
-        const blockSlide = block.value.slides[i];
         
         // Check if slide body is filled
         if (!slide.body || slide.body.trim() === '') {
@@ -1292,12 +1291,6 @@ const removeSlide = (index: number) => {
       document: /\.(pdf)$/i
     };
 
-    const messages: Record<string, string> = {
-      image: "Please select a valid Image (.jpg, .jpeg, .png, .gif)",
-      video: "Please select a valid Video (.mp4)",
-      document: "Please select a valid File (.pdf)"
-    };
-
     if (extensionMap[template.value.header] && !extensionMap[template.value.header].test(attachmentLink)) {
       errors.value.file = { [template.value.header]: `Please enter a valid link, must be a ${template.value.header} file!` };
       block.value.attachment_link = '';
@@ -1321,12 +1314,6 @@ const removeSlide = (index: number) => {
       image: /\.(jpg|jpeg|png|gif)$/i,
       video: /\.(mp4)$/i,
       document: /\.(pdf)$/i
-    };
-
-    const messages: Record<string, string> = {
-      image: "Please select a valid Image (.jpg, .jpeg, .png, .gif)",
-      video: "Please select a valid Video (.mp4)",
-      document: "Please select a valid File (.pdf)"
     };
 
     if (extensionMap[slide.header] && !extensionMap[slide.header].test(attachmentLink)) {

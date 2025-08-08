@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {Button, Input, PublishModalLayout} from "@/components/ui";
+import {Button, PublishModalLayout} from "@/components/ui";
 import { ref } from "vue";
 
 // Define tabs

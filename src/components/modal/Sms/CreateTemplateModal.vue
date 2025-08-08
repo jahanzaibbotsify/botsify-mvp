@@ -7,12 +7,12 @@ interface Props {
   isLoading?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   isLoading: false
 });
 
 // Emits
-const emit = defineEmits<{
+defineEmits<{
   'create-media-block': [block: any];
 }>();
 
@@ -75,11 +75,11 @@ const createTemplate = () => {
     return;
   }
 
-  const newBlock = {
-    id: Date.now(),
-    ...createForm.value,
-    createdAt: new Date().toISOString().split('T')[0]
-  };
+  // const newBlock = {
+  //   id: Date.now(),
+  //   ...createForm.value,
+  //   createdAt: new Date().toISOString().split('T')[0]
+  // };
 
   // Emit event
   // emit('create-template', newBlock);

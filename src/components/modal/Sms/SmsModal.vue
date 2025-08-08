@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {Button, PublishModalLayout, Pagination} from "@/components/ui";
-import { ref, computed, watch } from "vue";
+import { ref, computed } from "vue";
 import PublishAgentTab from "./PublishAgentTab.vue";
 import BroadcastTab from "./BroadcastTab.vue";
 import BroadcastReportTab from "./BroadcastReportTab.vue";

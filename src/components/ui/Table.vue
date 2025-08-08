@@ -18,16 +18,16 @@ const emit = defineEmits<{
   'row-click': [row: any]
 }>()
 
-const handleSelectAll = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  emit('select-all', target.checked)
-}
+// const handleSelectAll = (event: Event) => {
+//   const target = event.target as HTMLInputElement
+//   emit('select-all', target.checked)
+// }
 
-const handleRowClick = (row: any) => {
-  if (props.clickable) {
-    emit('row-click', row)
-  }
-}
+// const handleRowClick = (row: any) => {
+//   if (props.clickable) {
+//     emit('row-click', row)
+//   }
+// }
 </script>
 
 <template>

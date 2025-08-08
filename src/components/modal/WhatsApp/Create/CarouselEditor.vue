@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { Input, Button, VueSelect } from "@/components/ui";
+import { Button, VueSelect } from "@/components/ui";
 import { useWhatsAppTemplateStore } from "@/stores/whatsappTemplateStore";
 import EmojiTextarea from "./EmojiTextarea.vue";
 import ButtonsEditor from "./ButtonsEditor.vue";
@@ -68,7 +68,7 @@ const shouldDisableControls = computed(() => {
           @update:text="val => slide.body = val"
           @update:error-text="val => store.errors.body = val"
           @add-variable="() => store.addVariable('body_slide', true, null, index)"
-          @check-variables="val => store.checkForVariables('body_slide', null, index)"
+          @check-variables="() => store.checkForVariables('body_slide', null, index)"
         />
 
         <!-- Buttons for the slide -->

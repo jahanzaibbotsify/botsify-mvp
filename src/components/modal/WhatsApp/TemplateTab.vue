@@ -9,7 +9,7 @@ interface Props {
   isLoading?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   isLoading: false
 });
 
@@ -176,7 +176,7 @@ const cloneTemplate = async (template: any) => {
     window.$toast?.error('Failed to clone template');
   }
 };
-
+console.log(cloneTemplate, "cloneTemplate");
 const previewTemplate = (template: any) => {
   // Create a modal or use existing modal system to preview the template
   console.log('Previewing template:', template);

@@ -179,12 +179,6 @@ const addKeyword = () => {
   }
 };
 
-const removeKeyword = (keywordToRemove: string) => {
-  const keywords = newResponder.value.keywords.split(',').map(k => k.trim());
-  const filteredKeywords = keywords.filter(k => k !== keywordToRemove);
-  newResponder.value.keywords = filteredKeywords.join(', ');
-};
-
 const startAddingNew = () => {
   isAddingNew.value = true;
   newResponder.value = {
@@ -381,9 +375,6 @@ const transformAndSetData = () => {
   });
 };
 
-const getKeywordsArray = (keywordsString: string) => {
-  return keywordsString.split(',').map(k => k.trim()).filter(k => k);
-};
 
 // Load data on mount
 onMounted(() => {

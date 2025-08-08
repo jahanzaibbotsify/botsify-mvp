@@ -16,12 +16,12 @@ const props = withDefaults(defineProps<Props>(), {
 const store = useWhatsAppTemplateStore();
 
 // Debug computed properties
-const debugTemplate = computed(() => {
-  console.log('Store template:', store.template);
-  console.log('Store template slides:', store.template.slides);
-  console.log('Store template variables:', store.template.variables);
-  return store.template;
-});
+// const debugTemplate = computed(() => {
+//   console.log('Store template:', store.template);
+//   console.log('Store template slides:', store.template.slides);
+//   console.log('Store template variables:', store.template.variables);
+//   return store.template;
+// });
 </script>
 
 <template>

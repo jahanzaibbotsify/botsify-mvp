@@ -7,7 +7,7 @@ interface Props {
   isLoading?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   isLoading: false
 });
 
@@ -51,7 +51,6 @@ const previewData = ref({
 });
 
 // Computed properties
-const showUserSegment = computed(() => true); // Always show user segment for multiple broadcast
 const showFileUpload = computed(() => broadcastForm.value.userSegment === 'upload-user');
 
 // Methods
@@ -88,9 +87,9 @@ const updatePreview = () => {
   };
 };
 
-const handleMessageChange = () => {
-  updatePreview();
-};
+// const handleMessageChange = () => {
+//   updatePreview();
+// };
 
 const handleFileUpload = (attachments: any[]) => {
   if (attachments && attachments.length > 0) {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useChatStore } from '@/stores/chatStore';
 import { useMCPStore } from '@/stores/mcpStore';
 import type { Attachment } from '@/types';
@@ -43,7 +43,6 @@ const openWebSearchModal = () => {
   webSearchModalRef.value?.openModal()
 }
 
-const loadingData = ref(false);
 const loadingFor =  ref('');
 
 

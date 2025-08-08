@@ -2,7 +2,7 @@
 import { ref, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 import { useBotStore } from "@/stores/botStore";
-import {Pagination, Button, PublishModalLayout} from "@/components/ui";
+import {Button, PublishModalLayout} from "@/components/ui";
 import PublishAgentTab from "./PublishAgentTab.vue";
 import BroadcastTab from "./BroadcastTab.vue";
 import BroadcastReportTab from "./BroadcastReportTab.vue";
@@ -87,11 +87,6 @@ const closeModal = () => {
 const openCreateTemplateModal = () => {
   closeModal(); // Close WhatsApp modal
   createTemplateModalRef.value?.openModal();
-};
-
-const closeCreateTemplateModal = () => {
-  createTemplateModalRef.value?.closeModal();
-  openModal(); // Reopen WhatsApp modal
 };
 
 // Template Tab Events
@@ -221,17 +216,6 @@ const handleSendBroadcast = async (data: any) => {
 
 const handleFilterReport = (filters: any) => {
   console.log('Filtering report:', filters);
-};
-
-// Message Template Tab Events
-const handleSendMessage = (data: any) => {
-  console.log('Sending message:', data);
-  window.$toast?.success('Message sent successfully!');
-};
-
-// Catalog Tab Events
-const handleCreateProduct = (product: any) => {
-  console.log('Creating product:', product);
 };
 
 const handleUpdateProduct = (product: any) => {

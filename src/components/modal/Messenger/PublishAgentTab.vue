@@ -9,7 +9,7 @@ interface Props {
   isLoading?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   isLoading: false
 });
 
@@ -182,21 +182,6 @@ const removeFbPagePermissions = async () => {
     isLoading.value = false;
   }
 };
-
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'connected':
-      return 'var(--color-secondary, #10b981)';
-    case 'disconnected':
-      return 'var(--color-text-tertiary, #9ca3af)';
-    case 'error':
-      return 'var(--color-error, #ef4444)';
-    default:
-      return 'var(--color-text-tertiary, #9ca3af)';
-  }
-};
-
 // Get initials from page name
 const getInitials = (name: string) => {
   return name
