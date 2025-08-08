@@ -20,7 +20,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 // Emits
-const emit = defineEmits<{
+defineEmits<{
   'save-settings': [settings: any];
   'send-message': [message: any];
 }>();
@@ -126,57 +126,6 @@ const setPluginData = () => {
   
   // Set posts from API response
   posts.value = storePluginData.value.facebook_posts.data || [];
-  
-  // Transform optin templates to auto responders if needed
-  // if (storePluginData.value.optin_templates) {
-  //   transformOptinTemplates();
-  // }
-};
-
-const transformOptinTemplates = () => {
-  if (!storePluginData.value.optin_templates) {
-    return;
-  }
-  
-  const optinTemplates = storePluginData.value.optin_templates;
-  
-  autoResponders.value = optinTemplates.map((template: any) => {
-    let parsedData = {
-      keywords: '',
-      post_id: '',
-      message: '',
-      is_active: true
-    };
-    
-    // Try to parse template text if it exists
-    if (template.text) {
-      try {
-        const textData = JSON.parse(template.text);
-        parsedData.message = textData.text || '';
-      } catch (e) {
-        console.warn('Failed to parse template text:', e);
-      }
-    }
-    
-    return {
-      id: template.id.toString(),
-      keywords: parsedData.keywords ? parsedData.keywords.split(',').map((k: string) => k.trim()) : [],
-      selectedPost: parsedData.post_id || '',
-      message: parsedData.message || '',
-      isActive: parsedData.is_active || true
-    };
-  });
-};
-
-const addKeyword = () => {
-  if (newKeyword.value.trim()) {
-    const keywords = newResponder.value.keywords ? newResponder.value.keywords.split(',').map(k => k.trim()) : [];
-    if (!keywords.includes(newKeyword.value.trim())) {
-      keywords.push(newKeyword.value.trim());
-      newResponder.value.keywords = keywords.join(', ');
-    }
-    newKeyword.value = '';
-  }
 };
 
 const startAddingNew = () => {

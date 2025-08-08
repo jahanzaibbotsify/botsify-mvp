@@ -2,7 +2,6 @@
 import { Input } from "@/components/ui";
 import { useWhatsAppTemplateStore } from "@/stores/whatsappTemplateStore";
 import MessagePreview from "./MessagePreview.vue";
-import { computed } from 'vue';
 
 // Props
 interface Props {

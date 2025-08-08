@@ -7,13 +7,13 @@ interface Props {
   clickable?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   selectable: false,
   selectAll: false,
   clickable: false
 })
 
-const emit = defineEmits<{
+defineEmits<{
   'select-all': [checked: boolean]
   'row-click': [row: any]
 }>()
