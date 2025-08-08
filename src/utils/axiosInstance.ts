@@ -58,7 +58,7 @@ axiosInstance.interceptors.response.use(
     },
     (error) => {
         const errorResponse = error.response;
-        if (errorResponse?.status === 401 && errorResponse?.data?.message === 'Unauthenticated') {
+        if (errorResponse?.status === 401 && errorResponse?.data?.message?.includes('Unauthenticated')) {
             // Clear auth data
             localStorage.removeItem('accessToken');
             localStorage.removeItem('user');
@@ -77,7 +77,7 @@ uploadInstance.interceptors.response.use(
     },
     (error) => {
         const errorResponse = error.response;
-        if (errorResponse?.status === 401 && errorResponse?.data?.message === 'Unauthenticated') {
+        if (errorResponse?.status === 401 && errorResponse?.data?.message?.includes('Unauthenticated')) {
             // Clear auth data
             localStorage.removeItem('accessToken');
             localStorage.removeItem('user');

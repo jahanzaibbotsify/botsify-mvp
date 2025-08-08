@@ -82,6 +82,18 @@ const validatePassword = (password: string): string | null => {
   return null
 }
 
+/**
+ * validate phone number
+ * @param phoneObject
+ */
+const validatePhone = (phoneObject: any) => {
+  if (form.phone_number && !phoneObject.valid) {
+    validationErrors.value.push({field: 'phone_number', message: 'Invalid phone number.', type: 'error'})
+  } else {
+    validationErrors.value = validationErrors.value.filter((error: any) => error.field !== 'phone_number');
+  }
+}
+
 const validateConfirmPassword = (password: string, confirmPassword: string): string | null => {
   if (!confirmPassword.trim()) return 'Please confirm your password'
   if (password !== confirmPassword) return 'Passwords do not match'
@@ -243,15 +255,27 @@ const clearFieldError = (field: string) => {
           <div class="input-icon">
             <i class="pi pi-phone"></i>
           </div>
-          <input
-              id="phone"
-              v-model="form.phone_number"
-              @input="clearFieldError('phone_number')"
-              type="text"
-              class="form-input"
-              placeholder="Enter your phone no"
-              autocomplete="phone"
+<!--          <input-->
+<!--              id="phone"-->
+<!--              v-model="form.phone_number"-->
+<!--              @input="clearFieldError('phone_number')"-->
+<!--              type="text"-->
+<!--              class="form-input"-->
+<!--              placeholder="Enter your phone no"-->
+<!--              autocomplete="phone"-->
+<!--              :disabled="authStore.isLoading"-->
+<!--          />-->
+          <vue-tel-input
               :disabled="authStore.isLoading"
+              v-model="form.phone_number"
+              mode="international"
+              class="form-input"
+              :dropdownOptions="{
+                showFlags: true,
+                showDialCodeInSelection: true,
+                showDialCodeInList: true
+              }"
+              @validate="validatePhone"
           />
         </div>
         <div v-if="hasFieldError('phone_number')" class="field-error">
@@ -516,7 +540,6 @@ const clearFieldError = (field: string) => {
   padding: var(--space-1);
   border-radius: var(--radius-sm);
   transition: color var(--transition-normal);
-  z-index: 1;
 }
 
 .password-toggle:hover {

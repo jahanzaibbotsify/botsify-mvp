@@ -11,7 +11,9 @@ import ToastPlugin, { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-bootstrap.css';
 import { installPermissions } from './utils/permissions';
 import { extractApiKey } from './utils/apiKeyUtils';
-
+// @ts-ignore
+import VueTelInput from 'vue-tel-input';
+import 'vue-tel-input/vue-tel-input.css';
 import Swal from 'sweetalert2';
 
 // Import router
@@ -32,7 +34,6 @@ if (import.meta.env.DEV) {
     console.log('🔧 OpenAI Debugger available globally as window.OpenAIDebugger');
   });
 }
-
 
 const swalOption = {
   title: "Are you sure?",
@@ -82,67 +83,6 @@ function checkLocalStorage() {
   }
 }
 
-
-// Reusable function to make an authenticated GET request with axios
-
-// Router is imported from router/index.ts
-
-// let isBotDataLoaded = false;
-// router.beforeEach(async (to, from, next) => {
-//
-//   const paramKey = to.name === 'agent' ? to.params.id as string : '';
-//   const roleStore = useRoleStore();
-//   const localApiKey = getCurrentApiKey();
-//
-//   let apikey = paramKey || localApiKey || '';
-//   if (apikey && apikey !== 'undefined' && apikey !== 'null') {
-//     if (typeof to.name === 'undefined') {
-//       return next({ name: 'agent', params: { id: apikey } });
-//     }
-//     try {
-//       const data = await getBotDetails(apikey);
-//       isBotDataLoaded = true;
-//       if (data) {
-//         roleStore.setCurrentUser(data.user);
-//
-//         const chatStore = useChatStore();
-//         const conversationStore = useConversationStore();
-//
-//         // Role-based restriction for live chat agents
-//         if (roleStore.isLiveChatAgent) {
-//           if (to.name !== 'conversation') {
-//             return next({ name: 'conversation' });
-//           }
-//         }
-//
-//         // Load chat data if not already loaded or if navigating to a different page
-//         if (!chatStore.chats.length || from.name !== to.name) {
-//           chatStore.loadFromStorage(data.bot.chat_flow, data.versions);
-//         }
-//
-//         // Initialize Firebase if not already connected
-//         if (!conversationStore.isFirebaseConnected) {
-//           try {
-//             conversationStore.initializeFirebase();
-//           } catch (error) {
-//             console.error('❌ Error initializing Firebase:', error);
-//           }
-//         }
-//         return next();
-//       } else {
-//         return next({ name: 'Unauthenticated' });
-//       }
-//     } catch (error) {
-//       return next({ name: 'Unauthenticated' });
-//     }
-//   } else {
-//     console.error('❌ No API key found');
-//     return next({ name: 'Unauthenticated' });
-//   }
-// });
-
-
-
 // Create pinia store
 const pinia = createPinia()
 
@@ -153,6 +93,7 @@ const app = createApp(App)
 app.use(router)
 app.use(pinia)
 app.use(ToastPlugin);
+app.use(VueTelInput);
 installPermissions(app);
 
 window.$toast = useToast({position:'top-right'});
@@ -166,7 +107,6 @@ window.$confirm = function (overrideOpt = {}, callback = () => {}) {
     }
   });
 };
-
 
 // Check localStorage before mounting
 const localStorageAvailable = checkLocalStorage();
@@ -185,9 +125,6 @@ if (!localStorageAvailable) {
   warningDiv.textContent = 'Warning: Local storage is not available. Your chat history may not be saved.';
   document.body.appendChild(warningDiv);
 }
-
-
-
 
 // mount app
 app.mount('#app'); 

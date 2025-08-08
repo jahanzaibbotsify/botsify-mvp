@@ -70,27 +70,19 @@ const getAgents = async (page: number = 1, append: boolean = false): Promise<voi
       hasMoreAgents.value = currentPage.value < totalPages.value
 
       if (botsData.data) {
-        const agentsWithAvatar = botsData.data.map((agent: any) => ({
-          ...agent,
-          avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${agent.id}&backgroundColor=3b82f6`
-        }))
-
         if (append) {
           // Append to existing data
-          agentsData.value = [...agentsData.value, ...agentsWithAvatar]
+          agentsData.value = [...agentsData.value, ...botsData.data]
         } else {
           // Replace existing data
-          agentsData.value = agentsWithAvatar
+          agentsData.value = botsData.data
         }
       }
     }
 
     if (response.data && response.data.sharedBots) {
       // Add avatar to shared bots
-      sharedAgentsData.value = response.data.sharedBots.map((agent: any) => ({
-        ...agent,
-        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${agent.id}&backgroundColor=3b82f6`
-      }))
+      sharedAgentsData.value = response.data.sharedBots
     }
 
     // Store bot_users data
@@ -453,14 +445,8 @@ const loadMoreAgents = async () => {
       agentsPerPage.value = botsData.per_page || 20
       hasMoreAgents.value = currentPage.value < totalPages.value
 
-      // Add new agents with avatar
-      const newAgents = botsData.data.map((agent: any) => ({
-        ...agent,
-        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${agent.id}&backgroundColor=3b82f6`
-      }))
-
       // Append to existing data
-      agentsData.value = [...agentsData.value, ...newAgents]
+      agentsData.value = [...agentsData.value, ...botsData.data]
     }
 
     // Update bot_users if available
@@ -697,16 +683,23 @@ onUnmounted(() => {
               <div class="agent-info-column">
                 <!-- Agent Avatar -->
                 <div class="agent-avatar-section">
-                  <img :src="agent.avatar" :alt="agent.name" class="agent-avatar" @click="selectBot(agent)"
-                       style="cursor:pointer"/>
+                  <img :src="agent.avatar || '/icons/img.png'" :alt="agent.name" class="agent-avatar" @click="selectBot(agent)"
+                       style="cursor:pointer; user-select: none"/>
                 </div>
 
                 <!-- Agent Details -->
                 <div class="agent-details">
-                  <h3 class="agent-title" @click="selectBot(agent)" style="cursor:pointer">
-                    {{ agent.name || 'Unnamed Agent' }}</h3>
+                  <div class="agent-header">
+                    <h3 class="agent-title" @click="selectBot(agent)" style="cursor:pointer">
+                      {{ agent.name || 'Unnamed Agent' }}
+                    </h3>
+                    <!-- Status Badge -->
+                  </div>
                   <p class="agent-users">{{ botUsers[agent.id] !== undefined ? botUsers[agent.id] : 0 }} users</p>
-                  <p class="agent-role">General</p>
+                  <div class="status-badge" :class="{ 'active': agent.active === 1, 'inactive': agent.active === 0 || !agent.active }">
+                    <i class="pi" :class="agent.active === 1 ? 'pi-check-circle' : 'pi-times-circle'"></i>
+                    <span>{{ agent.active === 1 ? 'Active' : 'Inactive' }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1324,18 +1317,58 @@ onUnmounted(() => {
   width: 100%;
 }
 
+.agent-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  flex-wrap: wrap;
+}
+
 .agent-title {
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--color-text-primary);
   margin: 0;
   line-height: 1.2;
+  flex: 1;
+  min-width: 0;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-badge.active {
+  background-color: rgba(46, 204, 113, 0.1);
+  color: #27ae60;
+  border: 1px solid rgba(46, 204, 113, 0.2);
+}
+
+.status-badge.inactive {
+  background-color: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.2);
+}
+
+.status-badge i {
+  font-size: 0.8rem;
 }
 
 .agent-users {
   font-size: 0.875rem;
   color: var(--color-text-secondary);
   margin: 0;
+  padding-bottom: 5px;
 }
 
 .agent-role {
@@ -2037,6 +2070,17 @@ onUnmounted(() => {
     font-size: 1rem; /* Better for mobile */
   }
 
+  /* Status badge responsive adjustments for tablets */
+  .agent-header {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .status-badge {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+  }
 
   .agents-grid {
     grid-template-columns: 1fr;
@@ -2088,6 +2132,9 @@ onUnmounted(() => {
 
   .agent-header {
     padding: var(--space-4);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
   }
 
   .agent-body {
@@ -2096,6 +2143,13 @@ onUnmounted(() => {
 
   .agent-actions {
     padding: var(--space-3) var(--space-4);
+  }
+
+  /* Status badge responsive adjustments for small mobile */
+  .status-badge {
+    align-self: flex-start;
+    font-size: 0.7rem;
+    padding: 3px 8px;
   }
 }
 
