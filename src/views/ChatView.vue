@@ -92,9 +92,12 @@ function sendSuggestion(suggestion: string) {
 }
 
 function getBotDetails() {
-  const apikey = getCurrentApiKey() || route.params.id;
+  const apikey =  route.params.id || getCurrentApiKey();
   if (!apikey) {
     router.push('/select-agent')
+  } else {
+    // @ts-ignore
+    useBotStore().setApiKey(apikey);
   }
   return axiosInstance.get(`/v1/bot/get-data?apikey=${apikey}`)
       .then(response => {
@@ -123,7 +126,6 @@ function getBotDetails() {
         }
         const botStore = useBotStore();
         botStore.setApiKeyConfirmed(true);
-        botStore.setApiKey(apikey);
         botStore.setBotId(response.data.data.bot.id);
         botStore.setUser(response.data.data.user);
         botStore.setBotName(response.data.data.bot.name);
@@ -132,7 +134,8 @@ function getBotDetails() {
       })
       .catch(error => {
         console.error('API request error:', error);
-        router.push('/select-agent')
+        router.push('/select-agent');
+        useBotStore().clearApiKey()
         return false;
       });
 }
