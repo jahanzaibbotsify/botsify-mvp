@@ -2,11 +2,9 @@
 import { onMounted, ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
-import { useBotStore } from "@/stores/botStore";
 import BotsifyLoader from './components/ui/BotsifyLoader.vue';
 
 const route = useRoute();
-const isAuthenticated = computed(() => useBotStore().apiKeyConfirmed);
 const chatStore = useChatStore();
 
 // Check if current route should show loading screen
@@ -15,7 +13,7 @@ const shouldShowLoading = computed(() => {
   if (route.name === 'Unauthenticated' || route.name === 'NotFound') {
     return false;
   }
-  return !isAuthenticated.value;
+  return false
 });
 
 const showStorageWarning = ref(false);
@@ -115,6 +113,7 @@ onMounted(() => {
 <style>
 .app-container {
   position: relative;
+  overflow: scroll !important;
   height: 100%;
 }
 

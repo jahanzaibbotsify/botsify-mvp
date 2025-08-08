@@ -1,7 +1,6 @@
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { createRouter, createWebHistory } from 'vue-router'
 import App from '@/App.vue'
 import './style.css'
 import 'primeicons/primeicons.css'
@@ -10,19 +9,15 @@ import '@fontsource/ubuntu/500.css'
 import '@fontsource/ubuntu/700.css'
 import ToastPlugin, { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-bootstrap.css';
-import { useBotStore } from './stores/botStore';
-import { useConversationStore } from './stores/conversationStore';
-import { useChatStore } from './stores/chatStore';
-import { useRoleStore } from './stores/roleStore';
-import { useWhitelabelStore } from './stores/whitelabelStore';
 import { installPermissions } from './utils/permissions';
-import { extractApiKey, getCurrentApiKey } from './utils/apiKeyUtils';
-
+import { extractApiKey } from './utils/apiKeyUtils';
+// @ts-ignore
+import VueTelInput from 'vue-tel-input';
+import 'vue-tel-input/vue-tel-input.css';
 import Swal from 'sweetalert2';
 
-// Import routes
-import routes from '@/router'
-import { axiosInstance } from './utils/axiosInstance'
+// Import router
+import router from '@/router'
 (window as any).Swal = Swal;
 
 // Extract and store API key
@@ -39,7 +34,6 @@ if (import.meta.env.DEV) {
     console.log('🔧 OpenAI Debugger available globally as window.OpenAIDebugger');
   });
 }
-
 
 const swalOption = {
   title: "Are you sure?",
@@ -89,124 +83,6 @@ function checkLocalStorage() {
   }
 }
 
-
-// Reusable function to make an authenticated GET request with axios
-function getBotDetails(apikey: string) {
-  return axiosInstance.get(`/v1/bot/get-data?apikey=${apikey}`)
-  .then(response => {
-    
-    const roleStore = useRoleStore();
-    const whitelabelStore = useWhitelabelStore();
-    
-    // Set user role and permissions
-    if (response.data.data.user) {
-      roleStore.setCurrentUser(response.data.data.user);
-      
-      // Set whitelabel data if user is a whitelabel client
-      if (response.data.data.user.is_whitelabel_client) {
-        whitelabelStore.setWhitelabelData(response.data.data.user);
-        // Set favicon if present
-        if (response.data.data.user.whitelabel && response.data.data.user.whitelabel.favicon) {
-          let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-          if (!link) {
-            link = document.createElement('link');
-            link.rel = 'icon';
-            document.head.appendChild(link);
-          }
-          link.href = response.data.data.user.whitelabel.favicon;
-        }
-      }
-    }
-    const botStore = useBotStore();
-    botStore.setApiKeyConfirmed(true);
-    botStore.setApiKey(apikey);
-    botStore.setBotId(response.data.data.bot.id);
-    botStore.setUser(response.data.data.user);  
-    botStore.setBotName(response.data.data.bot.name);
-
-    return response.data.data;
-  })
-  .catch(error => {
-    console.error('API request error:', error);
-    return false;
-  });
-}
-
-// Create router instance
-const router = createRouter({
-  history: createWebHistory(),
-  routes
-})
-
-let isBotDataLoaded = false;
-router.beforeEach(async (to, from, next) => {
-  // Handle Unauthenticated route - allow it to render without any checks
-  if (to.name === 'Unauthenticated') {
-    return next();
-  }
-
-  // Handle NotFound route - allow it to render without any checks
-  if (to.name === 'NotFound') {
-    return next();
-  }
-
-  if (isBotDataLoaded) {
-    return next();
-  }
-
-  const paramKey = to.name === 'agent' ? to.params.id as string : '';
-  const roleStore = useRoleStore();
-  const localApiKey = getCurrentApiKey();
-
-  let apikey = paramKey || localApiKey || '';
-  if (apikey && apikey !== 'undefined' && apikey !== 'null') {
-    if (typeof to.name === 'undefined') {
-      return next({ name: 'agent', params: { id: apikey } });
-    }
-    try {
-      const data = await getBotDetails(apikey);
-      isBotDataLoaded = true;
-      if (data) {
-        roleStore.setCurrentUser(data.user);
-
-        const chatStore = useChatStore();
-        const conversationStore = useConversationStore();
-
-        // Role-based restriction for live chat agents
-        if (roleStore.isLiveChatAgent) {
-          if (to.name !== 'conversation') {
-            return next({ name: 'conversation' });
-          }
-        }
-
-        // Load chat data if not already loaded or if navigating to a different page
-        if (!chatStore.chats.length || from.name !== to.name) {
-          chatStore.loadFromStorage(data.bot.chat_flow, data.versions);
-        }
-
-        // Initialize Firebase if not already connected
-        if (!conversationStore.isFirebaseConnected) {
-          try {
-            conversationStore.initializeFirebase();
-          } catch (error) {
-            console.error('❌ Error initializing Firebase:', error);
-          }
-        }
-        return next();
-      } else {
-        return next({ name: 'Unauthenticated' });
-      }
-    } catch (error) {
-      return next({ name: 'Unauthenticated' });
-    }
-  } else {
-    console.error('❌ No API key found');
-    return next({ name: 'Unauthenticated' });
-  }
-});
-
-
-
 // Create pinia store
 const pinia = createPinia()
 
@@ -217,6 +93,7 @@ const app = createApp(App)
 app.use(router)
 app.use(pinia)
 app.use(ToastPlugin);
+app.use(VueTelInput);
 installPermissions(app);
 
 window.$toast = useToast({position:'top-right'});
@@ -230,7 +107,6 @@ window.$confirm = function (overrideOpt = {}, callback = () => {}) {
     }
   });
 };
-
 
 // Check localStorage before mounting
 const localStorageAvailable = checkLocalStorage();
@@ -249,9 +125,6 @@ if (!localStorageAvailable) {
   warningDiv.textContent = 'Warning: Local storage is not available. Your chat history may not be saved.';
   document.body.appendChild(warningDiv);
 }
-
-
-
 
 // mount app
 app.mount('#app'); 

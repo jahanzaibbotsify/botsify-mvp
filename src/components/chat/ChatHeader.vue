@@ -67,6 +67,7 @@
           </button>
         </div>
       </div>
+      <UserMenu/>
     </div>
     <CalendlyModal ref="bookMeetingRef"></CalendlyModal>
   </div>
@@ -82,6 +83,7 @@ import { useWhitelabelStore } from '@/stores/whitelabelStore';
 import { useBotStore } from '@/stores/botStore';
 import { useRoleStore } from '@/stores/roleStore';
 import CalendlyModal from '@/components/ui/CalendlyModal.vue';
+import UserMenu from "@/components/auth/UserMenu.vue";
 
 interface Props {
   chatId: string,
