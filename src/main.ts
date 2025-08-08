@@ -1,7 +1,6 @@
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { createRouter, createWebHistory } from 'vue-router'
 import App from '@/App.vue'
 import './style.css'
 import 'primeicons/primeicons.css'
@@ -10,19 +9,13 @@ import '@fontsource/ubuntu/500.css'
 import '@fontsource/ubuntu/700.css'
 import ToastPlugin, { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-bootstrap.css';
-import { useBotStore } from './stores/botStore';
-import { useConversationStore } from './stores/conversationStore';
-import { useChatStore } from './stores/chatStore';
-import { useRoleStore } from './stores/roleStore';
-import { useWhitelabelStore } from './stores/whitelabelStore';
 import { installPermissions } from './utils/permissions';
-import { extractApiKey, getCurrentApiKey } from './utils/apiKeyUtils';
+import { extractApiKey } from './utils/apiKeyUtils';
 
 import Swal from 'sweetalert2';
 
 // Import router
 import router from '@/router'
-import { axiosInstance } from './utils/axiosInstance'
 (window as any).Swal = Swal;
 
 // Extract and store API key
@@ -91,46 +84,6 @@ function checkLocalStorage() {
 
 
 // Reusable function to make an authenticated GET request with axios
-function getBotDetails(apikey: string) {
-  return axiosInstance.get(`/v1/bot/get-data?apikey=${apikey}`)
-  .then(response => {
-    
-    const roleStore = useRoleStore();
-    const whitelabelStore = useWhitelabelStore();
-    
-    // Set user role and permissions
-    if (response.data.data.user) {
-      roleStore.setCurrentUser(response.data.data.user);
-      
-      // Set whitelabel data if user is a whitelabel client
-      if (response.data.data.user.is_whitelabel_client) {
-        whitelabelStore.setWhitelabelData(response.data.data.user);
-        // Set favicon if present
-        if (response.data.data.user.whitelabel && response.data.data.user.whitelabel.favicon) {
-          let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-          if (!link) {
-            link = document.createElement('link');
-            link.rel = 'icon';
-            document.head.appendChild(link);
-          }
-          link.href = response.data.data.user.whitelabel.favicon;
-        }
-      }
-    }
-    const botStore = useBotStore();
-    botStore.setApiKeyConfirmed(true);
-    botStore.setApiKey(apikey);
-    botStore.setBotId(response.data.data.bot.id);
-    botStore.setUser(response.data.data.user);  
-    botStore.setBotName(response.data.data.bot.name);
-
-    return response.data.data;
-  })
-  .catch(error => {
-    console.error('API request error:', error);
-    return false;
-  });
-}
 
 // Router is imported from router/index.ts
 

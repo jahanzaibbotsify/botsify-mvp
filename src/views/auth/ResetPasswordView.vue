@@ -107,6 +107,7 @@ const handleSubmit = async () => {
       router.push('/auth/login')
     }
   }).catch(error => {
+    console.log(error)
     window.$toast?.error('Failed to reset password. Please try again.')
 
   }).finally(() => {

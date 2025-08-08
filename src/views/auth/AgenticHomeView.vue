@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -11,7 +11,7 @@ const userStats = computed(() => ({
   totalConversations: 0,
   planName: authStore.selectedPlan?.name || 'Free',
   planLimit: authStore.selectedPlan?.limits.conversations || 100
-}))
+}));
 
 const quickActions = [
   {
@@ -100,11 +100,6 @@ const continueToAgent = () => {
     router.push(`/agent/${authStore.user.id}`)
   }
 }
-
-onMounted(() => {
-  // Mark onboarding as completed
-  authStore.updateOnboardingStep('completed')
-})
 </script>
 
 <template>

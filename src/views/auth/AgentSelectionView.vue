@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import {ref, computed, onMounted, onUnmounted, nextTick, watch} from 'vue'
 import {useRouter} from 'vue-router'
-import {useAuthStore} from '@/stores/authStore'
 import {axiosInstance} from "@/utils/axiosInstance.ts"
 import {useBotStore} from "@/stores/botStore.ts";
 
 const router = useRouter()
-const authStore = useAuthStore()
 
 // Reactive state
 const searchQuery = ref('')
@@ -17,7 +15,7 @@ const activeMenuId = ref<string | null>(null)
 // Agent modal state (for both create and edit)
 const showAgentModal = ref(false)
 const modalMode = ref<'create' | 'edit'>('edit')
-const editingAgent = ref<object | null>(null)
+const editingAgent = ref<any | null>(null)
 const agentNameValue = ref('')
 const agentNameInput = ref<HTMLInputElement | null>(null)
 const isSavingAgent = ref(false)
@@ -115,9 +113,9 @@ const getAgents = async (page: number = 1, append: boolean = false): Promise<voi
 const filteredAgents = computed(() => {
   // Return agents based on current tab
   if (activeTab.value === 'my-agents') {
-    return agentsData.value
+    return agentsData.value as any
   } else {
-    return sharedAgentsData.value
+    return sharedAgentsData.value as any
   }
 })
 
@@ -183,7 +181,7 @@ const toggleAgentMenu = (agentId: string) => {
  * Edit agent name
  * @param agent - Agent to edit
  */
-const editAgentName = (agent: Agent) => {
+const editAgentName = (agent: any) => {
   modalMode.value = 'edit'
   editingAgent.value = agent
   agentNameValue.value = agent.name || 'Unnamed Agent'
@@ -206,7 +204,7 @@ const editAgentName = (agent: Agent) => {
  * Clone agent
  * @param agent - Agent to clone
  */
-const cloneAgent = async (agent: Agent) => {
+const cloneAgent = async (agent: any) => {
   activeMenuId.value = null
 
   try {
@@ -237,7 +235,7 @@ const cloneAgent = async (agent: Agent) => {
  * Delete agent
  * @param agent - Agent to delete
  */
-const deleteAgent = (agent: Agent) => {
+const deleteAgent = (agent: any) => {
   activeMenuId.value = null
 
   window.$confirm({
@@ -248,7 +246,7 @@ const deleteAgent = (agent: Agent) => {
 
       if (response.data && response.data.status) {
         window.$toast?.success('Agent deleted successfully!')
-        agentsData.value = agentsData.value.filter(a => {
+        agentsData.value = agentsData.value.filter((a: any) => {
           return a.id.toString() !== agent.id.toString()
         })
 
@@ -269,7 +267,7 @@ const deleteAgent = (agent: Agent) => {
  * Copy agent payload (bot ID)
  * @param agent - Agent to copy payload for
  */
-const copyPayload = async (agent: Agent) => {
+const copyPayload = async (agent: any) => {
   activeMenuId.value = null
   try {
     await navigator.clipboard.writeText(agent.id.toString())
@@ -295,7 +293,7 @@ const copyPayload = async (agent: Agent) => {
  * Export agent data
  * @param agent - Agent to export data for
  */
-const exportData = (agent: Agent) => {
+const exportData = (agent: any) => {
   activeMenuId.value = null
 
   window.$confirm({
@@ -316,14 +314,6 @@ const exportData = (agent: Agent) => {
       window.$toast?.error(error?.response?.data?.message || 'Failed to export bot data. Please try again.')
     }
   })
-}
-
-/**
- * Add new agent (placeholder function)
- */
-const addAgent = () => {
-  console.log('Add new agent')
-  window.$toast?.info('Add agent functionality coming soon!')
 }
 
 /**
@@ -501,7 +491,7 @@ const handleClickOutside = (event: Event) => {
  * Select bot and redirect
  * @param agent - Agent to select
  */
-const selectBot = async (agent: Agent) => {
+const selectBot = async (agent: any) => {
   try {
     const response = await axiosInstance.get(`v1/bot/select/${agent.token}`)
     if (response.data && response.data.bot) {

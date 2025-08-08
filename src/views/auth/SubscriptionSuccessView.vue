@@ -47,13 +47,6 @@ onMounted(() => {
   //   router.replace('/select-agent')
   // }, 3000)
 })
-
-/**
- * Manual navigation in case redirect fails
- */
-const goToDashboard = () => {
-  router.replace('/select-agent')
-}
 </script>
 
 <template>

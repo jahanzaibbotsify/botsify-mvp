@@ -4,8 +4,7 @@ import type {
   LoginCredentials, 
   SignupCredentials, 
   PricingPlan,
-  AgentCategory,
-  AuthResponse
+  AgentCategory
 } from '@/types/auth'
 import {axiosInstance} from "@/utils/axiosInstance.ts";
 
@@ -13,12 +12,12 @@ export const useAuthStore = defineStore('auth', () => {
   // State
   const localstorageUser = localStorage.getItem('user');
   const localstorageToken = localStorage.getItem('accessToken');
-  const user = ref<object | null>(localstorageUser ? JSON.parse(localstorageUser) : null)
+  const user = ref<any | null>(localstorageUser ? JSON.parse(localstorageUser) : null)
   const accessToken = ref<string | null>(localstorageToken ? JSON.parse(localstorageToken) : null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const selectedPlan = ref<PricingPlan | null>(null)
-  const selectedAgent = ref<object | null>(null)
+  const selectedAgent = ref<any | null>(null)
   const onboardingStep = ref<'signup' | 'pricing' | 'agent-selection' | 'completed'>('signup')
 
   // Computed
@@ -337,7 +336,7 @@ export const useAuthStore = defineStore('auth', () => {
         });
   }
 
-  const signup = async (credentials: SignupCredentials): Promise<AuthResponse> => {
+  const signup = async (credentials: SignupCredentials) => {
     setLoading(true)
     clearError()
     return await axiosInstance.post('v1/register', credentials)

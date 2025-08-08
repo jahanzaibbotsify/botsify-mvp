@@ -150,7 +150,7 @@ const router = createRouter({
   routes
 })
 
-// Navigation guards
+// @ts-ignore Navigation guards
 router.beforeEach(async (to, from, next) => {
   try {
     const { checkAuthFlow } = await import('@/utils/authFlow')

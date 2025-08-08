@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import type { PricingPlan } from '@/types/auth'
 import {axiosInstance} from "@/utils/axiosInstance.ts";
 
-const router = useRouter()
 const authStore = useAuthStore()
 
 const selectedPlanId = ref<string | null>(null)
@@ -29,20 +27,6 @@ const allPlans = computed(() => {
   })
 })
 
-// Calculate yearly savings
-const getYearlySavings = (monthlyPrice: number) => {
-  const yearlyPrice = monthlyPrice * 12 * 0.8 // 20% discount
-  const savings = (monthlyPrice * 12) - yearlyPrice
-  return Math.round(savings)
-}
-
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0
-  }).format(price)
-}
 
 const handlePlanSelect = async (plan: PricingPlan) => {
   selectedPlanId.value = plan.id;
