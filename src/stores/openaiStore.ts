@@ -198,8 +198,6 @@ export const useOpenAIStore = defineStore('openai', () => {
   async function streamChat(messages: ChatMessage[]): Promise<Response>  {
 
     try {
-      console.log('🚀 Preparing to stream chat with messages:', messages);
-      
       // Convert messages to Responses API format - use simple string input
       const nonSystemMessages = messages.filter(msg => msg.role !== 'system');
       let inputText = nonSystemMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
@@ -285,8 +283,6 @@ Preserve the last AI_PROMPT if user reverts or modifies
 If unsure about structure or limits, ask the user in the ---CHAT_RESPONSE--- section before proceeding.
 `;
 
-      console.log('📤 Sending request to OpenAI Responses API with input text:', inputText.substring(0, 100) + '...');
-      
       try {
 
         const payload = {

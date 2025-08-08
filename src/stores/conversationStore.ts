@@ -173,7 +173,6 @@ export const useConversationStore = defineStore('conversation', () => {
   // Firebase Methods
   const initializeFirebase = () => {
     try {
-      console.log('🔥 Initializing Firebase from conversation store...')
       // Initialize live chat listener
       const unsubscribe = firebaseService.initializeLiveChatListener(
         (fbId: string, data: FirebaseMessage) => {
@@ -189,9 +188,7 @@ export const useConversationStore = defineStore('conversation', () => {
       if (unsubscribe) {
         isFirebaseConnected.value = true
         firebaseError.value = null
-        console.log('✅ Firebase initialized successfully in conversation store')
       } else {
-        console.warn('⚠️ Firebase listener not set up - check configuration')
         firebaseError.value = 'Firebase configuration incomplete'
         isFirebaseConnected.value = false
       }

@@ -229,13 +229,6 @@ const handleImport = () => {
   flex-shrink: 0;
 }
 
-.filter-dropdown :deep(.vue3-select-component),
-.segment-dropdown :deep(.vue3-select-component),
-.action-dropdown :deep(.vue3-select-component) {
-  font-size: 13px;
-  height: 44px;
-}
-
 .date-range {
   min-width: 160px;
   flex-shrink: 0;

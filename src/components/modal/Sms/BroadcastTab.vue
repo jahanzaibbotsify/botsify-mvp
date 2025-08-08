@@ -1,0 +1,315 @@
+<script setup lang="ts">
+import { ref, computed } from "vue";
+import FileUpload from "@/components/ui/FileUpload.vue";
+
+// Props
+interface Props {
+  isLoading?: boolean;
+}
+
+withDefaults(defineProps<Props>(), {
+  isLoading: false
+});
+
+// Emits
+const emit = defineEmits<{
+  'send-broadcast': [data: any];
+}>();
+
+// Reactive data
+const broadcastForm = ref({
+  message: '',
+  template: '',
+  userSegment: '',
+  mediaType: 'text',
+  uploadedFile: null as any | null
+});
+
+// Message templates
+const messageTemplates = [
+  { value: '', label: 'Select a template' },
+  { value: 'welcome', label: 'Welcome Message' },
+  { value: 'promotion', label: 'Promotional Offer' },
+  { value: 'reminder', label: 'Appointment Reminder' },
+  { value: 'newsletter', label: 'Newsletter Update' },
+  { value: 'custom', label: 'Custom Message' }
+];
+
+// User segments
+const userSegments = [
+  { value: '', label: 'Select user segment' },
+  { value: 'subscribed', label: 'Subscribed Users' },
+  { value: 'upload-user', label: 'Upload User List' }
+];
+
+// Preview data
+const previewData = ref({
+  image: '',
+  text: '',
+  buttons: [] as string[],
+  description: ''
+});
+
+// Computed properties
+const showFileUpload = computed(() => broadcastForm.value.userSegment === 'upload-user');
+
+// Methods
+const handleTemplateChange = () => {
+  // Load template content based on selection
+  switch (broadcastForm.value.template) {
+    case 'welcome':
+      broadcastForm.value.message = 'Welcome to our service! We\'re excited to have you on board.';
+      break;
+    case 'promotion':
+      broadcastForm.value.message = '🎉 Special Offer! Get 20% off your next purchase. Limited time only!';
+      break;
+    case 'reminder':
+      broadcastForm.value.message = '⏰ Reminder: You have an appointment scheduled for tomorrow.';
+      break;
+    case 'newsletter':
+      broadcastForm.value.message = '📰 Our monthly newsletter is here! Check out the latest updates.';
+      break;
+    default:
+      broadcastForm.value.message = '';
+  }
+  
+  // Update preview
+  updatePreview();
+};
+
+const updatePreview = () => {
+  // Generate dummy preview data based on form
+  previewData.value = {
+    image: broadcastForm.value.mediaType === 'image' ? 'https://via.placeholder.com/300x200' : '',
+    text: broadcastForm.value.message,
+    buttons: broadcastForm.value.message.includes('offer') ? ['Shop Now', 'Learn More'] : [],
+    description: broadcastForm.value.message.length > 100 ? broadcastForm.value.message.substring(0, 100) + '...' : broadcastForm.value.message
+  };
+};
+
+// const handleMessageChange = () => {
+//   updatePreview();
+// };
+
+const handleFileUpload = (attachments: any[]) => {
+  if (attachments && attachments.length > 0) {
+    broadcastForm.value.uploadedFile = attachments[0];
+  }
+};
+
+const sendBroadcast = () => {
+  if (!broadcastForm.value.message) {
+    console.error('Message is required');
+    return;
+  }
+  
+  if (!broadcastForm.value.userSegment) {
+    console.error('User segment is required for broadcast');
+    return;
+  }
+  
+  if (broadcastForm.value.userSegment === 'upload-user' && !broadcastForm.value.uploadedFile) {
+    console.error('File upload is required for upload user broadcast');
+    return;
+  }
+  
+  emit('send-broadcast', {
+    ...broadcastForm.value,
+    type: 'multiple'
+  });
+};
+
+// Expose methods for parent component
+defineExpose({
+  sendBroadcast
+});
+</script>
+
+<template>
+  <div class="tab-panel">
+    <h3>Broadcast</h3>
+    <p class="subtitle">Send broadcast messages to your audience</p>
+    
+    <div class="broadcast-form">
+      <!-- Message Template -->
+      <div class="form-group">
+        <label for="broadcast-template">Message template</label>
+        <select 
+          id="broadcast-template" 
+          v-model="broadcastForm.template" 
+          class="form-input"
+          @change="handleTemplateChange"
+        >
+          <option v-for="template in messageTemplates" :key="template.value" :value="template.value">
+            {{ template.label }}
+          </option>
+        </select>
+      </div>
+      
+      <!-- User Segment -->
+      <div class="form-group">
+        <label for="broadcast-segment">User segment</label>
+        <select id="broadcast-segment" v-model="broadcastForm.userSegment" class="form-input">
+          <option v-for="segment in userSegments" :key="segment.value" :value="segment.value">
+            {{ segment.label }}
+          </option>
+        </select>
+      </div>
+      
+      <!-- File Upload (Upload user only) -->
+      <div v-if="showFileUpload" class="form-group">
+        <label>Upload user file</label>
+        <FileUpload
+          v-model="broadcastForm.uploadedFile"
+          accept=".csv,.txt"
+          :multiple="false"
+          :max-size-m-b="10"
+          text="Upload CSV or TXT file with phone numbers"
+          @upload="handleFileUpload"
+        />
+        <small class="help-text">
+          Upload a CSV or TXT file containing phone numbers to send messages to.
+        </small>
+      </div>
+    </div>
+    
+    <!-- Preview Section -->
+    <div class="preview-section">
+      <h4>Preview</h4>
+      <div class="preview-container">
+        <!-- Image Preview -->
+        <div v-if="previewData.image" class="preview-image">
+          <img :src="previewData.image" alt="Preview" />
+        </div>
+        
+        <!-- Text Preview -->
+        <div v-if="previewData.text" class="preview-text">
+          {{ previewData.text }}
+        </div>
+        
+        <!-- Buttons Preview -->
+        <div v-if="previewData.buttons.length > 0" class="preview-buttons">
+          <button 
+            v-for="button in previewData.buttons" 
+            :key="button"
+            class="preview-button"
+          >
+            {{ button }}
+          </button>
+        </div>
+        
+        <!-- Description Preview -->
+        <div v-if="previewData.description" class="preview-description">
+          {{ previewData.description }}
+        </div>
+        
+        <!-- Empty State -->
+        <div v-if="!previewData.text && !previewData.image && previewData.buttons.length === 0" class="preview-empty">
+          <p>No preview available. Add a message to see the preview.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
+
+.subtitle {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.broadcast-form {
+  margin-top: 20px;
+}
+
+.help-text {
+  font-size: 12px;
+  color: var(--color-text-secondary, #6b7280);
+  margin-top: 4px;
+}
+
+/* Toggle Group */
+.toggle-group {
+  display: flex;
+  gap: 8px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
+  padding: 4px;
+  background: var(--color-bg-tertiary, #f3f4f6);
+}
+
+.toggle-btn {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  background: transparent;
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal, 0.2s ease);
+}
+
+.toggle-btn.active {
+  background: var(--color-primary, #3b82f6);
+  color: white;
+}
+
+.toggle-btn:hover:not(.active) {
+  background: var(--color-bg-secondary, #f9fafb);
+}
+
+/* Preview Section */
+.preview-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border, #e5e7eb);
+}
+
+.preview-container {
+  background: var(--color-bg-secondary, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
+  padding: 16px;
+}
+
+.preview-item {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.preview-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.preview-item strong {
+  color: var(--color-text-primary, #111827);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.preview-content {
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .toggle-group {
+    flex-direction: column;
+  }
+  
+  .toggle-btn {
+    width: 100%;
+  }
+}
+</style> 

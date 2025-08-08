@@ -5,10 +5,10 @@ import { useChatStore } from '@/stores/chatStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useRoleStore } from '@/stores/roleStore';
 import { useWhitelabelStore } from '@/stores/whitelabelStore';
-import BookMeeting from '@/components/ui/BookMeeting.vue';
+import BookMeetingModal from '@/components/modal/BookMeetingModal.vue';
+import CalendlyModal from '@/components/modal/CalendlyModal.vue';
 import { botsifyApi } from '@/services/botsifyApi'
-import { BOTSIFY_WEB_URL } from '@/utils/config';
-import CalendlyModal from '../ui/CalendlyModal.vue';
+import { getWebUrl } from '@/utils';
 
 
 const chatStore = useChatStore();
@@ -31,7 +31,7 @@ const selectedNavigationButton = computed(() => {
 });
 // const isMobile = computed(() => width.value < 768);
 const showDropdown = ref(false);
-const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
+const bookMeetingModalRef = ref<InstanceType<typeof BookMeetingModal> | null>(null)
 const calendlyModalRef = ref<InstanceType<typeof CalendlyModal> | null>(null)
 
 // Close dropdown when clicking outside
@@ -80,14 +80,13 @@ const navigationButtons = computed(() => {
 
 // Help links for the help dropdown
 const navLinks = computed(() => {
+  const baseUrl = getWebUrl();
   if (whitelabelStore.isWhitelabelClient) {
     // For whitelabel clients, show only Legacy Platform and Support
     return [
       {
         name: 'Legacy Platform',
-        url: whitelabelStore.whitelabelData?.mask_url 
-          ? `https://${whitelabelStore.whitelabelData.mask_url}/bot`
-          : `${BOTSIFY_WEB_URL}/bot`,
+        url: `${baseUrl}/bot`,
         icon: 'pi pi-check-circle'
       },
       {
@@ -96,41 +95,41 @@ const navLinks = computed(() => {
         icon: 'pi pi-question-circle'
       }
     ];
-  } else {
-    // For regular Botsify clients, show all links
-    return [
-      {
-        name: 'Legacy Platform',
-        url: `${BOTSIFY_WEB_URL}/bot`,
-        icon: 'pi pi-history'
-      },
-      {
-        name: 'Tutorials',
-        url: `https://www.youtube.com/@Botsify`,
-        icon: 'pi pi-play-circle'
-      },
-      {
-        name: 'API Documentation',
-        url: 'https://documenter.getpostman.com/view/13814537/TVmTdF7W#d1e2a194-6d34-4d64-8dff-9628a2dc1077',
-        icon: 'pi pi-code'
-      },
-      {
-        name: 'Documentation',
-        url: 'https://botsify.zendesk.com/hc/en-us',
-        icon: 'pi pi-book'
-      },
-      {
-        name: 'Book a Meeting',
-        action: 'bookMeeting',
-        icon: 'pi pi-calendar'
-      },
-      {
-        name: 'Support',
-        action: 'showZen',
-        icon: 'pi pi-question-circle'
-      }
-    ];
   }
+
+  // For regular Botsify clients, show all links
+  return [
+    {
+      name: 'Legacy Platform',
+      url: `${baseUrl}/bot`,
+      icon: 'pi pi-history'
+    },
+    {
+      name: 'Tutorials',
+      url: 'https://www.youtube.com/@Botsify',
+      icon: 'pi pi-play-circle'
+    },
+    {
+      name: 'API Documentation',
+      url: 'https://documenter.getpostman.com/view/13814537/TVmTdF7W#d1e2a194-6d34-4d64-8dff-9628a2dc1077',
+      icon: 'pi pi-code'
+    },
+    {
+      name: 'Documentation',
+      url: 'https://botsify.zendesk.com/hc/en-us',
+      icon: 'pi pi-book'
+    },
+    {
+      name: 'Book a Meeting',
+      action: 'bookMeeting',
+      icon: 'pi pi-calendar'
+    },
+    {
+      name: 'Support',
+      action: 'showZen',
+      icon: 'pi pi-question-circle'
+    }
+  ];
 });
 
 const filteredChats = computed(() => {
@@ -191,12 +190,12 @@ const showZen = () => {
 
 // Function to open the BookMeeting modal
 const openBookMeetingModal = () => {
-  if (bookMeetingRef.value) {
-    console.log('📦 bookMeetingRef exists')
-    bookMeetingRef.value.openModal()
+  if (bookMeetingModalRef.value) {
+    console.log('📦 bookMeetingModalRef exists')
+    bookMeetingModalRef.value.openModal()
     closeDropdown();
   } else {
-    console.warn('❌ bookMeetingRef is null')
+    console.warn('❌ bookMeetingModalRef is null')
   }
 };
 
@@ -219,6 +218,7 @@ const handleManageBilling = async () => {
       window.$toast?.error('Unable to open billing portal. Please try again later.')
     }
   } catch (e) {
+    console.log(e)
     window.$toast?.error('Unable to open billing portal. Please try again later.')
   } finally {
     billingLoading.value = false
@@ -359,7 +359,7 @@ onUnmounted(() => {
           </div>
         </button>
     </div>
-    <BookMeeting ref="bookMeetingRef"></BookMeeting>
+    <BookMeetingModal ref="BookMeetingModalModalRef"></BookMeetingModal>
     <CalendlyModal ref="calendlyModalRef"></CalendlyModal>
     <User ref="userRef"></User>
   </aside>

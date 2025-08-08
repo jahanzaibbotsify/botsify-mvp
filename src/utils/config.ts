@@ -14,7 +14,7 @@ export const BOTSIFY_FIREBASE_CONFIG = {
 // VAPID public key for push notifications
 export const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
 //export const BOTSIFY_AUTH_TOKEN = getCookieValue('botsify_token');
-export const BOTSIFY_AUTH_TOKEN = getCookieValue('botsify_token');
+export const BOTSIFY_AUTH_TOKEN = getCookieValue('botsify_token') || import.meta.env.VITE_BOTSIFY_AUTH_TOKEN;
 
 export function getCookieValue(name: string): string {
   // Handle case where document is not available (SSR)

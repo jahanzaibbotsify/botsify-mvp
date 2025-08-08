@@ -50,7 +50,7 @@
       <!-- Dropdown Menu Trigger -->
       <div class="dropdown dropdown-container" id="moreActionsDropdown" ref="dropdownRef">
         <button class="icon-button" title="More actions">
-          <i class="pi pi-ellipsis-v" style="font-size: 22px;"></i>
+          <i class="pi pi-ellipsis-v"></i>
         </button>
         <div v-if="showDropdown" class="dropdown-content">
           <button class="dropdown-item" @click="toggleTheme">
@@ -76,12 +76,11 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useThemeStore } from '@/stores/themeStore';
 import { botsifyApi } from '@/services/botsifyApi';
-import { BOTSIFY_WEB_URL } from '@/utils/config';
 import { useChatStore } from '@/stores/chatStore';
-import { useWhitelabelStore } from '@/stores/whitelabelStore';
 import { useBotStore } from '@/stores/botStore';
 import { useRoleStore } from '@/stores/roleStore';
-import CalendlyModal from '@/components/ui/CalendlyModal.vue';
+import CalendlyModal from '@/components/modal/CalendlyModal.vue';
+import { getWebUrl } from '@/utils';
 
 interface Props {
   chatId: string,
@@ -105,7 +104,6 @@ const emit = defineEmits<{
 }>();
 
 const isDeployingAI = ref(false);
-const whitelabelStore = useWhitelabelStore();
 const roleStore = useRoleStore();
 
 
@@ -123,10 +121,7 @@ async function testAI() {
     return;
   }
   const apiKey = botStore.apiKey;
-  let url = `${BOTSIFY_WEB_URL}/web-bot/agent/${apiKey}?testagent=true`;
-  if (whitelabelStore.isWhitelabelClient && whitelabelStore.maskUrl) {
-    url = `${whitelabelStore.maskUrl}/web-bot/agent/${botStore.apiKey}?testagent=true`;
-  }
+  const url = `${getWebUrl()}/web-bot/agent/${apiKey}?testagent=true`;
   window.open(url, '_blank');
 }
 
@@ -264,6 +259,7 @@ onBeforeUnmount(() => {
   padding: var(--space-2);
   border-radius: var(--radius-md);
   display: flex;
+  font-size: 22px;
   align-items: center;
   justify-content: center;
 }

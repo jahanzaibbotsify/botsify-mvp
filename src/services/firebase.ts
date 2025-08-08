@@ -8,13 +8,6 @@ import { currentTime } from '@/utils'
 // Initialize Firebase
 const app = initializeApp(BOTSIFY_FIREBASE_CONFIG)
 const database = getDatabase(app)
-
-console.log('🔥 Firebase initialized with config:', {
-  apiKey: BOTSIFY_FIREBASE_CONFIG.apiKey ? 'Set' : 'Not set',
-  databaseURL: BOTSIFY_FIREBASE_CONFIG.databaseURL,
-  projectId: BOTSIFY_FIREBASE_CONFIG.projectId
-})
-
 export class FirebaseService {
   private static instance: FirebaseService
   private listeners: Map<string, () => void> = new Map()
@@ -36,9 +29,6 @@ export class FirebaseService {
     const apiKeyStore = useBotStore()
     const botApiKey = apiKeyStore.apiKey
     
-    console.log('🔥 Initializing Firebase live chat listener...')
-    console.log('🔑 Bot API Key:', botApiKey ? 'Set' : 'Not set')
-    
     if (!botApiKey) {
       console.error('❌ Bot API key not set. Cannot initialize live chat listener.')
       onError?.(new Error('Bot API key not set'))
@@ -48,9 +38,6 @@ export class FirebaseService {
     const liveChatPath = `botsify_live_chat/presence-agents-${botApiKey}`
     const liveChatRef = ref(database, liveChatPath)
     
-    console.log('📡 Setting up listener on path:', liveChatPath)
-    console.log('🌐 Database URL:', database.app.options.databaseURL)
-
     const unsubscribe = onChildAdded(liveChatRef, (snapshot) => {
       try {
         console.log('📨 Firebase snapshot received:', {
@@ -94,8 +81,6 @@ export class FirebaseService {
 
     // Store the unsubscribe function
     this.listeners.set('liveChat', unsubscribe)
-    
-    console.log('✅ Firebase live chat listener initialized successfully')
     return unsubscribe
   }
 
