@@ -526,7 +526,7 @@ export class PublishApiService {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post('/v1/media-block/delete', {
         apikey: apiKey,
-        id: id
+        payload: id
       }, {
         timeout: 30000 // 30 seconds timeout
       });
