@@ -26,7 +26,7 @@ export function checkAuthFlow(): AuthFlowResult {
   const user = authStore.user as any
 
   // Check if email is verified
-  if (!user.email_verified) {
+  if (!user.email_verified && !user.subs) {
     return {
       shouldRedirect: true,
       redirectPath: `/auth/verify-email?email=${encodeURIComponent(user.email || '')}`,
@@ -92,7 +92,7 @@ export function handlePostAuthRedirect(): string {
   }
 
   const user = authStore.user as any
-  if (!user.email_verified) {
+  if (!user.email_verified && !user.subs) {
     return `/auth/verify-email?email=${encodeURIComponent(user.email || '')}`
   }
 

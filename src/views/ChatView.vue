@@ -92,8 +92,11 @@ function sendSuggestion(suggestion: string) {
 }
 
 function getBotDetails() {
-  const apikey = getCurrentApiKey();
-  return axiosInstance.get(`/v1/bot/get-data?apikey=${apikey || route.params.id}`)
+  const apikey = getCurrentApiKey() || route.params.id;
+  if (!apikey) {
+    router.push('/select-agent')
+  }
+  return axiosInstance.get(`/v1/bot/get-data?apikey=${apikey}`)
       .then(response => {
 
         const roleStore = useRoleStore();
@@ -129,13 +132,14 @@ function getBotDetails() {
       })
       .catch(error => {
         console.error('API request error:', error);
+        router.push('/select-agent')
         return false;
       });
 }
 
 
 onMounted(async () => {
-  await getBotDetails()
+  await getBotDetails();
   // Prevent live chat agents from accessing this page
   if (roleStore.isLiveChatAgent) {
     console.log('🔄 Live chat agent redirected from ChatView to conversation page');
