@@ -1,14 +1,9 @@
 import { RouteRecordRaw, createRouter, createWebHistory } from 'vue-router'
-import ChatLayout from '../layouts/ChatLayout.vue'
-import AuthLayout from '../layouts/AuthLayout.vue'
-import NotFound from '@/views/NotFound.vue';
-import Unauthenticated from '@/views/Unauthenticated.vue';
-
 const routes: RouteRecordRaw[] = [
   // Auth Routes (with AuthLayout)
   {
     path: '/auth',
-    component: AuthLayout,
+    component: () => import('../layouts/AuthLayout.vue'),
     meta: { requiresAuth: false },
     children: [
       {
@@ -83,7 +78,7 @@ const routes: RouteRecordRaw[] = [
   // Main App Routes  
   {
     path: '',
-    component: ChatLayout,
+    component: () => import('../layouts/ChatLayout.vue'),
     meta: { requiresAuth: true },
     children: [
       {
@@ -135,12 +130,12 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/unauthenticated',
     name: 'Unauthenticated',
-    component: Unauthenticated
+    component: () => import('@/views/Unauthenticated.vue')
   },
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
-    component: NotFound,
+    component: () => import('@/views/NotFound.vue'),
   }
 ]
 

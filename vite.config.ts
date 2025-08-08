@@ -22,7 +22,8 @@ export default defineConfig({
       output: {
         manualChunks: {
           // Separate OpenAI SDK into its own chunk for better caching
-          'openai-sdk': ['openai']
+          'openai-sdk': ['openai'],
+          vendor: ['vue', 'axios'],
         }
       }
     },
