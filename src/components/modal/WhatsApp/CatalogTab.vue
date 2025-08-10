@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed } from "vue";
 import { Input, Button, Table, TableHead, TableBody, TableRow, TableCell, TableHeader } from "@/components/ui";
 import { usePublishStore } from "@/stores/publishStore";
 
@@ -115,9 +115,14 @@ const openFacebookExplorer = () => {
   window.open('https://developers.facebook.com/tools/explorer?method=GET&path=%7BcatalogID%7D%2Fproducts&version=v15.0', '_blank');
 };
 
-// Lifecycle
-onMounted(() => {
+// Expose method for parent component to call when tab is activated
+const initializeCatalog = () => {
+  console.log('Initializing catalog...');
   getWhatsAppCloudDetails();
+};
+
+defineExpose({
+  initializeCatalog
 });
 </script>
 

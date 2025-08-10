@@ -127,7 +127,6 @@ const handleBlur = (event: FocusEvent) => {
 
 .textarea-container {
   position: relative;
-  background-color: var(--color-bg-tertiary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   transition: all var(--transition-normal);

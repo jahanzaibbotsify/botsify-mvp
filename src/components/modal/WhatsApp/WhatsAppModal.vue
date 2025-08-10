@@ -9,6 +9,7 @@ import BroadcastReportTab from "./BroadcastReportTab.vue";
 import TemplateTab from "./TemplateTab.vue";
 import CatalogTab from "./CatalogTab.vue";
 import CreateTemplateModal from "./Create/CreateTemplateModal.vue";
+import Pagination from "@/components/ui/Pagination.vue";
 
 // Define tabs
 const tabs = [
@@ -40,7 +41,33 @@ const emit = defineEmits<{
 
 // Local reactive data
 const isLoading = ref(false);
-const isWhatsAppConfigured = ref(true);
+const isWhatsAppConfigured = ref(false);
+
+// Pagination variables for TemplateTab
+const currentPage = ref(1);
+const totalPages = ref(1);
+const paginationData = ref<{
+  page: number;
+  perPage: number;
+  total: number;
+  to: number;
+  prev_page_url: string | null;
+} | null>(null);
+const itemsPerPage = 20;
+const isLoadingTemplates = ref(false);
+
+// Pagination variables for BroadcastReportTab
+const broadcastCurrentPage = ref(1);
+const broadcastTotalPages = ref(1);
+const broadcastPaginationData = ref<{
+  page: number;
+  perPage: number;
+  total: number;
+  to: number;
+  prev_page_url: string | null;
+} | null>(null);
+const broadcastItemsPerPage = 20;
+const isLoadingBroadcastReports = ref(false);
 
 // Determine bot service based on configuration
 const botService = computed(() => {
@@ -77,6 +104,7 @@ const computedTabs = computed(() => {
 const openModal = () => {
   modalRef.value?.openModal();
   checkWhatsAppConfiguration();
+  handleTabChange(currentActiveTab.value);
 };
 
 const closeModal = () => {
@@ -116,14 +144,71 @@ const handleTabChange = (tabId: string) => {
     
     // Initialize templates when template tab is selected
     if (tabId === 'template' && templateTabRef.value) {
-      templateTabRef.value.initializeTemplates();
+      templateTabRef.value.fetchTemplates(1, itemsPerPage);
     }
     
     // Refresh broadcast report data when broadcast report tab is selected
     if (tabId === 'broadcast-report' && broadcastReportTabRef.value) {
       broadcastReportTabRef.value.refreshData();
+      // Reset pagination state for broadcast reports
+      broadcastCurrentPage.value = 1;
+      broadcastTotalPages.value = 1;
+      broadcastPaginationData.value = null;
     }
   }
+};
+
+// Pagination handler for TemplateTab
+const handlePageChange = (page: number) => {
+  if (templateTabRef.value) {
+    templateTabRef.value.fetchTemplates(page, itemsPerPage);
+  }
+};
+
+// Pagination handler for BroadcastReportTab
+const handleBroadcastPageChange = (page: number) => {
+  if (broadcastReportTabRef.value) {
+    // Update the current page in the parent state
+    broadcastCurrentPage.value = page;
+    // Call fetchReportData to get data for the new page
+    broadcastReportTabRef.value.fetchReportData();
+  }
+};
+
+// Handle broadcast pagination updates
+const handleBroadcastPaginationUpdate = (data: { page: number; perPage: number; total: number; to: number; prev_page_url: string | null } | null) => {
+  if (data) {
+    broadcastPaginationData.value = data;
+    broadcastTotalPages.value = Math.ceil(data.total / data.perPage);
+    broadcastCurrentPage.value = data.page;
+  } else {
+    broadcastPaginationData.value = null;
+    broadcastTotalPages.value = 1;
+    broadcastCurrentPage.value = 1;
+  }
+};
+
+// Handle broadcast loading state updates
+const handleBroadcastLoadingUpdate = (loading: boolean) => {
+  isLoadingBroadcastReports.value = loading;
+};
+
+// Handle template pagination updates
+const handleTemplatePaginationUpdate = (data: { page: number; perPage: number; total: number; to: number; prev_page_url: string | null } | null) => {
+  if (data) {
+    paginationData.value = data;
+    totalPages.value = Math.ceil(data.total / data.perPage);
+    currentPage.value = data.page;
+  } else {
+    paginationData.value = null;
+    totalPages.value = 1;
+    currentPage.value = 1;
+  }
+};
+
+// Handle template loading state updates
+const handleTemplateLoadingUpdate = (loading: boolean) => {
+  isLoadingTemplates.value = loading;
 };
 
 // Publish Bot Tab Events
@@ -186,7 +271,7 @@ const handleSendBroadcast = async (data: any) => {
   
   try {
     // Call the API to create broadcast task
-    const result = await publishStore.createBroadcastTask(data);
+    const result = await publishStore.createSmsBroadcastTask(data);
     
     if (result.success) {
       window.$toast?.success('Broadcast scheduled successfully!');
@@ -227,7 +312,7 @@ const handleDeleteProduct = (id: number) => {
 };
 
 const handleSaveSettings = () => {
-  const selectedProvider = publishAgentTabRef.value?.selectedProvider?.();
+  const selectedProvider = publishAgentTabRef.value?.selectedProvider();
   if (selectedProvider === 'meta') {
     publishAgentTabRef.value?.saveMetaSettings();
   } else if (selectedProvider === 'dialog360') {
@@ -260,6 +345,12 @@ defineExpose({ openModal, closeModal });
          @save-dialog360-settings="handleSaveDialog360Settings"
        />
 
+         <!-- Loading State -->
+        <div v-if="publishStore.isLoadingBotDetails" class="loading-state">
+          <div class="loader-spinner"></div>
+          <span>Loading WhatsApp settings...</span>
+        </div>
+        
        <!-- Broadcast Tab -->
        <BroadcastTab 
          v-show="activeTab === 'broadcast' && isWhatsAppConfigured"
@@ -273,7 +364,15 @@ defineExpose({ openModal, closeModal });
          v-show="activeTab === 'broadcast-report' && isWhatsAppConfigured"
          ref="broadcastReportTabRef"
          :is-loading="isLoading"
+         :current-page="broadcastCurrentPage"
+         :total-pages="broadcastTotalPages"
+         :pagination-data="broadcastPaginationData"
+         :items-per-page="broadcastItemsPerPage"
+         :is-loading-broadcast-reports="isLoadingBroadcastReports"
          @filter-report="handleFilterReport"
+         @page-change="handleBroadcastPageChange"
+         @pagination-update="handleBroadcastPaginationUpdate"
+         @set-loading="(loading: boolean) => handleBroadcastLoadingUpdate(loading)"
        />
 
        <!-- Template Tab -->
@@ -281,8 +380,16 @@ defineExpose({ openModal, closeModal });
          v-show="activeTab === 'template' && isWhatsAppConfigured"
          ref="templateTabRef"
          :is-loading="isLoading"
+         :current-page="currentPage"
+         :total-pages="totalPages"
+         :pagination-data="paginationData"
+         :items-per-page="itemsPerPage"
+         :is-loading-templates="isLoadingTemplates"
          @open-create-modal="handleTemplateOpenCreateModal"
          @close-whatsapp-modal="handleTemplateCloseWhatsAppModal"
+         @page-change="handlePageChange"
+         @pagination-update="handleTemplatePaginationUpdate"
+         @set-loading="handleTemplateLoadingUpdate"
        />
 
        <!-- Catalog Tab -->
@@ -315,7 +422,6 @@ defineExpose({ openModal, closeModal });
       >
         Test now on WhatsApp
       </Button>
-
       <!-- Save Settings Button for Publish Agent Tab (only when configured) -->
       <Button 
         v-if="currentActiveTab === 'publish-agent' && isWhatsAppConfigured" 
@@ -326,17 +432,38 @@ defineExpose({ openModal, closeModal });
       >
         {{ isLoading ? 'Saving...' : 'Save Settings' }}
       </Button>
-
       <!-- Send Message Button for Broadcast Tab -->
       <Button 
         v-if="currentActiveTab === 'broadcast' && isWhatsAppConfigured" 
         variant="primary"
         size="medium"
         :loading="isLoading"
+        :disabled="isLoading"
         @click="broadcastTabRef?.sendBroadcast()"
       >
         {{ isLoading ? 'Sending...' : 'Send Message' }}
       </Button>
+
+      
+      <Pagination
+        v-if="currentActiveTab === 'broadcast-report'"
+        :current-page="broadcastCurrentPage"
+        :total-pages="broadcastTotalPages"
+        :total-items="broadcastPaginationData?.total || 0"
+        :items-per-page="broadcastItemsPerPage"
+        :disabled="isLoadingBroadcastReports"
+        @page-change="handleBroadcastPageChange"
+      />
+      
+      <Pagination
+        v-if="currentActiveTab === 'template'"
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :total-items="paginationData?.total || 0"
+        :items-per-page="itemsPerPage"
+        :disabled="isLoadingTemplates"
+        @page-change="handlePageChange"
+      />
     </template>
   </PublishModalLayout>
 
@@ -380,5 +507,26 @@ defineExpose({ openModal, closeModal });
   font-size: 14px;
   color: var(--color-text-secondary, #6b7280);
   line-height: 1.5;
+}
+
+
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  gap: var(--space-3);
+  color: var(--color-text-secondary);
+}
+
+.loader-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border);
+  border-top: 3px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 </style>

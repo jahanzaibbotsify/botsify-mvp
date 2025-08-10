@@ -1,20 +1,45 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import { Input, Badge, DateRange, Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Pagination, Button } from "@/components/ui";
+import { ref, computed } from "vue";
+import { Input, Badge, DateRange, Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Button } from "@/components/ui";
 import { usePublishStore } from "@/stores/publishStore";
 import { formatTime } from "@/utils";
 
 // Props
 interface Props {
   isLoading?: boolean;
+  currentPage?: number;
+  totalPages?: number;
+  paginationData?: {
+    page: number;
+    perPage: number;
+    total: number;
+    to: number;
+    prev_page_url: string | null;
+  } | null;
+  itemsPerPage?: number;
+  isLoadingBroadcastReports?: boolean;
 }
 
-withDefaults(defineProps<Props>(), {
-  isLoading: false
+const props = withDefaults(defineProps<Props>(), {
+  isLoading: false,
+  currentPage: 1,
+  totalPages: 1,
+  paginationData: null,
+  itemsPerPage: 20,
+  isLoadingBroadcastReports: false
 });
 
 const emit = defineEmits<{
   'filter-report': [filters: any];
+  'page-change': [page: number];
+  'pagination-update': [paginationData: {
+    page: number;
+    perPage: number;
+    total: number;
+    to: number;
+    prev_page_url: string | null;
+  } | null];
+  'set-loading': [loading: boolean];
 }>();
 
 // Store
@@ -36,8 +61,9 @@ const getDefaultDateRange = () => {
 };
 
 const dateRange = ref(getDefaultDateRange());
-const currentPage = ref(1);
-const itemsPerPage = ref(20);
+// Remove local pagination variables - now managed by parent
+// const currentPage = ref(1);
+// const itemsPerPage = ref(20);
 
 // API data
 const allReportData = ref<any[]>([]); // Store all data from API
@@ -74,38 +100,37 @@ const filteredReports = computed(() => {
 
 // Computed pagination for filtered data
 const paginatedReports = computed(() => {
-  const startIndex = (currentPage.value - 1) * itemsPerPage.value;
-  const endIndex = startIndex + itemsPerPage.value;
+  const startIndex = (props.currentPage - 1) * props.itemsPerPage;
+  const endIndex = startIndex + props.itemsPerPage;
   return filteredReports.value.slice(startIndex, endIndex);
 });
 
-// Computed pagination info
-const computedPagination = computed(() => {
-  const total = filteredReports.value.length;
-  const lastPage = Math.ceil(total / itemsPerPage.value);
-  
-  return {
-    current_page: currentPage.value,
-    total: total,
-    per_page: itemsPerPage.value,
-    last_page: lastPage
-  };
-});
 
 // Methods
 const fetchReportData = async (forceRefresh = false) => {
+  if (props.isLoadingBroadcastReports) return;
+  
+  emit('set-loading', true);
+  
   try {
     // Only fetch if we don't have data yet or if force refresh is requested
     if (allReportData.value.length === 0 || forceRefresh) {
-      const result = await publishStore.getWhatsAppBroadcastReport({ page: currentPage.value, per_page: itemsPerPage.value, query: searchQuery.value, start_date: dateRange.value.start, end_date: dateRange.value.end });
+      const result = await publishStore.getWhatsAppBroadcastReport({ page: props.currentPage, per_page: props.itemsPerPage, query: searchQuery.value, start_date: dateRange.value.start, end_date: dateRange.value.end });
       
       if (result.success && result.data.messages) {
         allReportData.value = result.data.messages.data || [];
         calculateStats();
+        
+        // Emit pagination update to parent
+        if (result.data.messages.pagination) {
+          emit('pagination-update', result.data.messages.pagination);
+        }
       }
     }
   } catch (error) {
     console.error('Failed to fetch report data:', error);
+  } finally {
+    emit('set-loading', false);
   }
 };
 
@@ -130,13 +155,9 @@ const calculateStats = () => {
 };
 
 const handleFilterClick = () => {
-  currentPage.value = 1;
+  // Emit page change to reset to page 1 when filters are applied
+  emit('page-change', 1);
   // No need to call API, just reset to first page
-};
-
-const handlePageChange = (page: number) => {
-  currentPage.value = page;
-  // No need to call API, just change page
 };
 
 const filterReport = () => {
@@ -151,11 +172,6 @@ defineExpose({
   filterReport,
   fetchReportData,
   refreshData
-});
-
-// Fetch data on mount
-onMounted(() => {
-  fetchReportData();
 });
 </script>
 
@@ -282,17 +298,7 @@ onMounted(() => {
         </TableBody>
       </Table>
       
-             <!-- Pagination -->
-       <Pagination
-         v-if="computedPagination.last_page > 1"
-         :current-page="computedPagination.current_page"
-         :total-pages="computedPagination.last_page"
-         :total-items="computedPagination.total"
-         :items-per-page="computedPagination.per_page"
-         :show-page-info="false"
-         :disabled="publishStore.isLoading"
-         @page-change="handlePageChange"
-       />
+      <!-- Pagination removed - now handled by parent WhatsAppModal -->
     </div>
   </div>
 </template>

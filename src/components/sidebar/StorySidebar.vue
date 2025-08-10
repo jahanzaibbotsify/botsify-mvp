@@ -19,7 +19,7 @@ const isEditing = ref(false);
 const editContent = ref('');
 const showVersionHistory = ref(false);
 const showTemplateManager = ref(false);
-const newTemplateName = ref('');
+// const newTemplateName = ref('');
 const messagesContainer = ref<HTMLElement | null>(null);
 
 
@@ -141,22 +141,22 @@ function deleteVersion(versionId: string) {
   });
 }
 
-function saveAsTemplate() {
-  if (!story.value?.content || !newTemplateName.value.trim()) {
-    window.$toast.error('Please enter a template name and ensure there is prompt content to save.');
-    return;
-  }
+// function saveAsTemplate() {
+//   if (!story.value?.content || !newTemplateName.value.trim()) {
+//     window.$toast.error('Please enter a template name and ensure there is prompt content to save.');
+//     return;
+//   }
 
-  chatStore.createGlobalPromptTemplate(
-    newTemplateName.value.trim(),
-    story.value.content,
-    false
-  );
+//   chatStore.createGlobalPromptTemplate(
+//     newTemplateName.value.trim(),
+//     story.value.content,
+//     false
+//   );
 
-  newTemplateName.value = '';
-  showTemplateManager.value = false;
-  window.$toast.success('Template saved successfully!');
-}
+//   newTemplateName.value = '';
+//   showTemplateManager.value = false;
+//   window.$toast.success('Template saved successfully!');
+// }
 
 function loadTemplate(templateId: string) {
   const template = chatStore.globalPromptTemplates.find(t => t.id === templateId);
@@ -331,7 +331,7 @@ defineExpose({
         </div>
 
         <!-- Save Current as Template -->
-        <div v-if="story?.content" class="save-template-section">
+        <!-- <div v-if="story?.content" class="save-template-section">
           <h5>Save Current Prompt as Template</h5>
           <div class="save-template-form">
             <input v-model="newTemplateName" type="text" placeholder="Template name..." class="template-name-input" />
@@ -339,7 +339,7 @@ defineExpose({
               Save Template
             </button>
           </div>
-        </div>
+        </div> -->
 
         <!-- Templates List -->
         <div class="templates-list scrollbar">

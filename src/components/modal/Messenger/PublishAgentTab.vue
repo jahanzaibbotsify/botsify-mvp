@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
-import { usePublishStore } from "@/stores/publishStore";
-import { useBotStore } from "@/stores/botStore";
-import Button from "@/components/ui/Button.vue";
+import { usePublishStore } from "../../../stores/publishStore";
+import { useBotStore } from "../../../stores/botStore";
+import Button from "../../../components/ui/Button.vue";
 
 // Props
 interface Props {
@@ -24,6 +24,57 @@ const emit = defineEmits<{
 
 const publishStore = usePublishStore();
 const botStore = useBotStore();
+
+// Load Facebook pages function
+const loadPages = async () => {
+  try {
+    await publishStore.getFbPages();
+  } catch (error) {
+    console.error('Failed to load Facebook pages:', error);
+  }
+};
+
+// Refresh Facebook page permissions function
+const refreshPermissions = async () => {
+  try {
+    const result = await publishStore.refreshFbPagePermission();
+    if (result.success && 'data' in result && result.data?.redirect) {
+      window.location.href = result.data.redirect;
+    }
+    return result;
+  } catch (error) {
+    console.error('Failed to refresh Facebook page permissions:', error);
+    return { success: false, error };
+  }
+};
+
+// Remove Facebook page permissions function
+const removePermissions = async () => {
+  try {
+    const result = await publishStore.removeFbPagePermission();
+    if (result.success && 'data' in result && result.data?.redirect) {
+      window.location.href = result.data.redirect;
+    }
+    return result;
+  } catch (error) {
+    console.error('Failed to remove Facebook page permissions:', error);
+    return { success: false, error };
+  }
+};
+
+// Connect Facebook page function
+const connectPage = async (type: string, pageId: string, pageName: string, accessToken: string) => {
+  try {
+    const result = await publishStore.connectionFbPage(type, pageId, pageName, accessToken);
+    if (result.success) {
+      emit('page-connection-change');
+    }
+    return result;
+  } catch (error) {
+    console.error('Failed to connect Facebook page:', error);
+    return { success: false, error };
+  }
+};
 
 // Computed properties to sync with store state
 const storePages = computed(() => publishStore.facebookPagesCache);
@@ -82,9 +133,8 @@ const loadFbPages = async () => {
   }
   
   try {
-    await publishStore.getFbPages();
+    await loadPages();
       emit('page-connection-change');
-
     // The computed pages will automatically update when store data changes
   } catch (error) {
     console.error('Failed to load Facebook pages:', error);
@@ -101,8 +151,8 @@ const createNewPage = () => {
 const connectAccount = async () => {
   isLoading.value = true;
   try {
-    const result = await publishStore.refreshFbPagePermission();
-    if (result.success && result.data?.redirect) {
+    const result = await refreshPermissions();
+    if (result.success && 'data' in result && result.data?.redirect) {
       // Redirect to the URL provided by the API
       window.open(result.data.redirect, '_blank');
     } else {
@@ -118,25 +168,18 @@ const connectAccount = async () => {
 const connectionPage = async (type: string, page: any) => {
   isLoading.value = true;
   try {
-    const result = await publishStore.connectionFbPage(type, page.id, page.name, page.accessToken);
+    const result = await connectPage(type, page.id, page.name, page.accessToken);
     if (result.success) {
       // Clear cache and reload pages to update the status
       publishStore.clearFbPagesCache();
       await loadFbPages();
-      if (window.$toast) {
-        window.$toast.success('Page disconnected successfully!');
-      }
+      // Remove toast references for now
+      console.log('Page disconnected successfully!');
     } else {
       console.error('Failed to disconnect page:', result.error);
-      if (window.$toast) {
-        window.$toast.error(result.error || 'Failed to disconnect page');
-      }
     }
   } catch (error) {
     console.error('Failed to disconnect page:', error);
-    if (window.$toast) {
-      window.$toast.error('Failed to disconnect page');
-    }
   } finally {
     isLoading.value = false;
   }
@@ -151,8 +194,8 @@ const openFacebookPage = (pageId: string) => {
 const refreshFbPagePermissions = async () => {
   isLoading.value = true;
   try {
-    const result = await publishStore.refreshFbPagePermission();
-    if (result.success && result.data?.redirect) {
+    const result = await refreshPermissions();
+    if (result.success && 'data' in result && result.data?.redirect) {
       // Redirect to the URL provided by the API
       window.open(result.data.redirect, '_blank');
     } else {
@@ -169,8 +212,8 @@ const refreshFbPagePermissions = async () => {
 const removeFbPagePermissions = async () => {
   isLoading.value = true;
   try {
-    const result = await publishStore.removeFbPagePermission();
-    if (result.success && result.data?.redirect) {
+    const result = await removePermissions();
+    if (result.success && 'data' in result && result.data?.redirect) {
       // Redirect to the URL provided by the API
       window.open(result.data.redirect, '_blank');
     } else {

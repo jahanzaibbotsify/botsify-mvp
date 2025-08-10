@@ -12,7 +12,6 @@
           >
             Add button <i class="fa fa-plus"></i>
           </Button>
-
           <div class="button-type-selector" v-if="current == null || current <= 0">
                          <VueSelect
                @close="store.afterSelect"
@@ -78,6 +77,9 @@
              >
              </Button>
           </template>
+          <p class="button-type-label" v-else>
+            {{ button.type === "web_url" ? "URL" : "Phone Number" }}
+          </p>
         </div>
 
         <!-- Button Configuration Row -->
@@ -88,7 +90,7 @@
                v-model="button.title"
                maxlength="20"
                placeholder="e.g., Yes, I'm interested"
-               @input="store.checkForVariables('button_' + btnIndex, null, props.slideIndex || 0)"
+               @input="store.checkForVariables('button_' + btnIndex, props.slideIndex || 0)"
              />
             <p class="input-hint">Keep it short and clear (max 20 characters recommended)</p>
           </div>
@@ -112,7 +114,7 @@
                 v-model="button.title"
                 maxlength="20"
                 placeholder="e.g., Visit Website"
-                @input="store.checkForVariables('button_' + btnIndex, null, props.slideIndex || 0)"
+                @input="store.checkForVariables('button_' + btnIndex, props.slideIndex || 0)"
               />
              <p class="input-hint">Keep it short and clear (max 20 characters recommended)</p>
            </div>
@@ -137,14 +139,11 @@
                                                        <Input
                  type="url"
                  v-model="button.url"
-                 @input="store.checkForVariables('button_' + btnIndex, null, props.slideIndex || 0)"
+                 @input="store.checkForVariables('button_' + btnIndex, props.slideIndex || 0)"
                  placeholder="https://example.com"
                  required
                />
              <p class="input-hint">Enter the URL that will open when the button is clicked</p>
-             <p class="text-danger" v-if="props.errors.url_btn_var !== ''">
-               {{ props.errors.url_btn_var }}
-             </p>
            </div>
          </div>
 
@@ -155,7 +154,7 @@
                 v-model="button.title"
                 maxlength="20"
                 placeholder="e.g., Call Us"
-                @input="store.checkForVariables('button_' + btnIndex, null, props.slideIndex || 0)"
+                @input="store.checkForVariables('button_' + btnIndex, props.slideIndex || 0)"
               />
              <p class="input-hint">Keep it short and clear (max 20 characters recommended)</p>
            </div>
@@ -448,10 +447,6 @@ watch(() => props.block.buttons.length, () => {
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   padding: var(--space-2);
   background-color: var(--color-bg-secondary);
-}
-
-.text-danger {
-  color: var(--color-error);
 }
 
 .text-info {

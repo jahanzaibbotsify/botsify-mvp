@@ -1,23 +1,28 @@
 <script setup lang="ts">
 import {Button, PublishModalLayout, Pagination} from "@/components/ui";
-import { ref, computed } from "vue";
+import { ref, computed, nextTick } from "vue";
 import PublishAgentTab from "./PublishAgentTab.vue";
 import BroadcastTab from "./BroadcastTab.vue";
 import BroadcastReportTab from "./BroadcastReportTab.vue";
 import TemplateTab from "./TemplateTab.vue";
+import CreateTemplateModal from "./CreateTemplateModal.vue";
 import { usePublishStore } from "@/stores/publishStore";
 
 // Define tabs
 const tabs = [
   { id: 'publish-agent', label: 'Publish agent' },
-  { id: 'template', label: 'Template' },
+  { id: 'template', label: 'Templates' },
   { id: 'broadcast', label: 'Broadcast' },
-  { id: 'broadcast-report', label: 'Broadcast Report' },
+  { id: 'broadcast-report', label: 'Broadcast report' },
 ];
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
+const createTemplateModalRef = ref<InstanceType<typeof CreateTemplateModal> | null>(null);
 const currentActiveTab = ref('publish-agent');
 const publishStore = usePublishStore();
+
+// Store the previous tab when opening CreateTemplateModal
+const previousTab = ref<string | null>(null);
 
 // Tab component refs
 const publishAgentTabRef = ref<InstanceType<typeof PublishAgentTab> | null>(null);
@@ -32,9 +37,11 @@ const emit = defineEmits<{
 // Reactive data
 const isLoading = ref(false);
 const isSmsConfigured = ref(false);
+const isCheckingConfiguration = ref(false);
 
 // Check if SMS is configured
 const checkSmsConfiguration = async () => {
+  isCheckingConfiguration.value = true;
   try {
     const result = await publishStore.getThirdPartyConfig();
     if (result.success && result.data?.twilioConf) {
@@ -47,6 +54,8 @@ const checkSmsConfiguration = async () => {
   } catch (error) {
     console.error('Failed to check SMS configuration:', error);
     isSmsConfigured.value = false;
+  } finally {
+    isCheckingConfiguration.value = false;
   }
 };
 
@@ -58,9 +67,25 @@ const computedTabs = computed(() => {
   }));
 });
 
+// Computed active tab from modal ref
+const currentActiveTabFromModal = computed(() => modalRef.value?.activeTab || 'publish-agent');
+
 const openModal = () => {
   modalRef.value?.openModal();
   checkSmsConfiguration();
+  
+  // Restore the previous tab if available, otherwise default to 'publish-agent'
+  const tabToOpen = previousTab.value || 'publish-agent';
+  console.log('Opening SMS modal with tab:', tabToOpen);
+  
+  // Use nextTick to ensure the modal is fully mounted before changing tabs
+  nextTick(() => {
+    handleTabChange(tabToOpen);
+    currentActiveTab.value = tabToOpen; // Ensure currentActiveTab is updated
+  });
+  
+  // Clear the stored tab after using it
+  previousTab.value = null;
 };
 
 const closeModal = () => {
@@ -95,28 +120,35 @@ const handleTestBot = () => {
 
 // Template Tab Events
 const handleCreateTemplate = (block: any) => {
-  console.log('Creating template:', block);
-  // Handle template creation
+  publishStore.createTemplate(block, "sms");
+};
+
+const handleUpdateTemplate = (templateData: any) => {
+  publishStore.updateSmsTemplate(templateData.id, templateData);
 };
 
 const handleDeleteTemplate = (id: number) => {
-  console.log('Deleting template:', id);
-  // Handle template deletion
+  publishStore.deleteSmsTemplate(id);
 };
 
-const handleCloneTemplate = (block: any) => {
-  console.log('Cloning template:', block);
-  // Handle template cloning
+// Clone template is handled directly in TemplateTab
+
+// Template methods
+const openCreateTemplateModal = () => {
+  // Store the current tab before opening the modal
+  previousTab.value = currentActiveTab.value;
+  console.log('Storing previous tab:', previousTab.value);
+  
+  closeModal(); // Close SMS modal
+  createTemplateModalRef.value?.openModal();
 };
 
-const handlePreviewTemplate = (block: any) => {
-  console.log('Previewing template:', block);
-  // Handle template preview
+const handleTemplateOpenCreateModal = () => {
+  openCreateTemplateModal();
 };
 
-// Broadcast Tab Events
-const handleSendBroadcast = (data: any) => {
-  console.log('Sending broadcast:', data);
+const handleTemplateCloseSmsModal = () => {
+  closeModal();
 };
 
 const handleFilterReport = (filters: any) => {
@@ -138,13 +170,6 @@ const handleSaveSettings = async (settings: any) => {
     console.error('Failed to save Twilio settings:', error);
   } finally {
     isLoading.value = false;
-  }
-};
-
-// Pagination handler for template tab
-const handleTemplatePageChange = (page: number) => {
-  if (templateTabRef.value) {
-    templateTabRef.value.currentPage = page;
   }
 };
 
@@ -175,6 +200,7 @@ defineExpose({ openModal, closeModal });
         v-if="activeTab === 'publish-agent'"
         ref="publishAgentTabRef"
         :is-loading="isLoading"
+        :is-checking-configuration="isCheckingConfiguration"
         @save-settings="handleSaveSettings"
       />
 
@@ -184,9 +210,10 @@ defineExpose({ openModal, closeModal });
         ref="templateTabRef"
         :is-loading="isLoading"
         @create-template="handleCreateTemplate"
+        @update-template="handleUpdateTemplate"
         @delete-template="handleDeleteTemplate"
-        @clone-template="handleCloneTemplate"
-        @preview-template="handlePreviewTemplate"
+        @open-create-modal="handleTemplateOpenCreateModal"
+        @close-sms-modal="handleTemplateCloseSmsModal"
       />
 
       <!-- Broadcast Tab -->
@@ -194,7 +221,6 @@ defineExpose({ openModal, closeModal });
         v-if="activeTab === 'broadcast' && isSmsConfigured"
         ref="broadcastTabRef"
         :is-loading="isLoading"
-        @send-broadcast="handleSendBroadcast"
       />
 
       <!-- Broadcast Report Tab -->
@@ -218,7 +244,7 @@ defineExpose({ openModal, closeModal });
     <template #actions>
       <!-- Test Bot Button for Publish Agent Tab -->
       <Button 
-        v-if="currentActiveTab === 'publish-agent'" 
+        v-if="currentActiveTabFromModal === 'publish-agent'" 
         variant="secondary"
         size="medium"
         :loading="isLoading"
@@ -229,7 +255,7 @@ defineExpose({ openModal, closeModal });
       
       <!-- Save Settings Button for Publish Agent Tab -->
       <Button 
-        v-if="currentActiveTab === 'publish-agent'" 
+        v-if="currentActiveTabFromModal === 'publish-agent'" 
         variant="primary"
         size="medium"
         :loading="isLoading"
@@ -238,32 +264,21 @@ defineExpose({ openModal, closeModal });
         {{ isLoading ? 'Saving...' : 'Save Settings' }}
       </Button>
 
-      <!-- Pagination for Template Tab -->
-      <Pagination
-        v-if="currentActiveTab === 'template' && isSmsConfigured && (templateTabRef?.totalPages || 0) > 1"
-        :current-page="templateTabRef?.currentPage || 1"
-        :total-pages="templateTabRef?.totalPages || 1"
-        :total-items="templateTabRef?.filteredTemplates?.length || 0"
-        :items-per-page="5"
-        :show-page-info="false"
-        :disabled="isLoading"
-        @page-change="handleTemplatePageChange"
-      />
-
       <!-- Send Message Button for Broadcast Tab -->
       <Button 
-        v-if="currentActiveTab === 'broadcast' && isSmsConfigured" 
+        v-if="currentActiveTabFromModal === 'broadcast'" 
         variant="primary"
         size="medium"
-        :loading="isLoading"
+        :loading="broadcastTabRef?.isSendingBroadcast || isLoading"
+        :disabled="broadcastTabRef?.isSendingBroadcast || isLoading"
         @click="broadcastTabRef?.sendBroadcast()"
       >
-        {{ isLoading ? 'Sending...' : 'Send Message' }}
+        {{ (broadcastTabRef?.isSendingBroadcast || isLoading) ? 'Sending...' : 'Send Message' }}
       </Button>
 
       <!-- Pagination for Broadcast Report Tab -->
       <Pagination
-        v-if="currentActiveTab === 'broadcast-report' && isSmsConfigured && (broadcastReportTabRef?.totalPages || 0) > 1"
+        v-if="currentActiveTabFromModal === 'broadcast-report' && isSmsConfigured && (broadcastReportTabRef?.totalPages || 0) > 1"
         :current-page="broadcastReportTabRef?.currentPage || 1"
         :total-pages="broadcastReportTabRef?.totalPages || 1"
         :total-items="broadcastReportTabRef?.totalItems || 0"
@@ -274,6 +289,12 @@ defineExpose({ openModal, closeModal });
       />
     </template>
   </PublishModalLayout>
+
+  <!-- Create Template Modal -->
+  <CreateTemplateModal
+    ref="createTemplateModalRef"
+    @modal-closed="openModal"
+  />
 </template>
 
 <style scoped>

@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import {Button, Input, PublishModalLayout} from "@/components/ui";
-import { ref } from "vue";
+import { ref, provide } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
+import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
+import { Button, Input } from "@/components/ui";
+import { useTabManagement } from "@/composables/publishbot/useTabManagement";
 
 // Define tabs
 const tabs = [
@@ -9,14 +11,16 @@ const tabs = [
 ];
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
-const publishStore = usePublishStore();
 const currentActiveTab = ref('publish');
 
 const emit = defineEmits<{
   back: [];
 }>();
 
-// Reactive data
+// Stores
+const publishStore = usePublishStore();
+
+// Local state
 const isLoading = ref(false);
 const telegramForm = ref({
   accessToken: '',
@@ -24,6 +28,29 @@ const telegramForm = ref({
   telegramNumber: '',
   telegramChatbotUrl: ''
 });
+
+const { currentTab, computedTabs, handleTabChange } = useTabManagement(tabs, 'publish');
+
+// Load existing Telegram settings
+const loadTelegramSettings = async () => {
+  isLoading.value = true;
+  try {
+    const result = await publishStore.getThirdPartyConfig();
+    if (result.success && result.data?.telegramConf?.setting) {
+      const settings = result.data.telegramConf.setting;
+      telegramForm.value = {
+        accessToken: settings.access_token || '',
+        botName: settings.bot_name || '',
+        telegramNumber: settings.telegram_number || '',
+        telegramChatbotUrl: settings.telegram_url || ''
+      };
+    }
+  } catch (error) {
+    console.error('Failed to load Telegram settings:', error);
+  } finally {
+    isLoading.value = false;
+  }
+};
 
 const openModal = () => {
   modalRef.value?.openModal();
@@ -38,31 +65,14 @@ const handleBack = () => {
   emit('back');
 };
 
-const handleTabChange = (tabId: string) => {
-  console.log('Tab changed to:', tabId);
+const onTabChange = (tabId: string) => {
+  console.log('TelegramModal - Tab changed to:', tabId);
   currentActiveTab.value = tabId;
-};
-
-// Load existing Telegram settings
-const loadTelegramSettings = async () => {
-  try {
-    const result = await publishStore.getThirdPartyConfig();
-    if (result.success && result.data?.telegramConf?.setting) {
-      const settings = result.data.telegramConf.setting;
-      telegramForm.value = {
-        accessToken: settings.access_token || '',
-        botName: settings.bot_name || '',
-        telegramNumber: settings.telegram_number || '',
-        telegramChatbotUrl: settings.telegram_url || ''
-      };
-    }
-  } catch (error) {
-    console.error('Failed to load Telegram settings:', error);
-  }
+  handleTabChange(tabId);
 };
 
 // Methods
-const saveTelegramSettings = async () => {
+const handleSaveTelegramSettings = async () => {
   if (!telegramForm.value.accessToken || !telegramForm.value.botName) {
     console.error('Access Token and Bot Name are required');
     return;
@@ -75,15 +85,30 @@ const saveTelegramSettings = async () => {
     if (result.success) {
       console.log('Telegram settings saved successfully');
       // You can add a toast notification here
+      if (window.$toast) {
+        window.$toast.success('Telegram settings saved successfully!');
+      }
     } else {
       console.error('Failed to save Telegram settings:', result.error);
+      if (window.$toast) {
+        window.$toast.error(result.error || 'Failed to save Telegram settings');
+      }
     }
   } catch (error) {
     console.error('Failed to save Telegram settings:', error);
+    if (window.$toast) {
+      window.$toast.error('Failed to save Telegram settings');
+    }
   } finally {
     isLoading.value = false;
   }
 };
+
+// Provide context for child components
+provide('telegram-modal', {
+  currentTab,
+  botService: ref('telegram')
+});
 
 defineExpose({ openModal, closeModal });
 </script>
@@ -92,12 +117,12 @@ defineExpose({ openModal, closeModal });
   <PublishModalLayout
     ref="modalRef"
     title="Telegram integration"
-    :tabs="tabs"
+    :tabs="computedTabs"
     icon="/bots/telegram.png"
     max-width="1200px"
     default-tab="publish"
     @back="handleBack"
-    @tab-change="handleTabChange"
+    @tab-change="onTabChange"
   >
     <template #default="{ activeTab }">
       <!-- Publish Tab -->
@@ -105,7 +130,14 @@ defineExpose({ openModal, closeModal });
         <h3>Telegram agent configuration</h3>
         <p class="subtitle">Configure your Telegram bot settings</p>
         
-        <div class="form-section">
+        <!-- Loading State -->
+        <div v-if="publishStore.isLoadingThirdPartyConfig" class="loading-state">
+          <div class="loader-spinner"></div>
+          <span>Loading Telegram settings...</span>
+        </div>
+        
+        <!-- Form Content -->
+        <div v-else class="form-section">
           <div class="form-group">
             <label for="access-token">Access token</label>
             <Input 
@@ -168,18 +200,16 @@ defineExpose({ openModal, closeModal });
         v-if="currentActiveTab === 'publish'" 
         variant="primary"
         size="medium"
-        :loading="isLoading"
-        @click="saveTelegramSettings"
+        :loading="isLoading || publishStore.isLoadingThirdPartyConfig"
+        @click="handleSaveTelegramSettings"
       >
-        {{ isLoading ? 'Saving...' : 'Save' }}
+        {{ (isLoading || publishStore.isLoadingThirdPartyConfig) ? 'Saving...' : 'Save' }}
       </Button>
     </template>
   </PublishModalLayout>
 </template>
 
 <style scoped>
-/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
-
 .subtitle {
   margin: 0 0 12px 0;
   font-size: 14px;
@@ -196,6 +226,30 @@ defineExpose({ openModal, closeModal });
   color: var(--color-text-secondary, #6b7280);
   margin-top: 4px;
   display: block;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  gap: var(--space-3);
+  color: var(--color-text-secondary);
+}
+
+.loader-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border);
+  border-top: 3px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 @media (max-width: 640px) {

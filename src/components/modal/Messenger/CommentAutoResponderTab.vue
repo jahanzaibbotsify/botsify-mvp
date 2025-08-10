@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watch } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 import Button from "@/components/ui/Button.vue";
 import VueSelect from "@/components/ui/VueSelect.vue";
+import Textarea from "@/components/ui/Textarea.vue";
 import Table from "@/components/ui/Table.vue";
 import TableHead from "@/components/ui/TableHead.vue";
 import TableBody from "@/components/ui/TableBody.vue";
@@ -72,9 +73,6 @@ const editResponder = ref({
 const storeCommentResponders = computed(() => publishStore.commentResponderCache);
 const storeCommentRespondersLoaded = computed(() => publishStore.commentResponderLoaded);
 const storeIsLoadingCommentResponders = computed(() => publishStore.isLoadingCommentResponder);
-const storePluginData = computed(() => publishStore.pluginDataCache);
-const storePluginDataLoaded = computed(() => publishStore.pluginDataLoaded);
-const storeIsLoadingPluginData = computed(() => publishStore.isLoadingPluginData);
 
 // Computed post options for VueSelect
 const postOptions = computed(() => {
@@ -83,6 +81,8 @@ const postOptions = computed(() => {
     label: post.message || `Post ${post.id}`
   }));
 });
+
+
 
 // Watch for visibility changes
 watch(() => props.isLoading, (newValue) => {
@@ -95,41 +95,36 @@ watch(() => props.isLoading, (newValue) => {
       transformAndSetData();
     }
     
-    // Load plugin data if not already loaded
-    if (!storePluginDataLoaded.value) {
-      loadPluginData();
-    } else if (storePluginData.value) {
-      setPluginData();
-    }
+    // Load plugin data
+    loadPluginData();
   }
 });
 
 const loadPluginData = async () => {
-  if (storeIsLoadingPluginData.value) {
-    return;
-  }
-  
   try {
-    const result = await publishStore.loadDataForPlugins("optin_templates,posts");
+    const result = await publishStore.loadDataForPlugins("posts");
     if (result.success && result.data) {
-      setPluginData();
+      setPluginData(result.data);
     }
   } catch (error) {
     console.error('Failed to load plugin data:', error);
   }
 };
 
-const setPluginData = () => {
-  if (!storePluginData.value || !storePluginData.value.facebook_posts) {
+
+
+const setPluginData = (data: any) => {
+  if (!data || !data.facebook_posts) {
     return;
   }
   
   // Set posts from API response
-  posts.value = storePluginData.value.facebook_posts.data || [];
+  posts.value = data.facebook_posts.data || [];
 };
 
 const startAddingNew = () => {
   isAddingNew.value = true;
+  isEditing.value = false; // Hide edit form when opening create form
   newResponder.value = {
     keywords: '',
     selectedPost: '',
@@ -139,6 +134,7 @@ const startAddingNew = () => {
 
 const startEditing = (responder: AutoResponder) => {
   isEditing.value = true;
+  isAddingNew.value = false; // Hide create form when opening edit form
   editResponder.value = {
     id: responder.id,
     keywords: responder.keywords.join(', '),
@@ -242,6 +238,24 @@ const cancelAddingNew = () => {
 };
 
 const deleteAutoResponder = async (id: string) => {
+  if (window.$confirm) {
+    window.$confirm({
+      title: 'Delete Auto Responder',
+      text: 'Are you sure you want to delete this auto responder?',
+      icon: 'warning',
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel'
+    }, () => {
+      performDelete(id);
+    });
+    return;
+  }
+  
+  // If no confirm dialog, delete directly
+  performDelete(id);
+};
+
+const performDelete = async (id: string) => {
   isLoading.value = true;
   try {
     const result = await publishStore.deleteCommentResponder(id);
@@ -324,7 +338,6 @@ const transformAndSetData = () => {
   });
 };
 
-
 // Load data on mount
 onMounted(() => {
   // Load comment responders
@@ -335,11 +348,7 @@ onMounted(() => {
   }
   
   // Load plugin data
-  if (!storePluginDataLoaded.value) {
-    loadPluginData();
-  } else if (storePluginData.value) {
-    setPluginData();
-  }
+  loadPluginData();
 });
 
 // Expose methods for parent component
@@ -420,12 +429,12 @@ defineExpose({
 
       <div class="form-group">
         <label>Message</label>
-        <textarea 
+        <Textarea 
           v-model="newResponder.message"
           placeholder="Enter your auto-response message"
-          class="form-input"
-          rows="4"
-        ></textarea>
+          size="medium"
+          :rows="4"
+        />
       </div>
 
       <div class="form-actions">
@@ -482,14 +491,16 @@ defineExpose({
         />
       </div>
 
+      
+
       <div class="form-group">
         <label>Message</label>
-        <textarea 
+        <Textarea 
           v-model="editResponder.message"
           placeholder="Enter your auto-response message"
-          class="form-input"
-          rows="4"
-        ></textarea>
+          size="medium"
+          :rows="4"
+        />
       </div>
 
       <div class="form-actions">
@@ -694,6 +705,34 @@ defineExpose({
   margin-top: 20px;
 }
 
+/* Form Inputs */
+.form-input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  transition: border-color var(--transition-normal);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.form-group {
+  margin-bottom: var(--space-4);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
 /* Section Header */
 .section-header {
   display: flex;
@@ -734,6 +773,8 @@ defineExpose({
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+
 
 .message-cell {
   font-size: 14px;

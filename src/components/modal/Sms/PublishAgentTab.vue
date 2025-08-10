@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import {Input} from "@/components/ui";
-import { ref, onMounted } from "vue";
-
+import { ref, watch } from "vue";
+import { usePublishStore } from "@/stores/publishStore";
 // Props
 interface Props {
-  isLoading?: boolean;
+  isCheckingConfiguration?: boolean;
 }
 
 withDefaults(defineProps<Props>(), {
-  isLoading: false
+  isCheckingConfiguration: false
 });
 
 // Emits
@@ -16,7 +16,6 @@ const emit = defineEmits<{
   'save-settings': [settings: any];
 }>();
 
-import { usePublishStore } from "@/stores/publishStore";
 
 // Twilio fields
 const smsFields = ref({
@@ -27,22 +26,30 @@ const smsFields = ref({
 
 const publishStore = usePublishStore();
 
-// Load existing Twilio settings
-const loadTwilioSettings = async () => {
-  try {
-    const result = await publishStore.getThirdPartyConfig();
-    if (result.success && result.data?.twilioConf) {
-      const twilioConfig = result.data.twilioConf;
-      smsFields.value = {
-        twilioAccountSid: twilioConfig.sid || '',
-        twilioAuthToken: twilioConfig.auth_token || '',
-        twilioSmsNumber: twilioConfig.number || '',
-      };
-    }
-  } catch (error) {
-    console.error('Failed to load Twilio settings:', error);
+// Load existing Twilio settings from store cache
+const loadTwilioSettings = () => {
+  if (publishStore.thirdPartyConfigCache?.twilioConf) {
+    const twilioConfig = publishStore.thirdPartyConfigCache.twilioConf;
+    smsFields.value = {
+      twilioAccountSid: twilioConfig.sid || '',
+      twilioAuthToken: twilioConfig.auth_token || '',
+      twilioSmsNumber: twilioConfig.number || '',
+    };
   }
 };
+
+// Watch for when configuration checking is complete and store is loaded
+watch(() => publishStore.isLoadingThirdPartyConfig, (newValue, oldValue) => {
+  // When loading is complete (false), load the settings
+  if (oldValue === true && newValue === false) {
+    loadTwilioSettings();
+  }
+}, { immediate: true });
+
+// Also watch the store cache directly
+watch(() => publishStore.thirdPartyConfigCache, () => {
+  loadTwilioSettings();
+}, { immediate: true });
 
 const saveSettings = () => {
   if (!smsFields.value.twilioAccountSid || !smsFields.value.twilioAuthToken || 
@@ -52,10 +59,6 @@ const saveSettings = () => {
   }
   emit('save-settings', smsFields.value);
 };
-
-onMounted(() => {
-  loadTwilioSettings();
-});
 
 // Expose methods for parent component
 defineExpose({
@@ -68,52 +71,100 @@ defineExpose({
     <h3>Publish your agent</h3>
     <p class="subtitle">Choose your SMS provider and configure settings</p>
 
-    <div class="form-group">
-      <label for="twilio-account-sid">Twilio account SID</label>
-      <Input 
-        id="twilio-account-sid"
-        v-model="smsFields.twilioAccountSid"
-        type="text"
-        placeholder="Enter your Twilio account SID"
-        size="medium"
-      />
-      <small class="help-text">
-        Find this in your Twilio Console dashboard
-      </small>
+    <!-- Loading State -->
+    <div v-if="isCheckingConfiguration" class="loading-state">
+      <div class="loader-spinner"></div>
+      <span>Loading SMS settings...</span>
     </div>
-    
-    <div class="form-group">
-      <label for="twilio-auth-token">Twilio auth token</label>
-      <Input 
-        id="twilio-auth-token"
-        v-model="smsFields.twilioAuthToken"
-        type="password"
-        placeholder="Enter your Twilio auth token"
-        size="medium"
-      />
-      <small class="help-text">
-        Keep this secure - it's your authentication token
-      </small>
-    </div>
-    
-    <div class="form-group">
-      <label for="twilio-sms-number">Twilio SMS number</label>
-      <Input 
-        id="twilio-sms-number"
-        v-model="smsFields.twilioSmsNumber"
-        type="tel"
-        placeholder="Enter your Twilio phone number"
-        size="medium"
-      />
-      <small class="help-text">
-        The phone number you purchased from Twilio
-      </small>
+
+    <!-- Form Content -->
+    <div v-else class="form-section">
+      <div class="form-group">
+        <label for="twilio-account-sid">Twilio account SID</label>
+        <Input 
+          id="twilio-account-sid"
+          v-model="smsFields.twilioAccountSid"
+          type="text"
+          placeholder="Enter your Twilio account SID"
+          size="medium"
+        />
+        <small class="help-text">
+          Find this in your Twilio Console dashboard
+        </small>
+      </div>
+      
+      <div class="form-group">
+        <label for="twilio-auth-token">Twilio auth token</label>
+        <Input 
+          id="twilio-auth-token"
+          v-model="smsFields.twilioAuthToken"
+          type="password"
+          placeholder="Enter your Twilio auth token"
+          size="medium"
+        />
+        <small class="help-text">
+          Keep this secure - it's your authentication token
+        </small>
+      </div>
+      
+      <div class="form-group">
+        <label for="twilio-sms-number">Twilio SMS number</label>
+        <Input 
+          id="twilio-sms-number"
+          v-model="smsFields.twilioSmsNumber"
+          type="tel"
+          placeholder="Enter your Twilio phone number"
+          size="medium"
+        />
+        <small class="help-text">
+          The phone number you purchased from Twilio
+        </small>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 /* Component-specific styles only - common styles moved to PublishAgentModal.vue */
+
+.form-section {
+  margin-top: 20px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.help-text {
+  font-size: 12px;
+  color: var(--color-text-secondary, #6b7280);
+  margin-top: 4px;
+  display: block;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  gap: var(--space-3);
+  color: var(--color-text-secondary);
+}
+
+.loader-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border);
+  border-top: 3px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 
 .provider-selection {
   display: flex;

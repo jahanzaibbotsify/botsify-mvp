@@ -21,7 +21,6 @@ const store = useWhatsAppTemplateStore();
       
       <div class="buttons-body">
         <div class="button-item">
-          
           <div class="button-config-row">
             <div class="button-config-section full-width">
               <label class="button-label">Button text</label>
@@ -31,6 +30,9 @@ const store = useWhatsAppTemplateStore();
                 maxlength="20"
               />
               <p class="input-hint">Text that will appear on the copy code button</p>
+              <p v-if="store.errors.title_btn_var" class="text-danger">
+                <small>{{ store.errors.title_btn_var }}</small>
+              </p>
             </div>
           </div>
         </div>
@@ -128,5 +130,11 @@ const store = useWhatsAppTemplateStore();
   font-size: 0.75rem;
   color: var(--color-text-secondary);
   line-height: 1.4;
+}
+
+.text-danger {
+  color: var(--color-error);
+  margin-top: var(--space-2);
+  font-size: 0.75rem;
 }
 </style>

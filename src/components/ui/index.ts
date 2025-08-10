@@ -5,6 +5,7 @@ export { default as VueSelect } from './VueSelect.vue'
 export { default as DateRange } from './DateRange.vue'
 export { default as Textarea } from './Textarea.vue'
 export { default as Badge } from './Badge.vue'
+export { default as FileUpload } from './FileUpload.vue'
 
 // Table Components
 export { default as Table } from './Table.vue'

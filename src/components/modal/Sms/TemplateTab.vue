@@ -1,140 +1,153 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
-// import ModalLayout from "@/components/ui/ModalLayout.vue";
-// import Pagination from "@/components/ui/Pagination.vue";
-import Input from "@/components/ui/Input.vue";
+import { ref, computed, onMounted } from "vue";
+import { Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Input, Badge, Button } from "@/components/ui";
 import CreateTemplateModal from "./CreateTemplateModal.vue";
+import { usePublishStore } from "@/stores/publishStore";
 
-// Props
-interface Props {
-  isLoading?: boolean;
-}
-
-withDefaults(defineProps<Props>(), {
-  isLoading: false
-});
+// Props removed - not needed
 
 // Emits
 const emit = defineEmits<{
   'create-template': [block: any];
   'delete-template': [id: number];
-  'clone-template': [block: any];
-  'preview-template': [block: any];
   'copy-payload': [block: any];
+  'open-create-modal': [];
+  'close-sms-modal': [];
 }>();
 
 const createModalRef = ref<InstanceType<typeof CreateTemplateModal> | null>(null);
+const publishStore = usePublishStore();
 
-// Local reactive data
-const templates = ref([
-  {
-    id: 1,
-    name: "Welcome Template",
-    type: "text",
-    status: "active"
-  },
-  {
-    id: 2,
-    name: "Product Catalog",
-    type: "catalog",
-    status: "active"
-  },
-  {
-    id: 3,
-    name: "Promotional Message",
-    type: "text",
-    status: "inactive"
-  }
-]);
+// Store data
+const templates = ref<any[]>([]);
+const isLoading = ref(false);
 
+// Local state
 const searchQuery = ref('');
-const currentPage = ref(1);
-const itemsPerPage = 5;
+const deletingTemplateId = ref<number | null>(null);
 
-// Computed properties
+// Computed
 const filteredTemplates = computed(() => {
-  return templates.value.filter(block =>
-    block.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    block.type.toLowerCase().includes(searchQuery.value.toLowerCase())
+  if (!searchQuery.value) return templates.value;
+  return templates.value.filter(template => 
+    template.name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+    template.text?.toLowerCase().includes(searchQuery.value.toLowerCase())
   );
-});
-
-const paginatedTemplates = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  const end = start + itemsPerPage;
-  return filteredTemplates.value.slice(start, end);
-});
-
-const totalPages = computed(() => {
-  return Math.ceil(filteredTemplates.value.length / itemsPerPage);
 });
 
 // Methods
 const openCreateModal = () => {
-  createModalRef.value?.openModal();
+  // Emit to close SMS modal and open create modal
+  emit('close-sms-modal');
+  emit('open-create-modal');
 };
 
-// const closeCreateModal = () => {
-//   createModalRef.value?.closeModal();
-// };
-
-const createTemplate = (block: any) => {
-  const newBlock = {
-    id: Date.now(),
-    name: block.name,
-    type: block.type,
-    content: block.content,
-    created_at: new Date().toISOString().split('T')[0],
-    status: 'active'
-  };
-  templates.value.unshift(newBlock);
-  emit('create-template', newBlock);
+const openEditModal = (template: any) => {
+  // Store the template ID for update
+  createModalRef.value?.openModalWithData(template);
 };
 
-const deleteTemplate = (id: number) => {
-  templates.value = templates.value.filter(block => block.id !== id);
-  emit('delete-template', id);
+const handleDeleteTemplate = async (id: number) => {
+  window.$confirm(
+    'Are you sure you want to delete this template?',
+    async () => {
+      deletingTemplateId.value = id;
+      isLoading.value = true;
+      try {
+        console.log('Deleting template with ID:', id);
+        const result = await publishStore.deleteSmsTemplate(id);
+        console.log('Delete result:', result);
+        
+        if (result.success) {
+          emit('delete-template', id);
+          // Refresh templates
+          console.log('Refreshing templates after delete...');
+          const refreshResult = await publishStore.loadDataForPlugins("sms_templates");
+          console.log('Refresh result:', refreshResult);
+          
+          if (refreshResult.success && refreshResult.data?.sms_templates) {
+            templates.value = refreshResult.data.sms_templates;
+            console.log('Templates refreshed, new count:', templates.value.length);
+          } else {
+            console.error('Failed to refresh templates:', refreshResult);
+          }
+        } else {
+          console.error('Delete failed:', result.error);
+        }
+      } catch (error) {
+        console.error('Failed to delete template:', error);
+      } finally {
+        deletingTemplateId.value = null;
+        isLoading.value = false;
+      }
+    }
+  );
 };
 
-const cloneTemplate = (block: any) => {
-  const newBlock = {
-    id: Date.now(),
-    name: `${block.name} (Copy)`,
-    type: block.type,
-    content: block.content,
-    created_at: new Date().toISOString().split('T')[0],
-    status: 'active'
-  };
-  templates.value.unshift(newBlock);
-  emit('clone-template', newBlock);
+const handleCloneTemplate = async (id: number) => {
+  window.$confirm(
+    'Are you sure you want to clone this template?',
+    async () => {
+      isLoading.value = true;
+      try {
+        console.log('Cloning template with ID:', id);
+        const result = await publishStore.cloneSmsTemplate(id);
+        console.log('Clone result:', result);
+        
+        if (result.success) {
+          // Refresh templates after cloning
+          console.log('Refreshing templates after clone...');
+          const refreshResult = await publishStore.loadDataForPlugins("sms_templates");
+          console.log('Refresh result:', refreshResult);
+          
+          if (refreshResult.success && refreshResult.data?.sms_templates) {
+            templates.value = refreshResult.data.sms_templates;
+            console.log('Templates refreshed, new count:', templates.value.length);
+          } else {
+            console.error('Failed to refresh templates:', refreshResult);
+          }
+        } else {
+          console.error('Clone failed:', result.error);
+        }
+      } catch (error) {
+        console.error('Failed to clone template:', error);
+      } finally {
+        isLoading.value = false;
+      }
+    }
+  );
 };
 
-const previewTemplate = (block: any) => {
-  console.log('Previewing template:', block);
-  emit('preview-template', block);
-};
-
-// const copyPayload = (block: any) => {
-//   const payload = JSON.stringify(block, null, 2);
-//   navigator.clipboard.writeText(payload);
-//   console.log('Payload copied to clipboard');
-//   emit('copy-payload', block);
-// };
-
-// const handlePageChange = (page: number) => {
-//   currentPage.value = page;
-// };
+// These functions are not used - removed
 
 const handleSearch = (query: string) => {
   searchQuery.value = query;
-  currentPage.value = 1; // Reset to first page on new search
 };
 
-// Expose methods for parent component
-defineExpose({
-  currentPage,
-  totalPages,
-  filteredTemplates
+// Load templates on mount
+onMounted(async () => {
+  isLoading.value = true;
+  try {
+    console.log('Loading SMS templates on mount...');
+    const result = await publishStore.loadDataForPlugins("sms_templates");
+    console.log('Load result:', result);
+    
+    if (result.success && result.data?.sms_templates) {
+      templates.value = result.data.sms_templates;
+      console.log('Templates loaded:', templates.value);
+      console.log('Template count:', templates.value.length);
+      if (templates.value.length > 0) {
+        console.log('First template:', templates.value[0]);
+        console.log('First template ID:', templates.value[0].id);
+      }
+    } else {
+      console.error('Failed to load templates:', result);
+    }
+  } catch (error) {
+    console.error('Failed to load templates:', error);
+  } finally {
+    isLoading.value = false;
+  }
 });
 </script>
 
@@ -159,100 +172,153 @@ defineExpose({
         </button>
       </div>
     </div>
-
-    <div class="media-list">
-      <div class="media-table">
-        <div class="table-header">
-          <div class="header-cell">Name</div>
-          <div class="header-cell">Type</div>
-          <div class="header-cell">Status</div>
-          <div class="header-cell">Actions</div>
-        </div>
+    <div class="table-section">
+      <Table>
+        <TableHead>
+          <TableHeader>Name</TableHeader>
+          <TableHeader>Message</TableHeader>
+          <TableHeader>Status</TableHeader>
+          <TableHeader>Date</TableHeader>
+          <TableHeader>Actions</TableHeader>
+        </TableHead>
         
-        <tr v-for="block in paginatedTemplates" :key="block.id" class="table-row">
-          <td class="table-cell">{{ block.name }}</td>
-          <td class="table-cell">{{ block.type }}</td>
-          <td class="table-cell">
-            <span :class="['status-badge', block.status]">
-              {{ block.status }}
-            </span>
-          </td>
-          <td class="table-cell">
-            <div class="action-buttons">
-              <button
-                class="action-button delete"
-                @click="deleteTemplate(block.id)"
-                title="Delete template"
+        <TableBody>
+          <!-- Loading skeleton -->
+          <TableRow v-if="isLoading" v-for="i in 5" :key="`skeleton-${i}`" skeleton>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="badge"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="actions"></TableCell>
+          </TableRow>
+          
+          <!-- Empty state -->
+          <TableRow v-else-if="filteredTemplates.length === 0" noData>
+            <TableCell noData colspan="6">
+              <div class="empty-state">
+                <i class="pi pi-file-o"></i>
+                <p>No templates found</p>
+              </div>
+            </TableCell>
+          </TableRow>
+          
+          <!-- Template rows -->
+          <TableRow v-else v-for="template in filteredTemplates" :key="template.id || `template-${Math.random()}`">
+            <TableCell>{{ template.name }}</TableCell>
+            <TableCell>{{ template.text }}</TableCell>
+            <TableCell>
+              <Badge 
+                variant="success"
+                size="small"
               >
-                <i class="pi pi-trash"></i>
-              </button>
-              <button
-                class="action-button clone"
-                @click="cloneTemplate(block)"
-                title="Clone template"
-              >
-                <i class="pi pi-copy"></i>
-              </button>
-              <button
-                class="action-button preview"
-                @click="previewTemplate(block)"
-                title="Preview template"
-              >
-                <i class="pi pi-eye"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
-      </div>
+                {{ 'Text Message' }}
+              </Badge>
+            </TableCell>
+            <TableCell>{{ new Date(template.created_at || '').toLocaleDateString() }}</TableCell>
+            <TableCell>
+              <div class="action-buttons">
+                
+                <Button
+                  variant="success-outline"
+                  size="small"
+                  icon="pi pi-pencil"
+                  iconOnly
+                  @click="openEditModal(template)"
+                  title="Edit template"
+                />
+                <Button
+                  variant="secondary"
+                  size="small"
+                  icon="pi pi-copy"
+                  iconOnly
+                  @click="template.id ? handleCloneTemplate(template.id) : () => console.log('No template ID for clone')"
+                  title="Clone template"
+                />
+                <Button
+                  variant="error-outline"
+                  size="small"
+                  :icon="deletingTemplateId === template.id ? 'pi pi-spinner pi-spin' : 'pi pi-trash'"
+                  iconOnly
+                  :loading="deletingTemplateId === template.id"
+                  :disabled="deletingTemplateId === template.id"
+                  @click="template.id ? handleDeleteTemplate(template.id) : () => console.log('No template ID for delete')"
+                  title="Delete template"
+                />
+              </div>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
     </div>
 
-    <!-- Create Template Modal -->
-    <CreateTemplateModal
-      ref="createModalRef"
-      @create-template="createTemplate"
-    />
+
   </div>
 </template>
 
 <style scoped>
-/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
+/* Component-specific styles only */
 
-/* Template Styles */
 .media-header {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-4);
 }
 
-.media-list {
-  margin-top: 16px;
+.search-create-section {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
 }
 
-.media-table {
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  overflow: hidden;
-}
-
-.status-badge {
-  padding: 4px 8px;
-  border-radius: var(--radius-sm, 4px);
-  font-size: 12px;
+.action-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
   font-weight: 500;
-  text-transform: capitalize;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  border: none;
+  font-family: inherit;
 }
 
-.status-badge.active {
-  background: var(--color-secondary, #10b981);
+.action-button.primary {
+  background-color: var(--color-primary);
   color: white;
 }
 
-.status-badge.inactive {
-  background: var(--color-text-tertiary, #9ca3af);
-  color: white;
+.action-button.primary:hover {
+  background-color: var(--color-primary-hover);
 }
 
-@media (max-width: 768px) {
-  .media-table {
-    font-size: 12px;
-  }
+.table-section {
+  flex: 1;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+  color: var(--color-text-tertiary);
+  text-align: center;
+}
+
+.empty-state i {
+  font-size: 48px;
+  margin-bottom: var(--space-3);
+  opacity: 0.5;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
 }
 </style> 

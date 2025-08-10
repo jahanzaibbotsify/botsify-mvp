@@ -144,24 +144,15 @@ const saveMetaSettings = async () => {
     return;
   }
   
-  try {
-    const result = await publishStore.saveWhatsAppCloudSettings({
+  const payload = {
       temporaryToken: metaFields.value.temporaryToken,
       phoneNumber: metaFields.value.phoneNumber,
       phoneNumberId: metaFields.value.phoneNumberId,
       whatsappBusinessAccountId: metaFields.value.whatsappBusinessAccountId,
       clientId: metaFields.value.clientId,
       clientSecret: metaFields.value.clientSecret
-    });
-    
-    if (result.success) {
-      emit('save-meta-settings', metaFields.value);
-      // Reload bot details to update the UI
-      await loadBotDetails();
-    }
-  } catch (error) {
-    console.error('Failed to save Meta Cloud settings:', error);
-  }
+    };
+    emit('save-meta-settings', payload);
 };
 
 const saveDialog360Settings = async () => {
@@ -170,25 +161,14 @@ const saveDialog360Settings = async () => {
     return;
   }
   
-  try {
-    // Prepare the payload with all existing data plus updated fields
-    const payload = {
-      ...botDetails.value.dialog360, // Keep all existing data
-      whatsapp: dialog360Fields.value.whatsapp,
-      api_key: dialog360Fields.value.apiKey,
-      interactive_button: dialog360Fields.value.interactiveButton
-    };
-    
-    const result = await publishStore.saveDialog360Settings(payload);
-    
-    if (result.success) {
-      emit('save-dialog360-settings', dialog360Fields.value);
-      // Reload bot details to update the UI
-      await loadBotDetails();
-    }
-  } catch (error) {
-    console.error('Failed to save Dialog360 settings:', error);
-  }
+  // Prepare the payload with all existing data plus updated fields
+  const payload = {
+    ...botDetails.value.dialog360, // Keep all existing data
+    whatsapp: dialog360Fields.value.whatsapp,
+    dialog360ApiKey: dialog360Fields.value.apiKey,
+    interactive_button: dialog360Fields.value.interactiveButton
+  };
+  emit('save-dialog360-settings', payload);
 };
 
 // Expose methods for parent component

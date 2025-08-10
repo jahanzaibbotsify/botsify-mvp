@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from "vue";
 import { Input, VueSelect } from "@/components/ui";
-// import FileUpload from "@/components/ui/FileUpload.vue";
+import FileUpload from "@/components/ui/FileUpload.vue";
 import MessagePreview from "./Create/MessagePreview.vue";
 import { useWhatsAppTemplateStore } from "@/stores/whatsappTemplateStore";
 import { usePublishStore } from "@/stores/publishStore";
-import axios from "axios";
+import { botsifyApi } from "@/services/botsifyApi";
 
 // Props
 interface Props {
@@ -47,11 +47,25 @@ const validationErrors = ref({
 
 // Media handling
 const uploadingMedia = ref(false);
+const isDownloadingSample = ref(false);
 // const mediaFile = ref<File | null>(null);
-// const mediaUrl = ref('');
-const csvData = ref<{ headers: string[], data: any[] }>({ headers: [], data: [] });
-const csvFile = ref<File | null>(null);
+const uploadedUsers = ref<Array<{phone_number: string}>>([]);
+// Error state for CSV parsing
+const csvError = ref<string | null>(null);
 
+// CSV handling variables
+// const csvFile = ref<File | null>(null);
+const csvData = ref<{ headers: string[], data: any[] }>({ headers: [], data: [] });
+
+const fileUploadError = computed(() => {
+  if (broadcastForm.value.userSegment === 'file' && !broadcastForm.value.uploadedFile) {
+    return 'File upload is required for upload user broadcast';
+  }
+  if (broadcastForm.value.userSegment === 'file' && uploadedUsers.value.length === 0) {
+    return 'No valid users found in uploaded file';
+  }
+  return undefined;
+});
 // Template data
 const templates = ref<any[]>([]);
 const selectedTemplate = ref<any>(null);
@@ -114,10 +128,12 @@ const showMediaHeader = computed(() => {
 //   (templateData.value.type === 'generic' && templateData.value.slides.length > 0)
 // ));
 const showMessageEditor = computed(() => {
+  console.log("templateData.value", templateData.value)
   return selectedTemplate.value && (
     templateData.value.variables.body.length > 0 ||
     templateData.value.variables.header ||
     templateData.value.variables.button ||
+    templateData.value.bodyIncludes.includes('header') ||
     (templateData.value.type === 'generic' && templateData.value.slides.length > 0)
   );
 });
@@ -193,7 +209,9 @@ const fetchTemplates = async () => {
   
   // Check if templates are already loaded in the store
   if (publishStore.templatesLoaded && publishStore.templatesCache && publishStore.templatesCache.data && publishStore.templatesCache.data.length > 0) {
-    templates.value = publishStore.templatesCache.data.map((template: any) => ({
+    // Filter templates to only include those with status === 1 (approved)
+    const approvedTemplates = publishStore.templatesCache.data.filter((template: any) => template.status === 1);
+    templates.value = approvedTemplates.map((template: any) => ({
       ...template,
       label: template.template_name || template.name || template.id || `Template ${template.id}`,
       value: template
@@ -204,9 +222,11 @@ const fetchTemplates = async () => {
   
   isLoadingTemplates.value = true;
   try {
-    const result = await publishStore.fetchTemplates();
+    const result = await publishStore.fetchWhatsAppTemplates();
     if (result.success && result.data && result.data.templates && result.data.templates.data && Array.isArray(result.data.templates.data)) {
-      templates.value = result.data.templates.data.map((template: any) => ({
+      // Filter templates to only include those with status === 1 (approved)
+      const approvedTemplates = result.data.templates.data.filter((template: any) => template.status === 1);
+      templates.value = approvedTemplates.map((template: any) => ({
         ...template,
         label: template.template_name || template.name || template.id || `Template ${template.id}`,
         value: template
@@ -451,7 +471,8 @@ const setTemplateVariable = () => {
           });
         }
       });
-    } else if (templateDataFromData && templateDataFromData.components) {
+    } 
+    if (templateDataFromData && templateDataFromData.components) {
       // Use data field if available
       console.log('Processing template with data:', templateDataFromData);
       
@@ -546,6 +567,7 @@ const setTemplateVariable = () => {
         }
 
         if (component.type === 'CAROUSEL') {
+          console.log("carousel component", component)
           templateData.value.type = 'generic';
           
           component.cards.forEach((card: any, index: number) => {
@@ -630,6 +652,7 @@ const setTemplateVariable = () => {
     } else if (currTemplate.components) {
       // Fallback to components parsing if no params
       currTemplate.components.forEach((component: any) => {
+        console.log("component", component)
         if (component.type === 'HEADER') {
           templateData.value.bodyIncludes.push('header');
           const componentType = component.format ? component.format.toLowerCase() : 'text';
@@ -805,11 +828,6 @@ const setTemplateVariable = () => {
   }
 };
 
-// const handleFileUpload = (attachments: any[]) => {
-//   if (attachments && attachments.length > 0) {
-//     broadcastForm.value.uploadedFile = attachments[0];
-//   }
-// };
 
 // Media handling methods
 const acceptedFileTypes = (headerType: string) => {
@@ -841,32 +859,97 @@ const uploadMedia = async (event: Event, slideIndex?: number) => {
   if (!file) return;
 
   uploadingMedia.value = true;
-  const config = {
-    headers: {
-      "Content-Type": "multipart/form-data"
-    }
-  };
-
-  const formData = new FormData();
-  formData.append('file', file);
 
   try {
-    const response = await axios.post("/upload-sample-file-whatsapp", formData, config);
+    const result = await botsifyApi.uploadFileNew(file);
     
-    if (response.data.status === 'success') {
+    if (result.success && result.data) {
       if (templateData.value.type === 'generic' && slideIndex !== undefined) {
-        templateData.value.slides[slideIndex].attachment_link = response.data.file_handle;
+        templateData.value.slides[slideIndex].attachment_link = result.data.url;
       } else {
-        templateData.value.attachment_link = response.data.file_handle;
+        templateData.value.attachment_link = result.data.url;
       }
       updateStoreFromTemplateData();
       window.$toast?.success('Media uploaded successfully!');
+    } else {
+      window.$toast?.error('Upload failed: ' + (result.message || 'Unknown error'));
     }
   } catch (error: any) {
     console.error('Upload failed:', error);
-    window.$toast?.error(error.response?.data?.message || 'Upload failed');
+    window.$toast?.error('Upload failed: ' + (error.message || 'Unknown error'));
   } finally {
     uploadingMedia.value = false;
+  }
+};
+
+const parseCSVFile = (file: File) => {
+  console.log('Parsing CSV file:', file.name, 'Type:', file.type, 'Size:', file.size);
+  
+  if (!file || !(file instanceof File)) {
+    console.error('Invalid file object passed to parseCSVFile:', file);
+    csvError.value = 'Invalid file object';
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const text = e.target?.result as string;
+      const result = csvToArray(text);
+      if (result.data.length === 0) {
+        csvError.value = 'No valid users found in CSV file';
+      } else {
+        csvData.value = result;
+        uploadedUsers.value = result.data.map((row: any) => {
+          // Look for phone number in common column names
+          const phoneKey = Object.keys(row).find(key => 
+            key.toLowerCase().includes('phone') || 
+            key.toLowerCase().includes('mobile') || 
+            key.toLowerCase().includes('number')
+          );
+          const phoneValue = phoneKey ? row[phoneKey] : Object.values(row)[0];
+          return { phone_number: phoneValue || '' };
+        });
+        csvError.value = null;
+        console.log('Parsed users:', result);
+      }
+    } catch (error) {
+      console.error('Error parsing CSV:', error);
+      csvError.value = 'Failed to parse CSV file';
+    }
+  };
+  
+  reader.onerror = (error) => {
+    console.error('Error reading file:', error);
+    csvError.value = 'Failed to read file';
+  };
+  
+  reader.readAsText(file);
+};
+
+const downloadSampleFile = async () => {
+  isDownloadingSample.value = true;
+  try {
+    const response = await fetch('https://bot-file-upload-eu-1.s3.eu-west-1.amazonaws.com/templates/images/users_120323_1709725833.csv');
+    if (!response.ok) {
+      throw new Error('Failed to fetch sample file');
+    }
+    
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sms_users_sample.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Failed to download sample file:', error);
+    // Fallback: open in new tab
+    window.open('https://bot-file-upload-eu-1.s3.eu-west-1.amazonaws.com/templates/images/users_120323_1709725833.csv', '_blank');
+  } finally {
+    isDownloadingSample.value = false;
   }
 };
 
@@ -885,24 +968,16 @@ const csvToArray = (csv: string): { headers: string[], data: any[] } => {
   return { headers, data };
 };
 
-const onCsvFileUpload = (event: Event) => {
-  const file = (event.target as HTMLInputElement).files?.[0];
-  if (!file) return;
-
-  csvFile.value = file;
-  const reader = new FileReader();
-  
-  reader.onload = (e) => {
-    const text = e.target?.result as string;
-    const result = csvToArray(text);
-    csvData.value = result;
+const handleFileUpload = (attachments: any[]) => {
+  if (attachments && attachments.length > 0) {
+    const file = attachments[0];
     broadcastForm.value.uploadedFile = file;
     
-    console.log('CSV parsed:', result);
-    window.$toast?.success(`CSV uploaded successfully! Found ${result.data.length} users.`);
-  };
-  
-  reader.readAsText(file);
+    // Parse CSV file
+    if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+      parseCSVFile(file);
+    }
+  }
 };
 
 const getSegmentUsers = () => {
@@ -921,8 +996,102 @@ const getSegmentUsers = () => {
   return [];
 };
 
-const sendBroadcast = () => {
-  // Clear previous validation errors
+// Validation functions
+const validateTemplateSelection = (): boolean => {
+  if (!selectedTemplate.value) {
+    validationErrors.value.template = 'Please select a template';
+    return false;
+  }
+  return true;
+};
+
+const validateUserSegment = (): boolean => {
+  if (!broadcastForm.value.userSegment) {
+    validationErrors.value.userSegment = 'Please select a user segment';
+    return false;
+  }
+  return true;
+};
+
+const validatePhoneNumber = (): boolean => {
+  if (broadcastForm.value.userSegment === 'single') {
+    if (!broadcastForm.value.phoneNumber) {
+      validationErrors.value.phoneNumber = 'Phone number is required for single user broadcast';
+      return false;
+    } else if (!/^\+?[1-9]\d{1,14}$/.test(broadcastForm.value.phoneNumber.replace(/\s/g, ''))) {
+      validationErrors.value.phoneNumber = 'Please enter a valid phone number';
+      return false;
+    }
+  }
+  return true;
+};
+
+const validateFileUpload = (): boolean => {
+  if (broadcastForm.value.userSegment === 'upload') {
+    if (!broadcastForm.value.uploadedFile && csvData.value.data.length === 0) {
+      validationErrors.value.uploadedFile = 'Please upload a CSV or TXT file with phone numbers';
+      return false;
+    }
+  }
+  return true;
+};
+
+const validateTemplateVariables = (): boolean => {
+  if (!selectedTemplate.value) return true;
+
+  // Validate body variables
+  if (templateData.value.variables.body.length > 0) {
+    templateData.value.variables.body.forEach((variable: any, index: number) => {
+      if (!variable.value || variable.value.trim() === '') {
+        validationErrors.value.variables[`body_${index}`] = `${variable.key} is required`;
+        return false;
+      }
+    });
+  }
+
+  // Validate header variable
+  if (templateData.value.variables.header && !templateData.value.variables.header.value) {
+    validationErrors.value.variables.header = `${templateData.value.variables.header.key} is required`;
+    return false;
+  }
+
+  // Validate media header
+  if (showMediaHeader.value && !templateData.value.attachment_link) {
+    validationErrors.value.mediaHeader = `${templateData.value.type.charAt(0).toUpperCase() + templateData.value.type.slice(1)} link is required`;
+    return false;
+  }
+
+  // Validate carousel slides
+  if (templateData.value.type === 'generic' && templateData.value.slides.length > 0) {
+    for (const [slideIndex, slide] of templateData.value.slides.entries()) {
+      // Validate slide body variables
+      if (slide.variables && slide.variables.body && slide.variables.body.length > 0) {
+        for (const [varIndex, variable] of slide.variables.body.entries()) {
+          if (!variable.value || variable.value.trim() === '') {
+            validationErrors.value.variables[`slide_${slideIndex}_body_${varIndex}`] = `Slide ${slideIndex + 1} - ${variable.key} is required`;
+            return false;
+          }
+        }
+      }
+
+      // Validate slide button variable
+      if (slide.variables && slide.variables.button && !slide.variables.button.value) {
+        validationErrors.value.variables[`slide_${slideIndex}_button`] = `Slide ${slideIndex + 1} - ${slide.variables.button.key} is required`;
+        return false;
+      }
+
+      // Validate slide attachment
+      if (!slide.attachment_link) {
+        validationErrors.value.variables[`slide_${slideIndex}_attachment`] = `Slide ${slideIndex + 1} - Media attachment is required`;
+        return false;
+      }
+    }
+  }
+
+  return true;
+};
+
+const clearValidationErrors = () => {
   validationErrors.value = {
     template: '',
     userSegment: '',
@@ -931,99 +1100,10 @@ const sendBroadcast = () => {
     variables: {},
     mediaHeader: ''
   };
+};
 
-  let hasErrors = false;
-
-  // Validate template selection
-  if (!selectedTemplate.value) {
-    validationErrors.value.template = 'Please select a template';
-    hasErrors = true;
-  }
-
-  // Validate user segment
-  if (!broadcastForm.value.userSegment) {
-    validationErrors.value.userSegment = 'Please select a user segment';
-    hasErrors = true;
-  }
-
-  // Validate phone number for single user
-  if (broadcastForm.value.userSegment === 'single') {
-    if (!broadcastForm.value.phoneNumber) {
-      validationErrors.value.phoneNumber = 'Phone number is required for single user broadcast';
-      hasErrors = true;
-    } else if (!/^\+?[1-9]\d{1,14}$/.test(broadcastForm.value.phoneNumber.replace(/\s/g, ''))) {
-      validationErrors.value.phoneNumber = 'Please enter a valid phone number';
-      hasErrors = true;
-    }
-  }
-
-  // Validate file upload for upload user
-  if (broadcastForm.value.userSegment === 'upload') {
-    if (!broadcastForm.value.uploadedFile && csvData.value.data.length === 0) {
-      validationErrors.value.uploadedFile = 'Please upload a CSV or TXT file with phone numbers';
-      hasErrors = true;
-    }
-  }
-
-  // Validate template variables
-  if (selectedTemplate.value) {
-    // Validate body variables
-    if (templateData.value.variables.body.length > 0) {
-      templateData.value.variables.body.forEach((variable: any, index: number) => {
-        if (!variable.value || variable.value.trim() === '') {
-          validationErrors.value.variables[`body_${index}`] = `${variable.key} is required`;
-          hasErrors = true;
-        }
-      });
-    }
-
-    // Validate header variable
-    if (templateData.value.variables.header && !templateData.value.variables.header.value) {
-      validationErrors.value.variables.header = `${templateData.value.variables.header.key} is required`;
-      hasErrors = true;
-    }
-
-    // Validate media header
-    if (showMediaHeader.value && !templateData.value.attachment_link) {
-      validationErrors.value.mediaHeader = `${templateData.value.type.charAt(0).toUpperCase() + templateData.value.type.slice(1)} link is required`;
-      hasErrors = true;
-    }
-
-    // Validate carousel slides
-    if (templateData.value.type === 'generic' && templateData.value.slides.length > 0) {
-      templateData.value.slides.forEach((slide: any, slideIndex: number) => {
-        // Validate slide body variables
-        if (slide.variables && slide.variables.body && slide.variables.body.length > 0) {
-          slide.variables.body.forEach((variable: any, varIndex: number) => {
-            if (!variable.value || variable.value.trim() === '') {
-              validationErrors.value.variables[`slide_${slideIndex}_body_${varIndex}`] = `Slide ${slideIndex + 1} - ${variable.key} is required`;
-              hasErrors = true;
-            }
-          });
-        }
-
-        // Validate slide button variable
-        if (slide.variables && slide.variables.button && !slide.variables.button.value) {
-          validationErrors.value.variables[`slide_${slideIndex}_button`] = `Slide ${slideIndex + 1} - ${slide.variables.button.key} is required`;
-          hasErrors = true;
-        }
-
-        // Validate slide attachment
-        if (!slide.attachment_link) {
-          validationErrors.value.variables[`slide_${slideIndex}_attachment`] = `Slide ${slideIndex + 1} - Media attachment is required`;
-          hasErrors = true;
-        }
-      });
-    }
-  }
-
-  if (hasErrors) {
-    window.$toast?.error('Please fix the validation errors before sending the broadcast');
-    return;
-  }
-
-  // Prepare the payload in the format expected by the API
-  const payload = {
+const buildBroadcastPayload = () => {
+  return {
     description: `WhatsApp broadcast using template: ${selectedTemplate.value?.template_name || selectedTemplate.value?.name || 'Unknown'}`,
     fall_back: false,
     response: JSON.stringify({
@@ -1062,11 +1142,49 @@ const sendBroadcast = () => {
     type: 8, // WhatsApp broadcast type
     user_segment: broadcastForm.value.userSegment
   };
-  
-  console.log('Broadcast payload:', payload);
-  
-  emit('send-broadcast', payload);
 };
+
+const validateBroadcast = (): boolean => {
+  clearValidationErrors();
+  
+  const validations = [
+    validateTemplateSelection(),
+    validateUserSegment(),
+    validatePhoneNumber(),
+    validateFileUpload(),
+    validateTemplateVariables()
+  ];
+  
+  return validations.every(validation => validation);
+};
+
+const sendBroadcast = () => {
+  // Validate all inputs
+  if (!validateBroadcast()) {
+    return;
+  }
+
+  // Show confirmation dialog
+  try {
+    window.$confirm({
+      text: `Are you sure you want to send this broadcast to ${
+        broadcastForm.value.userSegment === 'single' ? '1 user' : 
+        broadcastForm.value.userSegment === 'upload' ? `${csvData.value.data.length} users` : 
+        'your subscribers'
+      }?`,
+    }, () => {
+      // Build and send payload
+      const payload = buildBroadcastPayload();
+      console.log('Broadcast payload:', payload);
+      
+      emit('send-broadcast', payload);
+    });
+  } catch (error) {
+    // User cancelled the confirmation
+    console.log('Broadcast cancelled by user');
+  }
+};
+
 
 // Initialize templates when component is mounted
 // This will be called when the broadcast tab becomes active
@@ -1148,16 +1266,13 @@ defineExpose({
               :loading="isLoadingTemplates"
               :disabled="isLoadingTemplates"
               @change="handleTemplateChange"
-              :class="{ 'error': validationErrors.template }"
+              :error="validationErrors.template"
             />
             <div v-if="isLoadingTemplates" class="template-loader">
               <div class="loader-spinner"></div>
               <span>Loading templates...</span>
             </div>
           </div>
-          <p v-if="validationErrors.template" class="text-danger">
-            <small>{{ validationErrors.template }}</small>
-          </p>
         </div>
         
         <!-- User Segment -->
@@ -1169,46 +1284,38 @@ defineExpose({
             :options="userSegments"
             :reduce="(segment: any) => segment.value"
             placeholder="Select user segment"
-            :class="{ 'error': validationErrors.userSegment }"
+            :error="validationErrors.userSegment"
           />
-          <p v-if="validationErrors.userSegment" class="text-danger">
-            <small>{{ validationErrors.userSegment }}</small>
-          </p>
         </div>
         
         <!-- File Upload (Upload user only) -->
         <div v-if="showFileUpload" class="form-group">
-          <label>Upload user file</label>
-          <div class="file-upload-section">
-            <input
-              type="file"
-              accept=".csv,.txt"
-              @change="onCsvFileUpload"
-              class="file-input"
-              :class="{ 'error': validationErrors.uploadedFile }"
-            />
-            <small class="help-text">
-              Upload a CSV or TXT file containing phone numbers to send messages to.
-            </small>
-            <p v-if="validationErrors.uploadedFile" class="text-danger">
-              <small>{{ validationErrors.uploadedFile }}</small>
-            </p>
-            <div v-if="csvData.data.length > 0" class="csv-preview">
-              <h6>CSV Preview ({{ csvData.data.length }} users)</h6>
-              <div class="csv-headers">
-                <strong>Headers:</strong> {{ csvData.headers.join(', ') }}
-              </div>
-              <div class="csv-sample">
-                <strong>Sample data:</strong>
-                <div v-for="(row, index) in csvData.data.slice(0, 3)" :key="index" class="csv-row">
-                  {{ Object.values(row).join(', ') }}
-                </div>
-                <div v-if="csvData.data.length > 3" class="csv-more">
-                  ... and {{ csvData.data.length - 3 }} more rows
-                </div>
-              </div>
-            </div>
-          </div>
+          <label>Upload File (CSV)</label>
+         <FileUpload
+           v-model="broadcastForm.uploadedFile"
+           accept=".csv"
+           :emit-raw-file="true"
+           :max-size-mb="10"
+           text="CSV files only"
+           :error="fileUploadError"
+           @upload="handleFileUpload"
+         />
+         
+         <small class="help-text">
+           Note: Supported formats: .csv<br>
+           Sample Files: <a href="#" @click.prevent="downloadSampleFile" :disabled="isDownloadingSample">CSV</a>
+           <span v-if="isDownloadingSample" class="ml-2">Downloading...</span>
+           <div v-if="uploadedUsers.length > 0" class="users-count">
+             <i class="pi pi-check-circle"></i>
+             <span>{{ uploadedUsers.length }} users loaded from CSV</span>
+           </div>
+           <div v-if="csvError" class="csv-error">
+             <i class="pi pi-exclamation-triangle"></i>
+             <span>{{ csvError }}</span>
+           </div>
+         </small>
+         
+
         </div>
         
         <!-- Phone Number (Single user only) -->
@@ -1219,7 +1326,7 @@ defineExpose({
             v-model="broadcastForm.phoneNumber"
             type="tel"
             placeholder="Enter phone number"
-            :error-text="validationErrors.phoneNumber"
+            :error="validationErrors.phoneNumber"
           />
         </div>
       </div>
@@ -1240,7 +1347,7 @@ defineExpose({
                 v-model="variable.value"
                 :placeholder="`Enter value for ${variable.key}`"
                 @input="updateStoreFromTemplateData"
-                :error-text="validationErrors.variables[`body_${varIndex}`]"
+                :error="validationErrors.variables[`body_${varIndex}`]"
               />
             </div>
           </div>
@@ -1256,7 +1363,7 @@ defineExpose({
                 v-model="templateData.variables.header.value"
                 placeholder="Enter header variable value"
                 @input="updateStoreFromTemplateData"
-                :error-text="validationErrors.variables.header"
+                :error="validationErrors.variables.header"
               />
             </div>
           </div>
@@ -1274,7 +1381,7 @@ defineExpose({
                 v-model="templateData.attachment_link"
                 :placeholder="`Enter ${templateData.type} link`"
                 @input="onUpdateAttachmentLink"
-                :error-text="validationErrors.mediaHeader"
+                :error="validationErrors.mediaHeader"
               />
             </div>
             
@@ -1305,10 +1412,8 @@ defineExpose({
                  v-model="templateData.variables.button.value"
                  placeholder="Enter button variable value"
                  @input="updateStoreFromTemplateData"
+                 :error="!templateData.variables.button.value ? 'This field is required' : ''"
                />
-              <p class="text-danger" v-if="!templateData.variables.button.value">
-                <small>This field is required</small>
-              </p>
             </div>
           </div>
         </div>
@@ -1329,10 +1434,8 @@ defineExpose({
                      v-model="variable.value"
                      placeholder="Enter variable value"
                      @input="updateStoreFromTemplateData"
+                     :error="!variable.value ? 'This field is required' : ''"
                    />
-                  <p class="text-danger" v-if="!variable.value">
-                    <small>This field is required</small>
-                  </p>
                 </div>
               </div>
 
@@ -1345,10 +1448,8 @@ defineExpose({
                      v-model="slide.variables.button.value"
                      placeholder="Enter button variable value"
                      @input="updateStoreFromTemplateData"
+                     :error="!slide.variables.button.value ? 'This field is required' : ''"
                    />
-                  <p class="text-danger" v-if="!slide.variables.button.value">
-                    <small>This field is required</small>
-                  </p>
                 </div>
               </div>
 
@@ -1363,10 +1464,8 @@ defineExpose({
                      v-model="slide.attachment_link"
                      :placeholder="`Enter ${slide.header} link`"
                      @input="updateStoreFromTemplateData"
+                     :error="!slide.attachment_link ? 'This field is required' : ''"
                    />
-                  <p class="text-danger" v-if="!slide.attachment_link">
-                    <small>This field is required</small>
-                  </p>
                 </div>
               </div>
             </div>
@@ -1375,22 +1474,24 @@ defineExpose({
        </div>
        
 
-     </div>
-     
-     <!-- Side Panel -->
-     <div class="side-panel">
-       <div class="preview-header">
-         <h4>Message preview</h4>
+            </div>
+       
+
+       
+       <!-- Side Panel -->
+       <div class="side-panel">
+         <div class="preview-header">
+           <h4>Message preview</h4>
+         </div>
+         <MessagePreview 
+           v-if="store.template && store.block"
+           :template="store.template"
+           :block="store.block"
+           :variables="store.template.variables"
+         />
        </div>
-       <MessagePreview 
-         v-if="store.template && store.block"
-         :template="store.template"
-         :block="store.block"
-         :variables="store.template.variables"
-       />
      </div>
-   </div>
- </template>
+   </template>
 
 <style scoped>
 .broadcast-layout {
@@ -1623,24 +1724,10 @@ defineExpose({
   margin-bottom: var(--space-2);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-}
+} 
 
 .text-danger {
   color: var(--color-error);
-  margin-top: var(--space-1);
-}
-
-.text-danger small {
-  font-size: 0.75rem;
-}
-
-.error {
-  border-color: var(--color-error) !important;
-}
-
-.error:focus {
-  border-color: var(--color-error) !important;
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
 }
 
 .file-input {
@@ -1710,25 +1797,6 @@ defineExpose({
   font-style: italic;
   color: var(--color-text-tertiary);
 }
-
-.send-button-section {
-  margin-top: var(--space-6);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border);
-}
-
-.send-button {
-  width: 100%;
-  padding: var(--space-3) var(--space-4);
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.send-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 
 
 /* Responsive Design */

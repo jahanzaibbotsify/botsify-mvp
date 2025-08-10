@@ -1,19 +1,91 @@
 <script setup lang="ts">
 import ModalLayout from "@/components/ui/ModalLayout.vue";
-import { ref, defineAsyncComponent } from "vue";
+import { ref, onMounted, defineAsyncComponent } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
+import { eventBus } from "@/utils/eventBus";
 
-const WhatsAppModal = defineAsyncComponent(() => import('./WhatsApp/WhatsAppModal.vue'));
-const SmsModal = defineAsyncComponent(() => import('./Sms/SmsModal.vue'));
-const MessengerModal = defineAsyncComponent(() => import('./Messenger/MessengerModal.vue'));
-const InstagramModal = defineAsyncComponent(() => import('./Instagram/InstagramModal.vue'));
-const TelegramModal = defineAsyncComponent(() => import('./TelegramModal.vue'));
-const WebsiteModal = defineAsyncComponent(() => import('./WebsiteModal.vue'));
-const PortableAgentModal = defineAsyncComponent(() => import('./PortableAgentModal.vue'));
+// Change from async to direct import for WhatsAppModal
+const WhatsAppModal = defineAsyncComponent({
+  loader: () => import('./WhatsApp/WhatsAppModal.vue'),
+  onError: (error: any, retry: any, fail: any, attempts: any) => {
+    console.error('Failed to load WhatsAppModal:', error);
+    if (attempts <= 3) {
+      retry();
+    } else {
+      fail();
+    }
+  }
+});
+const SmsModal = defineAsyncComponent({
+  loader: () => import('./Sms/SmsModal.vue'),
+  onError: (error: any, retry: any, fail: any, attempts: any) => {
+    console.error('Failed to load SmsModal:', error);
+    if (attempts <= 3) {
+      retry();
+    } else {
+      fail();
+    }
+  }
+});
+const MessengerModal = defineAsyncComponent({
+  loader: () => import('./Messenger/MessengerModal.vue'),
+  onError: (error: any, retry: any, fail: any, attempts: any) => {
+    console.error('Failed to load MessengerModal:', error);
+    if (attempts <= 3) {
+      retry();
+    } else {
+      fail();
+    }
+  }
+});
+const InstagramModal = defineAsyncComponent({
+  loader: () => import('./Instagram/InstagramModal.vue'),
+  onError: (error: any, retry: any, fail: any, attempts: any) => {
+    console.error('Failed to load InstagramModal:', error);
+    if (attempts <= 3) {
+      retry();
+    } else {
+      fail();
+    }
+  }
+});
+const TelegramModal = defineAsyncComponent({
+  loader: () => import('./TelegramModal.vue'),
+  onError: (error: any, retry: any, fail: any, attempts: any) => {
+    console.error('Failed to load TelegramModal:', error);
+    if (attempts <= 3) {
+      retry();
+    } else {
+      fail();
+    }
+  }
+});
+const WebsiteModal = defineAsyncComponent({
+  loader: () => import('./WebsiteModal.vue'),
+  onError: (error: any, retry: any, fail: any, attempts: any) => {
+    console.error('Failed to load WebsiteModal:', error);
+    if (attempts <= 3) {
+      retry();
+    } else {
+      fail();
+    }
+  }
+});
+const PortableAgentModal = defineAsyncComponent({
+  loader: () => import('./PortableAgentModal.vue'),
+  onError: (error: any, retry: any, fail: any, attempts: any) => {
+    console.error('Failed to load PortableAgentModal:', error);
+    if (attempts <= 3) {
+      retry();
+    } else {
+      fail();
+    }
+  }
+});
 
 const modalRef = ref<InstanceType<typeof ModalLayout> | null>(null);
 const websiteModalRef = ref<InstanceType<typeof WebsiteModal> | null>(null);
-const whatsappModalRef = ref<InstanceType<typeof WhatsAppModal> | null>(null);
+const whatsappModalRef = ref<any>(null);
 const telegramModalRef = ref<InstanceType<typeof TelegramModal> | null>(null);
 const smsModalRef = ref<InstanceType<typeof SmsModal> | null>(null);
 const messengerModalRef = ref<InstanceType<typeof MessengerModal> | null>(null);
@@ -103,6 +175,9 @@ const openModal = () => {
 };
 
 const handleAgentClick = (agentLabel: string) => {
+  // Emit event for agent selection
+  eventBus.emit('publish-agent:selected', { agent: agentLabel });
+  
   if (agentLabel === 'Website') {
     websiteModalRef.value?.openModal();
   } else if (agentLabel === 'WhatsApp') {
@@ -128,6 +203,16 @@ const handleBackToMain = () => {
     fetchPublishStatus();
   }
 };
+
+// Event listeners
+onMounted(() => {
+  // Listen for status updates from child modals
+  eventBus.on('agent:status-updated', (data) => {
+    console.log('Agent status updated:', data);
+    // Refresh status if needed
+    fetchPublishStatus();
+  });
+});
 
 defineExpose({ openModal });
 </script>

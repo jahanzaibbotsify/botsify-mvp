@@ -150,11 +150,11 @@ defineExpose({ openModal, closeModal, openModalWithData });
                               placeholder="Select Header Type"
                               :options="[
                                 {label: 'Text', value: 'text'},
-                                {label: 'Video', value: 'video'},
                                 {label: 'Image', value: 'image'},
+                                {label: 'Video', value: 'video'},
                                 {label: 'Document', value: 'document'}
                               ]"
-                              @input="store.onChangeHeaderType"
+                              @change="store.onChangeHeaderType"
                             />
                           </div>
                         </div>
@@ -246,10 +246,10 @@ defineExpose({ openModal, closeModal, openModalWithData });
         variant="primary"
         size="medium"
         @click="store.views.settings === 'current' ? handleSave() : store.goNext()"
-        :loading="props.isLoading"
-        :disabled="store.isNextDisabled() || props.isLoading"
+        :loading="store.isSaving"
+        :disabled="store.isNextDisabled() || store.isSaving"
       >
-        {{ store.views.settings === 'current' ? (props.isLoading ? 'Saving...' : 'Create Template') : 'Next' }}
+        {{ store.views.settings === 'current' ? (store.isSaving ? 'Saving...' : 'Create Template') : 'Next' }}
       </Button>
     </template>
   </PublishModalLayout>

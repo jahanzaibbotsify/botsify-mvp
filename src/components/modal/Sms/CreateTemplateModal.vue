@@ -1,368 +1,682 @@
 <script setup lang="ts">
-import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
+import { PublishModalLayout } from "@/components/ui";
+import { Button, Textarea, Input } from "@/components/ui";
+import { usePublishStore } from "@/stores/publishStore";
+import { eventBus } from "@/utils/eventBus";
 
 // Props
 interface Props {
   isLoading?: boolean;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   isLoading: false
 });
 
 // Emits
-defineEmits<{
-  'create-media-block': [block: any];
+const emit = defineEmits<{
+  'create-template': [template: any];
+  'update-template': [template: any];
+  'modal-closed': [];
 }>();
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
+const publishStore = usePublishStore();
 
-// Dummy tabs for PublishModalLayout (not used in this simple form modal)
+// Form state
+const form = ref({
+  name: '',
+  text: '',
+  buttons: [] as Array<{
+    api: number;
+    error: boolean;
+    payload: string;
+    response: string;
+    signature_hash: string;
+    title: string;
+    type: string;
+    url: string;
+    isEditing?: boolean;
+  }>,
+  image_url: '',
+  attachment_link: ''
+});
+
+const errors = ref<{
+  name?: string;
+  text?: string;
+  buttons: Record<number, string>;
+  image_url?: string;
+  attachment_link?: string;
+}>({ buttons: {} });
+const isSaving = ref(false);
+
+// Dummy tabs for PublishModalLayout
 const tabs = [
   { id: 'create', label: 'Create Template' }
 ];
 
-// Create form data
-const createForm = ref({
-  message: '',
-  buttons: [] as Array<{ text: string; url: string }>
-});
+// Track if we're in edit mode
+const isEditMode = ref(false);
+const editingTemplateId = ref<number | null>(null);
+
+// Form validation
+const validateForm = () => {
+  errors.value = { buttons: {} };
+  
+  if (!form.value.name?.trim()) {
+    errors.value.name = 'Template name is required';
+  }
+  
+  if (!form.value.text?.trim()) {
+    errors.value.text = 'Template text is required';
+  }
+  
+  return Object.keys(errors.value).length === 1; // Only buttons object should remain
+};
+
+// Form reset
+const resetForm = () => {
+  form.value = {
+    name: '',
+    text: '',
+    buttons: [],
+    image_url: '',
+    attachment_link: ''
+  };
+  errors.value = { buttons: {} };
+};
+
+// Button management
+const addButton = (type: string) => {
+  const newButton = {
+    api: 0,
+    error: false,
+    payload: '',
+    response: '',
+    signature_hash: '',
+    title: '',
+    type: type,
+    url: '',
+    isEditing: true // Start in editing mode for new buttons
+  };
+  form.value.buttons.push(newButton);
+};
+
+const removeButton = (index: number) => {
+  form.value.buttons.splice(index, 1);
+};
+
+// const updateButton = (index: number, field: string, value: any) => {
+//   if (form.value.buttons[index]) {
+//     (form.value.buttons[index] as any)[field] = value;
+//   }
+// };
+
+const editButton = (index: number) => {
+  form.value.buttons[index].isEditing = true;
+};
+
+const saveButtonEdit = (index: number) => {
+  const button = form.value.buttons[index];
+  if (!button.title?.trim()) {
+    errors.value.buttons[index] = 'Button title is required';
+    return;
+  }
+
+  if (button.type === 'url' && !button.url?.trim()) {
+    errors.value.buttons[index] = 'URL is required for URL buttons';
+    return;
+  }
+
+  // Validate URL format for URL buttons
+  if (button.type === 'url' && button.url?.trim()) {
+    try {
+      new URL(button.url.trim());
+    } catch {
+      errors.value.buttons[index] = 'Please enter a valid URL (e.g., https://example.com)';
+      return;
+    }
+  }
+
+  if (button.type === 'phone_number' && !button.payload?.trim()) {
+    errors.value.buttons[index] = 'Phone number is required for Phone Number buttons';
+    return;
+  }
+
+  if (button.type === 'postback' && !button.response?.trim()) {
+    errors.value.buttons[index] = 'Response text is required for Postback buttons';
+    return;
+  }
+
+  // Clear any previous errors
+  if (errors.value.buttons[index]) {
+    delete errors.value.buttons[index];
+  }
+
+  // Save the button edit
+  button.isEditing = false;
+};
+
+const cancelButtonEdit = (index: number) => {
+  form.value.buttons[index].isEditing = false;
+  // Clear errors for the button
+  if (errors.value.buttons[index]) {
+    delete errors.value.buttons[index];
+  }
+};
+
+// Template operations
+const createTemplate = async (templateData: any) => {
+  try {
+    const result = await publishStore.createSmsTemplate(templateData);
+    return result;
+  } catch (error) {
+    console.error('Failed to create template:', error);
+    return { success: false, error };
+  }
+};
+
+const updateTemplate = async (id: number, templateData: any) => {
+  try {
+    const result = await publishStore.updateSmsTemplate(id, templateData);
+    return result;
+  } catch (error) {
+    console.error('Failed to update template:', error);
+    return { success: false, error };
+  }
+};
 
 const openModal = () => {
   modalRef.value?.openModal();
-  // Reset form when opening
-  createForm.value = {
-    message: '',
-    buttons: []
+  resetForm();
+  isEditMode.value = false;
+  editingTemplateId.value = null;
+};
+
+const openModalWithData = (templateData: any) => {
+  modalRef.value?.openModal();
+  
+  // Set edit mode
+  isEditMode.value = true;
+  editingTemplateId.value = templateData.id;
+  
+  // Prefill form with template data
+  form.value = {
+    name: templateData.name,
+    text: templateData.text,
+    buttons: templateData.buttons || [],
+    image_url: templateData.image_url || '',
+    attachment_link: templateData.attachment_link || ''
   };
+  
+  // Reset errors
+  errors.value = { buttons: {} };
+  
+  console.log('Opening with data for edit:', templateData);
 };
 
 const closeModal = () => {
   modalRef.value?.closeModal();
+  emit('modal-closed');
 };
 
-// Button management
-const newButton = ref({ text: '', url: '' });
+const handleModalClose = () => {
+  emit('modal-closed');
+};
 
-const addButton = () => {
-  if (createForm.value.buttons.length >= 3) {
-    console.error('Maximum 3 buttons allowed');
+const handleSave = async () => {
+  console.log('SMS CreateTemplateModal - Form data before save:', form.value);
+  
+  if (!validateForm()) {
     return;
   }
   
-  if (!newButton.value.text || !newButton.value.url) {
-    console.error('Button text and URL are required');
-    return;
+  isSaving.value = true;
+  
+  try {
+    if (isEditMode.value && editingTemplateId.value) {
+      // Update existing template
+      const result = await updateTemplate(editingTemplateId.value, form.value);
+      if (result?.success) {
+        emit('update-template', { ...form.value, id: editingTemplateId.value });
+        closeModal();
+      }
+    } else {
+      // Create new template
+      const result = await createTemplate(form.value);
+      if (result?.success && 'data' in result && result.data) {
+        emit('create-template', result.data);
+        closeModal();
+      }
+    }
+  } catch (error) {
+    console.error('Failed to save template:', error);
+  } finally {
+    isSaving.value = false;
   }
-  
-  createForm.value.buttons.push({
-    text: newButton.value.text,
-    url: newButton.value.url
-  });
-  
-  // Reset new button form
-  newButton.value = { text: '', url: '' };
 };
 
-const removeButton = (index: number) => {
-  createForm.value.buttons.splice(index, 1);
-};
-
-const createTemplate = () => {
-  if (!createForm.value.message) {
-    console.error('Message is required');
-    return;
-  }
-
-  // const newBlock = {
-  //   id: Date.now(),
-  //   ...createForm.value,
-  //   createdAt: new Date().toISOString().split('T')[0]
-  // };
-
-  // Emit event
-  // emit('create-template', newBlock);
-  
-  // Close modal
+const handleCancel = () => {
   closeModal();
 };
 
-defineExpose({ openModal, closeModal });
+// Button type options
+const buttonTypes = [
+  { label: 'Text', value: 'postback' as const },
+  { label: 'URL', value: 'url' as const },
+  { label: 'Phone Number', value: 'phone_number' as const }
+];
+
+// Event listeners
+onMounted(() => {
+  // Listen for template creation events
+  eventBus.on('template:created', (data) => {
+    console.log('Template created:', data);
+    // Refresh templates in parent
+    eventBus.emit('sms:template:refresh');
+  });
+});
+
+defineExpose({ openModal, closeModal, openModalWithData });
 </script>
 
 <template>
   <PublishModalLayout
     ref="modalRef"
-    title="Create template"
-    :tabs="tabs"
+    :title="isEditMode ? 'Edit sms template' : 'SMS template'"
     icon="/bots/sms.png"
-    max-width="650px"
+    :tabs="tabs"
+    max-width="1000px"
     default-tab="create"
+    @back="closeModal"
+    @close="handleModalClose"
   >
-         <template #default="{ activeTab }">
-       <div v-if="activeTab === 'create'" class="create-media-content">
-         <div class="form-group">
-           <label for="media-message">Message</label>
-           <textarea 
-             id="media-message"
-             v-model="createForm.message"
-             placeholder="Enter message content"
-             class="form-input"
-             rows="4"
-           ></textarea>
-         </div>
-        
-        <!-- Button Management -->
-        <div class="form-group">
-          <label>Buttons (max 3)</label>
-          
-          <!-- Existing Buttons -->
-          <div v-if="createForm.buttons.length > 0" class="existing-buttons">
-            <div 
-              v-for="(button, index) in createForm.buttons" 
-              :key="index" 
-              class="button-item"
-            >
-              <div class="button-info">
-                <span class="button-text">{{ button.text }}</span>
-                <span class="button-url">{{ button.url }}</span>
+    <template #default="{ activeTab }">
+      <div v-if="activeTab === 'create'" class="template-editor">
+        <div class="form-layout">
+          <!-- Left Side: Name and Message -->
+          <div class="left-section">
+            <div class="form-section">
+              <!-- Template Name -->
+              <div class="form-group">
+                <label for="template-name">Template name</label>
+                <Input
+                  id="template-name"
+                  v-model="form.name"
+                  placeholder="Enter template name"
+                  :error="errors.name"
+                />
               </div>
-              <button 
-                type="button" 
-                class="remove-button"
-                @click="removeButton(index)"
-              >
-                <i class="pi pi-trash"></i>
-              </button>
+
+              <!-- Template Text -->
+              <div class="form-group">
+                <label for="template-text">Message text</label>
+                <Textarea
+                  id="template-text"
+                  v-model="form.text"
+                  placeholder="Enter your message content here..."
+                  :rows="6"
+                  :error="errors.text"
+                />
+              </div>
             </div>
           </div>
-          
-          <!-- Add New Button Form -->
-          <div v-if="createForm.buttons.length < 3" class="add-button-form">
-            <div class="button-input-row">
-              <input 
-                v-model="newButton.text"
-                type="text"
-                placeholder="Button text"
-                class="form-input button-input"
-              />
-              <input 
-                v-model="newButton.url"
-                type="url"
-                placeholder="Button URL"
-                class="form-input button-input"
-              />
-              <button 
-                type="button" 
-                class="add-button-btn"
-                @click="addButton"
-                :disabled="!newButton.text || !newButton.url"
-              >
-                <i class="pi pi-plus"></i>
-                Add
-              </button>
+
+          <!-- Right Side: Button Management -->
+          <div class="right-section">
+            <div class="form-section">
+              <div class="buttons-header">
+                <label>Buttons (max 3)</label>
+                <div class="button-actions">
+                  <Button
+                    v-for="type in buttonTypes"
+                    :key="type.value"
+                    variant="primary"
+                    size="small"
+                    @click="addButton(type.value)"
+                    :disabled="form.buttons.length >= 3"
+                  >
+                    <i class="pi pi-plus"></i>
+                    {{ type.label }}
+                  </Button>
+                </div>
+              </div>
+
+              <!-- Buttons List -->
+              <div v-if="form.buttons.length > 0" class="buttons-list">
+                <div
+                  v-for="(button, index) in form.buttons"
+                  :key="index"
+                  class="button-item"
+                >
+                  <div class="button-header">
+                    <div class="button-info">
+                      <span class="button-type-badge">{{ button.type.replace('_', ' ').toUpperCase() }}</span>
+                      <span class="button-title">{{ button.title || 'Untitled Button' }}</span>
+                    </div>
+                    <div class="button-controls">
+                      <Button
+                        variant="secondary"
+                        size="small"
+                        icon="pi pi-pencil"
+                        iconOnly
+                        @click="editButton(index)"
+                        title="Edit button"
+                        class="edit-btn"
+                      />
+                      <Button
+                        variant="error-outline"
+                        size="small"
+                        icon="pi pi-trash"
+                        iconOnly
+                        @click="removeButton(index)"
+                        title="Remove button"
+                        class="delete-btn"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Button Fields (shown when editing) -->
+                  <div v-if="button.isEditing" class="button-fields">
+                    <!-- Button Title -->
+                    <div class="field-group">
+                      <label>Button title</label>
+                      <Input
+                        v-model="button.title"
+                        placeholder="Enter button title"
+                        :error="errors.buttons[index]"
+                      />
+                    </div>
+
+                    <!-- Button Type Specific Fields -->
+                    <div v-if="button.type === 'url'" class="field-group">
+                      <label>URL</label>
+                      <Input
+                        v-model="button.url"
+                        type="url"
+                        placeholder="https://example.com"
+                        :error="errors.buttons[index]"
+                      />
+                    </div>
+
+                    <div v-if="button.type === 'phone_number'" class="field-group">
+                      <label>Phone number</label>
+                      <Input
+                        v-model="button.payload"
+                        type="tel"
+                        placeholder="+1234567890"
+                        :error="errors.buttons[index]"
+                      />
+                    </div>
+
+                    <div v-if="button.type === 'postback'" class="field-group">
+                      <label>Response text</label>
+                      <Textarea
+                        v-model="button.response"
+                        placeholder="Enter response text"
+                        :rows="2"
+                        :error="errors.buttons[index]"
+                      />
+                    </div>
+
+                    <div class="button-actions-footer">
+                      <Button
+                        variant="secondary"
+                        size="small"
+                        @click="saveButtonEdit(index)"
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        variant="error-outline"
+                        size="small"
+                        @click="cancelButtonEdit(index)"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- No Buttons Message -->
+              <div v-else class="no-buttons">
+                <div class="no-buttons-content">
+                  <i class="pi pi-plus-circle"></i>
+                  <p>No buttons added yet</p>
+                  <p class="hint">Click the buttons above to add interactive elements to your template</p>
+                </div>
+              </div>
             </div>
           </div>
-          
-          <small v-if="createForm.buttons.length >= 3" class="help-text">
-            Maximum 3 buttons reached
-          </small>
         </div>
       </div>
     </template>
 
     <template #actions>
-      <button 
-        class="action-button"
-        @click="closeModal"
-        :disabled="isLoading"
+      <Button 
+        variant="secondary"
+        size="medium"
+        @click="handleCancel"
+        :disabled="props.isLoading"
       >
         Cancel
-      </button>
+      </Button>
       
-             <button 
-         class="action-button primary" 
-         @click="createTemplate"
-         :disabled="isLoading || !createForm.message"
-       >
-         {{ isLoading ? 'Creating...' : 'Create Template' }}
-       </button>
+      <Button 
+        variant="primary"
+        size="medium"
+        @click="handleSave"
+        :loading="isSaving"
+        :disabled="isSaving"
+      >
+        {{ isSaving ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update template' : 'Create template') }}
+      </Button>
     </template>
   </PublishModalLayout>
 </template>
 
 <style scoped>
-/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
-
-.create-media-content {
-  padding: 0;
+.template-editor {
+  padding: var(--space-4);
 }
 
-/* Step Indicator */
-.step-indicator {
+.form-layout {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 24px;
-  gap: 12px;
+  gap: var(--space-4);
 }
 
-.step {
+.left-section, .right-section {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
+  gap: var(--space-4);
 }
 
-.step-number {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--color-bg-tertiary, #f3f4f6);
-  color: var(--color-text-secondary, #6b7280);
+.form-section {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.form-group label {
   font-weight: 600;
-  font-size: 14px;
-  border: 2px solid var(--color-border, #e5e7eb);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-1);
 }
 
-.step.active .step-number {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-  border-color: var(--color-primary, #3b82f6);
+.form-input {
+  font-family: inherit;
+  font-size: 0.875rem;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  transition: border-color var(--transition-normal);
 }
 
-.step.completed .step-number {
-  background: var(--color-secondary, #10b981);
-  color: white;
-  border-color: var(--color-secondary, #10b981);
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
 }
 
-.step-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--color-text-secondary, #6b7280);
+.form-input.error {
+  border-color: var(--color-error);
 }
 
-.step.active .step-label {
-  color: var(--color-text-primary, #111827);
+
+/* Buttons Section */
+.buttons-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
 }
 
-.step-line {
-  width: 40px;
-  height: 2px;
-  background: var(--color-border, #e5e7eb);
-  margin: 0 8px;
+.button-actions {
+  display: flex;
+  gap: var(--space-2);
 }
 
-.step-content {
-  margin-top: 20px;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-/* Button Management Styles */
-.existing-buttons {
-  margin-bottom: 16px;
+.buttons-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
 .button-item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  background-color: var(--color-bg-secondary);
+}
+
+.button-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 12px;
-  background: var(--color-bg-secondary, #f9fafb);
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  margin-bottom: 8px;
+  align-items: center;
+  margin-bottom: var(--space-3);
 }
 
 .button-info {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
+  align-items: center;
+  gap: var(--space-2);
 }
 
-.button-text {
+.button-type-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background-color: var(--color-bg-tertiary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.button-title {
+  font-size: 0.9rem;
   font-weight: 500;
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px; /* Adjust as needed */
 }
 
-.button-url {
-  font-size: 12px;
-  color: var(--color-text-secondary, #6b7280);
-  word-break: break-all;
+.button-controls {
+  display: flex;
+  gap: var(--space-1);
 }
 
-/* Preview Section */
-.preview-section {
-  margin-top: 20px;
+.edit-btn, .delete-btn {
+  padding: var(--space-1);
 }
 
-.preview-section h4 {
-  margin: 0 0 16px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
+.button-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
-.preview-container {
-  background: var(--color-bg-secondary, #f9fafb);
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  padding: 16px;
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
-.preview-item {
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
+.field-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
 }
 
-.preview-item:last-child {
-  margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: none;
+.button-actions-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
 }
 
-.preview-item strong {
-  color: var(--color-text-primary, #111827);
-  font-weight: 600;
-  display: block;
-  margin-bottom: 4px;
+.no-buttons {
+  text-align: center;
+  padding: var(--space-6);
+  color: var(--color-text-secondary);
+  font-style: italic;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-secondary);
 }
 
-.preview-body {
-  margin-top: 8px;
-  padding: 12px;
-  background: var(--color-bg-tertiary, #f3f4f6);
-  border-radius: var(--radius-sm, 4px);
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--color-text-primary, #111827);
-  white-space: pre-wrap;
+.no-buttons-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
 }
 
+.no-buttons-content i {
+  font-size: 2rem;
+  color: var(--color-primary);
+}
+
+.no-buttons-content p {
+  margin: 0;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
-  .form-row {
-    grid-template-columns: 1fr;
+  .form-layout {
+    flex-direction: column;
+  }
+
+  .left-section, .right-section {
+    width: 100%;
+  }
+
+  .buttons-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
   }
   
-  .step-indicator {
-    gap: 8px;
-  }
-  
-  .step-line {
-    width: 20px;
+  .button-actions {
+    flex-wrap: wrap;
   }
 }
 </style> 

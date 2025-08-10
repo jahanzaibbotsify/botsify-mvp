@@ -1,17 +1,7 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import VueSelect from "vue3-select-component";
-import { usePublishStore } from "@/stores/publishStore";
-import { publishApi } from "@/services/publishApi";
-
-// Props
-interface Props {
-  isLoading?: boolean;
-}
-
-withDefaults(defineProps<Props>(), {
-  isLoading: false
-});
+import { ref } from 'vue'
+import { publishApi } from '@/services/publishApi'
+import { VueSelect, Textarea } from '@/components/ui'
 
 // Emits
 const emit = defineEmits<{
@@ -21,9 +11,6 @@ const emit = defineEmits<{
   'loading-change': [loading: boolean];
 }>();
 
-// Store
-const publishStore = usePublishStore();
-
 // Reactive data
 const formData = ref({
   messageTag: '',
@@ -31,11 +18,6 @@ const formData = ref({
 });
 
 const isLoading = ref(false);
-
-// Emit loading state to parent
-const emitLoadingState = (loading: boolean) => {
-  emit('loading-change', loading);
-};
 
 // Message tag options with descriptions
 const messageTags = [
@@ -73,9 +55,9 @@ const messageTags = [
 ];
 
 // Handle VueSelect values
-const handleSelectChange = (key: keyof typeof formData.value, value: string | string[]): void => {
+const handleSelectChange = (key: keyof typeof formData.value, value: string | number | string[] | number[]): void => {
   const singleValue = Array.isArray(value) ? value[0] : value
-  formData.value[key] = singleValue
+  formData.value[key] = String(singleValue)
 };
 
 const noTestUser = () => {
@@ -83,17 +65,23 @@ const noTestUser = () => {
 };
 
 const sendMessage = async () => {
-  if (!formData.value.messageTag || !formData.value.message) {
+  if (!formData.value.messageTag || !formData.value.message.trim()) {
     console.error('All fields are required');
     return;
   }
 
-  console.log('Publish store:', publishStore);
-  console.log('createBroadcastTask method:', publishStore.createBroadcastTask);
+  // Add confirmation dialog before sending broadcast
+    window.$confirm({
+      text: 'Are you sure you want to send this broadcast message? This action cannot be undone.',
+    }, () => {
+      // User confirmed, proceed with sending
+      performSendMessage();
+    });
+    return;
+};
 
-  isLoading.value = true;
-  emitLoadingState(true);
-  
+const performSendMessage = async () => {
+  isLoading.value = true;  
   try {
     // Find the selected tag to get its description
     const selectedTag = messageTags.find(tag => tag.value === formData.value.messageTag);
@@ -109,64 +97,29 @@ const sendMessage = async () => {
 
     console.log('Sending payload:', payload);
 
-    // Try to access the store method
-    if (typeof publishStore.createBroadcastTask === 'function') {
-      const result = await publishStore.createBroadcastTask(payload);
-      
-      if (result.success) {
-        if (window.$toast) {
-          window.$toast.success('Broadcast message sent successfully!');
-        }
-        // Reset form
-        formData.value = {
-          messageTag: '',
-          message: ''
-        };
-      } else {
-        console.error('Failed to send broadcast:', result.error);
-        if (window.$toast) {
-          window.$toast.error(result.error || 'Failed to send broadcast');
-        }
-      }
+    // Use the publishApi method directly since it's available
+    const result = await publishApi.createBroadcastTask(payload);
+    
+    if (result.success) {
+      console.log('Broadcast message sent successfully!');
+      // Reset form
+      formData.value = {
+        messageTag: '',
+        message: ''
+      };
     } else {
-      console.error('createBroadcastTask method not found on store');
-      // Fallback to direct API call
-      const result = await publishApi.createBroadcastTask(payload);
-      
-      if (result.success) {
-        if (window.$toast) {
-          window.$toast.success('Broadcast message sent successfully!');
-        }
-        // Reset form
-        formData.value = {
-          messageTag: '',
-          message: ''
-        };
-      } else {
-        console.error('Failed to send broadcast:', result.message);
-        if (window.$toast) {
-          window.$toast.error(result.message || 'Failed to send broadcast');
-        }
-      }
+      console.error('Failed to send broadcast:', result.message);
     }
   } catch (error) {
     console.error('Failed to send broadcast:', error);
-    if (window.$toast) {
-      window.$toast.error('Failed to send broadcast');
-    }
   } finally {
     isLoading.value = false;
-    emitLoadingState(false);
   }
-};
-
-const sendBroadcast = () => {
-  emit('send-broadcast', formData.value);
 };
 
 // Expose methods for parent component
 defineExpose({
-  sendBroadcast,
+  isLoading,
   noTestUser,
   sendMessage
 });
@@ -182,24 +135,25 @@ defineExpose({
         <label for="message-tag">Select Message Tag</label>
         <VueSelect
           :model-value="formData.messageTag"
-          @update:model-value="(value: string | string[]) => handleSelectChange('messageTag', value)"
+          @update:model-value="(value: string | number | string[] | number[]) => handleSelectChange('messageTag', value)"
           :options="messageTags"
           placeholder="Select message tag"
           :multiple="false"
           :disabled="isLoading"
+          :error="!formData.messageTag ? 'Message tag is required' : ''"
         />
       </div>
 
       <div class="form-group">
         <label for="message">Message</label>
-        <textarea 
-          id="message"
+        <Textarea 
           v-model="formData.message"
           placeholder="Enter your message"
-          class="form-input"
-          rows="4"
+          size="medium"
+          :rows="4"
           :disabled="isLoading"
-        ></textarea>
+          :error="!formData.message.trim() ? 'Message is required' : ''"
+        />
       </div>
     </div>
   </div>

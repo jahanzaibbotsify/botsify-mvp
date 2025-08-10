@@ -32,7 +32,7 @@ const store = useWhatsAppTemplateStore();
         <Input
           v-model="store.template.name"
           placeholder="Enter template name"
-          class="template-name-input"
+          :error="!store.template.name ? 'Template name is required' : ''"
         />
       </div>
 
@@ -51,10 +51,8 @@ const store = useWhatsAppTemplateStore();
             v-model="store.block.attachment_link"
             placeholder="Enter URL for the {{ store.template.header }}"
             @input="store.onUpdateAttachmentLink"
+            :error="store.errors.file && Object.keys(store.errors.file).length > 0 ? Object.values(store.errors.file)[0] : ''"
           />
-          <p class="text-danger" v-if="store.errors.file && Object.keys(store.errors.file).length > 0">
-            <small>{{ Object.values(store.errors.file)[0] }}</small>
-          </p>
         </div>
       </div>
 
@@ -69,10 +67,8 @@ const store = useWhatsAppTemplateStore();
           <Input
             v-model="store.template.variables.header.value"
             placeholder="Enter header variable value"
+            :error="!store.template.variables.header.value ? 'This is required field' : ''"
           />
-          <p class="text-danger" v-if="store.template.variables.header.value == ''">
-            <small>This is required field</small>
-          </p>
         </div>
       </div>
 
@@ -94,10 +90,8 @@ const store = useWhatsAppTemplateStore();
             <Input
               v-model="variable.value"
               :placeholder="`Enter value for ${variable.key}`"
+              :error="!variable.value ? 'This is required field' : ''"
             />
-            <p class="text-danger" v-if="variable.value == ''">
-              <small>This is required field</small>
-            </p>
           </div>
         </div>
       </div>
@@ -148,10 +142,8 @@ const store = useWhatsAppTemplateStore();
                     v-model="store.block.slides[slideIndex].attachment_link"
                     :placeholder="slide.header === 'video' ? 'https://example.com/video.mp4' : 'https://example.com/image.jpg'"
                     @input="() => store.onUpdateCarouselAttachmentLink(slideIndex)"
+                    :error="store.errors.file && Object.keys(store.errors.file).length > 0 ? Object.values(store.errors.file)[0] : ''"
                   />
-                  <p class="text-danger" v-if="store.errors.file && Object.keys(store.errors.file).length > 0">
-                    <small>{{ Object.values(store.errors.file)[0] }}</small>
-                  </p>
                 </div>
               </div>
 
@@ -168,31 +160,23 @@ const store = useWhatsAppTemplateStore();
                     <Input
                       v-model="variable.value"
                       :placeholder="`Enter value for ${variable.key}`"
+                      :error="!variable.value ? 'This is required field' : ''"
                     />
-                    <p class="text-danger" v-if="variable.value == ''">
-                      <small>This is required field</small>
-                    </p>
                   </div>
                 </div>
               </div>
 
               <!-- Button Variables Section -->
-              <div class="slide-section" v-if="slide.variables?.buttons?.length > 0">
+              <div class="slide-section" v-if="slide.variables?.button">
                 <h5>Button Variables</h5>
                 <div class="variables-grid">
-                  <div 
-                    v-for="(buttonVar, varIndex) in slide.variables.buttons"
-                    :key="varIndex"
-                    class="form-group"
-                  >
-                    <label>Button {{ buttonVar.buttonIndex + 1 }} Variable - {{ buttonVar.key }}</label>
+                  <div>
+                    <label>Button Variable - {{ slide.variables.button.key }}</label>
                     <Input
-                      v-model="buttonVar.value"
-                      :placeholder="`Enter value for ${buttonVar.key}`"
+                      v-model="slide.variables.button.value"
+                      :placeholder="`Enter value for ${slide.variables.button.key}`"
+                      :error="!slide.variables.button.value ? 'This is required field' : ''"
                     />
-                    <p class="text-danger" v-if="buttonVar.value == ''">
-                      <small>This is required field</small>
-                    </p>
                   </div>
                 </div>
               </div>
@@ -202,22 +186,16 @@ const store = useWhatsAppTemplateStore();
       </div>
 
       <!-- BUTTON VARIABLES -->
-      <div v-if="store.template.variables.buttons.length > 0" class="parameter-section">
-        <h3>Button variables</h3>
-        <div class="variables-grid">
-          <div 
-            class="form-group"
-            v-for="(buttonVar, varIndex) in store.template.variables.buttons"
-            :key="varIndex"
-          >
-            <label>Button {{ buttonVar.buttonIndex + 1 }} Variable - {{ buttonVar.key }}</label>
+      <div v-if="store.template.variables.button" class="parameter-section">
+          <h3>Button variables</h3>
+          <div class="variables-grid">
+          <div class="form-group">
+            <label>Button Variable - {{ store.template.variables.button.key }}</label>
             <Input
-              v-model="buttonVar.value"
-              :placeholder="`Enter value for ${buttonVar.key}`"
+              v-model="store.template.variables.button.value"
+              :placeholder="`Enter value for ${store.template.variables.button.key}`"
+              :error="!store.template.variables.button.value ? 'This is required field' : ''"
             />
-            <p class="text-danger" v-if="buttonVar.value == ''">
-              <small>This is required field</small>
-            </p>
           </div>
         </div>
       </div>
@@ -246,11 +224,13 @@ const store = useWhatsAppTemplateStore();
 .parameter-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-1);
+  max-height: 600px;
+  overflow-y: scroll;
 }
 
 .parameter-section {
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-4);
 }
 
 .parameter-section h3 {
@@ -262,15 +242,11 @@ const store = useWhatsAppTemplateStore();
   padding-bottom: var(--space-2);
 }
 
-.template-name-input {
-  max-width: 400px;
-}
+
 
 .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
   margin-bottom: var(--space-3);
+  margin-top: var(--space-3);
 }
 
 .form-group label {
@@ -290,14 +266,6 @@ const store = useWhatsAppTemplateStore();
   color: var(--color-error);
 }
 
-.text-danger {
-  color: var(--color-error);
-  margin-top: var(--space-1);
-}
-
-.text-danger small {
-  font-size: 0.75rem;
-}
 
 /* Variables Grid for better organization */
 .variables-grid {

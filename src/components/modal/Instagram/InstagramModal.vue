@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import {PublishModalLayout} from "@/components/ui";
-import { ref, computed } from "vue";
+import { ref, provide, computed } from "vue";
+import { useBotStore } from "@/stores/botStore";
+import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
 import PublishAgentTab from "./PublishAgentTab.vue";
 import { usePublishStore } from "@/stores/publishStore";
-import { useBotStore } from "@/stores/botStore";
+import { useTabManagement } from "@/composables/publishbot/useTabManagement";
 
 // Define tabs
 const tabs = [
@@ -15,8 +16,8 @@ const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
 const currentActiveTab = ref('publish-bot');
 
 // Stores
-const publishStore = usePublishStore();
 const botStore = useBotStore();
+const publishStore = usePublishStore();
 
 // Tab component refs
 const publishAgentTabRef = ref<InstanceType<typeof PublishAgentTab> | null>(null);
@@ -26,38 +27,36 @@ const emit = defineEmits<{
   back: [];
 }>();
 
-// Reactive data
+// Local state
 const isLoading = ref(false);
-const isInstagramConfigured = ref(false);
 
-// Check if Instagram is configured (has connected pages)
-const checkInstagramConfiguration = () => {
+const { currentTab, handleTabChange } = useTabManagement(tabs, 'publish-bot');
+
+// Configuration checking
+const isConfigured = computed(() => {
   const pages = publishStore.instagramPagesCache;
   if (pages && pages.pagesData && pages.pagesData.data) {
     const pagesData = pages.pagesData.data;
     // Check if any page is connected to the current bot
-    isInstagramConfigured.value = pagesData.some((page: any) => 
+    return pagesData.some((page: any) => 
       page.connected_page_bot === botStore.botName
     );
-  } else {
-    isInstagramConfigured.value = false;
   }
-};
+  return false;
+});
 
-// Computed tabs with disabled state
-const computedTabs = computed(() => {
+// Override computedTabs to include disabled state based on configuration
+const instagramComputedTabs = computed(() => {
   return tabs.map(tab => ({
     ...tab,
-    disabled: tab.id !== 'publish-bot' && !isInstagramConfigured.value
+    disabled: tab.id !== 'publish-bot' && !isConfigured.value
   }));
 });
 
 const openModal = () => {
   modalRef.value?.openModal();
-  // Load Instagram pages when modal opens (store handles caching)
-  if (publishAgentTabRef.value) {
-    publishAgentTabRef.value.loadInstaPages();
-  }
+  // Load Instagram pages when modal opens
+  publishStore.getInstagramPages();
 };
 
 const closeModal = () => {
@@ -68,22 +67,27 @@ const handleBack = () => {
   emit('back');
 };
 
-const handleTabChange = (tabId: string) => {
-  console.log('Tab changed to:', tabId);
+const onTabChange = (tabId: string) => {
+  console.log('InstagramModal - Tab changed to:', tabId);
   
   // Only allow tab change if Instagram is configured or if it's the publish agent tab
-  if (tabId === 'publish-bot' || isInstagramConfigured.value) {
+  if (tabId === 'publish-bot' || isConfigured.value) {
     currentActiveTab.value = tabId;
+    handleTabChange(tabId);
   }
 };
 
 // Handle page connection/disconnection to update configuration status
 const handlePageConnectionChange = () => {
-  // Recheck configuration after page connection changes
-  setTimeout(() => {
-    checkInstagramConfiguration();
-  }, 1000); // Small delay to allow store to update
+  // Configuration is computed, so it updates automatically when store changes
 };
+
+// Provide context for child components
+provide('instagram-modal', {
+  isConfigured,
+  currentTab,
+  botService: ref('instagram')
+});
 
 defineExpose({ openModal, closeModal });
 </script>
@@ -92,12 +96,12 @@ defineExpose({ openModal, closeModal });
   <PublishModalLayout
     ref="modalRef"
     title="Instagram integration"
-    :tabs="computedTabs"
+    :tabs="instagramComputedTabs"
     icon="/bots/instagram.png"
     max-width="1200px"
     default-tab="publish-bot"
     @back="handleBack"
-    @tab-change="handleTabChange"
+    @tab-change="onTabChange"
   >
     <template #default="{ activeTab }">
       <!-- Publish Agent Tab -->
@@ -109,7 +113,7 @@ defineExpose({ openModal, closeModal });
       />
 
       <!-- Configuration Required Message -->
-      <div v-if="activeTab !== 'publish-bot' && !isInstagramConfigured" class="configuration-required">
+      <div v-if="activeTab !== 'publish-bot' && !isConfigured" class="configuration-required">
         <div class="configuration-message">
           <i class="pi pi-exclamation-triangle"></i>
           <h3>Configuration Required</h3>
@@ -117,30 +121,6 @@ defineExpose({ openModal, closeModal });
         </div>
       </div>
     </template>
-    
-    <!-- <template #actions> -->
-      <!-- No actions needed for Comment Auto Responder Tab -->
-      
-      <!-- No Test User Button for Broadcast Tab -->
-      <!-- <Button 
-        v-if="currentActiveTab === 'broadcast'" 
-        variant="secondary"
-        @click="handleNoTestUser"
-        :disabled="isLoading"
-      >
-        No test user
-      </Button> -->
-
-      <!-- Send Message Button for Broadcast Tab -->
-      <!-- <Button 
-        v-if="currentActiveTab === 'broadcast'" 
-        variant="primary"
-        @click="handleSendMessage"
-        :disabled="isLoading"
-      >
-        {{ isLoading ? 'Sending...' : 'Send message' }}
-      </Button> -->
-    <!-- </template> -->
   </PublishModalLayout>
 </template>
 

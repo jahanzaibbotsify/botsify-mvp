@@ -30,7 +30,7 @@ const shouldDisableControls = computed(() => {
 
     <div class="carousel-body">
       <div
-        v-for="(slide, index) in store.template.slides"
+        v-for="(_, index) in store.template.slides"
         :key="index"
         class="slide-item"
       >
@@ -62,20 +62,20 @@ const shouldDisableControls = computed(() => {
         <EmojiTextarea
           :key="index"
           :id-suffix="`slide${index}`"
-          :text="slide.body"
-          :error-text="store.errors.body"
+          :text="store.block.slides[index]?.title || ''"
+          :error-text="store.errors.slides[index].title"
           :maxlength="store.template.type == 'generic' ? 150 : 1024"
-          @update:text="val => slide.body = val"
-          @update:error-text="val => store.errors.body = val"
-          @add-variable="() => store.addVariable('body_slide', true, null, index)"
-          @check-variables="() => store.checkForVariables('body_slide', null, index)"
+          @update:text="val => store.block.slides[index].title = val"
+          @update:error-text="val => store.errors.slides[index].title = val"
+          @add-variable="() => store.addVariable('slider', true, null, index)"
+          @check-variables="() => store.checkForVariables('slider', index)"
         />
 
         <!-- Buttons for the slide -->
         <ButtonsEditor
           :show="store.template.type === 'generic'"
           :template="store.template.slides[index]"
-          :block="{ buttons: slide.buttons }"
+          :block="store.block.slides[index]"
           :errors="store.errors"
           :current="index"
           :slide-index="index"

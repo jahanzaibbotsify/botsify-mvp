@@ -1,7 +1,7 @@
 <template>
   <div>
     <h6 v-if="showTitle" class="preview-title">{{ title }}</h6>
-    <div class="actual-preview" v-if="template.bodyIncludes.includes('body')">
+    <div class="actual-preview" v-if="template.bodyIncludes.includes('body') || (template.type === 'generic' && slides.length > 0)">
       <!-- Media / Text Section -->
       <div class="body">
         <template v-if="template.bodyIncludes?.includes('header')">
@@ -284,6 +284,8 @@ const buttons = computed(() => {
   
   console.log('MessagePreview - buttons computed:', {
     buttons: buttons,
+    blockButtons: props.block?.buttons,
+    templateButtons: props.template.buttons,
     templateVariables: props.template.variables,
     buttonUrlVar: props.template.variables?.buttonUrl,
     buttonTextVar: props.template.variables?.buttonText
@@ -392,7 +394,7 @@ const slideBodyText = (index = 0) => {
   const slide = props.template.slides?.[index];
   if (!slide) return '';
   
-  let result = slide.body || '';
+  let result = slide.title || '';
   const vars = slide.variables?.body || [];
   
   vars.forEach((item: any) => {
@@ -623,6 +625,7 @@ onMounted(() => {
   overflow-x: auto;
   white-space: nowrap;
   scroll-behavior: smooth;
+  max-width: 500px;
 }
 
 .slides-wrapper {

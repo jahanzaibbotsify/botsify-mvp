@@ -216,7 +216,6 @@ const handleBlur = (event: FocusEvent) => {
   padding: 0;
   margin: 0;
   line-height: 1;
-  overflow-y: visible;
 }
 
 .vue-select-container:deep(.control .multi-value) {
@@ -284,10 +283,10 @@ const handleBlur = (event: FocusEvent) => {
   background-color: var(--color-primary);
   color: white;
 }
-
+*/
 .vue-select-container:deep(.menu .menu-option.focused) {
-  background-color: var(--color-bg-hover);
-} */
+  background-color: white;
+} 
 
 .vue-select-container:deep(.menu .menu-option.disabled) {
   opacity: 0.5;

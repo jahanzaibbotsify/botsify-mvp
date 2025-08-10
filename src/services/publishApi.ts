@@ -406,7 +406,7 @@ export class PublishApiService {
    */
   async saveDialog360Settings(settings: {
     whatsappNumber: string;
-    apiKey: string;
+    dialog360ApiKey: string;
     phoneNumberId: string;
     whatsappBusinessAccountId: string;
   }): Promise<PublishResponse> {
@@ -414,7 +414,7 @@ export class PublishApiService {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post('/v1/bot/dialog360/connect', {
         whatsapp_number: settings.whatsappNumber,
-        api_key: settings.apiKey,
+        api_key: settings.dialog360ApiKey,
         phone_number_id: settings.phoneNumberId,
         whatsapp_business_account_id: settings.whatsappBusinessAccountId,
         apikey: apiKey
@@ -486,9 +486,9 @@ export class PublishApiService {
   }
 
   /**
-   * Fetch templates
+   * Fetch WhatsApp templates
    */
-  async fetchTemplates(page: number = 1, perPage: number = 20): Promise<PublishResponse> {
+  async fetchWhatsAppTemplates(page: number = 1, perPage: number = 20): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.get('/v1/media-block/fetch', {
@@ -500,59 +500,91 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Fetch templates response:', response.data);
+      console.log('Fetch WhatsApp templates response:', response.data);
 
       return {
         success: true,
-        message: 'Templates fetched successfully',
+        message: 'WhatsApp templates fetched successfully',
         data: response.data
       };
     } catch (error: any) {
-      console.error('Error fetching templates:', error);
+      console.error('Error fetching WhatsApp templates:', error);
 
       return {
         success: false,
-        message: error.response?.data?.message || error.message || 'Failed to fetch templates',
+        message: error.response?.data?.message || error.message || 'Failed to fetch WhatsApp templates',
         data: error.response?.data
       };
     }
   }
 
+
   /**
-   * Delete template
+   * Delete WhatsApp template
    */
-  async deleteTemplate(id: number): Promise<PublishResponse> {
+  async deleteWhatsAppTemplate(id: number): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
-      const response = await axiosInstance.post('/v1/media-block/delete', {
+      const response = await axiosInstance.post('/v1/whatsapp/templates/delete', {
         apikey: apiKey,
         payload: id
       }, {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Delete template response:', response.data);
+      console.log('Delete WhatsApp template response:', response.data);
 
       return {
         success: true,
-        message: 'Template deleted successfully',
+        message: 'WhatsApp template deleted successfully',
         data: response.data
       };
     } catch (error: any) {
-      console.error('Error deleting template:', error);
+      console.error('Error deleting WhatsApp template:', error);
 
       return {
         success: false,
-        message: error.response?.data?.message || error.message || 'Failed to delete template',
+        message: error.response?.data?.message || error.message || 'Failed to delete WhatsApp template',
         data: error.response?.data
       };
     }
   }
 
-  async createTemplate(templateData: any): Promise<PublishResponse> {
+  /**
+   * Delete SMS template
+   */
+  async deleteSmsTemplate(id: number): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
-      const response = await axiosInstance.post('/v1/media-block/create', {
+      const response = await axiosInstance.post(`/v1/media-block/delete`, {
+        apikey: apiKey,
+        payload: id
+      }, {
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Delete SMS template response:', response.data);
+
+      return {
+        success: true,
+        message: 'SMS template deleted successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error deleting SMS template:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to delete SMS template',
+        data: error.response?.data
+      };
+    }
+  }
+
+  async createTemplate(templateData: any, type: string = ""): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.post(`/v1/media-block/create/${type}`, {
         apikey: apiKey,
         ...templateData
       }, {
@@ -572,6 +604,96 @@ export class PublishApiService {
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to create template',
+        data: error.response?.data
+      };
+    }
+  }
+
+
+  async cloneSmsTemplate(id: number): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.post(`/v1/media-block/clone`, {
+        apikey: apiKey,
+        id: id
+      }, {
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Clone template response:', response.data);
+
+      return {
+        success: true,
+        message: 'Template cloned successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error cloning template:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to clone template',
+        data: error.response?.data
+      };
+    }
+  }
+
+  async updateSmsTemplate(id: number, data: any): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.post(`/v1/media-block/edit/${id}`, {
+        apikey: apiKey,
+        ...data
+      }, {
+        timeout: 30000 // 30 seconds timeout
+      });
+      console.log('Edit SMS template response:', response.data);
+
+      return {
+        success: true,
+        message: 'SMS template edited successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error editing SMS template:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to edit SMS template',
+        data: error.response?.data
+      };
+    }
+  }
+
+
+  async sendSmsBroadcast(payload: {
+    template_id: number;
+    user_segment: string;
+    users: Array<{ phone_number: string }>;
+    send_at?: string | null;
+  }): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      const response = await axiosInstance.post('/v1/schedule/task/sms-broadcast/create', {
+        apikey: apiKey,
+        ...payload
+      }, {
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Send SMS broadcast response:', response.data);
+
+      return {
+        success: true,
+        message: 'SMS broadcast sent successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error sending SMS broadcast:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to send SMS broadcast',
         data: error.response?.data
       };
     }
@@ -729,7 +851,8 @@ export class PublishApiService {
         apikey: apiKey,
         message: data.message,
         post_id: data.post_id,
-        keywords: data.keywords
+        keywords: data.keywords,
+        template_id: id
       }, {
         timeout: 30000 // 30 seconds timeout
       });
@@ -785,6 +908,8 @@ export class PublishApiService {
   }): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
+      console.log('Making API call to create broadcast task with payload:', payload);
+      
       const response = await axiosInstance.post('/v1/schedule/task/broadcast/create', {
         apikey: apiKey,
         ...payload
@@ -793,6 +918,7 @@ export class PublishApiService {
       });
 
       console.log('Create broadcast task response:', response.data);
+      console.log('Response status:', response.status);
 
       return {
         success: true,
@@ -801,10 +927,52 @@ export class PublishApiService {
       };
     } catch (error: any) {
       console.error('Error creating broadcast task:', error);
+      console.error('Error response data:', error.response?.data);
+      console.error('Error status:', error.response?.status);
 
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to create broadcast task',
+        data: error.response?.data
+      };
+    }
+  }
+
+  async createSmsBroadcastTask(payload: {
+    title: string;
+    message: string;
+    template_id: number;
+    user_segment: string;
+    users: Array<{ phone_number: string }>;
+    send_at?: string | null;
+  }): Promise<PublishResponse> {
+    try {
+      const {apiKey} = useBotStore();
+      console.log('Making API call to create SMS broadcast task with payload:', payload);
+      
+      const response = await axiosInstance.post('/v1/schedule/task/sms-broadcast/create', {
+        apikey: apiKey,
+        ...payload
+      }, {
+        timeout: 30000 // 30 seconds timeout
+      });
+
+      console.log('Create SMS broadcast task response:', response.data);
+      console.log('Response status:', response.status);
+
+      return {
+        success: true,
+        message: 'SMS broadcast task created successfully',
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Error creating SMS broadcast task:', error);
+      console.error('Error response data:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to create SMS broadcast task',
         data: error.response?.data
       };
     }
@@ -882,7 +1050,7 @@ export class PublishApiService {
   async getCatalog(): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
-      const response = await axiosInstance.get('/v1/bot/whatsapp/catalog', {
+      const response = await axiosInstance.get('/v1/bot/whatsapp/catalogs', {
         params: {
           apikey: apiKey
         },

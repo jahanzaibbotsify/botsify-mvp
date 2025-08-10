@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { publishApi } from '@/services/publishApi';
 
 export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
@@ -24,7 +24,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     variables: {
       header: null as any,
       body: [] as any[],
-      buttons: [] as any[]
+      button: null as any
     }
   });
 
@@ -48,11 +48,209 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
   });
 
   const errors = ref({
-    body: '',
-    header: '',
-    footer: '',
-    file: {} as Record<string, string>
+    list: ['body', 'file', 'header', 'footer'],
+    body: 'The template body field is required',
+    header: 'The template header field is required',
+    footer: 'The template footer field is required',
+    file: '',
+    title_btn_var: '',
+    url_btn_var: 'The URL button response is required',
+    response_btn_var: '',
+    slides: [
+      {
+        title: '',
+        buttons: null as any,
+        file: ''
+      }
+    ]
   });
+
+  // Loading state for save operation
+  const isSaving = ref(false);
+
+  // Watch for authentication template button validation
+  watch(() => block.value.buttons, (buttons: any[]) => {
+    if (template.value.category === 'AUTHENTICATION' && buttons && buttons.length > 0) {
+      const button = buttons[0];
+      
+      // Validate button title/text
+      if (typeof button.text === 'string') {
+        button.text = button.text.trim();
+        
+        if (!button.text) {
+          errors.value.title_btn_var = 'The button text is required';
+        } else {
+          errors.value.title_btn_var = '';
+        }
+      }
+    }
+  }, { deep: true, immediate: true });
+
+  // Watch for header text validation
+  watch(() => template.value.header_text, (headerText: string) => {
+    if (template.value.type === 'media' && 
+        template.value.bodyIncludes.includes('header') && 
+        template.value.header === 'text') {
+      
+      if (!headerText || headerText.trim() === '') {
+        errors.value.header = 'Header text is required';
+      } else {
+        errors.value.header = '';
+      }
+    }
+  }, { immediate: true });
+
+  // Watch for footer text validation
+  watch(() => template.value.footer_text, (footerText: string) => {
+    if (template.value.type === 'media' && 
+        template.value.bodyIncludes.includes('footer')) {
+      
+      if (!footerText || footerText.trim() === '') {
+        errors.value.footer = 'Footer text is required';
+      } else {
+        errors.value.footer = '';
+      }
+    }
+  }, { immediate: true });
+
+  // Watch for body text validation
+  watch(() => block.value.text, (bodyText: string) => {
+    if (template.value.type === 'text' || template.value.type === 'media') {
+      if (!bodyText || bodyText.trim() === '') {
+        errors.value.body = 'The template body field is required';
+      } else {
+        errors.value.body = '';
+      }
+    }
+  }, { immediate: true });
+
+  // Watch for attachment link validation
+  watch(() => block.value.attachment_link, (newValue: string) => {
+    console.log("newValue", newValue)
+    if (template.value.header === 'video') {
+      block.value.video_url = newValue;
+    } else {
+      block.value.image_url = newValue;
+    }
+
+    if (!newValue) {
+      errors.value.file = template.value.header + ' link is required field!';
+      if (!errors.value.list.includes('file')) {
+        errors.value.list.push('file');
+      }
+    } else {
+      errors.value.file = '';
+      const index = errors.value.list.indexOf('file');
+      if (index !== -1) {
+        errors.value.list.splice(index, 1);
+      }
+    }
+  }, { deep: true });
+
+  // Watch for slides validation
+  watch(() => block.value.slides, (newSlides: any[]) => {
+    newSlides.forEach((slide, index) => {
+      if (!Array.isArray(errors.value.slides)) {
+        errors.value.slides = [];
+      }
+      if (!errors.value.slides[index]) {
+        errors.value.slides[index] = {
+          title: '',
+          buttons: null as any,
+          file: ''
+        };
+      }
+
+      // Watch for slide buttons
+      watch(() => slide.buttons, (newVal: any[]) => {
+        if (!newVal || newVal.length === 0) {
+          errors.value.slides[index].buttons = 'Buttons are required!';
+          if (!errors.value.list.includes(`slide_buttons_${index}`)) {
+            errors.value.list.push(`slide_buttons_${index}`);
+          }
+        } else {
+          delete errors.value.slides[index].buttons;
+          const errIndex = errors.value.list.indexOf(`slide_buttons_${index}`);
+          if (errIndex !== -1) {
+            errors.value.list.splice(errIndex, 1);
+          }
+        }
+      }, { immediate: true });
+
+      // Watch for slide title
+      watch(() => slide.title, (newVal: string) => {
+        if (!newVal || newVal.trim() === '') {
+          errors.value.slides[index].title = 'Slide title is required!';
+          if (!errors.value.list.includes(`slide_title_${index}`)) {
+            errors.value.list.push(`slide_title_${index}`);
+          }
+        } else {
+          errors.value.slides[index].title = '';
+          const errIndex = errors.value.list.indexOf(`slide_title_${index}`);
+          if (errIndex !== -1) {
+            errors.value.list.splice(errIndex, 1);
+          }
+        }
+      }, { immediate: true });
+
+      // Watch for slide attachment link
+      watch(() => slide.attachment_link, (newVal: string) => {
+        if (!newVal || newVal.trim() === '') {
+          errors.value.slides[index].file = 'Attachment link is required!';
+          if (!errors.value.list.includes(`slide_file_${index}`)) {
+            errors.value.list.push(`slide_file_${index}`);
+          }
+        } else {
+          slide.image_url = newVal;
+          errors.value.slides[index].file = '';
+          const errIndex = errors.value.list.indexOf(`slide_file_${index}`);
+          if (errIndex !== -1) {
+            errors.value.list.splice(errIndex, 1);
+          }
+        }
+      }, { immediate: true });
+    });
+  }, { deep: true });
+
+  // Update header text watch to include character limit and list management
+  watch(() => template.value.header_text, (newValue: string) => {
+    if (newValue.length > 60) {
+      template.value.header_text = newValue.substring(0, 60);
+    }
+
+    if (newValue === '') {
+      errors.value.header = 'Template header is required field!';
+      if (!errors.value.list.includes('header')) {
+        errors.value.list.push('header');
+      }
+    } else {
+      errors.value.header = '';
+      const index = errors.value.list.indexOf('header');
+      if (index !== -1) {
+        errors.value.list.splice(index, 1);
+      }
+    }
+  }, { deep: true });
+
+  // Update footer text watch to include character limit and list management
+  watch(() => template.value.footer_text, (newValue: string) => {
+    if (newValue.length > 60) {
+      template.value.footer_text = newValue.substring(0, 60);
+    }
+
+    if (newValue === '') {
+      errors.value.footer = 'Template footer is required field!';
+      if (!errors.value.list.includes('footer')) {
+        errors.value.list.push('footer');
+      }
+    } else {
+      errors.value.footer = '';
+      const index = errors.value.list.indexOf('footer');
+      if (index !== -1) {
+        errors.value.list.splice(index, 1);
+      }
+    }
+  }, { deep: true });
 
   // Options
   const template_types = [
@@ -154,11 +352,24 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     // resetForm();
     if (template.value.category === 'AUTHENTICATION') {
       // Auto-fill authentication template
+      template.value.bodyIncludes = ['body', 'buttons'];
       block.value.text = '{{1}} is your verification code. For security do not share this code.';
       template.value.footer_text = 'This code will expire in 1 minutes.';
-      block.value.buttons[0].type = 'copy_code';
       template.value.button_type = 'otp';
       template.value.variables.body = [{ key: '{{1}}', value: '' }];
+      template.value.type = 'media'
+      block.value.buttons = [{
+        type: 'copy_code',
+        text: '',
+        value: '',
+        title: '',
+        url: '',
+        response: ''
+      }];
+    } else if(template.value.category === 'MARKETING'){
+      template.value.bodyIncludes = ['body'];
+    } else if(template.value.category === 'UTILITY'){
+      template.value.bodyIncludes = ['body'];
     }
   };
 
@@ -169,23 +380,15 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     } else if (template.value.type === 'media') {
       template.value.bodyIncludes = ['body'];
     } else if (template.value.type === 'generic') {
-      // Create first slide with proper structure
+      template.value.bodyIncludes = ['body'];
+      // Create first slide with proper structure matching the new format
       const firstSlide = {
         header: 'image',
-        body: '',
-        button_type: 'postback', // Default to postback for first slide
-        total_buttons: 1,
-        buttons: [{
-          type: 'postback',
-          text: '',
-          value: '',
-          title: '',
-          url: '',
-          response: ''
-        }],
+        button_type: 'cta',
+        total_buttons: 2,
         variables: {
           body: [],
-          buttons: []
+          button: null
         }
       };
       
@@ -193,54 +396,61 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
       
       // Initialize block.slides for carousel with matching structure
       block.value.slides = [{
+        id: 1,
+        title: '',
+        subtitle: '',
+        type: 'button',
+        image_url: '',
         attachment_link: '',
-        body: '',
         buttons: [{
-          type: 'postback',
-          text: '',
-          value: '',
+          api: 1,
+          error: false,
+          type: 'web_url',
           title: '',
+          response: '',
+          payload: '',
           url: '',
-          response: ''
+          signature_hash: ''
         }]
       }];
     }
   };
 
   const onChangeHeaderType = () => {
+    // Ensure default header type
+    if (!template.value.header) {
+      template.value.header = 'text';
+    }
+  
     // Clear previous header content when type changes
     template.value.header_text = '';
     template.value.variables.header = null;
     block.value.image_url = '';
     block.value.video_url = '';
     block.value.attachment_link = '';
+    errors.value.header = '';
+  
+    // Validate header requirement
+    if (template.value.header !== 'text') {
+      errors.value.header = '';
+    } else if (!template.value.header_text) {
+      errors.value.header = 'The template header field is required';
+    }
   };
+  
 
   const onChangeCta = (buttonIndex: number, slideIndex: number) => {
     const isGeneric = template.value.type === 'generic';
 
     if (isGeneric) {
-      const templateSlide = template.value.slides?.[slideIndex];
       const blockSlide = block.value.slides?.[slideIndex];
       
-      if (templateSlide && blockSlide) {
-        const templateButton = templateSlide.buttons?.[buttonIndex];
+      if (blockSlide) {
         const blockButton = blockSlide.buttons?.[buttonIndex];
         
         // Set default type if not set
-        if (templateButton && !templateButton.type) {
-          templateButton.type = 'web_url';
-        }
-        
         if (blockButton && !blockButton.type) {
           blockButton.type = 'web_url';
-        }
-        
-        // Ensure both template and block buttons have the same type
-        if (templateButton && blockButton) {
-          const buttonType = templateButton.type || blockButton.type || 'web_url';
-          templateButton.type = buttonType;
-          blockButton.type = buttonType;
         }
       }
     } else {
@@ -251,8 +461,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     }
   };
 
-  const checkForVariables = (section?: string, btnIndex = null, slideIndex = 0) => {
-    console.log(btnIndex)
+  const checkForVariables = (section?: string, slideIndex = 0) => {
     // Check for variables in text and update variables structure
     if (section === 'header') {
       const variables = extractVariables(template.value.header_text || '');
@@ -270,10 +479,11 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         key: `{{${num}}}`,
         value: ''
       }));
-    } else if (section === 'body_slide') {
-      // Handle carousel slide body variables
+    } else if (section === 'slider') {
+      // Handle carousel slide title variables
       const slide = template.value.slides[slideIndex];
-      if (!slide) return;
+      const blockSlide = block.value.slides[slideIndex];
+      if (!slide || !blockSlide) return;
       
       // Initialize variables if not exists
       if (!slide.variables) {
@@ -283,7 +493,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         slide.variables.body = [];
       }
       
-      const variables = extractVariables(slide.body || '');
+      const variables = extractVariables(blockSlide.title || '');
       slide.variables.body = variables.map(num => ({
         key: `{{${num}}}`,
         value: ''
@@ -295,17 +505,18 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
       if (isGeneric && slideIndex !== undefined && slideIndex >= 0) {
         // Handle carousel slide button variables
         const slide = template.value.slides[slideIndex];
-        if (!slide) return;
+        const blockSlide = block.value.slides[slideIndex];
+        if (!slide || !blockSlide) return;
         
         // Initialize variables if not exists
         if (!slide.variables) {
-          slide.variables = { buttons: [] };
+          slide.variables = { button: null };
         }
-        if (!slide.variables.buttons) {
-          slide.variables.buttons = [];
+        if (!slide.variables.button) {
+          slide.variables.button = null;
         }
         
-        const button = slide.buttons?.[buttonIndex];
+        const button = blockSlide.buttons?.[buttonIndex];
         if (!button) return;
         
         // Check for variables in title, text, and URL fields
@@ -316,15 +527,13 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         
         if (allVariables.length > 0) {
           // Update or add button variable
-          const existingIndex = slide.variables.buttons.findIndex((v: any) => v.buttonIndex === buttonIndex);
-          if (existingIndex >= 0) {
-            slide.variables.buttons[existingIndex] = {
-              buttonIndex,
+          if (slide.variables.button) {
+            slide.variables.button = {
               key: `{{${allVariables[0]}}}`,
               value: ''
-            };
+            }
           } else {
-            slide.variables.buttons.push({
+            slide.variables.button.push({
               buttonIndex,
               key: `{{${allVariables[0]}}}`,
               value: ''
@@ -332,7 +541,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
           }
         } else {
           // Remove button variable if no variables found
-          slide.variables.buttons = slide.variables.buttons.filter((v: any) => v.buttonIndex !== buttonIndex);
+          slide.variables.button = null;
         }
       } else {
         // Handle regular template button variables
@@ -347,30 +556,26 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         
         if (allVariables.length > 0) {
           // Update or add button variable
-          const existingIndex = template.value.variables.buttons.findIndex(v => v.buttonIndex === buttonIndex);
-          if (existingIndex >= 0) {
-            template.value.variables.buttons[existingIndex] = {
-              buttonIndex,
+          if (template.value.variables.button) {
+            template.value.variables.button = {
               key: `{{${allVariables[0]}}}`,
               value: ''
             };
           } else {
-            template.value.variables.buttons.push({
-              buttonIndex,
+            template.value.variables.button = {
               key: `{{${allVariables[0]}}}`,
               value: ''
-            });
+            };
           }
         } else {
           // Remove button variable if no variables found
-          template.value.variables.buttons = template.value.variables.buttons.filter((v: any) => v.buttonIndex !== buttonIndex);
+          template.value.variables.button = null;
         }
       }
     }
   };
 
-  const addVariable = (section?: string,  addNew = true, btnIndex = null, slideIndex = 0) => {
-    console.log(addNew, btnIndex)
+  const addVariable = (section?: string, _addNew = true, _btnIndex = null, slideIndex = 0) => {
     // Check if we can add more variables
     if (!canAddVariable(section || 'body')) {
       return;
@@ -394,7 +599,8 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     } else if (section === 'body_slide') {
       // Handle carousel slide body variables
       const slide = template.value.slides[slideIndex];
-      if (!slide) return;
+      const blockSlide = block.value.slides[slideIndex];
+      if (!slide || !blockSlide) return;
       
       // Initialize variables if not exists
       if (!slide.variables) {
@@ -404,13 +610,13 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         slide.variables.body = [];
       }
       
-      const currentText = slide.body || '';
+      const currentText = blockSlide.title || '';
       const nextVarNum = extractVariables(currentText).length + 1;
       const cursorPos = (document.querySelector(`#emoji-textarea_slide${slideIndex}`) as HTMLTextAreaElement)?.selectionStart || currentText.length;
       
       const newText = currentText.slice(0, cursorPos) + `{{${nextVarNum}}}` + currentText.slice(cursorPos);
-      slide.body = newText;
-      checkForVariables('body_slide', null, slideIndex);
+      blockSlide.title = newText;
+      checkForVariables('slider', slideIndex);
     } else if (section?.startsWith('button')) {
       const buttonIndex = parseInt(section.split('_')[1]);
       const isGeneric = template.value.type === 'generic';
@@ -418,9 +624,10 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
       if (isGeneric && slideIndex !== undefined && slideIndex >= 0) {
         // Handle carousel slide button variables
         const slide = template.value.slides[slideIndex];
-        if (!slide) return;
+        const blockSlide = block.value.slides[slideIndex];
+        if (!slide || !blockSlide) return;
         
-        const button = slide.buttons?.[buttonIndex];
+        const button = blockSlide.buttons?.[buttonIndex];
         if (!button) return;
         
         // For buttons, we need to determine which field to add the variable to
@@ -431,22 +638,14 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
           const nextVarNum = extractVariables(currentText).length + 1;
           const newText = currentText + `{{${nextVarNum}}}`;
           button.url = newText;
-          // Also update the text field if it exists
-          // if (button.text !== undefined) {
-          //   button.text = newText;
-          // }
-          checkForVariables(`button_${buttonIndex}`, null, slideIndex);
+          checkForVariables(`button_${buttonIndex}`, slideIndex);
         } else {
           // Add variable to title field for other button types
-          const currentText = button.title || button.text || '';
+          const currentText = button.title || '';
           const nextVarNum = extractVariables(currentText).length + 1;
           const newText = currentText + `{{${nextVarNum}}}`;
           button.title = newText;
-          // Also update the text field if it exists
-          // if (button.text !== undefined) {
-          //   button.text = newText;
-          // }
-          checkForVariables(`button_${buttonIndex}`, null, slideIndex);
+          checkForVariables(`button_${buttonIndex}`, slideIndex);
         }
       } else {
         // Handle regular template button variables
@@ -525,38 +724,15 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
   const createSlide = () => {
     // Get the current button type from the first slide if it exists
     const firstSlide = template.value.slides[0];
-    const currentButtonType = firstSlide?.button_type || 'postback';
-    
-    // Determine the expected button type for individual buttons
-    const expectedButtonType = currentButtonType === 'cta' ? 'web_url' : 'postback';
-    
-         // Clone buttons from the first template slide if it exists, preserving their types
-     const clonedButtons = firstSlide?.buttons?.map((button: any) => ({
-       ...button,
-       title: "",
-       response: "",
-       payload: "",
-       url: "",
-       // Preserve the button type
-       type: button.type || expectedButtonType
-     })) || [{
-       type: expectedButtonType,
-       text: '',
-       value: '',
-       title: '',
-       url: '',
-       response: ''
-     }];
+    const currentButtonType = firstSlide?.button_type || 'cta';
     
     return {
       header: 'image',
-      body: '',
       button_type: currentButtonType,
-      total_buttons: clonedButtons.length,
-      buttons: clonedButtons,
+      total_buttons: currentButtonType === 'cta' ? 2 : 1,
       variables: {
         body: [],
-        buttons: []
+        button: null
       }
     }
   };
@@ -566,31 +742,29 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     const firstSlide = template.value.slides[0];
     const currentButtonType = firstSlide?.button_type || 'postback';
     
-    // Determine the expected button type for individual buttons
-    const expectedButtonType = currentButtonType === 'cta' ? 'web_url' : 'postback';
+    // Get the next slide ID
+    const nextId = block.value.slides.length + 1;
     
-    // Clone buttons from the first template slide if it exists, preserving their types
-    const clonedButtons = firstSlide?.buttons?.map((button: any) => ({
-      ...button,
-      title: "",
-      response: "",
-      payload: "",
-      url: "",
-      // Preserve the button type
-      type: button.type || expectedButtonType
-    })) || [{
-      type: expectedButtonType,
-      text: '',
-      value: '',
+    // Create default button based on button type
+    const defaultButton = {
+      api: 1,
+      error: false,
+      type: currentButtonType === 'cta' ? 'web_url' : 'postback',
       title: '',
+      response: '',
+      payload: '',
       url: '',
-      response: ''
-    }];
+      signature_hash: ''
+    };
     
     return {
+      id: nextId,
+      title: '',
+      subtitle: '',
+      type: 'button',
+      image_url: '',
       attachment_link: '',
-      body: '',
-      buttons: clonedButtons
+      buttons: [defaultButton]
     }
   };
 
@@ -609,33 +783,119 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
   };
 
   const isNextDisabled = () => {
-    return !block.value.text || !template.value.category || !block.value.language;
+    const { type, category, bodyIncludes } = template.value;
+    
+    // Authentication template validation
+    if(category === 'AUTHENTICATION'){
+      if(errors.value.title_btn_var !== '') return true;
+      return false;
+    }
+    
+    // Text validation
+    if (type === 'text' && errors.value.body !== '') {
+      return true;
+    }
+    
+    // Media validation
+    if (type === 'media') {
+      if (errors.value.body !== '') return true;
+      if (bodyIncludes.includes('header') && errors.value.header !== '') return true;
+      if (bodyIncludes.includes('footer') && errors.value.footer !== '') return true;
+      if (bodyIncludes.includes('buttons')){
+        return block.value.buttons.some((button: any) => {
+          if (!button.title || button.title.trim() === '') return true;
+          if (button.type === 'postback' && (!button.response || button.response.trim() === '')) return true;
+          if (button.type === 'web_url' && (!button.url || button.url.trim() === '')) return true;
+          if (button.type === 'phone_number' && (!button.payload || button.payload.trim() === '')) return true;
+        });
+      }
+    }
+
+    // Generic validation
+    if (type === 'generic') {
+      const slides = block.value.slides;
+      if (!slides.length) return true;
+      const expectedButtonCount = slides[0].buttons.length;
+      if (expectedButtonCount === 0) return true;
+      for (const slide of slides) {
+        if (!slide.title || slide.title.trim() === '') return true;
+        if (slide.buttons.length !== expectedButtonCount) return true;
+        return slide.buttons.some((button: any) => {
+          if (!button.title || button.title.trim() === '') return true;
+          if (button.type === 'postback' && (!button.response || button.response.trim() === '')) return true;
+          if (button.type === 'web_url' && (!button.url || button.url.trim() === '')) return true;
+          if (button.type === 'phone_number' && (!button.payload || button.payload.trim() === '')) return true;
+        });
+      }
+    }
+    
+    return false;
   };
 
   const validateData = () => {
+    const { type, category, bodyIncludes } = template.value;
+    
     // Basic validation
     if (!block.value.text || !template.value.category || !block.value.language) {
       window.$toast?.error('Please fill all required fields');
       return false;
     }
     
-    // Additional validation for carousel templates
-    if (template.value.type === 'generic') {
+    // Authentication template validation
+    if (category === 'AUTHENTICATION') {
+      if (errors.value.title_btn_var !== '') {
+        window.$toast?.error('Please fill the button text for authentication template');
+        return false;
+      }
+    }
+    
+    // Text template validation
+    if (type === 'text') {
+      if (errors.value.body !== '') {
+        window.$toast?.error('Please fill the template body');
+        return false;
+      }
+    }
+    
+    // Media template validation
+    if (type === 'media') {
+      if (errors.value.body !== '') {
+        window.$toast?.error('Please fill the template body');
+        return false;
+      }
+      if (bodyIncludes.includes('header') && errors.value.header !== '') {
+        window.$toast?.error('Please fill the header text');
+        return false;
+      }
+      if (bodyIncludes.includes('footer') && errors.value.footer !== '') {
+        window.$toast?.error('Please fill the footer text');
+        return false;
+      }
+    }
+    
+    // Generic template validation
+    if (type === 'generic') {
       // Check if all slides have required content
       for (let i = 0; i < template.value.slides.length; i++) {
         const slide = template.value.slides[i];
+        const blockSlide = block.value.slides[i];
         
-        // Check if slide body is filled
-        if (!slide.body || slide.body.trim() === '') {
-          window.$toast?.error(`Please fill the body for slide ${i + 1}`);
+        if (!slide || !blockSlide) {
+          window.$toast?.error(`Slide ${i + 1} is missing data`);
+          return false;
+        }
+        
+        // Check if slide title is filled
+        if (!blockSlide.title || blockSlide.title.trim() === '') {
+          window.$toast?.error(`Please fill the title for slide ${i + 1}`);
           return false;
         }
         
         // Check if at least one button is filled
-        const hasFilledButton = slide.buttons?.some((button: any) => 
+        const hasFilledButton = blockSlide.buttons?.some((button: any) => 
           (button.title && button.title.trim() !== '') || 
-          (button.text && button.text.trim() !== '') ||
-          (button.url && button.url.trim() !== '')
+          (button.url && button.url.trim() !== '') ||
+          (button.payload && button.payload.trim() !== '')
         );
         
         if (!hasFilledButton) {
@@ -653,9 +913,9 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         }
         
         // Validate button types are consistent within each slide
-        if (slide.buttons && slide.buttons.length > 0) {
-          const firstButtonType = slide.buttons[0]?.type;
-          const inconsistentButtons = slide.buttons.some((button: any, index: number) => {
+        if (blockSlide.buttons && blockSlide.buttons.length > 0) {
+          const firstButtonType = blockSlide.buttons[0]?.type;
+          const inconsistentButtons = blockSlide.buttons.some((button: any, index: number) => {
             if (index === 0) return false; // Skip first button
             return button.type !== firstButtonType;
           });
@@ -676,14 +936,13 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
       return;
     }
 
+    isSaving.value = true;
+
     try {
       // Create copies of the data to modify
       const dataBlock = { ...block.value };
       const cTemp = { ...template.value };
       
-      console.log('Original template:', cTemp);
-      console.log('Original block:', dataBlock);
-
       // If Template base type is text
       if (cTemp.type === 'text') {
         cTemp.header = 'text';
@@ -692,7 +951,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         cTemp.variables = {
           header: null,
           body: [],
-          buttons: []
+          button: null
         };
         cTemp.header_text = '';
         cTemp.footer_text = '';
@@ -716,7 +975,10 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
       // If there are no buttons (or) template does not include buttons, remove button Variable
       if (!dataBlock.buttons || dataBlock.buttons.length === 0 || !cTemp.bodyIncludes.includes('buttons')) {
         dataBlock.buttons = [];
-        cTemp.variables.buttons = [];
+        cTemp.variables.button = null;
+      } else {
+        // Set button variable to the first button if buttons exist
+        cTemp.variables.button = dataBlock.buttons[0] || null;
       }
 
       // if template does not include footer, remove footer text
@@ -725,32 +987,11 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
       }
 
       // If There is no URL Button but variable is set previously, reset it while saving.
-      if (cTemp.variables.buttons && cTemp.variables.buttons.length > 0) {
+      if (cTemp.variables.button) {
         const urlButton = dataBlock.buttons.find((button: any) => button.type === 'web_url');
         if (!urlButton) {
-          cTemp.variables.buttons = [];
+          cTemp.variables.button = null;
         }
-      }
-
-      // For carousel templates, preserve slides data
-      if (cTemp.type === 'generic') {
-        // Keep slides in both template and block
-        console.log('Preserving carousel slides:', cTemp.slides);
-        console.log('Preserving block slides:', dataBlock.slides);
-        
-        // Ensure slides have proper structure
-        if (cTemp.slides && cTemp.slides.length > 0) {
-          cTemp.slides.forEach((slide: any, index: number) => {
-            console.log(`Slide ${index + 1} template data:`, slide);
-            if (dataBlock.slides && dataBlock.slides[index]) {
-              console.log(`Slide ${index + 1} block data:`, dataBlock.slides[index]);
-            }
-          });
-        }
-      } else {
-        // Remove slides for non-carousel templates
-        if ('slides' in cTemp) delete (cTemp as any).slides;
-        if ('slides' in dataBlock) delete (dataBlock as any).slides;
       }
 
       // Format buttons according to API requirements
@@ -772,10 +1013,34 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
             type: button.type === 'postback' ? 'postback' : (button.type === 'web_url' ? 'url' : 'phone_number'),
             url: button.type === 'web_url' ? button.url : null,
             title: button.text || button.title || '',
-            payload: button.type === 'postback' ? button.response || '' : null
+            payload: button.payload,
+            response: button.type === 'postback' ? button.response || '' : null
           };
         }
       });
+
+      // Format slides for carousel according to new structure
+      let formattedSlides: any[] = [];
+      if (cTemp.type === 'generic' && dataBlock.slides && dataBlock.slides.length > 0) {
+        formattedSlides = dataBlock.slides.map((slide: any) => ({
+          id: slide.id,
+          title: slide.title,
+          subtitle: slide.subtitle,
+          type: slide.type,
+          image_url: slide.image_url,
+          attachment_link: slide.attachment_link,
+          buttons: slide.buttons.map((button: any) => ({
+            api: button.api,
+            error: button.error,
+            type: button.type,
+            title: button.title,
+            response: button.response,
+            payload: button.payload,
+            url: button.url,
+            signature_hash: button.signature_hash
+          }))
+        }));
+      }
 
       const templateData = {
         name: cTemp.name || 'Template',
@@ -788,20 +1053,30 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
           footer_text: cTemp.footer_text,
           variables: cTemp.variables || {},
           bodyIncludes: cTemp.bodyIncludes,
-          // Preserve slides for carousel
+          // Preserve slides for carousel with new format
           ...(cTemp.type === 'generic' && { slides: cTemp.slides })
         },
         buttons: formattedButtons,
-        image_url: "",
-        attachment_link: "",
-        // Preserve slides in block for carousel
-        ...(cTemp.type === 'generic' && { slides: dataBlock.slides })
+        image_url: dataBlock.image_url,
+        attachment_link: dataBlock.attachment_link,
+        // Preserve slides in block for carousel with new format
+        ...(cTemp.type === 'generic' && { slides: formattedSlides })
       };
-
-      console.log('Final template data to send:', templateData);
+console.log("final template", templateData);
 
       const result = await publishApi.createTemplate(templateData);
       if (result.success) {
+        console.log(result.data, "result data")
+        if(result.data.status === "error"){
+          window.$toast?.error(result.data.message);
+          return { success: false, error: result.data.message };
+        }
+        // Clear the templates cache in publishStore
+        const { usePublishStore } = await import('@/stores/publishStore');
+        const publishStore = usePublishStore();
+        publishStore.templatesCache = null;
+        publishStore.templatesLoaded = false;
+        
         window.$toast?.success('Template created successfully!');
         return { success: true, data: templateData };
       } else {
@@ -812,6 +1087,8 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
       console.error('Failed to create template:', error);
       window.$toast?.error('Failed to create template');
       return { success: false, error: 'Failed to create template' };
+    } finally {
+      isSaving.value = false;
     }
   };
 
@@ -830,7 +1107,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
       variables: {
         header: null,
         body: [],
-        buttons: []
+        button: null
       }
     };
     block.value = {
@@ -844,10 +1121,21 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     };
     views.value = { fields: 'current', settings: 'hidden' };
     errors.value = {
-      body: '',
-      header: '',
-      footer: '',
-      file: {}
+      list: ['body', 'file', 'header', 'footer'],
+      body: 'The template body field is required',
+      header: 'The template header field is required',
+      footer: 'The template footer field is required',
+      file: '',
+      title_btn_var: '',
+      url_btn_var: 'The URL button response is required',
+      response_btn_var: '',
+      slides: [
+        {
+          title: '',
+          buttons: null,
+          file: ''
+        }
+      ]
     };
   };
 
@@ -867,174 +1155,29 @@ const addSlide = () => {
     return;
   }
 
-  // Check if body is filled
-  if (!firstSlide.body || firstSlide.body.trim() === '') {
-    window.$toast?.error('Please fill the carousel body before adding more slides');
-    return;
-  }
-
-  // Check if at least one button is filled
-  // The ButtonsEditor works with template slide buttons, so we need to check firstSlide.buttons
-  console.log('Validating buttons for first slide:', firstSlide.buttons);
-  console.log('First slide button_type:', firstSlide.button_type);
-  console.log('First slide total_buttons:', firstSlide.total_buttons);
-  
-  // Check if buttons array exists and has proper structure
-  if (!firstSlide.buttons || !Array.isArray(firstSlide.buttons)) {
-    console.log('Error: firstSlide.buttons is not properly initialized');
-    window.$toast?.error('Please complete the first slide before adding more');
-    return;
-  }
-  
-  let hasFilledButton = firstSlide.buttons.some((button: any) => {
+  // Check if at least one button is filled in the block slide
+  let hasFilledButton = firstBlockSlide.buttons.some((button: any) => {
     const hasTitle = button.title && button.title.trim() !== '';
-    const hasText = button.text && button.text.trim() !== '';
     const hasUrl = button.url && button.url.trim() !== '';
+    const hasPayload = button.payload && button.payload.trim() !== '';
     
-    console.log('Button validation:', { 
-      button, 
-      hasTitle, 
-      hasText, 
-      hasUrl, 
-      isFilled: hasTitle || hasText || hasUrl 
-    });
-    
-    return hasTitle || hasText || hasUrl;
+    return hasTitle || hasUrl || hasPayload;
   });
-
-  console.log('Has filled button:', hasFilledButton);
-  console.log('First block slide buttons (for comparison):', firstBlockSlide.buttons);
-
-  // If no filled button found in template slide, check block slide as fallback
-  if (!hasFilledButton && firstBlockSlide.buttons && Array.isArray(firstBlockSlide.buttons)) {
-    console.log('Checking block slide buttons as fallback...');
-    const hasFilledButtonInBlock = firstBlockSlide.buttons.some((button: any) => {
-      const hasTitle = button.title && button.title.trim() !== '';
-      const hasText = button.text && button.text.trim() !== '';
-      const hasUrl = button.url && button.url.trim() !== '';
-      
-      console.log('Block button validation:', { 
-        button, 
-        hasTitle, 
-        hasText, 
-        hasUrl, 
-        isFilled: hasTitle || hasText || hasUrl 
-      });
-      
-      return hasTitle || hasText || hasUrl;
-    });
-    
-    console.log('Has filled button in block:', hasFilledButtonInBlock);
-    
-    if (hasFilledButtonInBlock) {
-      // Synchronize the filled data from block to template
-      firstBlockSlide.buttons.forEach((blockButton: any, index: number) => {
-        if (firstSlide.buttons[index]) {
-          firstSlide.buttons[index] = { ...blockButton };
-        }
-      });
-      console.log('Synchronized button data from block to template');
-      hasFilledButton = true;
-    }
-  }
 
   if (!hasFilledButton) {
     window.$toast?.error('Please fill at least one button before adding more slides');
     return;
   }
 
-  // Ensure button types are properly synchronized before cloning
-  if (firstSlide && firstBlockSlide) {
-    firstSlide.buttons.forEach((templateButton: any, index: number) => {
-      const blockButton = firstBlockSlide.buttons[index];
-      if (blockButton) {
-        // Ensure both buttons have the same type
-        const buttonType = templateButton.type || blockButton.type || 'postback';
-        templateButton.type = buttonType;
-        blockButton.type = buttonType;
-      }
-    });
-  }
-
-  const slideIndex = template.value.slides.length;
+  // const slideIndex = template.value.slides.length;
   
-  console.log('Adding slide at index:', slideIndex);
-  console.log('Current template slides:', template.value.slides);
-  console.log('Current block slides:', block.value.slides[0]?.buttons);
-  
-  console.log('First slide button type:', firstSlide?.button_type);
-  console.log('First slide buttons:', firstSlide?.buttons);
-  console.log('First block slide buttons:', firstBlockSlide?.buttons);
-  
-  // Ensure the first block slide buttons are synchronized with the template slide button type
-  if (firstSlide && firstBlockSlide) {
-    const expectedButtonType = firstSlide.button_type === 'cta' ? 'web_url' : 'postback';
-    
-    // Update the first block slide buttons to match the template slide button type
-    firstBlockSlide.buttons.forEach((button: any) => {
-      if (button.type !== expectedButtonType) {
-        button.type = expectedButtonType;
-      }
-    });
-  }
-  
-  // Clone buttons from the first slide if it exists, preserving their types
-  const clonedButtons = firstSlide?.buttons?.map((button: any) => {
-    const clonedButton = {
-      ...button,
-      title: "",
-      response: "",
-      payload: "",
-      url: "",
-      // Preserve the button type from the first slide
-      type: button.type || 'postback'
-    };
-    
-    console.log('Cloning button:', { 
-      originalType: button.type, 
-      clonedType: clonedButton.type,
-      originalButton: button,
-      clonedButton: clonedButton
-    });
-    
-    return clonedButton;
-  }) || [{
-    type: 'postback',
-    text: '',
-    value: '',
-    title: '',
-    url: '',
-    response: ''
-  }];
-
-  console.log('Cloned buttons:', clonedButtons);
-
-  // Create a new block slide with cloned buttons
-  const blockSlide = {
-    attachment_link: '',
-    body: '',
-    buttons: clonedButtons
-  };
-
-  block.value.slides.push(blockSlide);
-
-  // Clone the first template slide structure with current button type
-  const currentButtonType = firstSlide?.button_type || 'postback';
-  const currentTotalButtons = firstSlide?.total_buttons || 1;
-  
-  const templateSlide = {
-    header: 'image',
-    body: '',
-    button_type: currentButtonType, // Use the current button type from first slide
-    total_buttons: currentTotalButtons,
-    buttons: clonedButtons,
-    variables: {
-      body: [],
-      buttons: []
-    }
-  };
-
+  // Create new template slide
+  const templateSlide = createSlide();
   template.value.slides.push(templateSlide);
+
+  // Create new block slide
+  const blockSlide = createBlockSlide();
+  block.value.slides.push(blockSlide);
   
   // Ensure all slides have consistent button types
   const firstSlideButtonType = template.value.slides[0]?.button_type;
@@ -1047,8 +1190,12 @@ const addSlide = () => {
     });
   }
   
-  console.log('After adding slide - Template slides:', template.value.slides);
-  console.log('After adding slide - Block slides:', block.value.slides);
+  // Push default error object for new slide
+  errors.value.slides.push({
+    title: '',
+    buttons: null as any,
+    file: ''
+  });
 };
 
 const removeSlide = (index: number) => {
@@ -1066,13 +1213,8 @@ const removeSlide = (index: number) => {
       if (templateSlide && blockSlide) {
         templateSlide.total_buttons = templateSlide.button_type == 'cta' ? 2 : 1;
         
-        // Update button types in both template and block slides to match the button_type
+        // Update button types in block slide to match the button_type
         const expectedButtonType = templateSlide.button_type === 'cta' ? 'web_url' : 'postback';
-        
-        // Update template slide buttons
-        templateSlide.buttons.forEach((button: any) => {
-          button.type = expectedButtonType;
-        });
         
         // Update block slide buttons
         blockSlide.buttons.forEach((button: any) => {
@@ -1084,7 +1226,6 @@ const removeSlide = (index: number) => {
           const excessCount = blockSlide.buttons.length - templateSlide.total_buttons;
           for (let i = 0; i < excessCount; i++) {
             blockSlide.buttons.pop();
-            templateSlide.buttons.pop();
           }
         }
         
@@ -1094,11 +1235,6 @@ const removeSlide = (index: number) => {
             if (index > 0) { // Skip first slide as it's already updated
               slide.button_type = templateSlide.button_type;
               slide.total_buttons = templateSlide.total_buttons;
-              
-              // Update button types in this slide
-              slide.buttons.forEach((button: any) => {
-                button.type = expectedButtonType;
-              });
               
               // Also update corresponding block slide
               const correspondingBlockSlide = block.value.slides[index];
@@ -1112,7 +1248,6 @@ const removeSlide = (index: number) => {
                   const excessCount = correspondingBlockSlide.buttons.length - slide.total_buttons;
                   for (let i = 0; i < excessCount; i++) {
                     correspondingBlockSlide.buttons.pop();
-                    slide.buttons.pop();
                   }
                 }
               }
@@ -1134,11 +1269,13 @@ const removeSlide = (index: number) => {
     if (isGeneric) {
       // If slideIndex is provided, check that specific slide
       if (slideIndex !== undefined && slideIndex >= 0) {
-        const slideButtons = template.value.slides[slideIndex]?.buttons || [];
+        const blockSlide = block.value.slides[slideIndex];
+        const slideButtons = blockSlide?.buttons || [];
         return slideButtons.length < (isCTA ? 2 : 1);
       } else {
         // Check the first slide (for backward compatibility)
-        const slideButtons = template.value.slides[0]?.buttons || [];
+        const blockSlide = block.value.slides[0];
+        const slideButtons = blockSlide?.buttons || [];
         return slideButtons.length < (isCTA ? 2 : 1);
       }
     } else {
@@ -1153,26 +1290,25 @@ const removeSlide = (index: number) => {
       ? template.value.slides[slideIndex]?.button_type === 'cta'
       : template.value.button_type === 'cta';
 
-    const newButtonTemplate = {
-      type: 'postback',
-      text: '',
-      value: '',
-      title: '',
-      url: '',
-      response: ''
-    };
-
     if (isGeneric) {
       // If slideIndex is provided, add button only to that specific slide
       if (slideIndex !== undefined && slideIndex >= 0) {
-        const slide = template.value.slides[slideIndex];
         const blockSlide = block.value.slides[slideIndex];
         
-        if (slide && blockSlide) {
-          const newButton = { ...newButtonTemplate };
+        if (blockSlide) {
+          const newButton = {
+            api: 1,
+            error: false,
+            type: 'postback',
+            title: '',
+            response: '',
+            payload: '',
+            url: '',
+            signature_hash: ''
+          };
 
           if (isCTA) {
-            const existingButtons = slide.buttons || [];
+            const existingButtons = blockSlide.buttons || [];
             const webUrlButtons = existingButtons.filter((btn: any) => btn.type === 'web_url');
             const phoneButtons = existingButtons.filter((btn: any) => btn.type === 'phone_number');
             
@@ -1185,28 +1321,27 @@ const removeSlide = (index: number) => {
               // If both types exist, add web_url (this shouldn't happen with max 2 buttons)
               newButton.type = 'web_url';
             }
-            
-            console.log('Adding CTA button:', { 
-              existingButtons: existingButtons.map((b: any) => b.type),
-              newButtonType: newButton.type,
-              webUrlCount: webUrlButtons.length,
-              phoneCount: phoneButtons.length
-            });
           }
 
-          // Add button to both template and block slides
-          slide.buttons.push(newButton);
-          blockSlide.buttons.push({ ...newButton });
+          blockSlide.buttons.push(newButton);
         }
       } else {
         // Add button to all slides (for backward compatibility)
-        template.value.slides.forEach((slide, idx) => {
-          const blockSlide = block.value.slides[idx];
-          if (slide && blockSlide) {
-            const newButton = { ...newButtonTemplate };
+        block.value.slides.forEach((blockSlide, _idx) => {
+          if (blockSlide) {
+            const newButton = {
+              api: 1,
+              error: false,
+              type: 'postback',
+              title: '',
+              response: '',
+              payload: '',
+              url: '',
+              signature_hash: ''
+            };
 
             if (isCTA) {
-              const existingButtons = slide.buttons || [];
+              const existingButtons = blockSlide.buttons || [];
               const webUrlButtons = existingButtons.filter((btn: any) => btn.type === 'web_url');
               const phoneButtons = existingButtons.filter((btn: any) => btn.type === 'phone_number');
               
@@ -1219,22 +1354,21 @@ const removeSlide = (index: number) => {
                 // If both types exist, add web_url (this shouldn't happen with max 2 buttons)
                 newButton.type = 'web_url';
               }
-              
-              console.log('Adding CTA button (backward compatibility):', { 
-                existingButtons: existingButtons.map((b: any) => b.type),
-                newButtonType: newButton.type,
-                webUrlCount: webUrlButtons.length,
-                phoneCount: phoneButtons.length
-              });
             }
 
-            slide.buttons.push(newButton);
-            blockSlide.buttons.push({ ...newButton });
+            blockSlide.buttons.push(newButton);
           }
         });
       }
     } else {
-      const newButton = { ...newButtonTemplate };
+      const newButton = {
+        type: 'postback',
+        text: '',
+        value: '',
+        title: '',
+        url: '',
+        response: ''
+      };
 
       if (isCTA) {
         const firstButtonType = block.value.buttons?.[0]?.type;
@@ -1249,25 +1383,14 @@ const removeSlide = (index: number) => {
     if (template.value.type === 'generic') {
       // If slideIndex is provided, remove button only from that specific slide
       if (slideIndex !== undefined && slideIndex >= 0) {
-        const slide = template.value.slides[slideIndex];
         const blockSlide = block.value.slides[slideIndex];
-        
-        if (slide && Array.isArray(slide.buttons) && slide.buttons.length > index) {
-          slide.buttons.splice(index, 1);
-        }
         
         if (blockSlide && Array.isArray(blockSlide.buttons) && blockSlide.buttons.length > index) {
           blockSlide.buttons.splice(index, 1);
         }
       } else {
         // Remove button from all slides (for backward compatibility)
-        template.value.slides.forEach((slide, idx) => {
-          const blockSlide = block.value.slides[idx];
-          
-          if (Array.isArray(slide.buttons) && slide.buttons.length > index) {
-            slide.buttons.splice(index, 1);
-          }
-          
+        block.value.slides.forEach((blockSlide, _idx) => {
           if (blockSlide && Array.isArray(blockSlide.buttons) && blockSlide.buttons.length > index) {
             blockSlide.buttons.splice(index, 1);
           }
@@ -1292,12 +1415,12 @@ const removeSlide = (index: number) => {
     };
 
     if (extensionMap[template.value.header] && !extensionMap[template.value.header].test(attachmentLink)) {
-      errors.value.file = { [template.value.header]: `Please enter a valid link, must be a ${template.value.header} file!` };
+      errors.value.file = `Please enter a valid link, must be a ${template.value.header} file!`;
       block.value.attachment_link = '';
       return;
     }
 
-    errors.value.file = {};
+    errors.value.file = '';
   };
 
   const onUpdateCarouselAttachmentLink = (slideIndex: number) => {
@@ -1317,12 +1440,12 @@ const removeSlide = (index: number) => {
     };
 
     if (extensionMap[slide.header] && !extensionMap[slide.header].test(attachmentLink)) {
-      errors.value.file = { [slide.header]: `Please enter a valid link, must be a ${slide.header} file!` };
+      errors.value.file = `Please enter a valid link, must be a ${slide.header} file!`;
       block.value.slides[slideIndex].attachment_link = '';
       return;
     }
 
-    errors.value.file = {};
+    errors.value.file = '';
   };
 
   const onUploadCarouselFile = async (event: Event, slideIndex: number) => {
@@ -1341,7 +1464,7 @@ const removeSlide = (index: number) => {
     };
 
     if (extensionMap[slide.header] && !extensionMap[slide.header].test(file.name)) {
-      errors.value.file = { [slide.header]: `Please select a valid ${slide.header} file!` };
+      errors.value.file = `Please select a valid ${slide.header} file!`;
       return;
     }
 
@@ -1356,10 +1479,10 @@ const removeSlide = (index: number) => {
       // }
 
       // For now, we'll just clear the error
-      errors.value.file = {};
+      errors.value.file = '';
     } catch (error) {
       console.error('Upload failed:', error);
-      errors.value.file = { [slide.header]: 'Upload failed' };
+      errors.value.file = 'Upload failed';
     }
   };
 
@@ -1382,6 +1505,7 @@ const removeSlide = (index: number) => {
     template,
     block,
     errors,
+    isSaving,
     
     // Options
     template_types,
