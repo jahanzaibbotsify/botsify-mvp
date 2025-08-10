@@ -6,7 +6,7 @@ import CommentAutoResponderTab from "./CommentAutoResponderTab.vue";
 import BroadcastTab from "./BroadcastTab.vue";
 import { usePublishStore } from "@/stores/publishStore";
 import { useBotStore } from "@/stores/botStore";
-import { useTabManagement } from "@/composables/publishbot/useTabManagement";
+import { useTabManagement } from "@/composables/useTabManagement";
 
 // Define tabs
 const tabs = [

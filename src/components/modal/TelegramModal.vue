@@ -3,7 +3,7 @@ import { ref, provide } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
 import { Button, Input } from "@/components/ui";
-import { useTabManagement } from "@/composables/publishbot/useTabManagement";
+import { useTabManagement } from "@/composables/useTabManagement";
 
 // Define tabs
 const tabs = [

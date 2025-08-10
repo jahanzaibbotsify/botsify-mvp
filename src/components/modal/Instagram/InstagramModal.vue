@@ -4,7 +4,7 @@ import { useBotStore } from "@/stores/botStore";
 import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
 import PublishAgentTab from "./PublishAgentTab.vue";
 import { usePublishStore } from "@/stores/publishStore";
-import { useTabManagement } from "@/composables/publishbot/useTabManagement";
+import { useTabManagement } from "@/composables/useTabManagement";
 
 // Define tabs
 const tabs = [
