@@ -713,7 +713,7 @@ onUnmounted(() => {
               <div class="agent-info-column">
                 <!-- Agent Avatar -->
                 <div class="agent-avatar-section">
-                  <img :src="agent.avatar || '/icons/img.png'" :alt="agent.name" class="agent-avatar" @click="selectBot(agent)"
+                  <img :src="agent.logo || '/icons/img.png'" :alt="agent.name" class="agent-avatar" @click="selectBot(agent)"
                        style="cursor:pointer; user-select: none"/>
                 </div>
 
