@@ -3,6 +3,7 @@ import {ref, computed, onMounted, onUnmounted, nextTick, watch} from 'vue'
 import {useRouter} from 'vue-router'
 import {axiosInstance} from "@/utils/axiosInstance.ts"
 import {useBotStore} from "@/stores/botStore.ts";
+import UserMenu from "@/components/auth/UserMenu.vue";
 
 const router = useRouter()
 
@@ -491,6 +492,24 @@ const selectBot = async (agent: any) => {
   }
 }
 
+// Publish status helpers
+const hasAnyPublish = (status?: any): boolean => {
+  if (!status) return false
+  return Object.values(status).some(Boolean)
+}
+
+const getPublishedChannels = (agent: any) => {
+  const ps = agent?.publish_status || {}
+  const channels = [
+    { key: 'whatsapp',   label: 'WhatsApp',  icon: 'pi pi-whatsapp',  active: !!ps.whatsapp },
+    { key: 'telegram',   label: 'Telegram',  icon: 'pi pi-send',      active: !!ps.telegram },
+    { key: 'facebook',   label: 'Facebook',  icon: 'pi pi-facebook',  active: !!ps.facebook },
+    { key: 'instagram',  label: 'Instagram', icon: 'pi pi-instagram', active: !!ps.instagram },
+    { key: 'twilio',     label: 'Twilio',    icon: 'pi pi-phone',     active: !!ps.twilio }
+  ]
+  return channels.filter(c => c.active)
+}
+
 onMounted(() => {
   // Fetch agents on component mount
   getAgents()
@@ -515,6 +534,17 @@ onUnmounted(() => {
   <div class="agent-selection-view">
     <!-- Hero Section -->
     <div class="hero-section">
+      <div class="hero-header">
+        <div class="header-container">
+          <div class="header-left">
+            <img src="/images/logos/botsify-logo.webp" alt="Botsify" class="header-logo">
+          </div>
+          <div class="header-right">
+            <UserMenu/>
+          </div>
+        </div>
+      </div>
+      
       <div class="hero-content">
         <div class="hero-badge">
           <i class="pi pi-users"></i>
@@ -695,6 +725,13 @@ onUnmounted(() => {
                     </h3>
                     <!-- Status Badge -->
                   </div>
+                <!-- Published Channels Badges -->
+                <div v-if="hasAnyPublish(agent.publish_status)" class="published-badges">
+                  <span class="published-badge" v-for="ch in getPublishedChannels(agent)" :key="ch.key">
+                    <i :class="ch.icon"></i>
+                    <span class="badge-text">{{ ch.label }}</span>
+                  </span>
+                </div>
                   <p class="agent-users">{{ botUsers[agent.id] !== undefined ? botUsers[agent.id] : 0 }} users</p>
                   <div class="status-badge" :class="{ 'active': agent.active === 1, 'inactive': agent.active === 0 || !agent.active }">
                     <i class="pi" :class="agent.active === 1 ? 'pi-check-circle' : 'pi-times-circle'"></i>
@@ -841,6 +878,44 @@ onUnmounted(() => {
 .hero-section > * {
   position: relative;
   z-index: 2;
+}
+
+.hero-header {
+  position: relative;
+  z-index: 2;
+}
+
+.header-container {
+  position: relative;
+  z-index: 2;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-6);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.header-logo {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  transition: filter var(--transition-normal);
+  display: block;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .hero-content {
@@ -1369,6 +1444,31 @@ onUnmounted(() => {
   color: var(--color-text-secondary);
   margin: 0;
   padding-bottom: 5px;
+}
+
+/* Published badges */
+.published-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 6px;
+}
+
+.published-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.published-badge i {
+  font-size: 0.8rem;
 }
 
 .agent-role {

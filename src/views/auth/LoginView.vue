@@ -307,7 +307,7 @@ const handlePasswordInput = () => {
 
 .form-input {
   width: 100%;
-  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-7) + var(--space-1));
+  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-6) + var(--space-1));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background-color: var(--color-bg-tertiary);

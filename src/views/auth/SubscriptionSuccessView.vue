@@ -12,7 +12,9 @@ const authStore = useAuthStore();
  * Create new agent user newly registered user.
  */
 const createAgent = async () => {
-  await axiosInstance.post('v1/create-bot')
+  await axiosInstance.post('v1/create-bot', {
+    bot_name: 'Echo'
+  })
       .then(res => {
         if (res.data.bot_api_key) {
           useBotStore().setApiKey(res.data.bot_api_key)
@@ -38,14 +40,10 @@ const getUpdatedUser = async () => {
       })
 }
 
-/**
- * Redirect to /select-agent after 3 seconds
- */
 onMounted(() => {
-  getUpdatedUser()
-  // setTimeout(() => {
-  //   router.replace('/select-agent')
-  // }, 3000)
+  setTimeout(() => {
+    getUpdatedUser()
+  }, 2000)
 })
 </script>
 

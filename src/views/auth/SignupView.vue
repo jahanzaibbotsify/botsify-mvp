@@ -148,7 +148,8 @@ const handleSubmit = async () => {
     const response = await authStore.signup(form)
     if (response?.errors) {
       Object.keys(response.errors).forEach(key => {
-        validationErrors.value.push({field: key, message: response.errors[key].join(',', ' '), type: 'error'})
+        if (key === 'input') return;
+        validationErrors.value.push({field: key, message: response?.errors[key]?.join(',', ' '), type: 'error'})
       })
     } else {
       // Use the new authentication flow for redirect
@@ -273,7 +274,9 @@ const clearFieldError = (field: string) => {
               :dropdownOptions="{
                 showFlags: true,
                 showDialCodeInSelection: true,
-                showDialCodeInList: true
+                showDialCodeInList: true,
+                searchBoxPlaceholder: '',
+                showSearchBox: true
               }"
               @validate="validatePhone"
           />
@@ -510,7 +513,7 @@ const clearFieldError = (field: string) => {
 
 .form-input {
   width: 100%;
-  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-7) + var(--space-1));
+  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-6) + var(--space-1));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background-color: var(--color-bg-tertiary);

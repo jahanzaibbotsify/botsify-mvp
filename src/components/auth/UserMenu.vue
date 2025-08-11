@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, ref} from 'vue';
+import {computed, ref, onMounted, onUnmounted} from 'vue';
 import {useAuthStore} from "@/stores/authStore";
 import {useRouter} from "vue-router";
 
@@ -7,6 +7,7 @@ const authStore = useAuthStore();
 const showDropdown = ref(false);
 const isLoggingOut = ref(false);
 const router = useRouter();
+const rootRef = ref<HTMLDivElement | null>(null);
 
 const currentUser = computed(() => authStore.user as any);
 
@@ -20,6 +21,22 @@ const userInitial = computed(() => {
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value;
 };
+
+const handleOutsideClick = (event: MouseEvent) => {
+  if (!rootRef.value) return;
+  const target = event.target as Node;
+  if (!rootRef.value.contains(target)) {
+    showDropdown.value = false;
+  }
+};
+
+onMounted(() => {
+  document.addEventListener('click', handleOutsideClick);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleOutsideClick);
+});
 
 const handleLogout = async () => {
   try {
@@ -36,7 +53,7 @@ const handleLogout = async () => {
 </script>
 
 <template>
-  <div class="user-menu">
+  <div class="user-menu" ref="rootRef">
     <button class="user-button" @click="toggleDropdown">
       <div v-if="authStore.isAuthenticated" class="user-avatar">
         <template v-if="currentUser?.avatar">
@@ -107,6 +124,11 @@ const handleLogout = async () => {
   justify-content: center;
 }
 
+/* Force perfect circle for all avatar variants and outline */
+.user-avatar, .avatar-image, .avatar-initial, .avatar-ring, .enhanced-avatar {
+  border-radius: 50% !important;
+}
+
 .default-avatar {
   background-color: var(--color-bg-tertiary);
   transition: background-color var(--transition-normal);
@@ -142,6 +164,7 @@ const handleLogout = async () => {
 .user-name {
   font-weight: 500;
   margin: 0;
+  color: black;
 }
 
 .user-email {

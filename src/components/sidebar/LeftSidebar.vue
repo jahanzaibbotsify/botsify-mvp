@@ -48,13 +48,6 @@ const navigationButtons = computed(() => {
       requiresSubscription: false // Agent is always available
     },
     {
-      id: `select-agent`,
-      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><title>Multiple Robots</title><rect x="2" y="7" width="6" height="5" rx="0.8"/><circle cx="3.8" cy="9.5" r="0.5" fill="currentColor"/><circle cx="6.2" cy="9.5" r="0.5" fill="currentColor"/><line x1="5" y1="7" x2="5" y2="5.5"/><circle cx="5" cy="5" r="0.4" fill="currentColor"/><rect x="16" y="7" width="6" height="5" rx="0.8"/><circle cx="17.8" cy="9.5" r="0.5" fill="currentColor"/><circle cx="20.2" cy="9.5" r="0.5" fill="currentColor"/><line x1="19" y1="7" x2="19" y2="5.5"/><circle cx="19" cy="5" r="0.4" fill="currentColor"/><rect x="6.5" y="11" width="11" height="7" rx="1"/><circle cx="9.5" cy="14" r="0.7" fill="currentColor"/><circle cx="14.5" cy="14" r="0.7" fill="currentColor"/><line x1="12" y1="11" x2="12" y2="9"/><circle cx="12" cy="8.5" r="0.5" fill="currentColor"/><line x1="6.5" y1="14" x2="4.8" y2="14"/><line x1="17.5" y1="14" x2="19.2" y2="14"/></svg>',
-      name: 'Agents',
-      permission: 'access_agent_page' as const,
-      requiresSubscription: false // Agent is always available
-    },
-    {
       id: `conversation`,
       icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 4a8 8 0 0 0-5.687 13.627 1 1 0 0 1 .147 1.217L5.766 20H12a8 8 0 1 0 0-16ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10H4a1 1 0 0 1-.857-1.515l1.218-2.03A9.964 9.964 0 0 1 2 12Z" clip-rule="evenodd"></path><path d="M9.25 12a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Zm4 0a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Zm4 0a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Z"></path></svg>',
       name: 'Chat',
