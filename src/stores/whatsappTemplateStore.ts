@@ -252,6 +252,39 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     }
   }, { deep: true });
 
+  // Watch for button changes to automatically check for variables
+  watch(() => block.value.buttons, (buttons: any[]) => {
+    if (buttons && buttons.length > 0) {
+      // Check each button for variables
+      buttons.forEach((button, index) => {
+        console.log(button);
+        checkForVariables(`button_${index}`);
+      });
+    } else {
+      // Clear button variables if no buttons
+      template.value.variables.button = null;
+    }
+  }, { deep: true });
+
+  // Watch for slide button changes to automatically check for variables
+  watch(() => block.value.slides, (slides: any[]) => {
+    if (slides && slides.length > 0) {
+      slides.forEach((slide, slideIndex) => {
+        if (slide.buttons && slide.buttons.length > 0) {
+          slide.buttons.forEach((button: any, buttonIndex: number) => {
+            console.log(button);
+            checkForVariables(`button_${buttonIndex}`, slideIndex);
+          });
+        } else {
+          // Clear slide button variables if no buttons
+          if (template.value.slides[slideIndex]?.variables) {
+            template.value.slides[slideIndex].variables.button = null;
+          }
+        }
+      });
+    }
+  }, { deep: true });
+
   // Options
   const template_types = [
     { label: 'Standard (text only)', value: 'text' },
@@ -527,18 +560,10 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         
         if (allVariables.length > 0) {
           // Update or add button variable
-          if (slide.variables.button) {
-            slide.variables.button = {
-              key: `{{${allVariables[0]}}}`,
-              value: ''
-            }
-          } else {
-            slide.variables.button.push({
-              buttonIndex,
-              key: `{{${allVariables[0]}}}`,
-              value: ''
-            });
-          }
+          slide.variables.button = {
+            key: `{{${allVariables[0]}}}`,
+            value: ''
+          };
         } else {
           // Remove button variable if no variables found
           slide.variables.button = null;
@@ -556,17 +581,10 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         
         if (allVariables.length > 0) {
           // Update or add button variable
-          if (template.value.variables.button) {
-            template.value.variables.button = {
-              key: `{{${allVariables[0]}}}`,
-              value: ''
-            };
-          } else {
-            template.value.variables.button = {
-              key: `{{${allVariables[0]}}}`,
-              value: ''
-            };
-          }
+          template.value.variables.button = {
+            key: `{{${allVariables[0]}}}`,
+            value: ''
+          };
         } else {
           // Remove button variable if no variables found
           template.value.variables.button = null;
@@ -1051,6 +1069,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
           header: cTemp.header,
           button_type: cTemp.category === 'AUTHENTICATION' ? 'otp' : (cTemp.type === 'media' ? 'cta' : 'qr'),
           footer_text: cTemp.footer_text,
+          header_text: cTemp.header_text,
           variables: cTemp.variables || {},
           bodyIncludes: cTemp.bodyIncludes,
           // Preserve slides for carousel with new format
@@ -1074,8 +1093,8 @@ console.log("final template", templateData);
         // Clear the templates cache in publishStore
         const { usePublishStore } = await import('@/stores/publishStore');
         const publishStore = usePublishStore();
-        publishStore.templatesCache = null;
-        publishStore.templatesLoaded = false;
+        publishStore.cache.templates = null;
+        publishStore.cacheValid.templates = false;
         
         window.$toast?.success('Template created successfully!');
         return { success: true, data: templateData };

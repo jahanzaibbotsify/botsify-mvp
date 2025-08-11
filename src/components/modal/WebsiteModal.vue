@@ -249,41 +249,41 @@ defineExpose({ openModal, closeModal });
 
 
       </div>
-    </template>
-    
-    <template #actions>
-      <!-- Generate Code Button for Inline Widget Tab -->
-      <Button 
-        v-if="currentActiveTab === 'inline-widget'" 
-        variant="primary"
-        size="medium"
-        @click="generateInlineCode"
-      >
-        Generate code
-      </Button>
       
-      <!-- Send Instructions Button for Email Developer Tab -->
-      <Button 
-        v-if="currentActiveTab === 'email-developer'" 
-        variant="primary"
-        size="medium"
-        :loading="isLoading"
-        type="submit"
-        form="email-form"
-      >
-        {{ isLoading ? 'Sending...' : 'Send Instructions' }}
-      </Button>
-      
-      <!-- Save Button for Landing Bot Tab -->
-      <Button 
-        v-if="currentActiveTab === 'landing-bot'" 
-        variant="primary"
-        size="medium"
-        :loading="isLoading"
-        @click="saveLandingSettings"
-      >
-        {{ isLoading ? 'Saving...' : 'Save' }}
-      </Button>
+      <div class="agent-action-buttons">
+        <!-- Generate Code Button for Inline Widget Tab -->
+        <Button 
+          v-if="currentActiveTab === 'inline-widget'" 
+          variant="primary"
+          size="medium"
+          @click="generateInlineCode"
+        >
+          Generate code
+        </Button>
+        
+        <!-- Send Instructions Button for Email Developer Tab -->
+        <Button 
+          v-if="currentActiveTab === 'email-developer'" 
+          variant="primary"
+          size="medium"
+          :loading="isLoading"
+          type="submit"
+          form="email-form"
+        >
+          {{ isLoading ? 'Sending...' : 'Send instructions' }}
+        </Button>
+        
+        <!-- Save Button for Landing Bot Tab -->
+        <Button 
+          v-if="currentActiveTab === 'landing-bot'" 
+          variant="primary"
+          size="medium"
+          :loading="isLoading"
+          @click="saveLandingSettings"
+        >
+          {{ isLoading ? 'Saving...' : 'Save settings' }}
+        </Button>
+      </div>
     </template>
   </PublishModalLayout>
 </template>

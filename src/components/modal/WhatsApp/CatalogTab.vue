@@ -30,10 +30,10 @@ const webhookDetails = ref({
 
 // Computed properties
 const whatsappCloudData = computed(() => {
-  if (publishStore.botDetailsCache?.dialog360) {
-    return publishStore.botDetailsCache.dialog360;
-  } else if (publishStore.botDetailsCache?.whatsapp_cloud) {
-    return publishStore.botDetailsCache.whatsapp_cloud;
+  if (publishStore.cache.botDetails?.dialog360) {
+    return publishStore.cache.botDetails.dialog360;
+  } else if (publishStore.cache.botDetails?.whatsapp_cloud) {
+    return publishStore.cache.botDetails.whatsapp_cloud;
   }
   return null;
 });
@@ -121,6 +121,7 @@ const initializeCatalog = () => {
   getWhatsAppCloudDetails();
 };
 
+// Expose only necessary methods for parent component
 defineExpose({
   initializeCatalog
 });
@@ -258,6 +259,19 @@ defineExpose({
       </div>
 
     </div>
+
+    <!-- Action Buttons -->
+    <div class="agent-action-buttons">
+      <Button
+        variant="primary"
+        size="medium"
+        :loading="saving"
+        :disabled="saving"
+        @click="handleSaveSettings"
+      >
+        {{ saving ? 'Saving...' : 'Save Settings' }}
+      </Button>
+    </div>
   </div>
 </template>
 
@@ -360,7 +374,11 @@ defineExpose({
 
 .action-buttons {
   display: flex;
-  gap: var(--space-2);
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  justify-content: flex-start;
 }
 
 .empty-state {
@@ -384,7 +402,7 @@ defineExpose({
 }
 
 .empty-state p {
-  margin: 0 0 var(--space-4) 0;
+  margin: 0;
   font-size: 14px;
   color: var(--color-text-secondary);
   line-height: 1.5;
@@ -395,6 +413,13 @@ defineExpose({
     padding: var(--space-3);
   }
   
+  .catalog-layout {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+}
+
+@media (max-width: 640px) {
   .catalog-layout {
     flex-direction: column;
     gap: var(--space-4);

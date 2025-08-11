@@ -3,14 +3,7 @@ import { ref, onMounted, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 import Button from "@/components/ui/Button.vue";
 
-// Props
-interface Props {
-  isLoading?: boolean;
-}
-
-withDefaults(defineProps<Props>(), {
-  isLoading: false
-});
+// Props - removed isLoading as it's not needed from parent
 
 const publishStore = usePublishStore();
 
@@ -18,9 +11,9 @@ const publishStore = usePublishStore();
 const isLoading = ref(false);
 
 // Computed properties to sync with store state
-const storePages = computed(() => publishStore.instagramPagesCache);
-const storePagesLoaded = computed(() => publishStore.instagramPagesLoaded);
-const storeIsLoadingPages = computed(() => publishStore.isLoadingInstagramPages);
+const storePages = computed(() => publishStore.cache.instagramPages);
+const storePagesLoaded = computed(() => publishStore.cacheValid.instagramPages);
+const storeIsLoadingPages = computed(() => publishStore.loadingStates.instagramPages);
 
 // Computed pages data from store
 const pages = computed(() => {

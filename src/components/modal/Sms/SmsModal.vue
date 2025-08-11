@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import {Button, PublishModalLayout, Pagination} from "@/components/ui";
-import { ref, computed, nextTick } from "vue";
+import {PublishModalLayout} from "@/components/ui";
+import { ref } from "vue";
 import PublishAgentTab from "./PublishAgentTab.vue";
 import BroadcastTab from "./BroadcastTab.vue";
 import BroadcastReportTab from "./BroadcastReportTab.vue";
@@ -17,18 +17,20 @@ const tabs = [
 ];
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
-const createTemplateModalRef = ref<InstanceType<typeof CreateTemplateModal> | null>(null);
+// Removed createTemplateModalRef as CreateTemplateModal is no longer imported
 const currentActiveTab = ref('publish-agent');
 const publishStore = usePublishStore();
 
-// Store the previous tab when opening CreateTemplateModal
-const previousTab = ref<string | null>(null);
+// Removed previousTab as CreateTemplateModal is no longer used
 
 // Tab component refs
 const publishAgentTabRef = ref<InstanceType<typeof PublishAgentTab> | null>(null);
 const broadcastTabRef = ref<InstanceType<typeof BroadcastTab> | null>(null);
 const broadcastReportTabRef = ref<InstanceType<typeof BroadcastReportTab> | null>(null);
 const templateTabRef = ref<InstanceType<typeof TemplateTab> | null>(null);
+
+// Template modal ref
+const createTemplateModalRef = ref<InstanceType<typeof CreateTemplateModal> | null>(null);
 
 const emit = defineEmits<{
   back: [];
@@ -60,32 +62,24 @@ const checkSmsConfiguration = async () => {
 };
 
 // Computed tabs with disabled state
-const computedTabs = computed(() => {
-  return tabs.map(tab => ({
-    ...tab,
-    disabled: tab.id !== 'publish-agent' && !isSmsConfigured.value
-  }));
-});
+const computedTabs = tabs.map(tab => ({
+  ...tab,
+  disabled: false
+}));
 
-// Computed active tab from modal ref
-const currentActiveTabFromModal = computed(() => modalRef.value?.activeTab || 'publish-agent');
+// Removed currentActiveTabFromModal as it's no longer needed
 
 const openModal = () => {
   modalRef.value?.openModal();
   checkSmsConfiguration();
   
-  // Restore the previous tab if available, otherwise default to 'publish-agent'
-  const tabToOpen = previousTab.value || 'publish-agent';
+  // Default to 'publish-agent' tab
+  const tabToOpen = 'publish-agent';
   console.log('Opening SMS modal with tab:', tabToOpen);
   
-  // Use nextTick to ensure the modal is fully mounted before changing tabs
-  nextTick(() => {
-    handleTabChange(tabToOpen);
-    currentActiveTab.value = tabToOpen; // Ensure currentActiveTab is updated
-  });
-  
-  // Clear the stored tab after using it
-  previousTab.value = null;
+  // Change tab directly
+  handleTabChange(tabToOpen);
+  currentActiveTab.value = tabToOpen; // Ensure currentActiveTab is updated
 };
 
 const closeModal = () => {
@@ -105,55 +99,35 @@ const handleTabChange = (tabId: string) => {
   }
 };
 
-// Publish Agent Tab Events
-const handleTestBot = () => {
-  isLoading.value = true;
-  try {
-    console.log('Testing bot...');
-    // Add actual test bot logic here
-  } catch (error) {
-    console.error('Failed to test bot:', error);
-  } finally {
-    isLoading.value = false;
-  }
-};
+// Publish Agent Tab Events - removed handleTestBot as it's not needed
 
 // Template Tab Events
-const handleCreateTemplate = (block: any) => {
-  publishStore.createTemplate(block, "sms");
-};
-
-const handleUpdateTemplate = (templateData: any) => {
-  publishStore.updateSmsTemplate(templateData.id, templateData);
-};
-
-const handleDeleteTemplate = (id: number) => {
-  publishStore.deleteSmsTemplate(id);
-};
-
-// Clone template is handled directly in TemplateTab
-
-// Template methods
-const openCreateTemplateModal = () => {
-  // Store the current tab before opening the modal
-  previousTab.value = currentActiveTab.value;
-  console.log('Storing previous tab:', previousTab.value);
-  
-  closeModal(); // Close SMS modal
+const handleCreateTemplate = () => {
   createTemplateModalRef.value?.openModal();
 };
 
-const handleTemplateOpenCreateModal = () => {
-  openCreateTemplateModal();
+const handleEditTemplate = (template: any) => {
+  console.log('Opening edit modal for template:', template);
+  createTemplateModalRef.value?.openModalWithData(template);
 };
 
-const handleTemplateCloseSmsModal = () => {
-  closeModal();
+const handleTemplateCreated = (template: any) => {
+  console.log('Template created:', template);
+  // Refresh templates in TemplateTab
+  if (templateTabRef.value) {
+    templateTabRef.value.fetchTemplates(1, 20);
+  }
 };
 
-const handleFilterReport = (filters: any) => {
-  console.log('Filtering report:', filters);
+const handleTemplateUpdated = (template: any) => {
+  console.log('Template updated:', template);
+  // Refresh templates in TemplateTab
+  if (templateTabRef.value) {
+    templateTabRef.value.fetchTemplates(1, 20);
+  }
 };
+
+// Filter report - removed as it's handled directly in BroadcastReportTab
 
 const handleSaveSettings = async (settings: any) => {
   isLoading.value = true;
@@ -173,12 +147,7 @@ const handleSaveSettings = async (settings: any) => {
   }
 };
 
-// Pagination handler for broadcast report tab
-const handleBroadcastReportPageChange = (page: number) => {
-  if (broadcastReportTabRef.value) {
-    broadcastReportTabRef.value.fetchSmsReport(page);
-  }
-};
+// Pagination handler removed - handled directly in BroadcastReportTab
 
 defineExpose({ openModal, closeModal });
 </script>
@@ -210,25 +179,19 @@ defineExpose({ openModal, closeModal });
         ref="templateTabRef"
         :is-loading="isLoading"
         @create-template="handleCreateTemplate"
-        @update-template="handleUpdateTemplate"
-        @delete-template="handleDeleteTemplate"
-        @open-create-modal="handleTemplateOpenCreateModal"
-        @close-sms-modal="handleTemplateCloseSmsModal"
+        @edit-template="handleEditTemplate"
       />
 
       <!-- Broadcast Tab -->
       <BroadcastTab 
         v-if="activeTab === 'broadcast' && isSmsConfigured"
         ref="broadcastTabRef"
-        :is-loading="isLoading"
       />
 
       <!-- Broadcast Report Tab -->
       <BroadcastReportTab 
         v-if="activeTab === 'broadcast-report' && isSmsConfigured"
         ref="broadcastReportTabRef"
-        :is-loading="isLoading"
-        @filter-report="handleFilterReport"
       />
 
       <!-- Configuration Required Message -->
@@ -240,61 +203,16 @@ defineExpose({ openModal, closeModal });
         </div>
       </div>
     </template>
-    
-    <template #actions>
-      <!-- Test Bot Button for Publish Agent Tab -->
-      <Button 
-        v-if="currentActiveTabFromModal === 'publish-agent'" 
-        variant="secondary"
-        size="medium"
-        :loading="isLoading"
-        @click="handleTestBot"
-      >
-        {{ isLoading ? 'Testing...' : 'Test Agent' }}
-      </Button>
-      
-      <!-- Save Settings Button for Publish Agent Tab -->
-      <Button 
-        v-if="currentActiveTabFromModal === 'publish-agent'" 
-        variant="primary"
-        size="medium"
-        :loading="isLoading"
-        @click="publishAgentTabRef?.saveSettings()"
-      >
-        {{ isLoading ? 'Saving...' : 'Save Settings' }}
-      </Button>
-
-      <!-- Send Message Button for Broadcast Tab -->
-      <Button 
-        v-if="currentActiveTabFromModal === 'broadcast'" 
-        variant="primary"
-        size="medium"
-        :loading="broadcastTabRef?.isSendingBroadcast || isLoading"
-        :disabled="broadcastTabRef?.isSendingBroadcast || isLoading"
-        @click="broadcastTabRef?.sendBroadcast()"
-      >
-        {{ (broadcastTabRef?.isSendingBroadcast || isLoading) ? 'Sending...' : 'Send Message' }}
-      </Button>
-
-      <!-- Pagination for Broadcast Report Tab -->
-      <Pagination
-        v-if="currentActiveTabFromModal === 'broadcast-report' && isSmsConfigured && (broadcastReportTabRef?.totalPages || 0) > 1"
-        :current-page="broadcastReportTabRef?.currentPage || 1"
-        :total-pages="broadcastReportTabRef?.totalPages || 1"
-        :total-items="broadcastReportTabRef?.totalItems || 0"
-        :items-per-page="20"
-        :show-page-info="false"
-        :disabled="isLoading"
-        @page-change="handleBroadcastReportPageChange"
-      />
-    </template>
   </PublishModalLayout>
 
-  <!-- Create Template Modal -->
+  <!-- Create/Edit Template Modal -->
   <CreateTemplateModal
     ref="createTemplateModalRef"
-    @modal-closed="openModal"
+    @create-template="handleTemplateCreated"
+    @update-template="handleTemplateUpdated"
+    @modal-closed="() => console.log('Template modal closed')"
   />
+
 </template>
 
 <style scoped>

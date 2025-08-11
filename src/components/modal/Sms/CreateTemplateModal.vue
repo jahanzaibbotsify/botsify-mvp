@@ -180,7 +180,10 @@ const createTemplate = async (templateData: any) => {
 
 const updateTemplate = async (id: number, templateData: any) => {
   try {
-    const result = await publishStore.updateSmsTemplate(id, templateData);
+    const result = await publishStore.createSmsTemplate({
+      id,
+      ...templateData
+    });
     return result;
   } catch (error) {
     console.error('Failed to update template:', error);
@@ -202,19 +205,33 @@ const openModalWithData = (templateData: any) => {
   isEditMode.value = true;
   editingTemplateId.value = templateData.id;
   
-  // Prefill form with template data
-  form.value = {
-    name: templateData.name,
-    text: templateData.text,
-    buttons: templateData.buttons || [],
-    image_url: templateData.image_url || '',
-    attachment_link: templateData.attachment_link || ''
+  // Transform template data to match form structure
+  const transformedData = {
+    name: templateData.name || templateData.title || '',
+    text: templateData.text || '',
+    buttons: templateData.template_buttons?.map((tb: any) => ({
+      api: tb.button?.api || 0,
+      error: false,
+      payload: tb.button?.payload || '',
+      response: tb.button?.response || '',
+      signature_hash: tb.button?.btn_slug || '',
+      title: tb.button?.title || '',
+      type: tb.button?.type || 'postback',
+      url: tb.button?.url || '',
+      isEditing: false
+    })) || templateData.buttons || [],
+    image_url: templateData.image_url || templateData.attachment_link || '',
+    attachment_link: templateData.attachment_link || templateData.image_url || ''
   };
+  
+  // Prefill form with transformed data
+  form.value = transformedData;
   
   // Reset errors
   errors.value = { buttons: {} };
   
   console.log('Opening with data for edit:', templateData);
+  console.log('Form data after transformation:', form.value);
 };
 
 const closeModal = () => {
@@ -238,21 +255,30 @@ const handleSave = async () => {
   try {
     if (isEditMode.value && editingTemplateId.value) {
       // Update existing template
+      console.log('Updating template with ID:', editingTemplateId.value);
       const result = await updateTemplate(editingTemplateId.value, form.value);
       if (result?.success) {
+        window.$toast?.success('Template updated successfully!');
         emit('update-template', { ...form.value, id: editingTemplateId.value });
         closeModal();
+      } else {
+        window.$toast?.error(result?.error || 'Failed to update template');
       }
     } else {
       // Create new template
+      console.log('Creating new template');
       const result = await createTemplate(form.value);
       if (result?.success && 'data' in result && result.data) {
+        window.$toast?.success('Template created successfully!');
         emit('create-template', result.data);
         closeModal();
+      } else {
+        window.$toast?.error(result?.error || 'Failed to create template');
       }
     }
   } catch (error) {
     console.error('Failed to save template:', error);
+    window.$toast?.error('An error occurred while saving the template');
   } finally {
     isSaving.value = false;
   }
@@ -453,27 +479,26 @@ defineExpose({ openModal, closeModal, openModalWithData });
           </div>
         </div>
       </div>
-    </template>
-
-    <template #actions>
-      <Button 
-        variant="secondary"
-        size="medium"
-        @click="handleCancel"
-        :disabled="props.isLoading"
-      >
-        Cancel
-      </Button>
-      
-      <Button 
-        variant="primary"
-        size="medium"
-        @click="handleSave"
-        :loading="isSaving"
-        :disabled="isSaving"
-      >
-        {{ isSaving ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update template' : 'Create template') }}
-      </Button>
+      <div class="agent-action-buttons">
+        <Button 
+          variant="secondary"
+          size="medium"
+          @click="handleCancel"
+          :disabled="props.isLoading"
+        >
+          Cancel
+        </Button>
+        
+        <Button 
+          variant="primary"
+          size="medium"
+          @click="handleSave"
+          :loading="isSaving"
+          :disabled="isSaving"
+        >
+          {{ isSaving ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update template' : 'Create template') }}
+        </Button>
+      </div>
     </template>
   </PublishModalLayout>
 </template>

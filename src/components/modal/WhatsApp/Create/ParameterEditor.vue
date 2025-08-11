@@ -2,6 +2,7 @@
 import { Input } from "@/components/ui";
 import { useWhatsAppTemplateStore } from "@/stores/whatsappTemplateStore";
 import MessagePreview from "./MessagePreview.vue";
+import { ref, computed, watch } from 'vue';
 
 // Props
 interface Props {
@@ -14,13 +15,166 @@ const props = withDefaults(defineProps<Props>(), {
 
 const store = useWhatsAppTemplateStore();
 
-// Debug computed properties
-// const debugTemplate = computed(() => {
-//   console.log('Store template:', store.template);
-//   console.log('Store template slides:', store.template.slides);
-//   console.log('Store template variables:', store.template.variables);
-//   return store.template;
-// });
+// Local state to track field interactions
+const touchedFields = ref({
+  templateName: false,
+  headerLink: false,
+  headerVariable: false,
+  bodyVariables: {} as Record<number, boolean>,
+  buttonVariable: false,
+  carouselSlides: {} as Record<number, Record<string, boolean>>
+});
+
+// Computed properties for validation
+const hasValidationErrors = computed(() => {
+  // Check template name
+  if (!store.template.name) return true;
+  
+  // Check header link if required
+  if (store.template.type === 'media' && 
+      store.template.bodyIncludes.includes('header') && 
+      store.template.header !== 'text' && 
+      !store.block.attachment_link) {
+    return true;
+  }
+  
+  // Check header variable if exists
+  if (store.template.variables.header && !store.template.variables.header.value) {
+    return true;
+  }
+  
+  // Check body variables
+  for (const variable of store.template.variables.body) {
+    if (!variable.value) return true;
+  }
+  
+  // Check button variable if exists
+  if (store.template.variables.button && !store.template.variables.button.value) {
+    return true;
+  }
+  
+  // Check carousel slides
+  for (let i = 0; i < store.template.slides.length; i++) {
+    const slide = store.template.slides[i];
+    // const blockSlide = store.block.slides[i];
+    
+    // Check slide body variables
+    if (slide.variables?.body) {
+      for (const variable of slide.variables.body) {
+        if (!variable.value) return true;
+      }
+    }
+    
+    // Check slide button variables
+    if (slide.variables?.button && !slide.variables.button.value) {
+      return true;
+    }
+  }
+  
+  return false;
+});
+
+// Methods to mark fields as touched
+const markFieldAsTouched = (fieldName: string, index?: number, subField?: string) => {
+  if (fieldName === 'templateName') {
+    touchedFields.value.templateName = true;
+  } else if (fieldName === 'headerLink') {
+    touchedFields.value.headerLink = true;
+  } else if (fieldName === 'headerVariable') {
+    touchedFields.value.headerVariable = true;
+  } else if (fieldName === 'bodyVariable') {
+    if (index !== undefined) {
+      touchedFields.value.bodyVariables[index] = true;
+    }
+  } else if (fieldName === 'buttonVariable') {
+    touchedFields.value.buttonVariable = true;
+  } else if (fieldName === 'carouselSlide') {
+    if (index !== undefined) {
+      if (!touchedFields.value.carouselSlides[index]) {
+        touchedFields.value.carouselSlides[index] = {};
+      }
+      if (subField) {
+        touchedFields.value.carouselSlides[index][subField] = true;
+      }
+    }
+  }
+};
+
+// Helper function to check if field should show error
+const shouldShowError = (fieldName: string, index?: number, subField?: string): boolean => {
+  if (fieldName === 'templateName') {
+    return touchedFields.value.templateName && !store.template.name;
+  } else if (fieldName === 'headerLink') {
+    return touchedFields.value.headerLink && 
+           store.template.type === 'media' && 
+           store.template.bodyIncludes.includes('header') && 
+           store.template.header !== 'text' && 
+           !store.block.attachment_link;
+  } else if (fieldName === 'headerVariable') {
+    return touchedFields.value.headerVariable && 
+           store.template.variables.header && 
+           !store.template.variables.header.value;
+  } else if (fieldName === 'bodyVariable') {
+    if (index !== undefined) {
+      return touchedFields.value.bodyVariables[index] && 
+             store.template.variables.body[index] && 
+             !store.template.variables.body[index].value;
+    }
+  } else if (fieldName === 'buttonVariable') {
+    return touchedFields.value.buttonVariable && 
+           store.template.variables.button && 
+           !store.template.variables.button.value;
+  } else if (fieldName === 'carouselSlide') {
+    if (index !== undefined && subField) {
+      return touchedFields.value.carouselSlides[index]?.[subField] || false;
+    }
+  }
+  return false;
+};
+
+// Watch for changes to mark fields as touched
+watch(() => store.template.name, () => {
+  if (store.template.name !== '') {
+    markFieldAsTouched('templateName');
+  }
+});
+
+watch(() => store.block.attachment_link, () => {
+  if (store.block.attachment_link !== '') {
+    markFieldAsTouched('headerLink');
+  }
+});
+
+// Expose validation state for parent component
+defineExpose({
+  hasValidationErrors
+});
+
+// Helper function to check if button actually has variables
+const hasButtonVariables = (slide?: any, slideIndex?: number): boolean => {
+  if (slide && slideIndex !== undefined) {
+    // For carousel slides, check if the slide button has variables
+    const blockSlide = store.block.slides[slideIndex];
+    if (blockSlide?.buttons) {
+      for (const button of blockSlide.buttons) {
+        if (button.title && button.title.includes('{{')) return true;
+        if (button.text && button.text.includes('{{')) return true;
+        if (button.url && button.url.includes('{{')) return true;
+      }
+    }
+    return false;
+  } else {
+    // For regular template, check if main buttons have variables
+    if (store.block.buttons) {
+      for (const button of store.block.buttons) {
+        if (button.title && button.title.includes('{{')) return true;
+        if (button.text && button.text.includes('{{')) return true;
+        if (button.url && button.url.includes('{{')) return true;
+      }
+    }
+    return false;
+  }
+};
 </script>
 
 <template>
@@ -32,7 +186,8 @@ const store = useWhatsAppTemplateStore();
         <Input
           v-model="store.template.name"
           placeholder="Enter template name"
-          :error="!store.template.name ? 'Template name is required' : ''"
+          :error="shouldShowError('templateName') ? 'Template name is required' : ''"
+          @input="markFieldAsTouched('templateName')"
         />
       </div>
 
@@ -49,9 +204,9 @@ const store = useWhatsAppTemplateStore();
           <Input
             type="url"
             v-model="store.block.attachment_link"
-            placeholder="Enter URL for the {{ store.template.header }}"
-            @input="store.onUpdateAttachmentLink"
-            :error="store.errors.file && Object.keys(store.errors.file).length > 0 ? Object.values(store.errors.file)[0] : ''"
+            :placeholder="`Enter URL for the ${store.template.header}`"
+            @input="() => { store.onUpdateAttachmentLink(); markFieldAsTouched('headerLink'); }"
+            :error="shouldShowError('headerLink') ? 'Header link is required' : ''"
           />
         </div>
       </div>
@@ -67,7 +222,8 @@ const store = useWhatsAppTemplateStore();
           <Input
             v-model="store.template.variables.header.value"
             placeholder="Enter header variable value"
-            :error="!store.template.variables.header.value ? 'This is required field' : ''"
+            :error="shouldShowError('headerVariable') ? 'This is required field' : ''"
+            @input="markFieldAsTouched('headerVariable')"
           />
         </div>
       </div>
@@ -90,7 +246,8 @@ const store = useWhatsAppTemplateStore();
             <Input
               v-model="variable.value"
               :placeholder="`Enter value for ${variable.key}`"
-              :error="!variable.value ? 'This is required field' : ''"
+              :error="shouldShowError('bodyVariable', varIndex) ? 'This is required field' : ''"
+              @input="markFieldAsTouched('bodyVariable', varIndex)"
             />
           </div>
         </div>
@@ -141,8 +298,8 @@ const store = useWhatsAppTemplateStore();
                     type="url"
                     v-model="store.block.slides[slideIndex].attachment_link"
                     :placeholder="slide.header === 'video' ? 'https://example.com/video.mp4' : 'https://example.com/image.jpg'"
-                    @input="() => store.onUpdateCarouselAttachmentLink(slideIndex)"
-                    :error="store.errors.file && Object.keys(store.errors.file).length > 0 ? Object.values(store.errors.file)[0] : ''"
+                    @input="() => { store.onUpdateCarouselAttachmentLink(slideIndex); markFieldAsTouched('carouselSlide', slideIndex, 'media'); }"
+                    :error="shouldShowError('carouselSlide', slideIndex, 'media') ? 'Media link is required' : ''"
                   />
                 </div>
               </div>
@@ -160,14 +317,15 @@ const store = useWhatsAppTemplateStore();
                     <Input
                       v-model="variable.value"
                       :placeholder="`Enter value for ${variable.key}`"
-                      :error="!variable.value ? 'This is required field' : ''"
+                      :error="shouldShowError('carouselSlide', slideIndex, `body_${varIndex}`) ? 'This is required field' : ''"
+                      @input="markFieldAsTouched('carouselSlide', slideIndex, `body_${varIndex}`)"
                     />
                   </div>
                 </div>
               </div>
 
-              <!-- Button Variables Section -->
-              <div class="slide-section" v-if="slide.variables?.button">
+              <!-- Button Variables Section - Only show if button actually has variables -->
+              <div class="slide-section" v-if="slide.variables?.button && hasButtonVariables(slide, slideIndex)">
                 <h5>Button Variables</h5>
                 <div class="variables-grid">
                   <div>
@@ -175,7 +333,8 @@ const store = useWhatsAppTemplateStore();
                     <Input
                       v-model="slide.variables.button.value"
                       :placeholder="`Enter value for ${slide.variables.button.key}`"
-                      :error="!slide.variables.button.value ? 'This is required field' : ''"
+                      :error="shouldShowError('carouselSlide', slideIndex, 'button') ? 'This is required field' : ''"
+                      @input="markFieldAsTouched('carouselSlide', slideIndex, 'button')"
                     />
                   </div>
                 </div>
@@ -185,8 +344,8 @@ const store = useWhatsAppTemplateStore();
         </div>
       </div>
 
-      <!-- BUTTON VARIABLES -->
-      <div v-if="store.template.variables.button" class="parameter-section">
+      <!-- BUTTON VARIABLES - Only show if button actually has variables -->
+      <div v-if="store.template.variables.button && hasButtonVariables()" class="parameter-section">
           <h3>Button variables</h3>
           <div class="variables-grid">
           <div class="form-group">
@@ -194,7 +353,8 @@ const store = useWhatsAppTemplateStore();
             <Input
               v-model="store.template.variables.button.value"
               :placeholder="`Enter value for ${store.template.variables.button.key}`"
-              :error="!store.template.variables.button.value ? 'This is required field' : ''"
+              :error="shouldShowError('buttonVariable') ? 'This is required field' : ''"
+              @input="markFieldAsTouched('buttonVariable')"
             />
           </div>
         </div>
@@ -225,8 +385,10 @@ const store = useWhatsAppTemplateStore();
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  max-height: 600px;
-  overflow-y: scroll;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: var(--space-5);
+  scrollbar-width: thin;
 }
 
 .parameter-section {
@@ -270,8 +432,8 @@ const store = useWhatsAppTemplateStore();
 /* Variables Grid for better organization */
 .variables-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
 }
 
 /* Carousel Slides Container */

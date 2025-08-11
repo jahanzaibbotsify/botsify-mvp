@@ -33,7 +33,6 @@ const activeTab = ref(props.defaultTab || props.tabs[0]?.id || '');
 
 defineSlots<{
   default(props: { activeTab: string; tabs: Tab[] }): any;
-  actions(): any;
 }>();
 
 // Watch for prop changes
@@ -97,44 +96,43 @@ defineExpose({
     @close="handleClose"
   >
     <div class="bot-modal-content">
-      <!-- Tabs Header - Only show when there are multiple tabs -->
-      <div v-if="tabs.length > 1" class="tabs-header">
-        <button
-          v-for="tab in tabs"
-          :key="tab.id"
-          class="tab-button"
-          :class="{ 
-            active: activeTab === tab.id,
-            disabled: tab.disabled 
-          }"
-          @click="handleTabChange(tab.id)"
-          :aria-selected="activeTab === tab.id"
-          :disabled="tab.disabled"
-          role="tab"
-        >
-          {{ tab.label }}
-        </button>
+      <!-- Header with Close Button -->
+      <div class="modal-header">
+        <div class="header-content">
+          <!-- Tabs Header - Only show when there are multiple tabs -->
+          <div class="tabs-header">
+            <button
+              v-for="tab in tabs"
+              :key="tab.id"
+              class="tab-button"
+              :class="{ 
+                active: activeTab === tab.id,
+                disabled: tab.disabled 
+              }"
+              @click="handleTabChange(tab.id)"
+              :aria-selected="activeTab === tab.id"
+              :disabled="tab.disabled"
+              role="tab"
+            >
+              {{ tab.label }}
+            </button>
+          </div>
+          
+          <!-- Close Button -->
+            <button 
+              class="close-btn" 
+              @click="handleBack"
+              type="button"
+              aria-label="Close modal"
+            >
+              <i class="pi pi-arrow-circle-left"></i>
+            </button>
+        </div>
       </div>
 
       <!-- Tab Content Slot -->
       <div class="tab-content" role="tabpanel">
         <slot name="default" :activeTab="activeTab" :tabs="tabs" />
-      </div>
-
-      <!-- Footer with Back Button and Actions -->
-      <div class="modal-footer">
-        <button 
-          class="back-btn" 
-          @click="handleBack"
-          type="button"
-          aria-label="Go back to previous screen"
-        >
-          <i class="pi pi-arrow-left"></i>
-          Back
-        </button>
-        <div class="actions-slot">
-          <slot name="actions"></slot>
-        </div>
       </div>
     </div>
   </ModalLayout>
@@ -161,15 +159,53 @@ defineExpose({
   box-sizing: border-box;
 }
 
+.modal-header {
+  margin-bottom: 20px;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3, 12px);
+}
+
 .tabs-header {
   display: flex;
   border-bottom: 1px solid var(--color-border, #e5e7eb);
-  margin-bottom: 20px;
   overflow-x: auto;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
   background: transparent;
   position: relative;
+  flex: 1;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--color-text-secondary, #6b7280);
+  border-radius: var(--radius-md, 8px);
+  transition: all var(--transition-normal, 0.2s ease-in-out);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.close-btn:hover {
+  color: var(--color-text-primary, #111827);
+  background: var(--color-bg-secondary, #f9fafb);
+}
+
+.close-btn:focus {
+  outline: 0;
+  box-shadow: 0 0 0 2px var(--color-primary, #3b82f6);
 }
 
 .tabs-header::-webkit-scrollbar {
@@ -235,27 +271,9 @@ defineExpose({
 .tab-content {
   flex: 1;
   min-height: 200px;
-  margin-bottom: 20px;
   padding: 0;
   width: 100%;
   box-sizing: border-box;
-}
-
-.modal-footer {
-  border-top: 1px solid var(--color-border, #e5e7eb);
-  padding-top: 16px;
-  margin-top: auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.actions-slot {
-  display: flex;
-  gap: var(--space-2, 8px);
-  align-items: center;
 }
 
 /* Loading state */
@@ -293,8 +311,15 @@ defineExpose({
     min-height: 280px;
   }
 
-  .tabs-header {
+  .modal-header {
     margin-bottom: 16px;
+  }
+
+  .header-content {
+    gap: var(--space-2, 8px);
+  }
+  
+  .tabs-header {
     padding-bottom: 0;
   }
   
@@ -305,12 +330,13 @@ defineExpose({
   }
   
   .tab-content {
-    margin-bottom: 16px;
     min-height: 180px;
   }
   
-  .modal-footer {
-    padding-top: 12px;
+  .close-btn {
+    min-width: 32px;
+    height: 32px;
+    font-size: 16px;
   }
 }
 
@@ -319,7 +345,7 @@ defineExpose({
     min-height: 250px;
   }
   
-  .tabs-header {
+  .modal-header {
     margin-bottom: 12px;
   }
   
@@ -331,14 +357,13 @@ defineExpose({
   
   .tab-content {
     min-height: 160px;
-    margin-bottom: 12px;
   }
   
-  .modal-footer {
-    padding-top: 10px;
+  .close-btn {
+    min-width: 28px;
+    height: 28px;
+    font-size: 14px;
   }
-  
-
 }
 
 /* High contrast mode support */

@@ -77,9 +77,9 @@ const connectPage = async (type: string, pageId: string, pageName: string, acces
 };
 
 // Computed properties to sync with store state
-const storePages = computed(() => publishStore.facebookPagesCache);
-const storePagesLoaded = computed(() => publishStore.facebookPagesLoaded);
-const storeIsLoadingPages = computed(() => publishStore.isLoadingFacebookPages);
+const storePages = computed(() => publishStore.cache.facebookPages);
+const storePagesLoaded = computed(() => publishStore.cacheValid.facebookPages);
+const storeIsLoadingPages = computed(() => publishStore.loadingStates.facebookPages);
 
 // Computed pages data from store
 const pages = computed(() => {

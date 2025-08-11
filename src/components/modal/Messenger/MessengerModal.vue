@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, provide, computed } from "vue";
-import { Button, PublishModalLayout } from "@/components/ui";
+import { PublishModalLayout } from "@/components/ui";
 import PublishAgentTab from "./PublishAgentTab.vue";
 import CommentAutoResponderTab from "./CommentAutoResponderTab.vue";
 import BroadcastTab from "./BroadcastTab.vue";
@@ -35,11 +35,11 @@ const botStore = useBotStore();
 const isConfigured = ref(false);
 
 // Loading state from store
-const isLoading = computed(() => publishStore.isLoadingFacebookPages);
+const isLoading = computed(() => publishStore.loadingStates.facebookPages);
 
 // Configuration check function
 const checkConfiguration = () => {
-  const pages = publishStore.facebookPagesCache;
+  const pages = publishStore.cache.facebookPages;
   if (pages && pages.pagesData && pages.pagesData.data) {
     const pagesData = pages.pagesData.data;
     // Check if any page is connected to the current bot
@@ -102,23 +102,6 @@ const handleSaveAutoResponder = (settings: any) => {
   console.log('Saving auto responder settings:', settings);
 };
 
-
-const handleSendMessage = async () => {
-  if (currentActiveTab.value === 'broadcast' && broadcastTabRef.value) {
-    await broadcastTabRef.value.sendMessage();
-  } else {
-    console.log('Sending message');
-  }
-};
-
-const handleNoTestUser = () => {
-  if (currentActiveTab.value === 'broadcast' && broadcastTabRef.value) {
-    broadcastTabRef.value.noTestUser();
-  } else {
-    console.log('No test user action');
-  }
-};
-
 // Provide context for child components
 provide('messenger-modal', {
   isConfigured,
@@ -155,16 +138,12 @@ defineExpose({ openModal, closeModal });
         ref="commentAutoResponderTabRef"
         :is-loading="isLoading"
         @save-settings="handleSaveAutoResponder"
-        @no-test-user="handleNoTestUser"
-        @send-message="handleSendMessage"
       />
 
       <!-- Broadcast Tab -->
       <BroadcastTab 
         v-show="activeTab === 'broadcast' && isConfigured"
         ref="broadcastTabRef"
-        @no-test-user="handleNoTestUser"
-        @send-message="handleSendMessage"
       />
 
       <!-- Configuration Required Message -->
@@ -175,28 +154,6 @@ defineExpose({ openModal, closeModal });
           <p>Please connect a Facebook page in the "Publish agent" tab before accessing other features.</p>
         </div>
       </div>
-    </template>
-    
-    <template #actions>
-      <!-- No Test User Button for Broadcast Tab -->
-      <!-- <Button 
-        v-if="currentActiveTab === 'broadcast' && isConfigured" 
-        variant="secondary"
-        @click="handleNoTestUser"
-        :disabled="isLoading"
-      >
-        No test user
-      </Button> -->
-      <!-- Send Message Button for Broadcast Tab -->
-      <Button 
-        v-if="currentActiveTab === 'broadcast' && isConfigured" 
-        variant="primary"
-        @click="handleSendMessage"
-        :disabled="broadcastTabRef?.isLoading"
-        :loading="broadcastTabRef?.isLoading"
-      >
-        {{ broadcastTabRef?.isLoading ? 'Sending...' : 'Send Broadcast' }}
-      </Button>
     </template>
   </PublishModalLayout>
 </template>

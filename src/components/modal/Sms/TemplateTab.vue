@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import { Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Input, Badge, Button } from "@/components/ui";
-import CreateTemplateModal from "./CreateTemplateModal.vue";
+import { ref, computed, onMounted, watch } from "vue";
+import { Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Input, Badge, Button, Pagination } from "@/components/ui";
 import { usePublishStore } from "@/stores/publishStore";
 
 // Props removed - not needed
 
 // Emits
 const emit = defineEmits<{
-  'create-template': [block: any];
+  'create-template': [];
+  'update-template': [template: any];
+  'edit-template': [template: any];
   'delete-template': [id: number];
   'copy-payload': [block: any];
   'open-create-modal': [];
   'close-sms-modal': [];
 }>();
 
-const createModalRef = ref<InstanceType<typeof CreateTemplateModal> | null>(null);
 const publishStore = usePublishStore();
 
 // Store data
@@ -25,31 +25,52 @@ const isLoading = ref(false);
 // Local state
 const searchQuery = ref('');
 const deletingTemplateId = ref<number | null>(null);
+const currentPage = ref(1);
+const itemsPerPage = 20; // Match the API per_page default
 
-// Computed
+// Add local pagination data
+const paginationData = ref<{
+  page: number;
+  perPage: number;
+  total: number;
+  to: number;
+  prev_page_url: string | null;
+} | null>(null);
+
+// Computed properties
 const filteredTemplates = computed(() => {
-  if (!searchQuery.value) return templates.value;
-  return templates.value.filter(template => 
-    template.name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    template.text?.toLowerCase().includes(searchQuery.value.toLowerCase())
-  );
+  // For server-side pagination, we don't filter locally
+  // The API should handle filtering
+  return templates.value;
+});
+
+const paginatedTemplates = computed(() => {
+  // For server-side pagination, all templates are already paginated
+  return filteredTemplates.value;
+});
+
+const totalPages = computed(() => {
+  if (paginationData.value) {
+    return Math.ceil(paginationData.value.total / paginationData.value.perPage);
+  }
+  return 1;
 });
 
 // Methods
 const openCreateModal = () => {
-  // Emit to close SMS modal and open create modal
-  emit('close-sms-modal');
-  emit('open-create-modal');
+  // Emit to parent SmsModal to open create modal
+  emit('create-template');
 };
 
 const openEditModal = (template: any) => {
-  // Store the template ID for update
-  createModalRef.value?.openModalWithData(template);
+  // Emit event to parent SmsModal to open edit modal
+  emit('edit-template', template);
 };
 
 const handleDeleteTemplate = async (id: number) => {
-  window.$confirm(
-    'Are you sure you want to delete this template?',
+  window.$confirm({
+    text: 'Are you sure you want to delete this template?'
+  },
     async () => {
       deletingTemplateId.value = id;
       isLoading.value = true;
@@ -62,15 +83,7 @@ const handleDeleteTemplate = async (id: number) => {
           emit('delete-template', id);
           // Refresh templates
           console.log('Refreshing templates after delete...');
-          const refreshResult = await publishStore.loadDataForPlugins("sms_templates");
-          console.log('Refresh result:', refreshResult);
-          
-          if (refreshResult.success && refreshResult.data?.sms_templates) {
-            templates.value = refreshResult.data.sms_templates;
-            console.log('Templates refreshed, new count:', templates.value.length);
-          } else {
-            console.error('Failed to refresh templates:', refreshResult);
-          }
+          await fetchTemplates(currentPage.value, itemsPerPage, searchQuery.value);
         } else {
           console.error('Delete failed:', result.error);
         }
@@ -85,8 +98,10 @@ const handleDeleteTemplate = async (id: number) => {
 };
 
 const handleCloneTemplate = async (id: number) => {
-  window.$confirm(
-    'Are you sure you want to clone this template?',
+  window.$confirm({
+    text: 'Are you sure you want to clone this template?',
+    confirmButtonText: "Yes, Clone it!",
+  },
     async () => {
       isLoading.value = true;
       try {
@@ -97,15 +112,7 @@ const handleCloneTemplate = async (id: number) => {
         if (result.success) {
           // Refresh templates after cloning
           console.log('Refreshing templates after clone...');
-          const refreshResult = await publishStore.loadDataForPlugins("sms_templates");
-          console.log('Refresh result:', refreshResult);
-          
-          if (refreshResult.success && refreshResult.data?.sms_templates) {
-            templates.value = refreshResult.data.sms_templates;
-            console.log('Templates refreshed, new count:', templates.value.length);
-          } else {
-            console.error('Failed to refresh templates:', refreshResult);
-          }
+          await fetchTemplates(currentPage.value, itemsPerPage, searchQuery.value);
         } else {
           console.error('Clone failed:', result.error);
         }
@@ -118,58 +125,89 @@ const handleCloneTemplate = async (id: number) => {
   );
 };
 
-// These functions are not used - removed
-
-const handleSearch = (query: string) => {
-  searchQuery.value = query;
+// Fetch templates function
+const fetchTemplates = async (page: number = 1, perPage: number = 20, query?: string) => { 
+  try {
+    const result = await publishStore.fetchSmsTemplates(page, perPage, query);
+    if (result.success && result.data && result.data.templates && result.data.templates.data && Array.isArray(result.data.templates.data)) {
+      templates.value = result.data.templates.data;
+      
+      console.log('Template API response:', result.data.templates);
+      console.log('Current page requested:', page);
+      console.log('API returned page:', result.data.templates.page);
+      
+      // Update local pagination data
+      paginationData.value = {
+        page: result.data.templates.page || page,
+        perPage: result.data.templates.per_page || perPage,
+        total: result.data.templates.total || 0,
+        to: result.data.templates.to || 0,
+        prev_page_url: result.data.templates.prev_page_url || null
+      };
+      
+      // Sync currentPage with the actual page from API response
+      currentPage.value = result.data.templates.page || page;
+      
+      console.log('Updated local state:', {
+        currentPage: currentPage.value,
+        paginationData: paginationData.value
+      });
+    } else {
+      console.warn('No templates data or invalid format:', result);
+      templates.value = [];
+      paginationData.value = null;
+    }
+  } catch (error) {
+    console.error('Error fetching templates:', error);
+    templates.value = [];
+    paginationData.value = null;
+  }
 };
+
+// Handle page change from pagination component
+const handlePageChange = (page: number) => {
+  currentPage.value = page;
+  fetchTemplates(page, itemsPerPage);
+};
+
+
+// Watch for search query changes to trigger data fetching
+watch(searchQuery, () => {
+  currentPage.value = 1; // Reset to first page
+  fetchTemplates(1, itemsPerPage); // Fetch with new search
+});
 
 // Load templates on mount
 onMounted(async () => {
-  isLoading.value = true;
-  try {
-    console.log('Loading SMS templates on mount...');
-    const result = await publishStore.loadDataForPlugins("sms_templates");
-    console.log('Load result:', result);
-    
-    if (result.success && result.data?.sms_templates) {
-      templates.value = result.data.sms_templates;
-      console.log('Templates loaded:', templates.value);
-      console.log('Template count:', templates.value.length);
-      if (templates.value.length > 0) {
-        console.log('First template:', templates.value[0]);
-        console.log('First template ID:', templates.value[0].id);
-      }
-    } else {
-      console.error('Failed to load templates:', result);
-    }
-  } catch (error) {
-    console.error('Failed to load templates:', error);
-  } finally {
-    isLoading.value = false;
-  }
+  await fetchTemplates(currentPage.value, itemsPerPage);
+});
+
+// Expose methods for parent component
+defineExpose({
+  fetchTemplates,
+  currentPage,
+  itemsPerPage,
+  searchQuery
 });
 </script>
 
 <template>
   <div class="tab-panel">
-    <div class="media-header">
-      <div class="search-create-section">
+    <div class="search-section">
+      <div class="search-create-wrapper">
         <Input 
           v-model="searchQuery" 
           placeholder="Search templates..."
           searchable
-          @search="handleSearch"
         />
         
-        <!-- Create Button moved back to search section -->
-        <button 
-          class="action-button primary"
+        <Button 
+          variant="primary"
+          icon="pi pi-plus"
           @click="openCreateModal"
         >
-          <i class="pi pi-plus"></i>
           Create
-        </button>
+        </Button>
       </div>
     </div>
     <div class="table-section">
@@ -184,7 +222,7 @@ onMounted(async () => {
         
         <TableBody>
           <!-- Loading skeleton -->
-          <TableRow v-if="isLoading" v-for="i in 5" :key="`skeleton-${i}`" skeleton>
+          <TableRow v-if="publishStore.loadingStates.templates" v-for="i in 5" :key="`skeleton-${i}`" skeleton>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="badge"></TableCell>
@@ -193,7 +231,7 @@ onMounted(async () => {
           </TableRow>
           
           <!-- Empty state -->
-          <TableRow v-else-if="filteredTemplates.length === 0" noData>
+          <TableRow v-else-if="paginatedTemplates.length === 0" noData>
             <TableCell noData colspan="6">
               <div class="empty-state">
                 <i class="pi pi-file-o"></i>
@@ -203,7 +241,7 @@ onMounted(async () => {
           </TableRow>
           
           <!-- Template rows -->
-          <TableRow v-else v-for="template in filteredTemplates" :key="template.id || `template-${Math.random()}`">
+          <TableRow v-else v-for="template in paginatedTemplates" :key="template.id || `template-${Math.random()}`">
             <TableCell>{{ template.name }}</TableCell>
             <TableCell>{{ template.text }}</TableCell>
             <TableCell>
@@ -225,6 +263,8 @@ onMounted(async () => {
                   iconOnly
                   @click="openEditModal(template)"
                   title="Edit template"
+                  :loading="deletingTemplateId === template.id"
+                  :disabled="deletingTemplateId === template.id"
                 />
                 <Button
                   variant="secondary"
@@ -233,6 +273,8 @@ onMounted(async () => {
                   iconOnly
                   @click="template.id ? handleCloneTemplate(template.id) : () => console.log('No template ID for clone')"
                   title="Clone template"
+                  :loading="deletingTemplateId === template.id"
+                  :disabled="deletingTemplateId === template.id"
                 />
                 <Button
                   variant="error-outline"
@@ -249,6 +291,18 @@ onMounted(async () => {
           </TableRow>
         </TableBody>
       </Table>
+      
+      <!-- Pagination -->
+      <div v-if="!publishStore.loadingStates.templates && paginatedTemplates.length > 0 && paginationData?.total && paginationData.total > 0" class="agent-pagination-section">
+        <Pagination
+          :current-page="currentPage || 1"
+          :total-pages="totalPages || 1"
+          :total-items="paginationData?.total || 0"
+          :items-per-page="itemsPerPage || 20"
+          :disabled="publishStore.loadingStates.templates || false"
+          @page-change="handlePageChange"
+        />
+      </div>
     </div>
 
 
@@ -256,39 +310,15 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* Component-specific styles only */
-
-.media-header {
+.search-section {
   margin-bottom: var(--space-4);
 }
 
-.search-create-section {
+.search-create-wrapper {
   display: flex;
   gap: var(--space-3);
   align-items: center;
-}
-
-.action-button {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  border: none;
-  font-family: inherit;
-}
-
-.action-button.primary {
-  background-color: var(--color-primary);
-  color: white;
-}
-
-.action-button.primary:hover {
-  background-color: var(--color-primary-hover);
+  justify-content: end;
 }
 
 .table-section {
@@ -321,4 +351,6 @@ onMounted(async () => {
   gap: var(--space-2);
   align-items: center;
 }
+
+
 </style> 

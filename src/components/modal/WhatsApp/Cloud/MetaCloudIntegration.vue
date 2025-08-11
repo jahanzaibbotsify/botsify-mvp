@@ -111,13 +111,19 @@ const prevStep = () => {
 const completeIntegration = async () => {
   try {
     // Save the Meta Cloud settings
-    const result = await publishStore.saveWhatsAppCloudSettings({
-      temporaryToken: formData.value.temporary_token,
-      phoneNumber: formData.value.whatsapp,
-      phoneNumberId: formData.value.whatsapp_phone_id,
-      whatsappBusinessAccountId: formData.value.whatsapp_account_id,
-      clientId: formData.value.client_id,
-      clientSecret: formData.value.client_secret
+    const result = await publishStore.saveWhatsAppSettings({
+        temporary_token: formData.value.temporary_token,
+        whatsapp: formData.value.whatsapp,
+        whatsapp_phone_id: formData.value.whatsapp_phone_id,
+        whatsapp_account_id: formData.value.whatsapp_account_id,
+        client_id: formData.value.client_id,
+        client_secret: formData.value.client_secret,
+        type: 'meta' as const,
+        api_key: botStore.apiKey,
+        bot_id: botStore.botId,
+        interactive_buttons: false,
+        webhook: webhookUrl.value,
+        req_type: 'meta',
     });
     
     if (result.success) {

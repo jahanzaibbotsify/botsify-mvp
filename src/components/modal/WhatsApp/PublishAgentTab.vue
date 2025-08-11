@@ -21,8 +21,6 @@ const botStore = useBotStore();
 // Emits
 const emit = defineEmits<{
   'test-bot': [];
-  'save-meta-settings': [settings: any];
-  'save-dialog360-settings': [settings: any];
 }>();
 
 // Reactive data
@@ -32,6 +30,8 @@ const isLoadingBotDetails = ref(false);
 const showProviderSelection = ref(true);
 const isDialog360Connected = ref(false);
 const isMetaConnected = ref(false);
+const saving = ref(false);
+const testing = ref(false);
 
 // Meta Cloud integration state
 const showMetaIntegration = ref(false);
@@ -125,10 +125,6 @@ const openDialog360Modal = () => {
   window.open(url, "integratedOnboardingWindow", windowFeatures.value);
 };
 
-const testBot = () => {
-  emit('test-bot');
-};
-
 const handleMetaIntegrationComplete = async () => {
   showMetaIntegration.value = false;
   isMetaConnected.value = true;
@@ -136,46 +132,77 @@ const handleMetaIntegrationComplete = async () => {
   await loadBotDetails();
 };
 
-const saveMetaSettings = async () => {
-  if (!metaFields.value.temporaryToken || !metaFields.value.phoneNumber || 
-      !metaFields.value.phoneNumberId || !metaFields.value.whatsappBusinessAccountId ||
-      !metaFields.value.clientId || !metaFields.value.clientSecret) {
-    window.$toast?.error('All Meta Cloud fields are required');
-    return;
+const handleSaveSettings = async () => {
+  // Validate fields based on selected provider
+  if (selectedProvider.value === 'meta') {
+    if (!metaFields.value.temporaryToken || !metaFields.value.phoneNumber || 
+        !metaFields.value.phoneNumberId || !metaFields.value.whatsappBusinessAccountId ||
+        !metaFields.value.clientId || !metaFields.value.clientSecret) {
+      window.$toast?.error('All Meta Cloud fields are required');
+      return;
+    }
+  } else if (selectedProvider.value === 'dialog360') {
+    if (!dialog360Fields.value.whatsapp || !dialog360Fields.value.apiKey) {
+      window.$toast?.error('WhatsApp number and API Key are required');
+      return;
+    }
   }
   
-  const payload = {
-      temporaryToken: metaFields.value.temporaryToken,
-      phoneNumber: metaFields.value.phoneNumber,
-      phoneNumberId: metaFields.value.phoneNumberId,
-      whatsappBusinessAccountId: metaFields.value.whatsappBusinessAccountId,
-      clientId: metaFields.value.clientId,
-      clientSecret: metaFields.value.clientSecret
-    };
-    emit('save-meta-settings', payload);
-};
-
-const saveDialog360Settings = async () => {
-  if (!dialog360Fields.value.whatsapp || !dialog360Fields.value.apiKey) {
-    window.$toast?.error('WhatsApp number and API Key are required');
-    return;
-  }
+  saving.value = true; // Set loading state
   
-  // Prepare the payload with all existing data plus updated fields
-  const payload = {
-    ...botDetails.value.dialog360, // Keep all existing data
-    whatsapp: dialog360Fields.value.whatsapp,
-    dialog360ApiKey: dialog360Fields.value.apiKey,
-    interactive_button: dialog360Fields.value.interactiveButton
-  };
-  emit('save-dialog360-settings', payload);
+  try {
+    let payload: any;
+    
+    if (selectedProvider.value === 'meta') {
+      payload = {
+        api_key: botStore.apiKey,
+        bot_id: botStore.botId,
+        client_id: metaFields.value.clientId,
+        client_secret: metaFields.value.clientSecret,
+        temporary_token: metaFields.value.temporaryToken,
+        type: 'meta' as const,
+        whatsapp: metaFields.value.phoneNumber,
+        whatsapp_phone_id: metaFields.value.phoneNumberId,
+        whatsapp_account_id: metaFields.value.whatsappBusinessAccountId
+      };
+    } else if (selectedProvider.value === 'dialog360') {
+      payload = {
+        api_key: dialog360Fields.value.apiKey,
+        bot_id: botStore.botId,
+        interactive_buttons: dialog360Fields.value.interactiveButton,
+        type: '360_dialog' as const,
+        webhook: botDetails.value?.dialog360?.webhook || '',
+        whatsapp: dialog360Fields.value.whatsapp
+      };
+    }
+    
+    if (payload) {
+      // Use unified method
+      const result = await publishStore.saveWhatsAppSettings(payload);
+      if (result.success) {
+        const providerName = selectedProvider.value === 'meta' ? 'Meta Cloud' : 'Dialog360';
+        window.$toast?.success(`${providerName} settings saved successfully!`);
+        await loadBotDetails(); // Recheck configuration after saving
+      } else {
+        window.$toast?.error(result.error || `Failed to save ${selectedProvider.value === 'meta' ? 'Meta Cloud' : 'Dialog360'} settings`);
+      }
+    }
+  } catch (error) {
+    console.error('Error saving settings:', error);
+    const providerName = selectedProvider.value === 'meta' ? 'Meta Cloud' : 'Dialog360';
+    window.$toast?.error(`Failed to save ${providerName} settings`);
+  } finally {
+    saving.value = false; // Reset loading state
+  }
 };
 
-// Expose methods for parent component
+// Add these methods to the script section
+const handleTestBot = () => {
+  emit('test-bot');
+};
+
+// Expose only necessary methods for parent component
 defineExpose({
-  testBot,
-  saveMetaSettings,
-  saveDialog360Settings,
   selectedProvider: () => selectedProvider.value
 });
 </script>
@@ -348,8 +375,33 @@ defineExpose({
 
       <!-- No Provider Selected Message -->
       <div v-if="!isLoadingBotDetails && !selectedProvider && showProviderSelection" class="no-provider-message">
-        <p>Please select a WhatsApp provider to configure your bot.</p>
+        <p>Please select a WhatsApp provider to continue</p>
       </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="agent-action-buttons">
+      
+      <Button
+        variant="success"
+        size="medium"
+        :loading="testing"
+        :disabled="testing"
+        @click="handleTestBot"
+      >
+        {{ testing ? 'Testing...' : 'Test now on WhatsApp' }}
+      </Button>
+
+      
+      <Button
+        variant="primary"
+        size="medium"
+        :loading="saving"
+        :disabled="saving"
+        @click="handleSaveSettings"
+      >
+        {{ saving ? 'Saving...' : 'Save Settings' }}
+      </Button>
     </div>
   </div>
 </template>
@@ -428,14 +480,13 @@ defineExpose({
 }
 
 .form-checkbox {
-  margin-right: 8px;
   width: 16px;
   height: 16px;
   accent-color: var(--color-primary, #3b82f6);
 }
 
 .checkbox-label {
-  display: flex;
+  display: flex !important;
   align-items: center;
   cursor: pointer;
   font-size: 14px;

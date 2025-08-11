@@ -27,14 +27,13 @@ const emit = defineEmits<{
   back: [];
 }>();
 
-// Local state
-const isLoading = ref(false);
+// Local state - removed isLoading as it's not needed
 
 const { currentTab, handleTabChange } = useTabManagement(tabs, 'publish-bot');
 
 // Configuration checking
 const isConfigured = computed(() => {
-  const pages = publishStore.instagramPagesCache;
+  const pages = publishStore.cache.instagramPages;
   if (pages && pages.pagesData && pages.pagesData.data) {
     const pagesData = pages.pagesData.data;
     // Check if any page is connected to the current bot
@@ -77,10 +76,7 @@ const onTabChange = (tabId: string) => {
   }
 };
 
-// Handle page connection/disconnection to update configuration status
-const handlePageConnectionChange = () => {
-  // Configuration is computed, so it updates automatically when store changes
-};
+// Configuration updates automatically when store changes (computed property)
 
 // Provide context for child components
 provide('instagram-modal', {
@@ -108,8 +104,6 @@ defineExpose({ openModal, closeModal });
       <PublishAgentTab 
         v-show="activeTab === 'publish-bot'"
         ref="publishAgentTabRef"
-        :is-loading="isLoading"
-        @page-connection-change="handlePageConnectionChange"
       />
 
       <!-- Configuration Required Message -->

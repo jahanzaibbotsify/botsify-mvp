@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
-import FileUpload from "@/components/ui/FileUpload.vue";
+import {FileUpload, Button, VueSelect} from "@/components/ui";
 import { usePublishStore } from "@/stores/publishStore";
-import VueSelect from "@/components/ui/VueSelect.vue";
 
 // Props
 interface Props {
@@ -29,6 +28,11 @@ const isSendingBroadcast = ref(false);
 const isLoadingData = ref(false);
 const isDownloadingSample = ref(false);
 
+// Add subscribed users state
+const subscribedUsers = ref<Array<{phone_number: string}>>([]);
+const isLoadingSubscribedUsers = ref(false);
+
+
 // Message templates
 const messageTemplates = ref<Array<{value: string, label: string}>>([]);
 const fullTemplates = ref<Array<any>>([]);
@@ -41,8 +45,8 @@ const userSegments = ref([
 
 // Broadcast limits
 const limits = ref({
-  daily: 0,
-  monthly: 0
+  daily: 10000,
+  monthly: 50000
 });
 
 const remainingLimits = ref({
@@ -60,21 +64,9 @@ const csvError = ref<string | null>(null);
 const showFileUpload = computed(() => broadcastForm.value.userSegment === 'file');
 
 // Validation computed properties
-const templateError = computed(() => !broadcastForm.value.template ? 'Template is required' : undefined);
-const userSegmentError = computed(() => !broadcastForm.value.userSegment ? 'User segment is required' : undefined);
-const fileUploadError = computed(() => {
-  if (broadcastForm.value.userSegment === 'file' && !broadcastForm.value.uploadedFile) {
-    return 'File upload is required for upload user broadcast';
-  }
-  if (broadcastForm.value.userSegment === 'file' && uploadedUsers.value.length === 0) {
-    return 'No valid users found in uploaded file';
-  }
-  return undefined;
-});
-
-const hasValidationErrors = computed(() => 
-  !!templateError.value || !!userSegmentError.value || !!fileUploadError.value
-);
+const templateError = ref('');
+const userSegmentError = ref('');
+const fileUploadError = ref('');
 
 // Methods
 const loadData = async () => {
@@ -204,25 +196,29 @@ const csvToArray = (str: string, delimiter = ",") => {
 
 const sendBroadcast = async () => {
   // Check for validation errors
-  if (hasValidationErrors.value) {
-    console.error('Please fix validation errors before sending broadcast');
+  if (broadcastForm.value.template === '') {
+    templateError.value = 'Template is required';
+    return;
+  }
+
+  if (broadcastForm.value.userSegment === '') {
+    userSegmentError.value = 'User segment is required';
+    return;
+  }
+
+  if (broadcastForm.value.uploadedFile === null && broadcastForm.value.userSegment !== '-1') {
+    fileUploadError.value = 'File upload is required';
     return;
   }
 
   // Show confirmation dialog using window.$confirm
-  if (window.$confirm) {
-    window.$confirm({
-      text: 'Are you sure you want to send this broadcast? You won\'t be able to undo this action!'
-    }, () => {
-      // User confirmed - proceed with broadcast
-      executeBroadcast();
-    });
-  } else {
-    // Fallback to native confirm
-    if (confirm('Are you sure you want to send this broadcast? You won\'t be able to undo this action!')) {
-      executeBroadcast();
-    }
-  }
+  window.$confirm({
+    text: 'Are you sure you want to send this broadcast? You won\'t be able to undo this action!',
+    confirmButtonText: "Yes, Send it!",
+  }, () => {
+    // User confirmed - proceed with broadcast
+    executeBroadcast();
+  });
 };
 
 const executeBroadcast = async () => {
@@ -233,7 +229,7 @@ const executeBroadcast = async () => {
     const payload = {
       template_id: parseInt(broadcastForm.value.template),
       user_segment: broadcastForm.value.userSegment,
-      users: broadcastForm.value.userSegment === 'file' ? uploadedUsers.value : []
+      users: broadcastForm.value.userSegment === 'file' ? uploadedUsers.value : broadcastForm.value.userSegment === '-1' ? subscribedUsers.value : []
     };
     
     console.log('Sending broadcast with payload:', payload);
@@ -278,9 +274,34 @@ const downloadSampleFile = async () => {
   }
 };
 
+const fetchSubscribedUsers = async () => {
+  if (isLoadingSubscribedUsers.value) return;
+  
+  isLoadingSubscribedUsers.value = true;
+  try {
+    const result = await publishStore.getSegmentUsers('-1', 'sms');
+    if (result.success && result.data) {
+      subscribedUsers.value = result.data.map((user: any) => ({
+        phone_number: user.phone_number || user.phone || user.phoneNumber
+      }));
+    }
+  } catch (error) {
+    console.error('Error fetching subscribed users:', error);
+    window.$toast?.error('Failed to fetch subscribed users');
+  } finally {
+    isLoadingSubscribedUsers.value = false;
+  }
+};
+
 // Load data on mount
 onMounted(() => {
   loadData();
+});
+
+watch(() => broadcastForm.value.userSegment, (newSegment) => {
+  if (newSegment === '-1') {
+    fetchSubscribedUsers();
+  }
 });
 
 // Watch for changes in the uploadedFile to trigger CSV parsing
@@ -336,6 +357,23 @@ defineExpose({
                     placeholder="Select a user segment"
                     :error="userSegmentError"
                   />
+
+                  
+                <!-- Show loading and user count for subscribed users -->
+                <div v-if="broadcastForm.userSegment === '-1'" class="subscribed-users-info">
+                  <div v-if="isLoadingSubscribedUsers" class="loading-indicator">
+                    <i class="pi pi-spin pi-spinner"></i>
+                    <span>Loading subscribed users...</span>
+                  </div>
+                  <div v-else-if="subscribedUsers.length > 0" class="users-count">
+                    <i class="pi pi-check-circle"></i>
+                    <span>{{ subscribedUsers.length }} subscribed users</span>
+                  </div>
+                  <div v-else class="no-users">
+                    <i class="pi pi-exclamation-triangle"></i>
+                    <span>No subscribed users found</span>
+                  </div>
+                </div>
                 </div>
        
        <!-- File Upload (Upload user only) -->
@@ -373,7 +411,7 @@ defineExpose({
         <div class="limits-row">
           <div class="limit-card">
           <div class="limit-header">
-            <h5>Daily Limit</h5>
+            <h5>Daily limit</h5>
             <i class="pi pi-info-circle"></i>
           </div>
           <div class="limit-content">
@@ -390,7 +428,7 @@ defineExpose({
         
         <div class="limit-card">
           <div class="limit-header">
-            <h5>Monthly Limit</h5>
+            <h5>Monthly limit</h5>
             <i class="pi pi-info-circle"></i>
           </div>
           <div class="limit-content">
@@ -405,7 +443,20 @@ defineExpose({
           </div>
         </div>
         </div>
-     </div>
+           </div>
+    </div>
+
+    <!-- Action Button -->
+    <div class="agent-action-buttons">
+      <Button 
+        variant="primary"
+        size="medium"
+        :loading="isSendingBroadcast || isLoadingSubscribedUsers"
+        :disabled="isSendingBroadcast || isLoadingSubscribedUsers"
+        @click="sendBroadcast"
+      >
+        {{ isSendingBroadcast ? 'Sending...' : 'Send message' }}
+      </Button>
     </div>
   </div>
 </template>
@@ -451,6 +502,28 @@ defineExpose({
   color: var(--color-text-tertiary);
   cursor: not-allowed;
   text-decoration: none;
+}
+
+
+/* Subscribed Users Info Styles */
+.subscribed-users-info {
+  margin-top: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.loading-indicator i {
+  color: var(--color-primary);
 }
 
 .users-count {

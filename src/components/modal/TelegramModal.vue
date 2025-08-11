@@ -131,7 +131,7 @@ defineExpose({ openModal, closeModal });
         <p class="subtitle">Configure your Telegram bot settings</p>
         
         <!-- Loading State -->
-        <div v-if="publishStore.isLoadingThirdPartyConfig" class="loading-state">
+        <div v-if="publishStore.loadingStates.thirdPartyConfig" class="loading-state">
           <div class="loader-spinner"></div>
           <span>Loading Telegram settings...</span>
         </div>
@@ -192,20 +192,20 @@ defineExpose({ openModal, closeModal });
           </div>
         </div>
       </div>
+      <div class="agent-action-buttons">
+        <!-- Save Button for Publish Tab -->
+        <Button 
+          v-if="currentActiveTab === 'publish'" 
+          variant="primary"
+          size="medium"
+          :loading="isLoading || publishStore.loadingStates.thirdPartyConfig"
+          @click="handleSaveTelegramSettings"
+        >
+          {{ (isLoading || publishStore.loadingStates.thirdPartyConfig) ? 'Saving...' : 'Save' }}
+        </Button>
+      </div>
     </template>
     
-    <template #actions>
-      <!-- Save Button for Publish Tab -->
-      <Button 
-        v-if="currentActiveTab === 'publish'" 
-        variant="primary"
-        size="medium"
-        :loading="isLoading || publishStore.isLoadingThirdPartyConfig"
-        @click="handleSaveTelegramSettings"
-      >
-        {{ (isLoading || publishStore.isLoadingThirdPartyConfig) ? 'Saving...' : 'Save' }}
-      </Button>
-    </template>
   </PublishModalLayout>
 </template>
 

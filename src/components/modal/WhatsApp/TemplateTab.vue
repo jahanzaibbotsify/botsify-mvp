@@ -1,32 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import { Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Input, Badge, Button, ModalLayout } from "@/components/ui";
+import { ref, computed, onMounted, watch } from "vue";
+import { Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Input, Badge, Button, ModalLayout, Pagination } from "@/components/ui";
 import { usePublishStore } from "@/stores/publishStore";
 import MessagePreview from "./Create/MessagePreview.vue";
 
 // Props
 interface Props {
   isLoading?: boolean;
-  currentPage?: number;
-  totalPages?: number;
-  paginationData?: {
-    page: number;
-    perPage: number;
-    total: number;
-    to: number;
-    prev_page_url: string | null;
-  } | null;
-  itemsPerPage?: number;
-  isLoadingTemplates?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  isLoading: false,
-  currentPage: 1,
-  totalPages: 1,
-  paginationData: null,
-  itemsPerPage: 20,
-  isLoadingTemplates: false
+withDefaults(defineProps<Props>(), {
+  isLoading: false
 });
 
 // Store
@@ -44,26 +28,16 @@ const emit = defineEmits<{
   'search-templates': [params: { query: string; page: number }];
   'set-templates': [templatesData: any];
   'fetch-templates': [page: number, perPage: number];
-  'page-change': [page: number];
-  'pagination-update': [paginationData: {
-    page: number;
-    perPage: number;
-    total: number;
-    to: number;
-    prev_page_url: string | null;
-  } | null];
-  'set-loading': [loading: boolean];
 }>();
 
 // Local reactive data
 const templates = ref<any[]>([]);
 
 const searchQuery = ref('');
-// Remove local pagination state since it's now managed by parent
-// const currentPage = ref(1);
-// const itemsPerPage = 20; // Match the API per_page default
-// const isLoadingTemplates = ref(false);
-const isTemplatesLoaded = ref(false);
+// Local pagination state since it's now managed internally
+const currentPage = ref(1);
+const itemsPerPage = 20; // Match the API per_page default
+const deletingTemplateId = ref<number | null>(null);
 
 // Preview modal state
 const previewModalRef = ref<InstanceType<typeof ModalLayout> | null>(null);
@@ -83,32 +57,34 @@ const paginatedTemplates = computed(() => {
 });
 
 const totalPages = computed(() => {
-  if (props.paginationData) {
-    return Math.ceil(props.paginationData.total / props.paginationData.perPage);
+  if (paginationData.value) {
+    return Math.ceil(paginationData.value.total / paginationData.value.perPage);
   }
   return 1;
 });
 
+// Add local pagination data
+const paginationData = ref<{
+  page: number;
+  perPage: number;
+  total: number;
+  to: number;
+  prev_page_url: string | null;
+} | null>(null);
+
 // Methods
-const fetchTemplates = async (page: number = 1, perPage: number = 20) => {
-  // Prevent multiple simultaneous calls
-  if (props.isLoadingTemplates) return;
-  
-  // If templates are already loaded for the same page, use cached data
-  if (isTemplatesLoaded.value && props.paginationData && props.paginationData.page === page) {
-    return;
-  }
-  
-  // Emit loading state to parent
-  emit('set-loading', true);
-  
+const fetchTemplates = async (page: number = 1, perPage: number = 20) => { 
   try {
-    const result = await publishStore.fetchWhatsAppTemplates(page, perPage);
+    const result = await publishStore.fetchWhatsAppTemplates(page, perPage, searchQuery.value);
     if (result.success && result.data && result.data.templates && result.data.templates.data && Array.isArray(result.data.templates.data)) {
       templates.value = result.data.templates.data;
       
-      // Emit pagination update to parent
-      const paginationData = {
+      console.log('Template API response:', result.data.templates);
+      console.log('Current page requested:', page);
+      console.log('API returned page:', result.data.templates.page);
+      
+      // Update local pagination data
+      paginationData.value = {
         page: result.data.templates.page || page,
         perPage: result.data.templates.per_page || perPage,
         total: result.data.templates.total || 0,
@@ -116,41 +92,22 @@ const fetchTemplates = async (page: number = 1, perPage: number = 20) => {
         prev_page_url: result.data.templates.prev_page_url || null
       };
       
-      emit('pagination-update', paginationData);
-      isTemplatesLoaded.value = true;
+      // Sync currentPage with the actual page from API response
+      currentPage.value = result.data.templates.page || page;
+      
+      console.log('Updated local state:', {
+        currentPage: currentPage.value,
+        paginationData: paginationData.value
+      });
     } else {
       console.warn('No templates data or invalid format:', result);
       templates.value = [];
-      emit('pagination-update', null);
+      paginationData.value = null;
     }
   } catch (error) {
     console.error('Error fetching templates:', error);
     templates.value = [];
-    emit('pagination-update', null);
-  } finally {
-    // Emit loading state to parent
-    emit('set-loading', false);
-  }
-};
-
-const setTemplates = (templatesData: any) => {
-  if (templatesData && templatesData.data) {
-    templates.value = templatesData.data;
-    
-    // Emit pagination update to parent
-    const paginationData = {
-      page: templatesData.page || 1,
-      perPage: templatesData.per_page || 20,
-      total: templatesData.total || 0,
-      to: templatesData.to || 0,
-      prev_page_url: templatesData.prev_page_url || null
-    };
-    
-    emit('pagination-update', paginationData);
-    isTemplatesLoaded.value = true;
-  } else {
-    templates.value = [];
-    emit('pagination-update', null);
+    paginationData.value = null;
   }
 };
 
@@ -165,6 +122,7 @@ const deleteTemplate = async (id: number) => {
     window.$confirm({
       text: "Are you sure you want to delete this template?",
     }, async () => {
+      deletingTemplateId.value = id;
       const result = await publishStore.deleteWhatsAppTemplate(id);
       if (result.success) {
         // Remove from local state
@@ -172,8 +130,8 @@ const deleteTemplate = async (id: number) => {
         window.$toast?.success('Template deleted successfully!');
         
         // Refresh templates if we're on the last page and it's now empty
-        if (templates.value.length === 0 && props.paginationData && props.paginationData.page > 1) {
-          fetchTemplates(props.paginationData.page - 1, props.itemsPerPage);
+        if (templates.value.length === 0 && paginationData.value && paginationData.value.page > 1) {
+          fetchTemplates(paginationData.value.page - 1, itemsPerPage);
         }
       } else {
         window.$toast?.error('Failed to delete template');
@@ -182,7 +140,9 @@ const deleteTemplate = async (id: number) => {
   } catch (error) {
     console.error('Failed to delete template:', error);
     window.$toast?.error('Failed to delete template');
-  }
+  } finally {
+    deletingTemplateId.value = null;
+  } 
 };
 
 // const cloneTemplate = async (template: any) => {
@@ -439,32 +399,34 @@ const previewTemplate = (template: any) => {
   previewModalRef.value?.openModal();
 };
 
-const copyPayload = (template: any) => {
-  const payload = JSON.stringify(template, null, 2);
-  navigator.clipboard.writeText(payload);
+const copyPayload = (id: string) => {
+  navigator.clipboard.writeText(`WHATSAPP_TEMPLATE_ID-${id}`);
   window.$toast?.success('Template payload copied to clipboard!');
 };
 
-const handleSearch = (query: string) => {
-  searchQuery.value = query;
-  // Reset to first page when searching
-  fetchTemplates(1, props.itemsPerPage);
+// Search is now handled by watch on searchQuery
+
+// Handle page change from pagination component
+const handlePageChange = (page: number) => {
+  currentPage.value = page;
+  fetchTemplates(page, itemsPerPage);
 };
+
+// Watch for search query changes to trigger data fetching
+watch(searchQuery, () => {
+  currentPage.value = 1; // Reset to first page
+  fetchTemplates(1, itemsPerPage); // Fetch with new search
+});
 
 // Initialize templates when component is mounted
 onMounted(() => {
-  // Don't fetch templates on mount - wait for tab activation
-  fetchTemplates(1, props.itemsPerPage);
+  // Fetch templates on mount to ensure they're loaded
+  fetchTemplates(1, itemsPerPage);
 });
 
-// Expose methods for parent component
+// Expose only necessary methods for parent component
 defineExpose({
-  totalPages,
-  filteredTemplates,
-  setTemplates,
-  paginationData: computed(() => props.paginationData),
-  fetchTemplates,
-  isLoadingTemplates: computed(() => props.isLoadingTemplates)
+  fetchTemplates
 });
 </script>
 
@@ -476,7 +438,6 @@ defineExpose({
           v-model="searchQuery" 
           placeholder="Search templates..."
           searchable
-          @search="handleSearch"
         />
         
         <Button 
@@ -502,7 +463,7 @@ defineExpose({
         
         <TableBody>
           <!-- Loading skeleton -->
-          <TableRow v-if="props.isLoadingTemplates" v-for="i in 5" :key="`skeleton-${i}`" skeleton>
+          <TableRow v-if="publishStore.loadingStates.templates" v-for="i in 5" :key="`skeleton-${i}`" skeleton>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
@@ -537,14 +498,6 @@ defineExpose({
             <TableCell>{{ new Date(template.created_at).toLocaleDateString() }}</TableCell>
             <TableCell>
               <div class="action-buttons">
-                <Button
-                  variant="error-outline"
-                  size="small"
-                  icon="pi pi-trash"
-                  iconOnly
-                  @click="deleteTemplate(template.id)"
-                  title="Delete template"
-                />
                 <!-- <Button
                   variant="primary-outline"
                   size="small"
@@ -566,14 +519,36 @@ defineExpose({
                   size="small"
                   icon="pi pi-id-card"
                   iconOnly
-                  @click="copyPayload(template)"
+                  @click="copyPayload(template.id)"
                   title="Copy payload"
+                />
+                <Button
+                  variant="error-outline"
+                  size="small"
+                  icon="pi pi-trash"
+                  iconOnly
+                  @click="deleteTemplate(template.id)"
+                  title="Delete template"
+                  :loading="deletingTemplateId === template.id"
+                  :disabled="deletingTemplateId === template.id"
                 />
               </div>
             </TableCell>
           </TableRow>
         </TableBody>
       </Table>
+      
+      <!-- Pagination -->
+      <div v-if="!publishStore.loadingStates.templates && paginatedTemplates.length > 0 && paginationData?.total && paginationData.total > 0" class="agent-pagination-section">
+        <Pagination
+          :current-page="currentPage || 1"
+          :total-pages="totalPages || 1"
+          :total-items="paginationData?.total || 0"
+          :items-per-page="itemsPerPage || 20"
+                      :disabled="publishStore.loadingStates.templates || false"
+          @page-change="handlePageChange"
+        />
+      </div>
     </div>
 
 

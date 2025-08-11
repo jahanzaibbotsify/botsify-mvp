@@ -127,20 +127,20 @@ defineExpose({ openModal, closeModal });
           </div>
         </div>
       </div>
+      <div class="agent-action-buttons">
+        <!-- Save Button for Publish Tab -->
+        <Button 
+          v-if="currentActiveTab === 'publish'" 
+          variant="primary"
+          size="medium"
+          :loading="isLoading"
+          @click="savePortableAgentSettings"
+        >
+          {{ isLoading ? 'Saving...' : 'Save' }}
+        </Button>
+      </div>
     </template>
     
-    <template #actions>
-      <!-- Save Button for Publish Tab -->
-      <Button 
-        v-if="currentActiveTab === 'publish'" 
-        variant="primary"
-        size="medium"
-        :loading="isLoading"
-        @click="savePortableAgentSettings"
-      >
-        {{ isLoading ? 'Saving...' : 'Save' }}
-      </Button>
-    </template>
   </PublishModalLayout>
 </template>
 

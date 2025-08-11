@@ -63,13 +63,13 @@ const handleChange = (value: any) => {
   emit('change', value);
 };
 
-const handleFocus = (event: FocusEvent) => {
-  emit('focus', event);
-};
+// const handleFocus = (event: FocusEvent) => {
+//   emit('focus', event);
+// };
 
-const handleBlur = (event: FocusEvent) => {
-  emit('blur', event);
-};
+// const handleBlur = (event: FocusEvent) => {
+//   emit('blur', event);
+// };
 </script>
 
 <template>
@@ -93,9 +93,9 @@ const handleBlur = (event: FocusEvent) => {
         :readonly="readonly"
         class="vue-select-component"
         @update:model-value="handleChange"
-        @focus="handleFocus"
-        @blur="handleBlur"
-      />
+        />
+        <!-- @focus="handleFocus"
+        @blur="handleBlur" -->
     </div>
     
     <!-- Error Message -->

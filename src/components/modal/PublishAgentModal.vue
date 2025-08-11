@@ -107,8 +107,8 @@ const agents = ref([
 
 const fetchPublishStatus = async () => {
   // Only fetch if not already loaded
-  if (publishStore.publishStatusLoaded && publishStore.publishStatusCache) {
-    updateAgentStatus(publishStore.publishStatusCache);
+  if (publishStore.loadingStates.publishStatus && publishStore.cache.publishStatus) {
+    updateAgentStatus(publishStore.cache.publishStatus);
     return;
   }
   
@@ -166,11 +166,11 @@ const updateAgentStatus = (publishStatus: any) => {
 const openModal = () => {
   modalRef.value?.openModal();
   // Only fetch if not already cached
-  if (!publishStore.publishStatusLoaded || !publishStore.publishStatusCache) {
+  if (!publishStore.loadingStates.publishStatus || !publishStore.cache.publishStatus) {
     fetchPublishStatus();
   } else {
     // Use cached data
-    updateAgentStatus(publishStore.publishStatusCache);
+    updateAgentStatus(publishStore.cache.publishStatus);
   }
 };
 
@@ -199,7 +199,7 @@ const handleAgentClick = (agentLabel: string) => {
 const handleBackToMain = () => {
   modalRef.value?.openModal();
   // Only fetch if not already cached
-  if (!publishStore.publishStatusLoaded || !publishStore.publishStatusCache) {
+  if (!publishStore.loadingStates.publishStatus || !publishStore.cache.publishStatus) {
     fetchPublishStatus();
   }
 };

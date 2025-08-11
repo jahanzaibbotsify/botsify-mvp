@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {Input} from "@/components/ui";
+import {Input, Button} from "@/components/ui";
 import { ref, watch } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 // Props
@@ -26,10 +26,13 @@ const smsFields = ref({
 
 const publishStore = usePublishStore();
 
+// Loading state
+const isLoading = ref(false);
+
 // Load existing Twilio settings from store cache
 const loadTwilioSettings = () => {
-  if (publishStore.thirdPartyConfigCache?.twilioConf) {
-    const twilioConfig = publishStore.thirdPartyConfigCache.twilioConf;
+  if (publishStore.cache.thirdPartyConfig?.twilioConf) {
+    const twilioConfig = publishStore.cache.thirdPartyConfig.twilioConf;
     smsFields.value = {
       twilioAccountSid: twilioConfig.sid || '',
       twilioAuthToken: twilioConfig.auth_token || '',
@@ -39,7 +42,7 @@ const loadTwilioSettings = () => {
 };
 
 // Watch for when configuration checking is complete and store is loaded
-watch(() => publishStore.isLoadingThirdPartyConfig, (newValue, oldValue) => {
+watch(() => publishStore.loadingStates.thirdPartyConfig, (newValue, oldValue) => {
   // When loading is complete (false), load the settings
   if (oldValue === true && newValue === false) {
     loadTwilioSettings();
@@ -47,9 +50,27 @@ watch(() => publishStore.isLoadingThirdPartyConfig, (newValue, oldValue) => {
 }, { immediate: true });
 
 // Also watch the store cache directly
-watch(() => publishStore.thirdPartyConfigCache, () => {
+watch(() => publishStore.cache.thirdPartyConfig, () => {
   loadTwilioSettings();
 }, { immediate: true });
+
+const testBot = () => {
+  isLoading.value = true;
+  try {
+    console.log('Testing bot...');
+    // Add actual test bot logic here
+    if (window.$toast) {
+      window.$toast.info('Bot test functionality coming soon');
+    }
+  } catch (error) {
+    console.error('Failed to test bot:', error);
+    if (window.$toast) {
+      window.$toast.error('Failed to test bot');
+    }
+  } finally {
+    isLoading.value = false;
+  }
+};
 
 const saveSettings = () => {
   if (!smsFields.value.twilioAccountSid || !smsFields.value.twilioAuthToken || 
@@ -63,6 +84,7 @@ const saveSettings = () => {
 // Expose methods for parent component
 defineExpose({
   saveSettings,
+  testBot,
 });
 </script>
 
@@ -120,6 +142,27 @@ defineExpose({
           The phone number you purchased from Twilio
         </small>
       </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="agent-action-buttons">
+      <!-- <Button 
+        variant="secondary"
+        size="medium"
+        :loading="isLoading"
+        @click="testBot"
+      >
+        {{ isLoading ? 'Testing...' : 'Test Agent' }}
+      </Button>
+       -->
+      <Button 
+        variant="primary"
+        size="medium"
+        :loading="isLoading"
+        @click="saveSettings"
+      >
+        {{ isLoading ? 'Saving...' : 'Save Settings' }}
+      </Button>
     </div>
   </div>
 </template>

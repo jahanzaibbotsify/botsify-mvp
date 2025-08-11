@@ -70,9 +70,9 @@ const editResponder = ref({
 });
 
 // Computed properties for store state
-const storeCommentResponders = computed(() => publishStore.commentResponderCache);
-const storeCommentRespondersLoaded = computed(() => publishStore.commentResponderLoaded);
-const storeIsLoadingCommentResponders = computed(() => publishStore.isLoadingCommentResponder);
+const storeCommentResponders = computed(() => publishStore.cache.commentResponder);
+const storeCommentRespondersLoaded = computed(() => publishStore.cacheValid.commentResponder);
+const storeIsLoadingCommentResponders = computed(() => publishStore.loadingStates.commentResponder);
 
 // Computed post options for VueSelect
 const postOptions = computed(() => {
@@ -171,20 +171,14 @@ const saveEditAutoResponder = async () => {
       // Refresh the list
       await loadCommentResponders();
       cancelEditing();
-      if (window.$toast) {
-        window.$toast.success('Auto responder updated successfully!');
-      }
+      window.$toast.success('Auto responder updated successfully!');
     } else {
       console.error('Failed to update auto responder:', result.error);
-      if (window.$toast) {
-        window.$toast.error(result.error || 'Failed to update auto responder');
-      }
+      window.$toast.error(result.error || 'Failed to update auto responder');
     }
   } catch (error) {
     console.error('Failed to update auto responder:', error);
-    if (window.$toast) {
-      window.$toast.error('Failed to update auto responder');
-    }
+    window.$toast.error('Failed to update auto responder');
   } finally {
     isLoading.value = false;
   }
@@ -208,20 +202,14 @@ const saveNewAutoResponder = async () => {
       // Refresh the list
       await loadCommentResponders();
       cancelAddingNew();
-      if (window.$toast) {
-        window.$toast.success('Auto responder created successfully!');
-      }
+      window.$toast.success('Auto responder created successfully!');
     } else {
       console.error('Failed to create auto responder:', result.error);
-      if (window.$toast) {
-        window.$toast.error(result.error || 'Failed to create auto responder');
-      }
+      window.$toast.error(result.error || 'Failed to create auto responder');
     }
   } catch (error) {
     console.error('Failed to create auto responder:', error);
-    if (window.$toast) {
-      window.$toast.error('Failed to create auto responder');
-    }
+    window.$toast.error('Failed to create auto responder');
   } finally {
     isLoading.value = false;
   }
@@ -238,21 +226,15 @@ const cancelAddingNew = () => {
 };
 
 const deleteAutoResponder = async (id: string) => {
-  if (window.$confirm) {
-    window.$confirm({
-      title: 'Delete Auto Responder',
-      text: 'Are you sure you want to delete this auto responder?',
-      icon: 'warning',
-      confirmButtonText: 'Delete',
-      cancelButtonText: 'Cancel'
-    }, () => {
-      performDelete(id);
-    });
-    return;
-  }
-  
-  // If no confirm dialog, delete directly
-  performDelete(id);
+  window.$confirm({
+    title: 'Delete Auto Responder',
+    text: 'Are you sure you want to delete this auto responder?',
+    icon: 'warning',
+    confirmButtonText: 'Delete',
+    cancelButtonText: 'Cancel'
+  }, () => {
+    performDelete(id);
+  });
 };
 
 const performDelete = async (id: string) => {
@@ -263,20 +245,14 @@ const performDelete = async (id: string) => {
     if (result.success) {
       // Refresh the list
       await loadCommentResponders();
-      if (window.$toast) {
-        window.$toast.success('Auto responder deleted successfully!');
-      }
+      window.$toast.success('Auto responder deleted successfully!');
     } else {
       console.error('Failed to delete auto responder:', result.error);
-      if (window.$toast) {
-        window.$toast.error(result.error || 'Failed to delete auto responder');
-      }
+      window.$toast.error(result.error || 'Failed to delete auto responder');
     }
   } catch (error) {
     console.error('Failed to delete auto responder:', error);
-    if (window.$toast) {
-      window.$toast.error('Failed to delete auto responder');
-    }
+    window.$toast.error('Failed to delete auto responder');
   } finally {
     isLoading.value = false;
   }

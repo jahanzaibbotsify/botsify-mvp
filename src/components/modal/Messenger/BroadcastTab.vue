@@ -1,15 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { publishApi } from '@/services/publishApi'
-import { VueSelect, Textarea } from '@/components/ui'
+import { VueSelect, Textarea, Button } from '@/components/ui'
 
-// Emits
-const emit = defineEmits<{
-  'send-broadcast': [data: any];
-  'no-test-user': [];
-  'send-message': [message: any];
-  'loading-change': [loading: boolean];
-}>();
+// Emits - removed unused emits as actions are now handled directly in the component
 
 // Reactive data
 const formData = ref({
@@ -61,23 +55,28 @@ const handleSelectChange = (key: keyof typeof formData.value, value: string | nu
 };
 
 const noTestUser = () => {
-  emit('no-test-user');
+  // Handle no test user action
+  console.log('No test user action');
 };
 
 const sendMessage = async () => {
-  if (!formData.value.messageTag || !formData.value.message.trim()) {
-    console.error('All fields are required');
+  // Validate required fields
+  if (!formData.value.messageTag) {
+    return;
+  }
+  
+  if (!formData.value.message.trim()) {
     return;
   }
 
   // Add confirmation dialog before sending broadcast
-    window.$confirm({
-      text: 'Are you sure you want to send this broadcast message? This action cannot be undone.',
-    }, () => {
-      // User confirmed, proceed with sending
-      performSendMessage();
-    });
-    return;
+  window.$confirm({
+    text: 'Are you sure you want to send this broadcast message?',
+    confirmButtonText: 'Yes, Send it!',
+  }, () => {
+    // User confirmed, proceed with sending
+    performSendMessage();
+  });
 };
 
 const performSendMessage = async () => {
@@ -140,7 +139,6 @@ defineExpose({
           placeholder="Select message tag"
           :multiple="false"
           :disabled="isLoading"
-          :error="!formData.messageTag ? 'Message tag is required' : ''"
         />
       </div>
 
@@ -152,9 +150,27 @@ defineExpose({
           size="medium"
           :rows="4"
           :disabled="isLoading"
-          :error="!formData.message.trim() ? 'Message is required' : ''"
         />
       </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="agent-action-buttons">
+      <!-- <Button 
+        variant="secondary"
+        @click="noTestUser"
+        :disabled="isLoading"
+      >
+        No test user
+      </Button> -->
+      <Button 
+        variant="primary"
+        @click="sendMessage"
+        :disabled="isLoading || !formData.messageTag || !formData.message.trim()"
+        :loading="isLoading"
+      >
+        {{ isLoading ? 'Sending...' : 'Send Broadcast' }}
+      </Button>
     </div>
   </div>
 </template>
@@ -203,6 +219,7 @@ defineExpose({
   z-index: 10;
   pointer-events: none;
 }
+
 
 @media (max-width: 640px) {
   .form-group {

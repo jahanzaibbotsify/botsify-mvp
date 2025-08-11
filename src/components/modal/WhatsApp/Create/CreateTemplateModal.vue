@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
 import { Button, VueSelect } from "@/components/ui";
 import { useWhatsAppTemplateStore } from "@/stores/whatsappTemplateStore";
@@ -31,6 +31,9 @@ const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
 
 // Store
 const store = useWhatsAppTemplateStore();
+
+// Add ref for ParameterEditor to access validation state
+const parameterEditorRef = ref<InstanceType<typeof ParameterEditor> | null>(null);
 
 // Dummy tabs for PublishModalLayout
 const tabs = [
@@ -65,6 +68,16 @@ const handleSave = async () => {
     closeModal();
   }
 };
+
+// Computed property to check if save button should be disabled
+const isSaveButtonDisabled = computed(() => {
+  // If we're on the settings step, check for validation errors
+  if (store.views.settings === 'current') {
+    return parameterEditorRef.value?.hasValidationErrors || store.isSaving;
+  }
+  // On other steps, use the store's logic
+  return store.isNextDisabled() || store.isSaving;
+});
 
 defineExpose({ openModal, closeModal, openModalWithData });
 </script>
@@ -227,30 +240,29 @@ defineExpose({ openModal, closeModal, openModalWithData });
 
         <!-- Step 2: Parameters and Preview -->
         <div v-if="store.views.settings === 'current'" class="step-content">
-          <ParameterEditor :bot-service="props.botService" />
+          <ParameterEditor ref="parameterEditorRef" :bot-service="props.botService" />
         </div>
       </div>
-    </template>
-
-    <template #actions>
-      <Button 
-        variant="secondary"
-        size="medium"
-        @click="store.views.fields === 'current' ? closeModal() : store.goBack()"
-        :disabled="props.isLoading"
-      >
-        {{ store.views.fields === 'current' ? 'Cancel' : 'Back' }}
-      </Button>
-      
-      <Button 
-        variant="primary"
-        size="medium"
-        @click="store.views.settings === 'current' ? handleSave() : store.goNext()"
-        :loading="store.isSaving"
-        :disabled="store.isNextDisabled() || store.isSaving"
-      >
-        {{ store.views.settings === 'current' ? (store.isSaving ? 'Saving...' : 'Create Template') : 'Next' }}
-      </Button>
+      <div class="agent-action-buttons">
+        <Button 
+          variant="secondary"
+          size="medium"
+          @click="store.views.fields === 'current' ? closeModal() : store.goBack()"
+          :disabled="props.isLoading"
+        >
+          {{ store.views.fields === 'current' ? 'Cancel' : 'Back' }}
+        </Button>
+        
+        <Button 
+          variant="primary"
+          size="medium"
+          @click="store.views.settings === 'current' ? handleSave() : store.goNext()"
+          :loading="store.isSaving"
+          :disabled="isSaveButtonDisabled"
+        >
+          {{ store.views.settings === 'current' ? (store.isSaving ? 'Saving...' : 'Create Template') : 'Next' }}
+        </Button>
+      </div>
     </template>
   </PublishModalLayout>
 </template>

@@ -68,6 +68,10 @@ const fetchSmsReport = async (page: number = 1) => {
   }
 };
 
+const handlePageChange = (page: number) => {
+  fetchSmsReport(page);
+};
+
 // Helper functions
 const getStatusVariant = (message: any) => {
   if (message.failed > 0) return 'error';
@@ -173,6 +177,19 @@ onMounted(() => {
           </tr>
         </TableBody>
       </Table>
+    </div>
+
+    <!-- Pagination -->
+    <div v-if="totalPages > 1" class="agent-pagination-section">
+      <Pagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :total-items="totalItems"
+        :items-per-page="20"
+        :show-page-info="false"
+        :disabled="isLoading"
+        @page-change="handlePageChange"
+      />
     </div>
   </div>
 </template>
