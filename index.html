@@ -55,11 +55,18 @@
 
 <body>
   
-  <div id="app">
-    <h1 class="loader"></h1>
-  </div>
+  <div id="app"></div>
+  <div id="google_translate_element" style="display: none;"></div>
   <script type="module" src="/src/main.ts"></script>
 
+  <script type="text/javascript">
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement({ pageLanguage: 'en' }, 'google_translate_element');
+    }
+  </script>
+  <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+  
   <!-- Zendesk Widget -->
   <script id="ze-snippet"
     src="https://static.zdassets.com/ekr/snippet.js?key=91ab9e64-789b-4947-80f6-f2a9712a23b0"></script>

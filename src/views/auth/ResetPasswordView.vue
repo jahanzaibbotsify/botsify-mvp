@@ -3,6 +3,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import type { FormValidation } from '@/types/auth'
+import {axiosInstance} from "@/utils/axiosInstance.ts";
 
 const router = useRouter()
 const route = useRoute()
@@ -19,7 +20,8 @@ const showConfirmPassword = ref(false)
 const isLoading = ref(false)
 const isSuccess = ref(false)
 const validationErrors = ref<FormValidation[]>([])
-const resetToken = ref<string>('')
+const resetToken = ref<string>('');
+const error = ref<string | null>(null)
 
 // Computed properties
 const isFormValid = computed(() => {
@@ -90,19 +92,27 @@ const validateForm = (): boolean => {
 const handleSubmit = async () => {
   if (!validateForm()) return
 
-  isLoading.value = true
+  isLoading.value = true;
 
-  try {
-    // Simulate API call to reset password
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    isSuccess.value = true
-    window.$toast?.success('Password reset successfully!')
-  } catch (error) {
+  await axiosInstance.post('reset-password', {
+    email: route.query.email,
+    token: route.query.token,
+    ...form
+  }).then(res => {
+    if (res.data.status == 'error'){
+      error.value = res.data.message;
+      window.$toast?.error(error.value)
+    } else {
+      window.$toast?.success('Password reset successfully!');
+      router.push('/auth/login')
+    }
+  }).catch(error => {
+    console.log(error)
     window.$toast?.error('Failed to reset password. Please try again.')
-  } finally {
-    isLoading.value = false
-  }
+
+  }).finally(() => {
+    isLoading.value = false;
+  })
 }
 
 const togglePasswordVisibility = (field: 'password' | 'confirmPassword') => {
@@ -123,13 +133,14 @@ const goToLogin = () => {
 
 // Check for reset token on mount
 onMounted(() => {
-  const token = route.query.token as string
-  if (!token) {
+  const token = route.query.token as string;
+  const email = route.query.email as string;
+  if (!token && !email) {
     window.$toast?.error('Invalid reset link. Please try again.')
     router.push('/auth/forgot-password')
     return
   }
-  resetToken.value = token
+  resetToken.value = token;
 })
 </script>
 
@@ -406,7 +417,7 @@ onMounted(() => {
 
 .form-input {
   width: 100%;
-  padding: var(--space-3) calc(var(--space-8) + var(--space-1)) var(--space-3) calc(var(--space-7) + var(--space-1));
+  padding: var(--space-3) calc(var(--space-8) + var(--space-1)) var(--space-3) calc(var(--space-6) + var(--space-1));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background-color: var(--color-bg-tertiary);

@@ -40,20 +40,12 @@ const handleSubmit = async () => {
 
   isLoading.value = true
   validationError.value = null
-
-  try {
-    const success = await authStore.resetPassword(form.email)
-    
-    if (success) {
-      isSuccess.value = true
-      window.$toast?.success('Password reset instructions sent to your email.')
-    } else {
-      window.$toast?.error('Failed to send reset instructions. Please try again.')
-    }
-  } catch (error) {
-    window.$toast?.error('An error occurred. Please try again.')
-  } finally {
-    isLoading.value = false
+  const response = await authStore.resetPassword(form.email).finally(() => {
+    isLoading.value = false;
+  });
+  if (response.status == 'success') {
+    isSuccess.value = true
+    window.$toast?.success('Password reset instructions sent to your email.')
   }
 }
 
@@ -277,7 +269,7 @@ const goBack = () => {
 
 .form-input {
   width: 100%;
-  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-7) + var(--space-1));
+  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-6) + var(--space-1));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background-color: var(--color-bg-tertiary);

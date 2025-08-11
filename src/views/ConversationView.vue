@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useConversationStore } from '@/stores/conversationStore'
+import { useRoleStore } from '@/stores/roleStore'
 import {
   ConversationSidebar,
   ChatHeader,
@@ -13,6 +14,7 @@ import {
 
 const route = useRoute()
 const conversationStore = useConversationStore()
+const roleStore = useRoleStore()
 
 // Local state
 const newMessage = ref('')
@@ -104,6 +106,7 @@ onMounted(async () => {
 
         <!-- Message Input -->
         <MessageInput 
+          v-if="roleStore.canSendMessages"
           :chat-id="conversationStore.selectedConversation?.id || ''"
           :message="newMessage"
           :loading="conversationStore.loading"

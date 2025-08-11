@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useAuthStore } from '@/stores/authStore'
 
 const router = useRouter()
 const route = useRoute()
-const authStore = useAuthStore()
 
 // Get email and token from route params or query
 const email = computed(() => route.query.email as string || '')
-const token = computed(() => route.query.token as string || '')
 
 // Form state
 const form = reactive({
@@ -110,27 +107,7 @@ const handleSubmit = async () => {
   isLoading.value = true
   
   try {
-    const success = await authStore.setPassword({
-      email: email.value,
-      token: token.value,
-      password: form.password
-    })
-    
-    if (success) {
-      window.$toast?.success('Password set successfully!')
-      
-      // Redirect to login or dashboard based on context
-      const redirectTo = route.query.redirect as string
-      if (redirectTo) {
-        router.push(redirectTo)
-      } else if (authStore.user) {
-        router.push('/auth/agentic-home')
-      } else {
-        router.push('/auth/login')
-      }
-    } else {
-      window.$toast?.error('Failed to set password. Please try again.')
-    }
+
   } catch (error) {
     window.$toast?.error('An error occurred. Please try again.')
   } finally {

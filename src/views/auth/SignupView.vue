@@ -2,15 +2,16 @@
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
-import type { SignupCredentials, FormValidation, SocialAuthProvider } from '@/types/auth'
+import type { SignupCredentials, FormValidation } from '@/types/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
 // Form state
 const form = reactive<SignupCredentials>({
-  fullName: '',
+  name: '',
   email: '',
+  phone_number: '',
   password: '',
   confirmPassword: '',
   acceptTerms: false
@@ -22,7 +23,7 @@ const validationErrors = ref<FormValidation[]>([])
 
 // Computed properties
 const isFormValid = computed(() => {
-  return form.fullName.trim() !== '' &&
+  return form.name.trim() !== '' &&
          form.email.trim() !== '' && 
          form.password.trim() !== '' &&
          form.confirmPassword.trim() !== '' &&
@@ -81,6 +82,18 @@ const validatePassword = (password: string): string | null => {
   return null
 }
 
+/**
+ * validate phone number
+ * @param phoneObject
+ */
+const validatePhone = (phoneObject: any) => {
+  if (form.phone_number && !phoneObject.valid) {
+    validationErrors.value.push({field: 'phone_number', message: 'Invalid phone number.', type: 'error'})
+  } else {
+    validationErrors.value = validationErrors.value.filter((error: any) => error.field !== 'phone_number');
+  }
+}
+
 const validateConfirmPassword = (password: string, confirmPassword: string): string | null => {
   if (!confirmPassword.trim()) return 'Please confirm your password'
   if (password !== confirmPassword) return 'Passwords do not match'
@@ -97,9 +110,9 @@ const validateTerms = (accepted: boolean): string | null => {
 const validateForm = (): boolean => {
   const errors: FormValidation[] = []
   
-  const fullNameError = validateName(form.fullName, 'Full name')
-  if (fullNameError) {
-    errors.push({ field: 'fullName', message: fullNameError, type: 'error' })
+  const nameError = validateName(form.name, 'Full name')
+  if (nameError) {
+    errors.push({ field: 'name', message: nameError, type: 'error' })
   }
   
   const emailError = validateEmail(form.email)
@@ -129,30 +142,23 @@ const validateForm = (): boolean => {
 // Event handlers
 const handleSubmit = async () => {
   if (!validateForm()) return
-  
   authStore.clearError()
-  
-  const response = await authStore.signup(form)
-  
-  if (response.success) {
-    window.$toast?.success('Account created successfully! Please verify your email.')
-    router.push(`/auth/verify-email?email=${encodeURIComponent(form.email)}`)
-  } else {
-    window.$toast?.error(response.message)
-  }
-}
 
-const handleSocialSignup = async (provider: SocialAuthProvider) => {
-  authStore.clearError()
-  
-  const response = await authStore.socialLogin(provider)
-  
-  if (response.success) {
-    window.$toast?.success(`Welcome! Account created with ${provider.name}.`)
-    // Social providers usually have verified emails, so go directly to pricing
-    router.push('/pricing')
-  } else {
-    window.$toast?.error(response.message)
+  try {
+    const response = await authStore.signup(form)
+    if (response?.errors) {
+      Object.keys(response.errors).forEach(key => {
+        if (key === 'input') return;
+        validationErrors.value.push({field: key, message: response?.errors[key]?.join(',', ' '), type: 'error'})
+      })
+    } else {
+      // Use the new authentication flow for redirect
+      const { handlePostAuthRedirect } = await import('@/utils/authFlow')
+      const redirectPath = handlePostAuthRedirect()
+      router.push(redirectPath)
+    }
+  } catch (error: any) {
+    window.$toast?.error(error.message)
   }
 }
 
@@ -190,18 +196,18 @@ const clearFieldError = (field: string) => {
     <form @submit.prevent="handleSubmit" class="auth-form">
       <!-- Full Name Field -->
       <div class="form-group">
-        <label for="fullName" class="form-label">
+        <label for="name" class="form-label">
           Full Name
           <span class="required">*</span>
         </label>
-        <div class="input-wrapper" :class="{ error: hasFieldError('fullName') }">
+        <div class="input-wrapper" :class="{ error: hasFieldError('name') }">
           <div class="input-icon">
             <i class="pi pi-user"></i>
           </div>
           <input
-            id="fullName"
-            v-model="form.fullName"
-            @input="clearFieldError('fullName')"
+            id="name"
+            v-model="form.name"
+            @input="clearFieldError('name')"
             type="text"
             class="form-input"
             placeholder="Enter your full name"
@@ -209,8 +215,8 @@ const clearFieldError = (field: string) => {
             :disabled="authStore.isLoading"
           />
         </div>
-        <div v-if="hasFieldError('fullName')" class="field-error">
-          {{ validationErrors.find(e => e.field === 'fullName')?.message }}
+        <div v-if="hasFieldError('name')" class="field-error">
+          {{ validationErrors.find(e => e.field === 'name')?.message }}
         </div>
       </div>
 
@@ -237,6 +243,46 @@ const clearFieldError = (field: string) => {
         </div>
         <div v-if="hasFieldError('email')" class="field-error">
           {{ validationErrors.find(e => e.field === 'email')?.message }}
+        </div>
+      </div>
+
+      <!-- Phone Field -->
+      <div class="form-group">
+        <label for="phone" class="form-label">
+          Phone No
+          <span class="required">*</span>
+        </label>
+        <div class="input-wrapper" :class="{ error: hasFieldError('phone_number') }">
+          <div class="input-icon">
+            <i class="pi pi-phone"></i>
+          </div>
+<!--          <input-->
+<!--              id="phone"-->
+<!--              v-model="form.phone_number"-->
+<!--              @input="clearFieldError('phone_number')"-->
+<!--              type="text"-->
+<!--              class="form-input"-->
+<!--              placeholder="Enter your phone no"-->
+<!--              autocomplete="phone"-->
+<!--              :disabled="authStore.isLoading"-->
+<!--          />-->
+          <vue-tel-input
+              :disabled="authStore.isLoading"
+              v-model="form.phone_number"
+              mode="international"
+              class="form-input"
+              :dropdownOptions="{
+                showFlags: true,
+                showDialCodeInSelection: true,
+                showDialCodeInList: true,
+                searchBoxPlaceholder: '',
+                showSearchBox: true
+              }"
+              @validate="validatePhone"
+          />
+        </div>
+        <div v-if="hasFieldError('phone_number')" class="field-error">
+          {{ validationErrors.find(e => e.field === 'phone_number')?.message }}
         </div>
       </div>
 
@@ -467,7 +513,7 @@ const clearFieldError = (field: string) => {
 
 .form-input {
   width: 100%;
-  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-7) + var(--space-1));
+  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-6) + var(--space-1));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background-color: var(--color-bg-tertiary);
@@ -497,7 +543,6 @@ const clearFieldError = (field: string) => {
   padding: var(--space-1);
   border-radius: var(--radius-sm);
   transition: color var(--transition-normal);
-  z-index: 1;
 }
 
 .password-toggle:hover {

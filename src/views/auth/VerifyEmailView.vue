@@ -1,38 +1,51 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
+import { axiosInstance } from '@/utils/axiosInstance'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-// Get email from route params or query
+/**
+ * Get email from route params or query
+ * Used for displaying email and sending verification emails
+ */
 const email = computed(() => route.query.email as string || '')
 
-// Form state
-const form = reactive({
-  otp: ['', '', '', '', '', ''] as string[]
-})
-
-const isLoading = ref(false)
-const validationError = ref<string | null>(null)
+/**
+ * Verification state management
+ * Controls loading states, errors, and success feedback
+ */
+const isVerifying = ref(false)
 const isResending = ref(false)
+const verificationError = ref<string | null>(null)
+const verificationSuccess = ref(false)
 const resendCooldown = ref(0)
-const otpInputs = ref<HTMLInputElement[]>([])
 
-// Computed properties
-const isFormValid = computed(() => {
-  return form.otp.every(digit => digit.length === 1 && /^\d$/.test(digit))
+/**
+ * Get the verification token from route params or query
+ * Used for automatic verification when user clicks email link
+ */
+const verificationToken = computed(() => {
+  return (route.params.token as string) || (route.query.token as string) || ''
 })
 
-const otpValue = computed(() => {
-  return form.otp.join('')
+/**
+ * Check if user has visited before (stored in localStorage)
+ * Prevents sending duplicate verification emails
+ */
+const hasVisitedBefore = computed(() => {
+  return localStorage.getItem('emailVerificationVisited') === 'true'
 })
 
-// Countdown timer for resend cooldown
+/**
+ * Start countdown timer for resend cooldown
+ * Prevents spam clicking of resend button
+ */
 const startResendCooldown = () => {
-  resendCooldown.value = 30
+  resendCooldown.value = 60
   const timer = setInterval(() => {
     resendCooldown.value--
     if (resendCooldown.value <= 0) {
@@ -41,230 +54,320 @@ const startResendCooldown = () => {
   }, 1000)
 }
 
-// Event handlers
-const handleOtpInput = (index: number, event: Event) => {
-  const target = event.target as HTMLInputElement
-  const value = target.value
-  
-  // Only allow digits
-  if (value && !/^\d$/.test(value)) {
-    target.value = ''
-    return
-  }
-  
-  form.otp[index] = value
-  validationError.value = null
-  
-  // Auto-focus next input
-  if (value && index < 5) {
-    nextTick(() => {
-      otpInputs.value[index + 1]?.focus()
-    })
-  }
-}
-
-const handleKeyDown = (index: number, event: KeyboardEvent) => {
-  if (event.key === 'Backspace' && !form.otp[index] && index > 0) {
-    // Focus previous input on backspace if current is empty
-    nextTick(() => {
-      otpInputs.value[index - 1]?.focus()
-    })
-  } else if (event.key === 'ArrowLeft' && index > 0) {
-    nextTick(() => {
-      otpInputs.value[index - 1]?.focus()
-    })
-  } else if (event.key === 'ArrowRight' && index < 5) {
-    nextTick(() => {
-      otpInputs.value[index + 1]?.focus()
-    })
-  }
-}
-
-const handlePaste = (event: ClipboardEvent) => {
-  event.preventDefault()
-  const pastedData = event.clipboardData?.getData('text') || ''
-  const digits = pastedData.replace(/\D/g, '').slice(0, 6)
-  
-  if (digits.length > 0) {
-    for (let i = 0; i < 6; i++) {
-      form.otp[i] = digits[i] || ''
-    }
-    
-    // Focus the next empty input or the last one
-    const nextEmptyIndex = form.otp.findIndex(digit => !digit)
-    const focusIndex = nextEmptyIndex === -1 ? 5 : Math.min(nextEmptyIndex, 5)
-    
-    nextTick(() => {
-      otpInputs.value[focusIndex]?.focus()
-    })
-  }
-}
-
-const handleSubmit = async () => {
-  if (!isFormValid.value) {
-    validationError.value = 'Please enter all 6 digits'
-    return
-  }
-
-  isLoading.value = true
-  validationError.value = null
+/**
+ * Verify email with token from URL
+ * Called when user clicks verification link in email
+ * Updates user verification status and redirects if authenticated
+ */
+const verifyEmailWithToken = async (token: string) => {
+  isVerifying.value = true
+  verificationError.value = null
 
   try {
-    const success = await authStore.verifyEmail(email.value, otpValue.value)
-    
-    if (success) {
-      window.$toast?.success('Email verified successfully!')
+    const response = await axiosInstance.get(`/verify-email/${token}`)
+
+    if (response.data && response.data.status === 'success') {
+      verificationSuccess.value = true
+      localStorage.removeItem('emailVerificationVisited');
       
-      // Redirect based on verification context
-      const redirectTo = route.query.redirect as string
-      if (redirectTo) {
-        router.push(redirectTo)
-      } else if (authStore.onboardingStep === 'completed') {
-        router.push('/auth/agentic-home')
-      } else {
-        router.push('/pricing')
+      // Update user verification status in store and localStorage
+      if (authStore.user) {
+        authStore.user = {
+          ...authStore.user,
+          email_verified: 1
+        };
+        localStorage.setItem('user', JSON.stringify(authStore.user))
+      }
+
+      // Redirect authenticated users to next route, prevent infinite loops
+      if (authStore.isAuthenticated) {
+        const { handlePostAuthRedirect } = await import('@/utils/authFlow')
+        const redirectPath = handlePostAuthRedirect()
+        const currentPath = router.currentRoute.value.path
+        // Only redirect if next route is different from current route and not a verify-email route
+        if (
+          redirectPath !== currentPath &&
+          !redirectPath.includes('verify-email')
+        ) {
+          router.replace(redirectPath)
+        }
       }
     } else {
-      validationError.value = 'Invalid verification code. Please try again.'
-      // Clear the OTP inputs
-      form.otp.fill('')
-      nextTick(() => {
-        otpInputs.value[0]?.focus()
-      })
+      verificationError.value = response.data?.message || 'Invalid or expired verification link. Please request a new one.'
+      window.$toast?.error('Verification failed. Please try again.')
     }
-  } catch (error) {
-    validationError.value = 'Verification failed. Please try again.'
+  } catch (error: any) {
+    verificationError.value = error?.response?.data?.message || 'Verification failed. Please try again.'
     window.$toast?.error('Verification failed. Please try again.')
   } finally {
-    isLoading.value = false
+    isVerifying.value = false
   }
 }
 
-const handleResendCode = async () => {
-  if (resendCooldown.value > 0) return
-  
+/**
+ * Send verification email to user
+ * Called on page load and when user clicks resend button
+ * Handles success/error states and starts cooldown timer
+ */
+const sendVerificationEmail = async () => {
+  if (!email.value) {
+    verificationError.value = 'Email address is required for verification.'
+    return
+  }
+
   isResending.value = true
-  
+  verificationError.value = null
+
   try {
-    const success = await authStore.resendVerificationCode(email.value)
-    
-    if (success) {
-      window.$toast?.success('Verification code sent!')
+    const response = await axiosInstance.post('/send-verification-email', {
+      email: email.value
+    })
+
+    if (response.data?.status === 'success') {
       startResendCooldown()
-      // Clear current OTP
-      form.otp.fill('')
-      nextTick(() => {
-        otpInputs.value[0]?.focus()
-      })
+      localStorage.setItem('emailVerificationVisited', 'true')
     } else {
-      window.$toast?.error('Failed to resend code. Please try again.')
+      const errorMessage = response.data?.message || 'Failed to send verification email. Please try again.'
+      verificationError.value = errorMessage
+      window.$toast?.error(errorMessage)
     }
-  } catch (error) {
-    window.$toast?.error('Failed to resend code. Please try again.')
+  } catch (error: any) {
+    const errorMessage = error?.response?.data?.message || 'Failed to send verification email. Please try again.'
+    verificationError.value = errorMessage
+    window.$toast?.error(errorMessage)
   } finally {
     isResending.value = false
   }
 }
 
+/**
+ * Handle resend verification email button click
+ * Prevents spam clicking during cooldown period
+ */
+const handleResendEmail = async () => {
+  if (resendCooldown.value > 0) return
+  await sendVerificationEmail()
+}
+
+/**
+ * Navigate back to signup page
+ * Used when user wants to start over
+ */
 const goBack = () => {
   router.push('/auth/signup')
 }
 
-// Auto-focus first input on mount
-onMounted(() => {
-  nextTick(() => {
-    otpInputs.value[0]?.focus()
-  })
+/**
+ * Navigate to login page
+ * Used when user is not authenticated after verification
+ */
+const goToLogin = () => {
+  router.push('/auth/login')
+}
+
+/**
+ * Check if user is already verified and handle redirect
+ * Called on page load to check verification status
+ * Prevents infinite redirects by checking current route
+ */
+const checkIfUserVerified = async () => {
+  // Check auth store user first
+  if (authStore.user && (authStore.user as any).email_verified === 1) {
+    verificationSuccess.value = true
+    
+    // Redirect authenticated users, prevent infinite loops
+    if (authStore.isAuthenticated) {
+      const { handlePostAuthRedirect } = await import('@/utils/authFlow')
+      const redirectPath = handlePostAuthRedirect()
+      const currentPath = router.currentRoute.value.path
+      // Only redirect if next route is different from current route and not a verify-email route
+      if (
+        redirectPath !== currentPath &&
+        !redirectPath.includes('verify-email')
+      ) {
+        router.replace(redirectPath)
+      }
+    }
+    return true
+  }
   
-  // Start initial cooldown
-  startResendCooldown()
+  // Check localStorage for immediate verification
+  const storedUser = localStorage.getItem('user')
+  if (storedUser) {
+    const user = JSON.parse(storedUser)
+    if (user.email_verified === 1) {
+      // Update store with verification status
+      if (authStore.user) {
+        authStore.user = {
+          ...authStore.user,
+          email_verified: 1
+        } as any
+        localStorage.setItem('user', JSON.stringify(authStore.user))
+      }
+      
+      verificationSuccess.value = true
+      
+      // Redirect authenticated users, prevent infinite loops
+      if (authStore.isAuthenticated) {
+        const { handlePostAuthRedirect } = await import('@/utils/authFlow')
+        const redirectPath = handlePostAuthRedirect()
+        const currentPath = router.currentRoute.value.path
+        // Only redirect if next route is different from current route and not a verify-email route
+        if (
+          redirectPath !== currentPath &&
+          !redirectPath.includes('verify-email')
+        ) {
+          router.replace(redirectPath)
+        }
+      }
+      return true
+    }
+  }
+  
+  return false
+}
+
+/**
+ * Watch for token changes and verify if present
+ * Automatically verifies email when token is detected in URL
+ */
+watch(verificationToken, (newToken) => {
+  if (newToken && !isVerifying.value) {
+    verifyEmailWithToken(newToken)
+  }
+}, { immediate: true })
+
+/**
+ * Component lifecycle - initialize verification flow
+ * Checks for existing verification status and sends email if needed
+ */
+onMounted(async () => {
+  // If token is present, verify immediately
+  if (verificationToken.value) {
+    await verifyEmailWithToken(verificationToken.value)
+    return
+  }
+
+  // Check if user is already verified
+  if (await checkIfUserVerified()) {
+    return
+  }
+
+  // Send verification email if user hasn't visited before
+  if (!hasVisitedBefore.value && email.value) {
+    await sendVerificationEmail()
+  }
 })
 </script>
 
 <template>
   <div class="verify-email-view">
-    <div class="verify-header">
-      <div class="header-icon">
-        <i class="pi pi-envelope"></i>
+    <!-- Success State - shown after successful verification -->
+    <div v-if="verificationSuccess" class="verification-success">
+      <div class="success-icon">
+        <i class="pi pi-check-circle"></i>
       </div>
-      <h2 class="header-title">Verify Your Email</h2>
-      <p class="header-subtitle">
-        We've sent a 6-digit verification code to
-        <br>
-        <strong>{{ email }}</strong>
+      <h2 class="success-title">Email Verified Successfully!</h2>
+      <p class="success-subtitle">
+        Your email has been verified.
+        <span v-if="authStore.isAuthenticated">Redirecting you to your dashboard...</span>
+        <span v-else>You can now access your account.</span>
+      </p>
+      <!-- Show login button only for non-authenticated users -->
+      <div v-if="!authStore.isAuthenticated" class="success-actions">
+        <button @click="goToLogin" class="btn primary-btn">
+          <i class="pi pi-sign-in"></i>
+          <span>Go to Login</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Verification in Progress - shown during token verification -->
+    <div v-else-if="isVerifying" class="verification-loading">
+      <div class="loading-icon">
+        <i class="pi pi-spin pi-spinner"></i>
+      </div>
+      <h2 class="loading-title">Verifying Your Email</h2>
+      <p class="loading-subtitle">
+        Please wait while we verify your email address...
       </p>
     </div>
 
-    <!-- Error Display -->
-    <div v-if="validationError" class="error-alert">
-      <div class="error-content">
-        <i class="pi pi-exclamation-circle"></i>
-        <span>{{ validationError }}</span>
+    <!-- Main Verification View - shown when waiting for verification -->
+    <div v-else class="verification-main">
+      <div class="verification-header">
+        <div class="header-icon">
+          <i class="pi pi-envelope"></i>
+        </div>
+        <h2 class="header-title">Verify Your Email</h2>
+        <p class="header-subtitle">
+          We've sent a verification link to
+          <br>
+          <strong>{{ email }}</strong>
+        </p>
       </div>
-    </div>
 
-    <!-- OTP Form -->
-    <form @submit.prevent="handleSubmit" class="verify-form">
-      <div class="otp-container">
-        <label class="otp-label">Enter verification code</label>
-        <div class="otp-inputs">
-          <input
-            v-for="(digit, index) in form.otp"
-            :key="index"
-            :ref="el => otpInputs[index] = el as HTMLInputElement"
-            v-model="form.otp[index]"
-            @input="handleOtpInput(index, $event)"
-            @keydown="handleKeyDown(index, $event)"
-            @paste="handlePaste"
-            type="text"
-            class="otp-input"
-            maxlength="1"
-            autocomplete="one-time-code"
-            :disabled="isLoading"
-          />
+      <!-- Error Display - shown when verification fails -->
+      <div v-if="verificationError" class="error-alert">
+        <div class="error-content">
+          <i class="pi pi-exclamation-circle"></i>
+          <span>{{ verificationError }}</span>
         </div>
       </div>
 
-      <button
-        type="submit"
-        class="verify-button"
-        :disabled="!isFormValid || isLoading"
-      >
-        <span v-if="isLoading" class="loading-spinner"></span>
-        <span>{{ isLoading ? 'Verifying...' : 'Verify Email' }}</span>
-      </button>
-    </form>
+      <!-- Instructions - guide user through verification process -->
+      <div class="verification-instructions">
+        <div class="instruction-item">
+          <i class="pi pi-check-circle"></i>
+          <span>Check your email inbox (and spam folder)</span>
+        </div>
+        <div class="instruction-item">
+          <i class="pi pi-link"></i>
+          <span>Click the verification link in the email</span>
+        </div>
+        <div class="instruction-item">
+          <i class="pi pi-arrow-right"></i>
+          <span>You'll be redirected automatically if logged in, or go to login if not</span>
+        </div>
+      </div>
 
-    <!-- Resend Section -->
-    <div class="resend-section">
-      <p class="resend-text">
-        Didn't receive the code?
-      </p>
-      <button
-        @click="handleResendCode"
-        type="button"
-        class="resend-button"
-        :disabled="resendCooldown > 0 || isResending"
-      >
-        <span v-if="isResending" class="loading-spinner"></span>
-        <span v-if="resendCooldown > 0">
-          Resend in {{ resendCooldown }}s
-        </span>
-        <span v-else-if="isResending">
-          Sending...
-        </span>
-        <span v-else>
-          Resend Code
-        </span>
-      </button>
-    </div>
 
-    <!-- Back Link -->
-    <div class="verify-footer">
-      <button @click="goBack" type="button" class="back-link">
-        <i class="pi pi-arrow-left"></i>
-        <span>Back to Sign Up</span>
-      </button>
+
+      <!-- Resend Section -->
+      <div class="resend-section">
+        <p class="resend-text">
+          Didn't receive the verification email?
+        </p>
+        <button
+          @click="handleResendEmail"
+          type="button"
+          class="resend-button"
+          :disabled="resendCooldown > 0 || isResending"
+        >
+          <span v-if="isResending" class="loading-spinner"></span>
+          <span v-if="resendCooldown > 0">
+            Resend in {{ resendCooldown }}s
+          </span>
+          <span v-else-if="isResending">
+            Sending...
+          </span>
+          <span v-else>
+            Resend Verification Email
+          </span>
+        </button>
+      </div>
+
+      <!-- Footer Actions -->
+      <div class="verification-footer">
+        <button @click="goBack" type="button" class="back-link">
+          <i class="pi pi-arrow-left"></i>
+          <span>Back to Sign Up</span>
+        </button>
+        <button @click="goToLogin" type="button" class="login-link">
+          <i class="pi pi-sign-in"></i>
+          <span>Go to Login</span>
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -276,7 +379,84 @@ onMounted(() => {
   text-align: center;
 }
 
-.verify-header {
+/* Success State */
+.verification-success {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.success-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto var(--space-5);
+  border-radius: 50%;
+  background: var(--color-success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 2rem;
+}
+
+.success-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.success-subtitle {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--space-6);
+}
+
+.success-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+/* Loading State */
+.verification-loading {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.loading-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto var(--space-5);
+  border-radius: 50%;
+  background: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 2rem;
+}
+
+.loading-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.loading-subtitle {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* Main Verification View */
+.verification-main {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.verification-header {
   margin-bottom: var(--space-6);
 }
 
@@ -332,7 +512,7 @@ onMounted(() => {
 .header-title {
   font-size: 1.75rem;
   font-weight: 600;
-  color: #000;
+  color: var(--color-text-primary);
   margin-bottom: var(--space-3);
 }
 
@@ -348,6 +528,7 @@ onMounted(() => {
   font-weight: 600;
 }
 
+/* Error Alert */
 .error-alert {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.2);
@@ -365,99 +546,28 @@ onMounted(() => {
   font-size: 0.875rem;
 }
 
-.verify-form {
+/* Instructions */
+.verification-instructions {
   margin-bottom: var(--space-6);
+  text-align: left;
 }
 
-.otp-container {
-  margin-bottom: var(--space-6);
-}
-
-.otp-label {
-  display: block;
-  font-weight: 500;
-  color: var(--color-text-primary);
-  margin-bottom: var(--space-4);
-  font-size: 0.875rem;
-}
-
-.otp-inputs {
-  display: flex;
-  gap: var(--space-3);
-  justify-content: center;
-  margin-bottom: var(--space-2);
-}
-
-.otp-input {
-  width: 48px;
-  height: 56px;
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-  font-size: 1.25rem;
-  font-weight: 600;
-  text-align: center;
-  transition: all var(--transition-normal);
-}
-
-.otp-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(46, 102, 244, 0.1);
-  background: white;
-}
-
-.otp-input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.verify-button {
-  width: 100%;
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-normal);
+.instruction-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  min-height: 48px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
 }
 
-.verify-button:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-  transform: translateY(-1px);
+.instruction-item i {
+  color: var(--color-primary);
+  font-size: 1rem;
+  min-width: 16px;
 }
 
-.verify-button:disabled {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-tertiary);
-  cursor: not-allowed;
-  transform: none;
-}
-
-.loading-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid transparent;
-  border-top: 2px solid currentColor;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
+/* Resend Section */
 .resend-section {
   margin-bottom: var(--space-6);
 }
@@ -493,11 +603,16 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-.verify-footer {
+/* Footer */
+.verification-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-top: var(--space-8);
 }
 
-.back-link {
+.back-link,
+.login-link {
   background: transparent;
   color: var(--color-text-secondary);
   border: none;
@@ -509,9 +624,53 @@ onMounted(() => {
   gap: var(--space-2);
 }
 
-.back-link:hover {
+.back-link:hover,
+.login-link:hover {
   color: var(--color-text-primary);
 }
+
+/* Buttons */
+.btn {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: none;
+  text-decoration: none;
+}
+
+.primary-btn {
+  background: var(--color-primary);
+  color: white;
+}
+
+.primary-btn:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+}
+
+/* Loading Spinner */
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
@@ -519,38 +678,41 @@ onMounted(() => {
     padding: var(--space-4);
   }
 
-  .header-icon {
+  .header-icon,
+  .success-icon,
+  .loading-icon {
     width: 56px;
     height: 56px;
     font-size: 1.25rem;
   }
 
-  .header-title {
+  .success-icon,
+  .loading-icon {
+    width: 64px;
+    height: 64px;
     font-size: 1.5rem;
   }
 
-  .header-subtitle {
+  .header-title,
+  .success-title,
+  .loading-title {
+    font-size: 1.5rem;
+  }
+
+  .header-subtitle,
+  .success-subtitle,
+  .loading-subtitle {
     font-size: 0.8rem;
   }
 
-  .otp-inputs {
-    gap: var(--space-2);
-  }
-
-  .otp-input {
-    width: 40px;
-    height: 48px;
-    font-size: 1.125rem;
+  .verification-footer {
+    flex-direction: column;
+    gap: var(--space-3);
   }
 }
 
 /* Dark Theme Support */
-[data-theme="dark"] .otp-input {
-  background: var(--color-bg-secondary);
-  border-color: var(--color-border);
-}
-
-[data-theme="dark"] .otp-input:focus {
-  background: var(--color-bg-tertiary);
+[data-theme="dark"] .verification-instructions {
+  color: var(--color-text-secondary);
 }
 </style> 

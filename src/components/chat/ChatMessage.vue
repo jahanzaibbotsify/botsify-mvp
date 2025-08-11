@@ -38,10 +38,15 @@ const parsedContent = computed(() => {
     }
     
     // Check if it's an error message
-    if (typeof contentToRender === 'string' && contentToRender.startsWith('Error:')) {
+    if (typeof contentToRender === 'string' && (contentToRender.startsWith('Error:') || contentToRender.startsWith('Internal Server Error'))) {
       return `<p class="error-text">${contentToRender}</p>`;
     }
     
+    // don't show file urls
+    if (props.message.sender === 'user' && contentToRender.includes('Attached files:')) {
+      contentToRender = contentToRender.split('Attached files:')[0] + 'Attached files:\n';
+    }
+
     // Ensure we have a string to render
     if (typeof contentToRender !== 'string') {
       contentToRender = JSON.stringify(contentToRender);
@@ -71,12 +76,12 @@ const formatFileSize = (bytes: number) => {
 };
 
 onMounted(() => {
-  console.log('ChatMessage mounted:', {
-    id: props.message.id,
-    sender: props.message.sender,
-    contentLength: props.message.content?.length || 0,
-    hasAttachments: !!props.message.attachments?.length
-  });
+  // console.log('ChatMessage mounted:', {
+  //   id: props.message.id,
+  //   sender: props.message.sender,
+  //   contentLength: props.message.content?.length || 0,
+  //   hasAttachments: !!props.message.attachments?.length
+  // });
 });
 </script>
 
@@ -85,8 +90,8 @@ onMounted(() => {
     class="message-container" 
     :class="{ 'user-message': props.message.sender === 'user', '': props.message.sender === 'assistant' }"
   >
-    <div class="message">
-      <div v-if="props.message.content" class="content" v-html="parsedContent"></div>
+    <div class="message" :class="props.message.sender === 'user' ? 'user' : ''">
+      <div v-if="props.message.content" class="content" :class="props.message.sender == 'assistant' ? 'assistent-message' : ''" v-html="parsedContent"></div>
       <div v-else class="empty-content">
         <!-- <em>Empty message</em> -->
       </div>
@@ -137,7 +142,6 @@ onMounted(() => {
 
 .message {
   border-radius: 16px;
-  padding: var(--space-3) var(--space-3);
   position: relative;
   word-break: break-word;
   overflow-wrap: break-word;
@@ -145,11 +149,15 @@ onMounted(() => {
   border: 1px solid transparent;
 }
 
+.message.user {
+    padding: var(--space-3) var(--space-3);
+}
+
 .user-message .message {
   background-color: var(--color-primary);
   color: white;
   box-shadow: 0 4px 12px rgba(0, 163, 255, 0.15);
-  background-image: linear-gradient(to right, rgba(0, 100, 255, 0.9), var(--color-primary));
+  background-color: var(--color-primary);
   border-radius: 16px;
 }
 
@@ -178,7 +186,14 @@ onMounted(() => {
 
 .content {
   margin-bottom: 0;
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 300;
 }
+
+.assistent-message {
+  color: var(--color-message-text);
+}
+
 
 .empty-content {
   color: var(--color-text-tertiary);
@@ -287,7 +302,8 @@ onMounted(() => {
 .attachment-size {
   display: block;
   font-size: 0.75rem;
-  color: var(--color-text-tertiary);
+  color: white;
+  opacity: 0.8;
 }
 
 /* Mobile styles */

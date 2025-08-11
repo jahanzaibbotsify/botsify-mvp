@@ -1,5 +1,5 @@
 import { axiosInstance, uploadInstance } from '@/utils/axiosInstance'
-import { useApiKeyStore } from '@/stores/apiKeyStore';
+import { useBotStore } from '@/stores/botStore';
 import type { 
   GetUsersParams, 
   UserActionPayload, 
@@ -12,6 +12,8 @@ import type {
   UserAttribute
 } from '@/types/user'
 
+const botStore = useBotStore();
+
 class UserApiService {
   private buildQueryString(params: Record<string, any>): string {
     const filteredParams = Object.entries(params)
@@ -23,7 +25,7 @@ class UserApiService {
 
   async getUsers(params: GetUsersParams): Promise<ApiResponse<ApiUsersResponse>> {
     try {
-      const API_KEY = useApiKeyStore().apiKey
+      const API_KEY = botStore.apiKey
       const queryString = this.buildQueryString({ ...params, apikey: API_KEY })
       const response = await axiosInstance.get(`v1/get-users${queryString}`)
       return { success: true, data: response.data }
@@ -57,7 +59,7 @@ class UserApiService {
 
   async changeUserStatus(status: number, userIds: number[]): Promise<ApiResponse<any>> {
     try {
-      const API_KEY = useApiKeyStore().apiKey
+      const API_KEY = botStore.apiKey
       const payload: UserActionPayload = { user_ids: userIds, apikey: API_KEY }
       const response = await axiosInstance.post(`v1/user/change-status/${status}`, payload)
       return { success: true, data: response.data }
@@ -75,7 +77,7 @@ class UserApiService {
     file: File,
   ): Promise<ApiResponse<ImportResponse>> {
     try {
-      const API_KEY = useApiKeyStore().apiKey
+      const API_KEY = botStore.apiKey
       const formData = new FormData()
       formData.append('apikey', API_KEY)
       formData.append('file', file)
@@ -97,7 +99,7 @@ class UserApiService {
     attributes: UserAttribute[]
   ): Promise<ApiResponse<AttributeResponse>> {
     try {
-      const API_KEY = useApiKeyStore().apiKey
+      const API_KEY = botStore.apiKey
       const payload: AttributeUpdatePayload = {
         apikey: API_KEY,
         user_ids: userIds,
@@ -121,7 +123,7 @@ class UserApiService {
     attributeId: number
   ): Promise<ApiResponse<AttributeResponse>> {
     try {
-      const API_KEY = useApiKeyStore().apiKey
+      const API_KEY = botStore.apiKey
       const payload: AttributeDeletePayload = {
         apikey: API_KEY,
         messenger_user_id: messengerUserId,
@@ -142,7 +144,7 @@ class UserApiService {
 
   async getUserAttributes(fbId: string): Promise<ApiResponse<UserAttribute[]>> {
     try {
-      const API_KEY = useApiKeyStore().apiKey
+      const API_KEY = botStore.apiKey
       const response = await axiosInstance.get(`v1/get-user-attribute-data/${fbId}?apikey=${API_KEY}`)
       return { success: true, data: response.data }
     } catch (error: any) {

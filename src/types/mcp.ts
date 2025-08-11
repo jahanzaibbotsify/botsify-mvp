@@ -18,23 +18,17 @@ export interface MCPServer {
   id: string;
   name: string;
   description: string;
-  category: string;
   icon: string;
-  apiKeyRequired: boolean;
-  botIdRequired: boolean;
-  connectionUrl?: string;
+  apiKeyRequired?: boolean;
+  allowed_tools?: string[];
   isPopular?: boolean;
-  domain?: string;
-  features: string[];
+  server_url?: string;
   isCustom?: boolean;
+  connectionId?: number;
   authMethod?: 'api_key' | 'bearer_token' | 'basic_auth' | 'oauth' | 'none';
   authLabel?: string;
-  connection: {
-    isConnected: boolean;
-    mcp_id: string | null;
-    apiKey: string | null;
-    systemPrompt: string | null;
-  };
+  comingSoon?: boolean;
+  externalData?: object
 }
 
 export interface CustomMCPServerForm {
@@ -163,10 +157,7 @@ export interface MCPStoreState {
 
 export interface MCPStoreActions {
   addCustomServer: (formData: CustomMCPServerForm) => MCPServer;
-  updateCustomServer: (serverId: string, formData: Partial<CustomMCPServerForm>) => boolean;
-  deleteCustomServer: (serverId: string) => void;
-  connectServer: (serverId: string, apiKey?: string, systemPrompt?: string, customParams?: MCPConnectionParams) => Promise<boolean>;
-  disconnectServer: (serverId: string) => Promise<void>;
+  removeServer: (server: MCPServer) => void;
   getCombinedSystemPrompt: () => string;
   generateDefaultSystemPrompt: (server: MCPServer) => string;
   getConnectedMCPs: () => Promise<{ success: boolean; message: string }>;

@@ -1,14 +1,21 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
+import { useRoleStore } from '@/stores/roleStore';
 import StorySidebar from '@/components/sidebar/StorySidebar.vue';
 import ChatMessage from '@/components/chat/ChatMessage.vue';
 import MessageInput from '@/components/chat/MessageInput.vue';
 import TypingIndicator from '@/components/chat/TypingIndicator.vue';
 import SystemMessageSender from '@/components/chat/SystemMessageSender.vue';
-import ApiErrorNotification from '@/components/chat/ApiErrorNotification.vue';
 import ChatHeader from '@/components/chat/ChatHeader.vue';
+import {axiosInstance} from "@/utils/axiosInstance.ts";
+import {getCurrentApiKey} from "@/utils/apiKeyUtils.ts";
+import {useWhitelabelStore} from "@/stores/whitelabelStore.ts";
+import {useBotStore} from "@/stores/botStore.ts";
+
+const router = useRouter();
+const roleStore = useRoleStore();
 
 
 const route = useRoute();
@@ -34,8 +41,10 @@ const chat = computed(() => {
   return foundChat;
 });
 
+
 const latestPromptContent = computed(() => chat.value?.story?.content || '');
 const hasPromptContent = computed(() => latestPromptContent.value.trim().length > 0);
+console.log(hasPromptContent.value, "hasPromptContent");
 
 const scrollToBottom = async () => {
   await nextTick();
@@ -70,12 +79,11 @@ const showCenteredInput = computed(() => {
 });
 
 const suggestions = [
-  'Create an Agent for hotel management',
-  'Fetch data from my API',
-  'Collect user email and name at start',
-  'Add Carousel for products',
-  'Add welcome message with Quick Replies',
-  'Update agent logo'
+  'Create an AI agent that helps manage a resort like room availability, booking info, amenities, and contact details',
+  'Create an agent that searches uploaded files and answers user questions from it',
+  'Add Lead Collection Form that asks for user name, email, and message, then sends a summary email to sales@company.com',
+  'Create an agent that fetches data from a REST API and returns a formatted result to the user',
+  'Create an agent that can search my website for answers',
 ];
 
 function sendSuggestion(suggestion: string) {
@@ -83,11 +91,17 @@ function sendSuggestion(suggestion: string) {
   chatStore.addMessage(chatId.value, suggestion, 'user');
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // Prevent live chat agents from accessing this page
+  if (roleStore.isLiveChatAgent) {
+    console.log('🔄 Live chat agent redirected from ChatView to conversation page');
+    router.push('/conversation');
+    return;
+  }
+  
   // Set active chat when component mounts
   chatStore.setActiveChat(chatId.value);
   scrollToBottom();
-  
 });
 
 function toggleSystemMessageModal() {
@@ -103,9 +117,9 @@ function toggleStorySidebar() {
 <template>
   <div v-if="chat" class="chat-view" :class="{ 'with-sidebar': showStorySidebar }">
     <!-- API Error Notification -->
-    <ApiErrorNotification />
     <ChatHeader 
       v-if="chat"
+      :chatId="chat.id"
       :title="chat.title"
       :has-prompt-content="hasPromptContent"
       :latest-prompt-content="latestPromptContent"
@@ -127,7 +141,7 @@ function toggleStorySidebar() {
         <div class="centered-heading">
           <h1>Start building your AI agent prompt...</h1>
         </div>
-        <MessageInput :chatId="chatId" :centered="true" />
+        <MessageInput :chatId="chatId" :centered="true" :has-prompt-content="hasPromptContent" />
         <div class="suggestion-buttons">
           <button v-for="suggestion in suggestions" :key="suggestion" class="suggestion-btn" @click="sendSuggestion(suggestion)">
             {{ suggestion }}
@@ -137,10 +151,15 @@ function toggleStorySidebar() {
     </div>
     
     <!-- Bottom MessageInput if there are real messages -->
-      <MessageInput v-if="!showCenteredInput" :chatId="chatId" />
+      <MessageInput v-if="!showCenteredInput" :chatId="chatId" :has-prompt-content="hasPromptContent" />
     
      <!-- Story Sidebar - Only show when enabled -->
-     <StorySidebar v-if="showStorySidebar" ref="storySidebar" :chatId="chatId" />
+     <StorySidebar 
+      v-if="showStorySidebar" 
+      ref="storySidebar" 
+      :chatId="chatId"
+      @toggle-story-sidebar="toggleStorySidebar" 
+    />
 
     <!-- System Message Modal -->
     <div v-if="showSystemMessageModal" class="modal-overlay" @click.self="toggleSystemMessageModal">
@@ -171,7 +190,7 @@ function toggleStorySidebar() {
   overflow: hidden;
   transition: padding-right 0.3s ease;
   position: relative;
-  z-index: 1;
+  /* z-index: 1; */
 }
 
 .chat-view.with-sidebar {
@@ -185,7 +204,7 @@ function toggleStorySidebar() {
   background-color: var(--color-bg-primary);
   /* border-left: 1px solid rgba(0, 163, 255, 0.1);
   border-right: 1px solid rgba(0, 163, 255, 0.1); */
-  margin: 0 var(--space-4);
+  /* margin: 0 var(--space-4); */
   /*box-shadow: 0 0 20px rgba(0, 163, 255, 0.06); */
 }
 
@@ -360,21 +379,24 @@ function toggleStorySidebar() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 60vh;
+  justify-content: flex-start; /* Keep content at the top */
+  height: 80vh;
   width: 100%;
   padding: 0;
-  background-color:var(--color-bg-primary);
+  background-color: var(--color-bg-primary);
+  padding-top: calc(40vh - (desired-content-height / 2)); /* Optional */
 }
+
 .centered-message-input > * {
   width: 100%;
   max-width: 100%;
 }
+
 /* Centered heading styles */
 .centered-heading {
   width: 100%;
   text-align: center;
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-2);
 }
 .centered-heading h1 {
   font-size: 1.875rem;

@@ -1,28 +1,27 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { 
-  AuthUser, 
+import type {
   LoginCredentials, 
   SignupCredentials, 
-  PricingPlan, 
-  Agent, 
-  AgentCategory,
-  AuthResponse,
-  SocialAuthProvider
+  PricingPlan,
+  AgentCategory
 } from '@/types/auth'
+import {axiosInstance} from "@/utils/axiosInstance.ts";
 
 export const useAuthStore = defineStore('auth', () => {
   // State
-  const user = ref<AuthUser | null>(null)
+  const localstorageUser = localStorage.getItem('user');
+  const localstorageToken = localStorage.getItem('accessToken');
+  const user = ref<any | null>(localstorageUser ? JSON.parse(localstorageUser) : null)
+  const accessToken = ref<string | null>(localstorageToken ? JSON.parse(localstorageToken) : null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const selectedPlan = ref<PricingPlan | null>(null)
-  const selectedAgent = ref<Agent | null>(null)
+  const selectedAgent = ref<any | null>(null)
   const onboardingStep = ref<'signup' | 'pricing' | 'agent-selection' | 'completed'>('signup')
 
   // Computed
   const isAuthenticated = computed(() => !!user.value)
-  const fullName = computed(() => user.value ? `${user.value.firstName} ${user.value.lastName}` : '')
 
   // Official Botsify pricing plans
   const pricingPlans = ref<PricingPlan[]>([
@@ -37,8 +36,7 @@ export const useAuthStore = defineStore('auth', () => {
         '2 AI Agents',
         '5,000 Users',
         '$10/1,000 additional users',
-        'Unlimited conversation, forms, and media',
-        'Integrate Documents & Web Search 🔥',
+        'Integrate Documents & Web Search',
         'Messenger, SMS, Website, Instagram, Telegram',
         'Message Scheduling',
         'Basic Support',
@@ -70,6 +68,10 @@ export const useAuthStore = defineStore('auth', () => {
         percentage: 17,
         originalPrice: 59,
         yearlyPrice: 490
+      },
+      prices: {
+        monthly: 'Personal-Plan',
+        annually: 'Personal-Plan-Annual'
       }
     },
     {
@@ -83,10 +85,9 @@ export const useAuthStore = defineStore('auth', () => {
         '5 AI Agents',
         '$25/month/Additional Agent',
         'Unlimited Users',
-        'Unlimited conversation, forms, and media',
-        'Integrate MCP 🔥',
-        'Integrate Documents & Web Search 🔥',
-        'Scheduled Agents 🔥',
+        'Integrate MCP',
+        'Integrate Documents & Web Search',
+        'Scheduled Agents (Coming soon)',
         'FB, SMS, Website, WhatsApp, Instagram, Telegram',
         '1-Agent development free worth $100/Month',
         'Whitelabel Dashboard & Reselling Rights',
@@ -94,10 +95,8 @@ export const useAuthStore = defineStore('auth', () => {
         'Personal Onboarding Session',
         'Bi-Weekly Training of 1 Agent Free for 12 Months',
         'Message Scheduling',
-        'WhatsApp Agents (1,000 free conversations each month)',
         'Priority Support',
         'All integrations',
-        '3 Months Chat History'
       ],
       limits: {
         conversations: 'unlimited',
@@ -112,6 +111,10 @@ export const useAuthStore = defineStore('auth', () => {
         percentage: 17,
         originalPrice: 179,
         yearlyPrice: 1490
+      },
+      prices: {
+        monthly: 'Professional-Plan',
+        annually: 'Professional-Plan-Annual'
       }
     },
     {
@@ -128,10 +131,9 @@ export const useAuthStore = defineStore('auth', () => {
         '7-day training history',
         'Unlimited Users',
         'Unlimited Agents',
-        'Unlimited Forms and Media',
-        'Integrate MCP 🔥',
-        'Integrate Documents & Web Search 🔥',
-        'Scheduled Agents 🔥'
+        'Integrate MCP',
+        'Integrate Documents & Web Search',
+        'Scheduled Agents'
       ],
       limits: {
         conversations: 'unlimited',
@@ -190,7 +192,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   ])
 
-  const agents = ref<Agent[]>([
+  const agents = ref<object[]>([
     {
       id: 'customer-support-pro',
       name: 'Customer Support Pro',
@@ -313,15 +315,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   ])
 
-  const socialProviders = ref<SocialAuthProvider[]>([
-    {
-      id: 'facebook',
-      name: 'Facebook',
-      icon: 'pi-facebook',
-      color: '#1877F2'
-    }
-  ])
-
   // Actions
   const setError = (message: string | null) => {
     error.value = message
@@ -335,320 +328,112 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = loading
   }
 
-  const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
+  const login = async (credentials: LoginCredentials) => {
     setLoading(true)
     clearError()
 
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
-      // Mock validation
-      if (credentials.email === 'demo@botsify.com' && credentials.password === 'password') {
-        const mockUser: AuthUser = {
-          id: '1',
-          email: credentials.email,
-          firstName: 'John',
-          lastName: 'Doe',
-          fullName: 'John Doe',
-          avatar: '/avatars/demo-user.png',
-          plan: 'pro',
-          createdAt: new Date(),
-          lastLoginAt: new Date(),
-          isEmailVerified: true,
-          subscription: {
-            id: 'sub_1',
-            planId: 'pro',
-            planName: 'Pro',
-            status: 'active',
-            startDate: new Date(),
-            isTrialActive: false
-          }
-        }
-
-        user.value = mockUser
-        onboardingStep.value = 'completed'
-
-        if (credentials.rememberMe) {
-          localStorage.setItem('auth_remember', 'true')
-        }
-
-        return {
-          success: true,
-          message: 'Login successful',
-          user: mockUser,
-          token: 'mock_token_123'
-        }
-      } else {
-        throw new Error('Invalid email or password')
-      }
-    } catch (err: any) {
-      const errorMessage = err.message || 'Login failed'
-      setError(errorMessage)
-      return {
-        success: false,
-        message: errorMessage
-      }
-    } finally {
-      setLoading(false)
-    }
+    return await axiosInstance.post('v1/login', {
+      ...credentials,
+      'agentic-login': 1
+    })
+        .then(res => {
+          const responseData = res.data;
+          setAuthData(responseData.access_token, responseData.user)
+          return responseData;
+        }).catch(error => {
+          console.log(error)
+          setError(error?.response?.data?.error);
+          return error.response;
+        }).finally(() => {
+          setLoading(false)
+        });
   }
 
-  const signup = async (credentials: SignupCredentials): Promise<AuthResponse> => {
+  const signup = async (credentials: SignupCredentials) => {
     setLoading(true)
     clearError()
+    return await axiosInstance.post('v1/register', credentials)
+        .then(res => {
+          const responseData = res.data;
+          setAuthData(responseData.access_token, responseData.user)
+          return responseData;
+        }).catch(error => {
+          setError(error?.response?.message);
+          onboardingStep.value = 'pricing';
+          return error.response;
+        }).finally(() => {
+          setLoading(false)
+        });
+  }
 
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
-      const mockUser: AuthUser = {
-        id: Date.now().toString(),
-        email: credentials.email,
-        firstName: credentials.fullName.split(' ')[0] || '',
-        lastName: credentials.fullName.split(' ').slice(1).join(' ') || '',
-        fullName: credentials.fullName,
-        plan: 'free',
-        createdAt: new Date(),
-        isEmailVerified: false
-      }
-
-      user.value = mockUser
-      onboardingStep.value = 'pricing'
-
-      return {
-        success: true,
-        message: 'Account created successfully',
-        user: mockUser,
-        token: 'mock_token_' + Date.now()
-      }
-    } catch (err: any) {
-      const errorMessage = err.message || 'Signup failed'
-      setError(errorMessage)
-      return {
-        success: false,
-        message: errorMessage
-      }
-    } finally {
-      setLoading(false)
+  /**
+   * Set auth data.
+   * @param access_token
+   * @param auth_user
+   */
+  const setAuthData = (access_token: string|null, auth_user: object) => {
+    if (access_token) {
+      localStorage.setItem('accessToken', JSON.stringify(access_token));
+      accessToken.value = access_token;
+    }
+    if (auth_user) {
+      localStorage.setItem('user', JSON.stringify(auth_user));
+      user.value = auth_user
     }
   }
 
-  const selectPlan = async (plan: PricingPlan): Promise<boolean> => {
-    setLoading(true)
-    clearError()
-
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      selectedPlan.value = plan
-      
-      if (user.value) {
-        user.value.plan = plan.id as 'free' | 'pro' | 'enterprise'
-        user.value.subscription = {
-          id: 'sub_' + Date.now(),
-          planId: plan.id,
-          planName: plan.name,
-          status: 'active',
-          startDate: new Date(),
-          isTrialActive: !!plan.trialDays
-        }
-      }
-
-      onboardingStep.value = 'agent-selection'
-      return true
-    } catch (err: any) {
-      setError(err.message || 'Plan selection failed')
-      return false
-    } finally {
-      setLoading(false)
-    }
+  /**
+   * Remove auth data
+   */
+  const removeAuthData = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('accessToken');
+    accessToken.value = null;
+    user.value = null;
   }
 
-  const selectAgent = async (agent: Agent): Promise<boolean> => {
-    setLoading(true)
-    clearError()
-
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800))
-
-      selectedAgent.value = agent
-      onboardingStep.value = 'completed'
-      return true
-    } catch (err: any) {
-      setError(err.message || 'Agent selection failed')
-      return false
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const socialLogin = async (provider: SocialAuthProvider): Promise<AuthResponse> => {
-    setLoading(true)
-    clearError()
-
-    try {
-      // Simulate OAuth flow
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
-      const mockUser: AuthUser = {
-        id: Date.now().toString(),
-        email: `user@${provider.id}.com`,
-        firstName: 'Social',
-        lastName: 'User',
-        fullName: 'Social User',
-        plan: 'free',
-        createdAt: new Date(),
-        lastLoginAt: new Date(),
-        isEmailVerified: true
-      }
-
-      user.value = mockUser
-      onboardingStep.value = 'pricing'
-
-      return {
-        success: true,
-        message: `Logged in with ${provider.name}`,
-        user: mockUser,
-        token: 'social_token_' + Date.now()
-      }
-    } catch (err: any) {
-      const errorMessage = err.message || `${provider.name} login failed`
-      setError(errorMessage)
-      return {
-        success: false,
-        message: errorMessage
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
+  /**
+   * Logout.
+   */
   const logout = async () => {
     setLoading(true)
-
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500))
-
-      user.value = null
-      selectedPlan.value = null
-      selectedAgent.value = null
-      onboardingStep.value = 'signup'
-      localStorage.removeItem('auth_remember')
-      clearError()
+      await axiosInstance.post('v1/logout').then(response => {
+        console.log(response)
+        removeAuthData();
+        selectedAgent.value = null
+        localStorage.removeItem('auth_remember')
+        localStorage.removeItem('bot_api_key')
+        clearError()
+      }).catch(error => {
+        console.log(error);
+      })
     } finally {
       setLoading(false)
     }
   }
 
-  const resetPassword = async (email: string): Promise<boolean> => {
+  const resetPassword = async (email: string) => {
     setLoading(true)
-    clearError()
+    clearError();
 
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      return true
-    } catch (err: any) {
-      setError(err.message || 'Password reset failed')
-      return false
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const verifyEmail = async (email: string, otp: string): Promise<boolean> => {
-    setLoading(true)
-    clearError()
-    
-    try {
-      // Mock implementation - in real app, this would call your API
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      // Mock success for demonstration (in real app, validate OTP with backend)
-      const isValid = otp === '123456' || otp.length === 6
-      
-      if (isValid && user.value) {
-        user.value.isEmailVerified = true
-      }
-      
-      return isValid
-    } catch (err: any) {
-      setError(err.message || 'Email verification failed')
-      return false
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const resendVerificationCode = async (email: string): Promise<boolean> => {
-    try {
-      // Mock implementation
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      return true
-    } catch (err: any) {
-      setError(err.message || 'Failed to resend verification code')
-      return false
-    }
-  }
-
-  const setPassword = async (data: { email: string; token: string; password: string }): Promise<boolean> => {
-    setLoading(true)
-    clearError()
-    
-    try {
-      // Mock implementation - in real app, this would call your API
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      // Mock user creation/update for password setup
-      if (!user.value) {
-        user.value = {
-          id: Date.now().toString(),
-          email: data.email,
-          firstName: 'User',
-          lastName: 'Name',
-          fullName: 'User Name',
-          avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${data.email}`,
-          plan: 'free',
-          isEmailVerified: true,
-          createdAt: new Date(),
-          lastLoginAt: new Date()
-        }
-      }
-      
-      onboardingStep.value = 'pricing'
-      return true
-    } catch (err: any) {
-      setError(err.message || 'Failed to set password')
-      return false
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const updateOnboardingStep = (step: 'signup' | 'pricing' | 'agent-selection' | 'completed') => {
-    onboardingStep.value = step
-  }
-
-  // Getters for filtered data
-  const getAgentsByCategory = (categoryId: string) => {
-    return agents.value.filter(agent => agent.category === categoryId)
-  }
-
-  const getPopularAgents = () => {
-    return agents.value.filter(agent => agent.isPopular)
-  }
-
-  const getPremiumAgents = () => {
-    return agents.value.filter(agent => agent.isPremium)
+    return axiosInstance.post('forgot-password', {
+      email: email
+    }).then(res => {
+      return res.data;
+    }).catch(error => {
+      console.log(error)
+      setError(error.response.data.message || 'Password reset failed')
+      return error.response;
+    }).finally(() => {
+      setLoading(false);
+    });
   }
 
   return {
     // State
     user,
+    accessToken,
     isLoading,
     error,
     selectedPlan,
@@ -657,11 +442,9 @@ export const useAuthStore = defineStore('auth', () => {
     pricingPlans,
     agentCategories,
     agents,
-    socialProviders,
 
     // Computed
     isAuthenticated,
-    fullName,
 
     // Actions
     setError,
@@ -669,17 +452,8 @@ export const useAuthStore = defineStore('auth', () => {
     setLoading,
     login,
     signup,
-    selectPlan,
-    selectAgent,
-    socialLogin,
     logout,
     resetPassword,
-    verifyEmail,
-    resendVerificationCode,
-    setPassword,
-    updateOnboardingStep,
-    getAgentsByCategory,
-    getPopularAgents,
-    getPremiumAgents
+    setAuthData
   }
 }) 

@@ -5,7 +5,7 @@ import { useChatStore } from '@/stores/chatStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import LeftSidebar from '@/components/sidebar/LeftSidebar.vue';
 import { useWindowSize } from '@vueuse/core';
-import { useApiKeyStore } from '@/stores/apiKeyStore';
+import { useBotStore } from '@/stores/botStore';
 
 
 const chatStore = useChatStore();
@@ -13,7 +13,7 @@ const sidebarStore = useSidebarStore();
 const route = useRoute();
 const { width } = useWindowSize();
 const overlay = ref(false);
-const apiKeyStore = useApiKeyStore()
+const apiKeyStore = useBotStore()
 
 const apiKey = route.params.id as string // the :id from /agent/:id
 const isMobile = computed(() => width.value < 768);
@@ -55,7 +55,6 @@ watch(() => sidebarStore.isOpen, (isOpen) => {
 onMounted(() => {
    if (apiKey) {
     apiKeyStore.setApiKey(apiKey)
-    console.log('API Key set:', apiKey)
   } 
   if (isMobile.value) {
     sidebarStore.closeSidebar();

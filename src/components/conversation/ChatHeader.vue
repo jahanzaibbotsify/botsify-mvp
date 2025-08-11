@@ -76,13 +76,13 @@ const handleStatusChange = async (value: number | (number | undefined)[] | undef
   try {
     const response = await conversationStore.changeBotActivation(statusValue)
     if (response?.success) {
-      window.$toast.success(response.message || 'Bot status updated successfully')
+      // Success - status updated
     } else {
-      window.$toast.error(response?.message || 'Failed to update bot status')
+      // Error - status will be shown in red text
     }
   } catch (error) {
     console.error('Error changing bot status:', error)
-    window.$toast.error('An error occurred while updating bot status')
+    // Error - status will be shown in red text
   }
 }
 
@@ -121,7 +121,7 @@ const handleLanguageSelect = (lang: string) => {
   gap: var(--space-3);
 }
 
-.status-dropdown.status-active ::v-deep(.clear-button){
+.status-dropdown ::v-deep(.clear-button){
   display: none;
 }
 /* Active status styling */

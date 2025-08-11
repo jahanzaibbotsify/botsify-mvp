@@ -4,12 +4,13 @@
         <div class="icon">🔒</div>
         <h1>Authentication Required</h1>
         <p>You must be logged in to access this page.</p>
-        <a href="https://app.botsify.com/login" class="login-btn">Login</a>
+        <button @click="$router.push('/auth/login')" class="login-btn">Login</button>
       </div>
     </div>
   </template>
   
   <script setup lang="ts">
+
   </script>
   
   <style scoped>
@@ -51,7 +52,7 @@
   }
   
   .login-btn {
-    background: #00a3ff;
+    background: var(--color-primary);
     color: #fff;
     border: none;
     border-radius: 0.75rem;
@@ -63,6 +64,6 @@
   }
   
   .login-btn:hover {
-    background: #0077b6;
+    background: var(--color-primary-hover);
   }
   </style>

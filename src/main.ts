@@ -1,3 +1,4 @@
+
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from '@/App.vue'
@@ -6,19 +7,24 @@ import 'primeicons/primeicons.css'
 import '@fontsource/ubuntu/400.css'
 import '@fontsource/ubuntu/500.css'
 import '@fontsource/ubuntu/700.css'
-import axios from 'axios';
 import ToastPlugin, { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-bootstrap.css';
-import { useApiKeyStore } from './stores/apiKeyStore';
-import { useConversationStore } from './stores/conversationStore';
-import { useChatStore } from './stores/chatStore';
-
+import { installPermissions } from './utils/permissions';
+import { extractApiKey } from './utils/apiKeyUtils';
+// @ts-ignore
+import VueTelInput from 'vue-tel-input';
+import 'vue-tel-input/vue-tel-input.css';
 import Swal from 'sweetalert2';
 
 // Import router
 import router from '@/router'
-import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from './utils/config'
 (window as any).Swal = Swal;
+
+// Extract and store API key
+const apiKey = extractApiKey();
+if (apiKey) {
+  localStorage.setItem('bot_api_key', apiKey);
+}
 
 // Import OpenAI debug utility in development
 if (import.meta.env.DEV) {
@@ -29,17 +35,19 @@ if (import.meta.env.DEV) {
   });
 }
 
-
 const swalOption = {
   title: "Are you sure?",
-  text: "This action is irreversible. Are you sure you want to perform this action?",
+  text: "Are you sure you want to perform this action?",
   icon: "warning", // updated from `type`
   showCloseButton: true,
   showCancelButton: true,
-  confirmButtonColor: "#4473F6",
+  confirmButtonColor: "#6D3ADB",
   cancelButtonColor: "#e7515a",
   confirmButtonText: "Yes, Delete it!",
   cancelButtonText: "No, Keep it",
+  // customClass: {
+  //   cancelButton: 'custom-cancel-btn',
+  // },
   animation: false,
 };
 
@@ -52,18 +60,12 @@ function checkLocalStorage() {
     localStorage.removeItem(testKey);
     
     const isAvailable = testValue === 'test';
-    console.log('📦 localStorage availability check:', isAvailable ? 'Available' : 'Not available');
-    
-    if (!isAvailable) {
-      console.error('⚠️ localStorage is not working properly. Chat history may not be saved.');
-    }
     
     // Check for private browsing mode with a smaller test size
     const testData = '0'.repeat(1024); // 1KB instead of 5MB
     try {
       localStorage.setItem(testKey, testData);
       localStorage.removeItem(testKey);
-      console.log('✅ localStorage has sufficient space');
     } catch (e) {
       if (e instanceof Error && e.name === 'QuotaExceededError') {
         console.warn('⚠️ localStorage quota exceeded - may be in private browsing mode or has limited space');
@@ -81,33 +83,6 @@ function checkLocalStorage() {
   }
 }
 
-
-// Reusable function to make an authenticated GET request with axios
-function getBotDetails(apikey: string) {
-  return axios.get(
-    BOTSIFY_BASE_URL + `/v1/bot/get-data?apikey=${apikey}`,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${BOTSIFY_AUTH_TOKEN}`
-      }
-    }
-  )
-  .then(response => {
-    console.log('ressssss ', response.data);
-    
-    const apiKeyStore = useApiKeyStore();
-    apiKeyStore.setUserId(response.data.data.user_id);
-    apiKeyStore.setApiKey(response.data.data.apikey);
-
-    return response.data.data;
-  })
-  .catch(error => {
-    console.error('API request error:', error);
-    return false;
-  });
-}
-
 // Create pinia store
 const pinia = createPinia()
 
@@ -118,6 +93,8 @@ const app = createApp(App)
 app.use(router)
 app.use(pinia)
 app.use(ToastPlugin);
+app.use(VueTelInput);
+installPermissions(app);
 
 window.$toast = useToast({position:'top-right'});
 window.$confirm = function (overrideOpt = {}, callback = () => {}) {
@@ -130,7 +107,6 @@ window.$confirm = function (overrideOpt = {}, callback = () => {}) {
     }
   });
 };
-
 
 // Check localStorage before mounting
 const localStorageAvailable = checkLocalStorage();
@@ -150,42 +126,5 @@ if (!localStorageAvailable) {
   document.body.appendChild(warningDiv);
 }
 
-
-
-
-async function confirmApiKey() { 
-  const params = window.location.pathname.split('/');
-  if (['agent', 'conversation'].includes(params[1])) {
-    let apikey = params[2];
-    if (apikey) {
-      const bot = await getBotDetails(apikey);    
-      if (bot) {
-        // loading stored chats and ai prompts
-        const chatStore= useChatStore();
-        chatStore.loadFromStorage(bot.chat_flow, bot.bot_flow);
-        // Initialize Firebase after API key is set
-        console.log('🔥 Initializing Firebase in main.ts...');
-        try {
-          const conversationStore = useConversationStore();
-          conversationStore.initializeFirebase();
-          console.log('✅ Firebase initialized successfully in main.ts');
-        } catch (error) {
-          console.error('❌ Error initializing Firebase in main.ts:', error);
-        }
-        
-        return true;
-      }
-    }
-    // window.location.href = 'https://app.botsify.com/login';  
-    throw new Error('unauthenticated');
-  }
-  return true;
-}
-
-
 // mount app
-confirmApiKey().then(() => {
-  app.mount('#app');
-}).catch((error) => {
-  console.error('Error during app initialization:', error);
-}); 
+app.mount('#app'); 
