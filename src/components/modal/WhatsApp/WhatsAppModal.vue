@@ -271,7 +271,7 @@ const handleSendBroadcast = async (data: any) => {
   
   try {
     // Call the API to create broadcast task
-    const result = await publishStore.createSmsBroadcastTask(data);
+    const result = await publishStore.createWhatsappBroadcastTask(data);
     
     if (result.success) {
       window.$toast?.success('Broadcast scheduled successfully!');

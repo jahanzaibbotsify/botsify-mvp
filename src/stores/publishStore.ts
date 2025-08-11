@@ -386,10 +386,11 @@ export const usePublishStore = defineStore('publish', () => {
   };
 
   const saveDialog360Settings = async (settings: {
-    whatsappNumber: string;
+    whatsapp: string;
     dialog360ApiKey: string;
-    phoneNumberId: string;
-    whatsappBusinessAccountId: string;
+    bot_id: string;
+    interactive_button: string;
+    webhook: string;
   }) => {
     isLoading.value = true;
     error.value = null;
@@ -977,7 +978,7 @@ export const usePublishStore = defineStore('publish', () => {
     }
   };
 
-  const createSmsBroadcastTask = async (payload: {
+  const createWhatsappBroadcastTask = async (payload: {
     title: string;
     message: string;
     template_id: number;
@@ -990,7 +991,7 @@ export const usePublishStore = defineStore('publish', () => {
 
     try {
       console.log('Creating SMS broadcast task with payload:', payload);
-      const result = await publishApi.createSmsBroadcastTask(payload);
+      const result = await publishApi.createWhatsappBroadcastTask(payload);
       console.log('API result for SMS broadcast task:', result);
 
       if (result.success) {
@@ -1002,7 +1003,7 @@ export const usePublishStore = defineStore('publish', () => {
         return { success: false, error: error.value };
       }
     } catch (err: any) {
-      console.error('Exception in createSmsBroadcastTask:', err);
+      console.error('Exception in createWhatsappBroadcastTask:', err);
       error.value = err.message || 'Failed to create SMS broadcast task';
       return { success: false, error: error.value };
     } finally {
@@ -1139,7 +1140,7 @@ export const usePublishStore = defineStore('publish', () => {
     clearPublishStatusCache,
     getInstagramPages,
     createTemplate,
-    createSmsBroadcastTask,
+    createWhatsappBroadcastTask,
     connectionInstaPage,
     clearInstaPagesCache,
     connectCatalog,

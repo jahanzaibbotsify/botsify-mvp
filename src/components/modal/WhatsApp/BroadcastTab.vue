@@ -71,29 +71,30 @@ const templates = ref<any[]>([]);
 const selectedTemplate = ref<any>(null);
 const isLoadingTemplates = ref(false);
 const isTemplatesLoaded = ref(false);
-const templateData = ref({
-  name: '',
-  category: 'MARKETING',
-  type: 'text',
-  bodyIncludes: ['body'],
-  header: 'text',
-  header_text: '',
-  footer_text: '',
-  body_text: '',
-  slides: [] as any[],
-  button_type: 'postback',
-  total_buttons: 3,
-  variables: {
-    header: null as any,
-    body: [] as any[],
-    button: null as any,
-    buttonText: null as any,
-    buttonUrl: null as any,
-    buttons: [] as any[]
-  },
-  attachment_link: '',
-  buttons: []
-});
+  const templateData = ref({
+    name: '',
+    category: 'MARKETING',
+    type: 'text',
+    bodyIncludes: ['body'],
+    header: 'text',
+    header_text: '',
+    footer_text: '',
+    body_text: '',
+    slides: [] as any[],
+    button_type: 'postback',
+    total_buttons: 3,
+    variables: {
+      header: null as any,
+      body: [] as any[],
+      button: null as any,
+      buttonText: null as any,
+      buttonUrl: null as any,
+      buttons: [] as any[]
+    },
+    attachment_link: '',
+    filename: '',
+    buttons: []
+  });
 
 // User segments
 const userSegments = [
@@ -280,6 +281,7 @@ const setTemplateVariable = () => {
       buttons: []
     },
     attachment_link: '',
+    filename: '',
     buttons: []
   };
 
@@ -833,11 +835,11 @@ const setTemplateVariable = () => {
 const acceptedFileTypes = (headerType: string) => {
   switch (headerType) {
     case 'video':
-      return 'video/mp4';
+      return 'video/*';
     case 'image':
       return 'image/*';
     case 'document':
-      return '.pdf,.doc,.docx';
+      return '.pdf,.doc,.docx,.txt';
     default:
       return '*/*';
   }
@@ -868,6 +870,10 @@ const uploadMedia = async (event: Event, slideIndex?: number) => {
         templateData.value.slides[slideIndex].attachment_link = result.data.url;
       } else {
         templateData.value.attachment_link = result.data.url;
+        // Set filename for document types
+        if (templateData.value.type === 'document' && !templateData.value.filename) {
+          templateData.value.filename = file.name;
+        }
       }
       updateStoreFromTemplateData();
       window.$toast?.success('Media uploaded successfully!');
@@ -1124,7 +1130,7 @@ const buildBroadcastPayload = () => {
           body: [],
           button: null
         },
-        filename: ''
+        filename: templateData.value.filename || ''
       },
       user_segment: broadcastForm.value.userSegment,
       users: broadcastForm.value.userSegment === 'single' ? [{ phone: broadcastForm.value.phoneNumber }] : 
@@ -1374,30 +1380,46 @@ defineExpose({
           <h5>Media Header</h5>
           <div class="variable-fields">
             <div class="form-group">
-              <label class="required-label">
-                {{ templateData.type.charAt(0).toUpperCase() + templateData.type.slice(1) }} Link
-              </label>
+              <div class="media-input-group">
+                <label class="required-label">
+                  {{ templateData.type.charAt(0).toUpperCase() + templateData.type.slice(1) }} Link
+                </label>
+                <div class="media-actions">
+                  <div class="upload-media" :title="`Upload ${templateData.type}`">
+                    <div class="upload-icon">
+                      <div v-if="uploadingMedia" class="loader-spinner"></div>
+                      <i v-else class="pi pi-paperclip"></i>
+                    </div>
+                    <input 
+                      type="file" 
+                      :accept="acceptedFileTypes(templateData.type)" 
+                      @change="uploadMedia"
+                      :disabled="uploadingMedia"
+                      class="file-input-hidden"
+                    />
+                  </div>
+                </div>
+              </div>
               <Input
                 v-model="templateData.attachment_link"
                 :placeholder="`Enter ${templateData.type} link`"
                 @input="onUpdateAttachmentLink"
                 :error="validationErrors.mediaHeader"
+                :disabled="uploadingMedia"
               />
             </div>
             
-            <div class="form-group">
-              <label>Or Upload File</label>
-              <input
-                type="file"
-                :accept="acceptedFileTypes(templateData.type)"
-                @change="uploadMedia"
-                :disabled="uploadingMedia"
-                class="file-input"
+            <!-- Document filename field -->
+            <div v-if="templateData.type === 'document'" class="form-group">
+              <label>File Name <small>(optional)</small></label>
+              <Input
+                v-model="templateData.filename"
+                placeholder="Enter file name"
+                @input="updateStoreFromTemplateData"
               />
-              <div v-if="uploadingMedia" class="upload-status">
-                <div class="loader-spinner"></div>
-                <span>Uploading media...</span>
-              </div>
+              <small v-if="templateData.filename && templateData.filename.length >= 60" class="text-danger">
+                File name must not be more than 60 characters
+              </small>
             </div>
           </div>
         </div>
@@ -1457,15 +1479,33 @@ defineExpose({
               <div class="slide-variables">
                 <label class="variable-group-label">Media Link</label>
                 <div class="form-group">
-                  <label class="required-label">
-                    {{ slide.header.charAt(0).toUpperCase() + slide.header.slice(1) }} Link
-                  </label>
-                                     <Input
-                     v-model="slide.attachment_link"
-                     :placeholder="`Enter ${slide.header} link`"
-                     @input="updateStoreFromTemplateData"
-                     :error="!slide.attachment_link ? 'This field is required' : ''"
-                   />
+                  <div class="media-input-group">
+                    <label class="required-label">
+                      {{ slide.header.charAt(0).toUpperCase() + slide.header.slice(1) }} Link
+                    </label>
+                    <div class="media-actions">
+                      <div class="upload-media" :title="`Upload ${slide.header}`">
+                        <div class="upload-icon">
+                          <div v-if="uploadingMedia" class="loader-spinner"></div>
+                          <i v-else class="pi pi-paperclip"></i>
+                        </div>
+                        <input 
+                          type="file" 
+                          :accept="acceptedFileTypes(slide.header)" 
+                          @change="(event) => uploadMedia(event, index)"
+                          :disabled="uploadingMedia"
+                          class="file-input-hidden"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <Input
+                    v-model="slide.attachment_link"
+                    :placeholder="`Enter ${slide.header} link`"
+                    @input="updateStoreFromTemplateData"
+                    :error="!slide.attachment_link ? 'This field is required' : ''"
+                    :disabled="uploadingMedia"
+                  />
                 </div>
               </div>
             </div>
@@ -1730,20 +1770,65 @@ defineExpose({
   color: var(--color-error);
 }
 
-.file-input {
-  width: 100%;
-  padding: var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background-color: var(--color-bg-tertiary);
-  font-size: 0.875rem;
+.media-input-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-2);
 }
 
-.file-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+.media-actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
 }
+
+.upload-media {
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 27px;
+  height: 27px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  transition: all var(--transition-normal);
+  font-size: 12px;
+}
+
+.upload-media:hover {
+  background-color: var(--color-bg-hover);
+  border-color: var(--color-primary);
+}
+
+.upload-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+}
+
+.upload-media:hover .upload-icon {
+  color: var(--color-primary);
+}
+
+.file-input-hidden {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-input-hidden:disabled {
+  cursor: not-allowed;
+}
+
+
 
 .upload-status {
   display: flex;

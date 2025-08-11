@@ -405,18 +405,20 @@ export class PublishApiService {
    * Save Dialog360 settings
    */
   async saveDialog360Settings(settings: {
-    whatsappNumber: string;
+    whatsapp: string;
     dialog360ApiKey: string;
-    phoneNumberId: string;
-    whatsappBusinessAccountId: string;
+    bot_id: string;
+    interactive_button: string;
+    webhook: string;
   }): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post('/v1/bot/dialog360/connect', {
-        whatsapp_number: settings.whatsappNumber,
+        whatsapp: settings.whatsapp,
         api_key: settings.dialog360ApiKey,
-        phone_number_id: settings.phoneNumberId,
-        whatsapp_business_account_id: settings.whatsappBusinessAccountId,
+        bot_id: settings.bot_id,
+        interactive_button: settings.interactive_button,
+        webhook: settings.webhook,
         apikey: apiKey
       }, {
         timeout: 30000 // 30 seconds timeout
@@ -674,7 +676,7 @@ export class PublishApiService {
   }): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
-      const response = await axiosInstance.post('/v1/schedule/task/sms-broadcast/create', {
+      const response = await axiosInstance.post('/v1/schedule/task/broadcast/create', {
         apikey: apiKey,
         ...payload
       }, {
@@ -938,7 +940,7 @@ export class PublishApiService {
     }
   }
 
-  async createSmsBroadcastTask(payload: {
+  async createWhatsappBroadcastTask(payload: {
     title: string;
     message: string;
     template_id: number;
@@ -950,7 +952,7 @@ export class PublishApiService {
       const {apiKey} = useBotStore();
       console.log('Making API call to create SMS broadcast task with payload:', payload);
       
-      const response = await axiosInstance.post('/v1/schedule/task/sms-broadcast/create', {
+      const response = await axiosInstance.post('/v1/schedule/task/broadcast/create', {
         apikey: apiKey,
         ...payload
       }, {
