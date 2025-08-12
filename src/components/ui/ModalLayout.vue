@@ -6,6 +6,7 @@ interface Props {
   maxWidth?: string
   showCloseButton?: boolean
   closable?: boolean
+  icon?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -85,13 +86,13 @@ defineExpose({
       @click.stop
     >
       <div class="modal-header">
-        <h2>{{ props.title }}</h2>
+        <div class="modal-header-left">
+          <img v-if="icon" :src="icon" width="28" height="28" alt="logo" class="modal-logo" />
+          <h2>{{ props.title }}</h2>
+        </div>
         <button class="modal-close" @click="closeModal">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 6L6 18"></path>
-              <path d="M6 6l12 12"></path>
-            </svg>
-          </button>
+          <i class="pi pi-times"></i>
+        </button>
       </div>
       
       <div class="modal-body">
@@ -125,7 +126,7 @@ defineExpose({
   border-radius: var(--radius-lg);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   border: 1px solid var(--color-border);
-  max-height: 80vh;
+  max-height: 90vh;
   overflow-y: auto;
 }
 
@@ -136,6 +137,12 @@ defineExpose({
   padding: var(--space-4);
   border-bottom: 1px solid var(--color-border);
   background: linear-gradient(to right, rgba(0, 163, 255, 0.05), transparent);
+}
+
+.modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .modal-header h2 {

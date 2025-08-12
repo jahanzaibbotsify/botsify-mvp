@@ -431,7 +431,7 @@ function toggleStorySidebar() {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start; /* Keep content at the top */
-  height: 80vh;
+  height: 75vh;
   width: 100%;
   padding: 0;
   background-color: var(--color-bg-primary);

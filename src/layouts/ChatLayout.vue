@@ -121,9 +121,7 @@ const toggleSidebar = () => {
       :aria-label="'Hide sidebar'"
       :title="'Hide sidebar'"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="15 18 9 12 15 6"></polyline>
-      </svg>
+      <i class="pi pi-angle-left"></i>
     </button>
     
     <!-- Desktop sidebar toggle button - show sidebar -->
@@ -134,9 +132,7 @@ const toggleSidebar = () => {
       :aria-label="'Show sidebar'"
       :title="'Show sidebar'"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="9 18 15 12 9 6"></polyline>
-      </svg>
+      <i class="pi pi-angle-right"></i>
     </button>
   </div>
 </template>
