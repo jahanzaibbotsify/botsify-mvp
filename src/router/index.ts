@@ -166,10 +166,10 @@ const router = createRouter({
 });
 
 
-function getBotDetails() {
+async function getBotDetails() {
   const apikey =  getCurrentApiKey();
   if (!apikey) {
-    router.push('/select-agent')
+    await router.push('/select-agent')
     return;
   } else {
     // @ts-ignore
@@ -239,8 +239,10 @@ router.beforeEach(async (to, from, next) => {
       return next({ path: authFlow.redirectPath, replace: true })
     }
 
-    getBotDetails();
-    
+    if (to.path !== '/select-agent') {
+      getBotDetails();
+    }
+
     next()
   } catch (error) {
     console.error('Error in navigation guard:', error)
