@@ -340,7 +340,7 @@ const openPartnerPortal = () => {
             />
             <img
               v-else
-              src="/botsify-logo.png"
+              src="/logo.png"
               alt="Botsify"
               class="logo-icon"
             />
@@ -589,6 +589,8 @@ const openPartnerPortal = () => {
 .logo-icon {
   height: 35px;
   width: auto;
+  background: transparent;
+  object-fit: contain;
 }
 
 .sidebar-actions {
