@@ -16,7 +16,7 @@ export const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
 
 export const STRIPE_API_KEY = import.meta.env.VITE_BOTSIFY_STRIPE_API_KEY;
 //export const BOTSIFY_AUTH_TOKEN = getCookieValue('botsify_token');
-export const BOTSIFY_AUTH_TOKEN = getCookieValue('botsify_token') || import.meta.env.VITE_BOTSIFY_AUTH_TOKEN;
+export const BOTSIFY_AUTH_TOKEN = getCookieValue('botsify_token');
 
 export function getCookieValue(name: string): string {
   // Handle case where document is not available (SSR)

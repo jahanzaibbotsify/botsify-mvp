@@ -8,7 +8,7 @@ import { useWhitelabelStore } from '@/stores/whitelabelStore';
 import BookMeetingModal from '@/components/modal/BookMeetingModal.vue';
 import CalendlyModal from '@/components/modal/CalendlyModal.vue';
 import { botsifyApi } from '@/services/botsifyApi'
-import BillingModal from '../modal/BillingModal.vue';
+import BillingModal from '@/components/modal/BillingModal.vue';
 import { getWebUrl } from '@/utils';
 
 
