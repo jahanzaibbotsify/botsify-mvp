@@ -176,30 +176,30 @@ defineExpose({
 });
 
 // Helper function to check if button actually has variables
-const hasButtonVariables = (slide?: any, slideIndex?: number): boolean => {
-  if (slide && slideIndex !== undefined) {
-    // For carousel slides, check if the slide button has variables
-    const blockSlide = store.block.slides[slideIndex];
-    if (blockSlide?.buttons) {
-      for (const button of blockSlide.buttons) {
-        if (button.title && button.title.includes('{{')) return true;
-        if (button.text && button.text.includes('{{')) return true;
-        if (button.url && button.url.includes('{{')) return true;
-      }
-    }
-    return false;
-  } else {
-    // For regular template, check if main buttons have variables
-    if (store.block.buttons) {
-      for (const button of store.block.buttons) {
-        if (button.title && button.title.includes('{{')) return true;
-        if (button.text && button.text.includes('{{')) return true;
-        if (button.url && button.url.includes('{{')) return true;
-      }
-    }
-    return false;
-  }
-};
+// const hasButtonVariables = (slide?: any, slideIndex?: number): boolean => {
+//   if (slide && slideIndex !== undefined) {
+//     // For carousel slides, check if the slide button has variables
+//     const blockSlide = store.block.slides[slideIndex];
+//     if (blockSlide?.buttons) {
+//       for (const button of blockSlide.buttons) {
+//         if (button.title && button.title.includes('{{')) return true;
+//         if (button.text && button.text.includes('{{')) return true;
+//         if (button.url && button.url.includes('{{')) return true;
+//       }
+//     }
+//     return false;
+//   } else {
+//     // For regular template, check if main buttons have variables
+//     if (store.block.buttons) {
+//       for (const button of store.block.buttons) {
+//         if (button.title && button.title.includes('{{')) return true;
+//         if (button.text && button.text.includes('{{')) return true;
+//         if (button.url && button.url.includes('{{')) return true;
+//       }
+//     }
+//     return false;
+//   }
+// };
 </script>
 
 <template>

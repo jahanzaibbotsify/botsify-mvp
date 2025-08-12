@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Input, Badge, Button, ModalLayout, Pagination } from "@/components/ui";
 import { usePublishStore } from "@/stores/publishStore";
 import MessagePreview from "./Create/MessagePreview.vue";
