@@ -212,25 +212,12 @@ const headerText = computed(() => {
 const bodyText = computed(() => {
   let result = props.block?.text || props.template.body_text || '';
   const bodyVars = props.template.variables?.body || [];
-  
-  console.log('MessagePreview - bodyText computed:', {
-    originalText: result,
-    bodyVars: bodyVars,
-    templateBodyText: props.template.body_text,
-    blockText: props.block?.text
-  });
-  
+
   // Replace each body variable with its value
   bodyVars.forEach((item: any) => {
     if (item.value !== '') {
-      const beforeReplace = result;
+      // const beforeReplace = result;
       result = result.replace(item.key, item.value);
-      console.log('MessagePreview - replaced body variable:', {
-        key: item.key,
-        value: item.value,
-        before: beforeReplace,
-        after: result
-      });
     }
   });
   

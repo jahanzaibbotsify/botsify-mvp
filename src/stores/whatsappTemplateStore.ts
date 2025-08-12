@@ -982,7 +982,6 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
       // Create copies of the data to modify
       const dataBlock = { ...block.value };
       const cTemp = { ...template.value };
-      
       // If Template base type is text
       if (cTemp.type === 'text') {
         cTemp.header = 'text';
@@ -997,13 +996,9 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         cTemp.footer_text = '';
       }
 
-      if(cTemp.bodyIncludes.includes('header')) {
-        cTemp.type = cTemp.header;
-      }
-
       // If it is text template (or) if it is media template but header is removed
       if (cTemp.header === 'text' && cTemp.type !== 'generic') {
-        (dataBlock as any).type = 'button';
+        cTemp.type = 'button';
         dataBlock.image_url = '';
         dataBlock.video_url = '';
         dataBlock.attachment_link = '/theme/images/file-cover.png';
