@@ -840,7 +840,7 @@ onUnmounted(() => {
 /* Hero Section */
 .hero-section {
   text-align: center;
-  padding: var(--space-8) var(--space-6) var(--space-6);
+  padding: var(--space-4) var(--space-6) var(--space-7) var(--space-6);
   color: white;
   position: relative;
   overflow: hidden;
@@ -890,7 +890,7 @@ onUnmounted(() => {
   z-index: 2;
   max-width: 1400px;
   margin: 0 auto;
-  padding: var(--space-4) var(--space-6);
+  padding: var(--space-4) var(--space-2);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1023,7 +1023,6 @@ onUnmounted(() => {
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-normal);
-  flex: 1;
   justify-content: center;
 }
 
@@ -1073,7 +1072,7 @@ onUnmounted(() => {
 
 .search-input {
   width: 100%;
-  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-8) + var(--space-1));
+  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-6) + var(--space-1));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background-color: var(--color-bg-tertiary);
