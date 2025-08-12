@@ -4,14 +4,12 @@
         <div class="icon">🔒</div>
         <h1>Authentication Required</h1>
         <p>You must be logged in to access this page.</p>
-        <a :href="`${getWebUrl()}/login`" class="login-btn">Login</a>
+        <button @click="$router.push('/auth/login')" class="login-btn">Login</button>
       </div>
     </div>
   </template>
   
   <script setup lang="ts">
-import { getWebUrl } from '@/utils';
-
 
   </script>
   
