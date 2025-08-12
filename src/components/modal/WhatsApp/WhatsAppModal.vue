@@ -61,6 +61,13 @@ const botService = computed(() => {
 
 // Check if WhatsApp is configured
 const checkWhatsAppConfiguration = async () => {
+  // Only check if we don't have valid cached data
+  if (publishStore.cacheValid.botDetails && publishStore.cache.botDetails) {
+    // Use cached data to determine configuration
+    isWhatsAppConfigured.value = !!(publishStore.cache.botDetails.dialog360 || publishStore.cache.botDetails.whatsapp_cloud);
+    return;
+  }
+  
   isCheckingConfiguration.value = true;
   try {
     const result = await publishStore.getBotDetails();
@@ -107,7 +114,15 @@ const whatsappComputedTabs = computed(() => {
 
 const openModal = () => {
   modalRef.value?.openModal();
-  checkWhatsAppConfiguration();
+  
+  // Only check configuration if we don't have valid cached data
+  if (!publishStore.cacheValid.botDetails || !publishStore.cache.botDetails) {
+    checkWhatsAppConfiguration();
+  } else {
+    // Use cached data to determine configuration
+    isWhatsAppConfigured.value = !!(publishStore.cache.botDetails.dialog360 || publishStore.cache.botDetails.whatsapp_cloud);
+  }
+  
   // Ensure we're on the correct tab and initialize it
   nextTick(() => {
     handleTabChange(currentTab.value);

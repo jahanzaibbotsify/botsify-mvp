@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { Button, Input } from "@/components/ui";
 import { usePublishStore } from "@/stores/publishStore";
 import { useBotStore } from "@/stores/botStore";
@@ -56,53 +56,75 @@ const dialog360Fields = ref({
 // Window features for Dialog360 modal
 const windowFeatures = ref('width=800,height=600,scrollbars=yes,resizable=yes');
 
-// Load bot details on component mount
-onMounted(async () => {
-  await loadBotDetails();
-});
+// Update local state based on bot details
+const updateLocalState = (details: any) => {
+  botDetails.value = details;
+  
+  // Check if Dialog360 is configured
+  if (details.dialog360) {
+    selectedProvider.value = 'dialog360';
+    showProviderSelection.value = false;
+    isDialog360Connected.value = true;
+    isMetaConnected.value = false;
+    
+    // Pre-fill Dialog360 fields
+    dialog360Fields.value = {
+      whatsapp: details.dialog360.whatsapp || '',
+      apiKey: details.dialog360.api_key || '',
+      interactiveButton: details.dialog360.interactive_button || false
+    };
+  }
+  // Check if WhatsApp Cloud is configured
+  else if (details.whatsapp_cloud) {
+    selectedProvider.value = 'meta';
+    showProviderSelection.value = false;
+    isDialog360Connected.value = false;
+    isMetaConnected.value = true;
+    
+    // Pre-fill Meta Cloud fields
+    metaFields.value = {
+      temporaryToken: details.whatsapp_cloud.temporary_token || '',
+      phoneNumber: details.whatsapp_cloud.whatsapp || '',
+      phoneNumberId: details.whatsapp_cloud.whatsapp_phone_id || '',
+      whatsappBusinessAccountId: details.whatsapp_cloud.whatsapp_account_id || '',
+      clientId: details.whatsapp_cloud.client_id || '',
+      clientSecret: details.whatsapp_cloud.client_secret || ''
+    };
+  }
+  // No provider configured, show selection
+  else {
+    showProviderSelection.value = true;
+    selectedProvider.value = null;
+    isDialog360Connected.value = false;
+    isMetaConnected.value = false;
+  }
+};
 
-// Load bot details to determine configured provider
+// Watch for changes in bot details cache to update local state
+watch(() => publishStore.cache.botDetails, (newBotDetails) => {
+  if (newBotDetails) {
+    updateLocalState(newBotDetails);
+  }
+}, { immediate: true });
+
+// Load bot details only if not already cached
 const loadBotDetails = async () => {
+  // If we already have valid cached data, use it
+  if (publishStore.cacheValid.botDetails && publishStore.cache.botDetails) {
+    updateLocalState(publishStore.cache.botDetails);
+    return;
+  }
+  
+  // Only fetch if not already loading
+  if (publishStore.loadingStates.botDetails) {
+    return;
+  }
+  
   isLoadingBotDetails.value = true;
   try {
     const result = await publishStore.getBotDetails();
-    if (result.success) {
-      botDetails.value = result.data;
-      
-      // Check if Dialog360 is configured
-      if (result.data.dialog360) {
-        selectedProvider.value = 'dialog360';
-        showProviderSelection.value = false;
-        isDialog360Connected.value = true;
-        // Pre-fill Dialog360 fields
-        dialog360Fields.value = {
-          whatsapp: result.data.dialog360.whatsapp || '',
-          apiKey: result.data.dialog360.api_key || '',
-          interactiveButton: result.data.interactive_button || false
-        };
-      }
-      // Check if WhatsApp Cloud is configured
-      else if (result.data.whatsapp_cloud) {
-        selectedProvider.value = 'meta';
-        showProviderSelection.value = false;
-        isMetaConnected.value = true;
-        // Pre-fill Meta Cloud fields
-        metaFields.value = {
-          temporaryToken: result.data.whatsapp_cloud.temporary_token || '',
-          phoneNumber: result.data.whatsapp_cloud.whatsapp || '',
-          phoneNumberId: result.data.whatsapp_cloud.whatsapp_phone_id || '',
-          whatsappBusinessAccountId: result.data.whatsapp_cloud.whatsapp_account_id || '',
-          clientId: result.data.whatsapp_cloud.client_id || '',
-          clientSecret: result.data.whatsapp_cloud.client_secret || ''
-        };
-      }
-      // No provider configured, show selection
-      else {
-        showProviderSelection.value = true;
-        selectedProvider.value = null;
-        isDialog360Connected.value = false;
-        isMetaConnected.value = false;
-      }
+    if (result.success && result.data) {
+      updateLocalState(result.data);
     }
   } catch (error) {
     console.error('Failed to load bot details:', error);
@@ -110,6 +132,14 @@ const loadBotDetails = async () => {
     isLoadingBotDetails.value = false;
   }
 };
+
+// Load bot details on component mount only if needed
+onMounted(async () => {
+  // Only load if we don't have valid cached data
+  if (!publishStore.cacheValid.botDetails || !publishStore.cache.botDetails) {
+    await loadBotDetails();
+  }
+});
 
 // Methods
 const selectProvider = (provider: 'meta' | 'dialog360') => {
@@ -182,7 +212,13 @@ const handleSaveSettings = async () => {
       if (result.success) {
         const providerName = selectedProvider.value === 'meta' ? 'Meta Cloud' : 'Dialog360';
         window.$toast?.success(`${providerName} settings saved successfully!`);
-        await loadBotDetails(); // Recheck configuration after saving
+        
+        // Clear bot details cache to force refresh
+        publishStore.cache.botDetails = null;
+        publishStore.cacheValid.botDetails = false;
+        
+        // Reload bot details to update the UI
+        await loadBotDetails();
       } else {
         window.$toast?.error(result.error || `Failed to save ${selectedProvider.value === 'meta' ? 'Meta Cloud' : 'Dialog360'} settings`);
       }

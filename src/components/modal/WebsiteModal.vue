@@ -27,7 +27,7 @@ const selectedColor = ref('#3b82f6');
 const showColorPicker = ref(false);
 const generatedInlineCode = ref('');
 const backgroundStyle = ref<'gradient' | 'plain-primary' | 'plain-secondary'>('gradient');
-const landingUrl = `${getWebUrl()}/landing/${apikey}`;
+const landingUrl = `${getWebUrl()}/web-bot/landing/${apikey}`;
 
 // Install code content - fixed template literal
 const installCode = `&lt;script&gt;!function() {

@@ -74,6 +74,31 @@ const paginationData = ref<{
 
 // Methods
 const fetchTemplates = async (page: number = 1, perPage: number = 20) => { 
+  // Check if we already have valid cached data for this exact request
+  if (publishStore.cacheValid.templates && 
+      publishStore.cache.templates && 
+      publishStore.cache.templates.page === page && 
+      publishStore.cache.templates.perPage === perPage &&
+      publishStore.cache.templates.query === searchQuery.value) {
+    
+    // Use cached data
+    templates.value = publishStore.cache.templates.data || [];
+    paginationData.value = {
+      page: publishStore.cache.templates.page || page,
+      perPage: publishStore.cache.templates.perPage || perPage,
+      total: publishStore.cache.templates.total || 0,
+      to: publishStore.cache.templates.to || 0,
+      prev_page_url: publishStore.cache.templates.prev_page_url || null
+    };
+    currentPage.value = publishStore.cache.templates.page || page;
+    
+    console.log('Using cached templates data:', {
+      currentPage: currentPage.value,
+      paginationData: paginationData.value
+    });
+    return;
+  }
+  
   try {
     const result = await publishStore.fetchWhatsAppTemplates(page, perPage, searchQuery.value);
     if (result.success && result.data && result.data.templates && result.data.templates.data && Array.isArray(result.data.templates.data)) {
@@ -416,14 +441,32 @@ const handlePageChange = (page: number) => {
 const handleSearch = () => {
   setTimeout(() => {
     currentPage.value = 1;
+    // Only clear cache if the search query is different from cached query
+    if (publishStore.cache.templates && publishStore.cache.templates.query !== searchQuery.value) {
+      publishStore.cache.templates = null;
+      publishStore.cacheValid.templates = false;
+    }
     fetchTemplates(1, itemsPerPage);
-  }, 500);
+  }, 1000);
 };
 
 // Initialize templates when component is mounted
 onMounted(() => {
-  // Fetch templates on mount to ensure they're loaded
-  fetchTemplates(1, itemsPerPage);
+  // Only fetch templates if we don't have valid cached data
+  if (!publishStore.cacheValid.templates || !publishStore.cache.templates) {
+    fetchTemplates(1, itemsPerPage);
+  } else {
+    // Use cached data
+    templates.value = publishStore.cache.templates.data || [];
+    paginationData.value = {
+      page: publishStore.cache.templates.page || 1,
+      perPage: publishStore.cache.templates.perPage || itemsPerPage,
+      total: publishStore.cache.templates.total || 0,
+      to: publishStore.cache.templates.to || 0,
+      prev_page_url: publishStore.cache.templates.prev_page_url || null
+    };
+    currentPage.value = publishStore.cache.templates.page || 1;
+  }
 });
 
 // Expose only necessary methods for parent component

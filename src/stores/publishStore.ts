@@ -748,18 +748,10 @@ export const usePublishStore = defineStore('publish', () => {
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to get Facebook pages';
-        // Show error toast
-        if (window.$toast) {
-          window.$toast.error(error.value);
-        }
         return { success: false, error: error.value };
       }
     } catch (err: any) {
       error.value = err.message || 'Failed to get Facebook pages';
-      // Show error toast
-      if (window.$toast) {
-        window.$toast.error(error.value);
-      }
       return { success: false, error: error.value };
     } finally {
       loadingStates.value.facebookPages = false;

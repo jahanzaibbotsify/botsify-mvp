@@ -1,22 +1,40 @@
 import { defineStore } from 'pinia';
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
+import { marked } from 'marked';
+import { botsifyApi } from '@/services/botsifyApi';
+import type { Chat, Message, Attachment, Story, PromptVersion, GlobalPromptTemplate } from '@/types';
 import { useOpenAIStore } from './openaiStore';
 import { useMCPStore } from './mcpStore';
-import type { Chat, Message, Attachment, PromptVersion, GlobalPromptTemplate } from '../types';
-import { botsifyApi } from '../services/botsifyApi';
 import { useBotStore } from './botStore';
 import { currentTime } from '@/utils';
 
+// Debounce utility function
+function debounce<T extends (...args: any[]) => any>(func: T, wait: number): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
+
 export const useChatStore = defineStore('chat', () => {
+  // Configuration options
+  const ENABLE_AUTO_SAVE = true; // Set to false to disable automatic template saving
+  const MAX_CHAT_HISTORY = 50; // Maximum number of messages to include in template saving
+  const SAVE_DEBOUNCE_DELAY = 1000; // Debounce delay in milliseconds for template saving
+  
+  // Store instances
   const openAIStore = useOpenAIStore();
   const mcpStore = useMCPStore();
+  
+  // State
   const chats = ref<Chat[]>([]);
-  const activeChat = ref<string | null>(null);
+  const activeChat = ref<string>('');
   const isTyping = ref(false);
   const isAIPromptGenerating = ref(false);
   const doInputDisable = ref(false);
   const globalPromptTemplates = ref<GlobalPromptTemplate[]>([]);
-  const activeAiPromptVersion = computed(() => chats.value[0]?.story?.versions.find(v => v.isActive) || null);
+  const activeAiPromptVersion = ref<PromptVersion | null>(null);
 
   // Get current API key and bot ID reactively
   const getCurrentApiKey = () => {
@@ -72,7 +90,7 @@ export const useChatStore = defineStore('chat', () => {
       const storedChats = userChats;
       const storedTemplates = convertStoredVersionsToStoryStructure(aiPromptVersions);
       const storedActiveChat = localStorage.getItem('botsify_active_chat');    
-      
+      console.log(storedChats, "storedChats");
       if (storedChats && storedChats.length > 4 && storedChats !== 'null' && storedChats !== 'undefined') {
       try {
           const parsedChats = JSON.parse(storedChats);
@@ -129,15 +147,51 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  // Performance monitoring utility
+  function logPerformance(operation: string, startTime: number, additionalInfo?: string) {
+    const duration = Date.now() - startTime;
+    const info = additionalInfo ? ` - ${additionalInfo}` : '';
+    console.log(`⏱️ ${operation} completed in ${duration}ms${info}`);
+    
+    // Log warning for slow operations
+    if (duration > 1000) {
+      console.warn(`⚠️ Slow operation detected: ${operation} took ${duration}ms`);
+    }
+  }
+
   // Save data to localStorage
   async function saveToTemplate() {
+    // Skip if auto-save is disabled
+    if (!ENABLE_AUTO_SAVE) {
+      console.log('⏭️ Auto-save disabled, skipping template saving');
+      return true;
+    }
+
+    const startTime = Date.now();
+    console.log('🔄 Starting saveToTemplate function...');
 
     try {
-      const chatRecords = JSON.parse(JSON.stringify(chats.value[0]??''));
-      const aiPrompt = chatRecords.story?.content ?? '';
-      delete chatRecords.story;
-      const chatsJson =  JSON.stringify(chatRecords ? [chatRecords] : null);
+      // Performance optimization: Only copy essential data instead of full deep copy
+      const chat = chats.value[0];
+      if (!chat) {
+        console.warn('No chat data available for template saving');
+        return false;
+      }
 
+      // Limit chat history to configured maximum to reduce payload size
+      const limitedMessages = chat.messages.slice(-MAX_CHAT_HISTORY);
+      const optimizedChatData = {
+        id: chat.id,
+        messages: limitedMessages,
+        lastMessage: chat.lastMessage,
+        timestamp: chat.timestamp,
+        unread: chat.unread
+      };
+
+      const aiPrompt = chat.story?.content ?? '';
+      const chatsJson = JSON.stringify([optimizedChatData]);
+
+      console.log(`📊 Payload size: ${chatsJson.length} characters, Messages: ${limitedMessages.length}`);
       
       const payload = {
           bot_id: getCurrentBotId(),
@@ -151,9 +205,9 @@ export const useChatStore = defineStore('chat', () => {
         payload.version_id = `${activeAiPromptVersion.value?.version_id}`;
       }
 
-      
-
+      const apiStartTime = Date.now();
       const response = await botsifyApi.saveBotTemplates(payload);
+      logPerformance('API call to saveBotTemplates', apiStartTime);
       
       if (!response.success) {
          console.error('❌ Error saving bot templates:', response.message);
@@ -166,15 +220,21 @@ export const useChatStore = defineStore('chat', () => {
           activeAiPromptVersion.value.version_id = response.data.version_id;
       }
        
+      logPerformance('saveToTemplate', startTime, 'total operation');
       return true;
          } catch (error) {
        console.error('❌ Error saving to storage:', error);
-       // Error message will be shown in red text in the chat
+       // Error message will be shown in red text in the chats
        // Toast notifications disabled as requested
+       const endTime = Date.now();
+       console.log(`❌ saveToTemplate failed after ${endTime - startTime}ms`);
        return false;
      }
 
   }
+
+  // Debounced version to prevent multiple rapid calls
+  const debouncedSaveToTemplate = debounce(saveToTemplate, SAVE_DEBOUNCE_DELAY);
 
   const currentChat = computed(() => {
     return chats.value.find(chat => chat.id === activeChat.value) || null;
@@ -289,7 +349,9 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   function updateStory(chatId: string, content: string, createNewVersion: boolean = true, edit: boolean = false) {
-    // console.log(`Updating story for chat ${chatId}`);
+    const startTime = Date.now();
+    console.log(`🔄 Starting updateStory for chat ${chatId}, createNewVersion: ${createNewVersion}, edit: ${edit}`);
+    
     const chat = chats.value.find(c => c.id === chatId);
     if (!chat) {
       console.error('Chat not found with ID:', chatId);
@@ -323,10 +385,12 @@ export const useChatStore = defineStore('chat', () => {
       chat.story.content = content;
       chat.story.updatedAt = new Date();
       if (edit) {
-        saveToTemplate();
+        debouncedSaveToTemplate();
       }
     }
 
+    const endTime = Date.now();
+    logPerformance('updateStory', startTime, `chat ${chatId}`);
     return chat.story;
   }
 
@@ -455,6 +519,36 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   async function handleAIResponse(chat: Chat) {
+    const functionStartTime = Date.now();
+    console.log('🚀 Starting handleAIResponse...');
+    
+    // Add timeout protection for the entire function
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('handleAIResponse timeout after 60 seconds'));
+      }, 60000); // 60 second timeout
+    });
+    
+    try {
+      const result = await Promise.race([
+        executeAIResponse(chat),
+        timeoutPromise
+      ]);
+      
+      const functionEndTime = Date.now();
+      console.log(`✅ handleAIResponse completed successfully in ${functionEndTime - functionStartTime}ms`);
+      return result;
+    } catch (error: any) {
+      const functionEndTime = Date.now();
+      console.error(`❌ handleAIResponse failed after ${functionEndTime - functionStartTime}ms:`, error);
+      throw error;
+    }
+  }
+
+  async function executeAIResponse(chat: Chat) {
+    const functionStartTime = Date.now();
+    console.log('🔄 Starting executeAIResponse...');
+    
     doInputDisable.value = true;
     isTyping.value = true;
     let streamedContent = '';
@@ -474,7 +568,7 @@ export const useChatStore = defineStore('chat', () => {
       const mcpSystemPrompt = mcpStore.getCombinedSystemPrompt();
 
       // Get connected services JSON to append to system prompt
-      const connectedServicesJson = await getConnectedServicesJson(chat.id);
+      const connectedServicesJson = getConnectedServicesJson(chat.id);
 
       // ALWAYS start with the default system prompt as the foundation
       let finalSystemPrompt = defaultSystemPrompt;
@@ -511,53 +605,82 @@ Use the above connected services information to understand what tools and data s
 
       // Don't add initial AI message yet - wait for first content
       let aiMessage: Message | null = null;
-      let eachStreamContent = '';
-      let isChatResponse = false;
-      let dataType = '';
+      let streamStartTime = Date.now();
 
       aiMessage = {
         id: Date.now().toString(),
-        content: eachStreamContent,
+        content: '',
         timestamp: currentTime(),
         sender: 'assistant'
       };
       chat.messages.push(aiMessage);
+      
+      console.log('🔄 Starting stream processing...');
+      
+      // Use efficient buffering instead of string concatenation
+      const chunks: string[] = [];
+      let totalLength = 0;
+      
       while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          const content = chunk;
-          eachStreamContent = content;
-          
-          if (eachStreamContent.includes('---') && dataType !== '---AI_PROMPT---') {
-            isChatResponse = false;
-            if (!dataType && (streamedContent + eachStreamContent).includes('---CHAT_RESPONSE---')) {
-              dataType =  '---CHAT_RESPONSE---';
-              isTyping.value = false;
-              isChatResponse = true;
-              chat.messages[chat.messages.length - 1].content += (streamedContent + eachStreamContent).replace(dataType, '');
-            } else if (dataType){
-              dataType =  eachStreamContent.split('---')[0];
-              chat.messages[chat.messages.length - 1].content += dataType;
-              dataType = '---AI_PROMPT---';
-              isAIPromptGenerating.value = true;
-            }
-          }else if (isChatResponse && eachStreamContent) {
-            chat.messages[chat.messages.length - 1].content += eachStreamContent;
+          if (done) {
+            console.log('✅ Stream completed, processing final content...');
+            break;
           }
-
-          streamedContent += eachStreamContent;
-          eachStreamContent = '';
+          
+          const chunk = decoder.decode(value, { stream: true });
+          if (chunk) {
+            chunks.push(chunk);
+            totalLength += chunk.length;
+          }
+          
+          // Add timeout protection to prevent infinite loops
+          const streamDuration = Date.now() - streamStartTime;
+          if (streamDuration > 30000) { // 30 second timeout
+            console.warn('⚠️ Stream processing timeout after 30s, forcing completion');
+            break;
+          }
       }
+      
+      // Process all content at once instead of during streaming
+      const streamedContent = chunks.join('');
+      const streamEndTime = Date.now();
+      console.log(`⏱️ Stream processing completed in ${streamEndTime - streamStartTime}ms, content length: ${totalLength}`);
+      
+      // Ensure stream reader is properly closed
+      try {
+        if (reader) {
+          await reader.cancel();
+          console.log('✅ Stream reader cancelled');
+        }
+      } catch (cancelError) {
+        console.warn('⚠️ Error cancelling stream reader:', cancelError);
+      }
+      
       isTyping.value = false;
-      // Parse the dual response format
+      
+      // Parse the dual response format efficiently
       const parsedResponse = parseDualResponse(streamedContent);
-      if (parsedResponse.chatResponse) {
-        chat.lastMessage = parsedResponse.chatResponse;
+      
+      // Update AI message content in one operation instead of multiple concatenations
+      if (aiMessage) {
+        aiMessage.content = parsedResponse.chatResponse || streamedContent;
+        chat.lastMessage = parsedResponse.chatResponse || streamedContent;
       }
+      
+      // Handle AI prompt if present
       if (parsedResponse.aiPrompt) {
         console.log('parsedResponse.aiPrompt', parsedResponse.aiPrompt);
+        console.log('🔄 Updating story and resetting isAIPromptGenerating...');
         updateStory(chat.id, parsedResponse.aiPrompt, !activeAiPromptVersion.value ? true : false);
+        // Reset AI prompt generating flag after story is updated
+        isAIPromptGenerating.value = false;
+        console.log('✅ isAIPromptGenerating reset to false after story update');
+      } else {
+        // If no AI prompt was generated, also reset the flag
+        console.log('⚠️ No AI prompt found, resetting isAIPromptGenerating...');
+        isAIPromptGenerating.value = false;
+        console.log('✅ isAIPromptGenerating reset to false (no prompt)');
       }
 
       await nextTick();
@@ -682,15 +805,19 @@ Use the above connected services information to understand what tools and data s
 
       // Save templates only on successful completion
       try {
-        await saveToTemplate();
+        console.log('🔄 Starting saveToTemplate after successful AI response...');
+        const saveStartTime = Date.now();
+        await debouncedSaveToTemplate();
+        logPerformance('saveToTemplate', saveStartTime, 'after AI response');
       } catch (saveError) {
         console.error('Error saving templates after successful AI response:', saveError);
-        // Don't show error for template saving to avoid confusion
       }
 
     } catch (error: any) {
+      const errorTime = Date.now();
       console.error('AI response error:', error);
       console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      console.error(`❌ Error occurred after ${errorTime - functionStartTime}ms`);
 
       // Remove any empty message if it exists
       const lastMessage = chat.messages[chat.messages.length - 1];
@@ -712,11 +839,14 @@ Use the above connected services information to understand what tools and data s
       // Stop the flow - don't continue with any other operations
       return;
     } finally {
+      const finallyTime = Date.now();
+      console.log(`🔄 Finally block reached after ${finallyTime - functionStartTime}ms`);
+      
       // Always set typing to false when done
       isTyping.value = false;
       isAIPromptGenerating.value = false;
       doInputDisable.value = false;
-      // console.log('Typing indicator turned off');
+      console.log('🔄 Finally block: Reset all flags - isTyping: false, isAIPromptGenerating: false');
       
       // Note: saveToTemplate() is not called here to prevent additional API calls on error
       // The flow stops completely when an error occurs
@@ -725,12 +855,17 @@ Use the above connected services information to understand what tools and data s
 
   // Helper function to parse dual response format
   function parseDualResponse(content: string): { chatResponse: string | null; aiPrompt: string | null } {
-    // Handle case where content might contain the markers but not in expected order
+    // Use single regex pass for better performance
     const chatResponseMatch = content.match(/---CHAT_RESPONSE---([\s\S]*?)(?=---AI_PROMPT---|---END---|$)/);
     const aiPromptMatch = content.match(/---AI_PROMPT---([\s\S]*?)(?=---END---|$)/);
 
     let chatResponse = chatResponseMatch ? chatResponseMatch[1].trim() : null;
     let aiPrompt = aiPromptMatch ? aiPromptMatch[1].trim() : null;
+
+    // Early return if we found both markers
+    if (chatResponse && aiPrompt) {
+      return { chatResponse, aiPrompt };
+    }
 
     console.log('Initial parsing results:', {
       foundChatMarker: !!chatResponseMatch,
@@ -747,39 +882,23 @@ Use the above connected services information to understand what tools and data s
       aiPrompt = null;
     }
 
-    // If we didn't find the structured format, try to detect patterns more aggressively
+    // If we didn't find the structured format, try to detect patterns more efficiently
     if (!chatResponse && !aiPrompt && content.trim()) {
-      // console.log('No structured format found, analyzing content patterns...');
-
-      const lowerContent = content.toLowerCase().trim();
-      const contentLines = content.trim().split('\n');
-
-      // Check if it looks like a conversational chat response
-      const chatIndicators = [
-        'great!', 'perfect!', 'excellent!', 'awesome!', 'wonderful!',
-        'i\'ve updated', 'i\'ve created', 'i\'ve generated', 'i\'ve built',
-        'here you go', 'here\'s', 'let me help', 'how can i', 'how may i',
-        'what would you like', 'anything else', 'would you like me to',
-        'sure!', 'absolutely!', 'of course!', 'no problem!',
-        'i can help', 'happy to help', 'glad to help'
-      ];
-
-      // Check if it looks like an AI prompt/instructions (more comprehensive)
-      const promptIndicators = [
-        'you are', 'act as', 'your role is', 'instructions:', 'system:',
-        'when user', 'if user', 'respond with', 'reply with',
-        'user says', 'user sends', 'user clicks', 'user types'
-      ];
-
+      const lowerContent = content.toLowerCase();
+      
+      // Use single regex for multiple patterns instead of multiple includes() calls
+      const chatIndicators = /(great!|perfect!|excellent!|awesome!|wonderful!|i've updated|i've created|i've generated|i've built|here you go|here's|let me help|how can i|how may i|what would you like|anything else|would you like me to|sure!|absolutely!|of course!|no problem!|i can help|happy to help|glad to help)/;
+      const promptIndicators = /(you are|act as|your role is|instructions:|system:|when user|if user|respond with|reply with|user says|user sends|user clicks|user types)/;
+      
       // Check for numbered list patterns that indicate AI prompts
-      const hasNumberedList = /^\d+\.\s/.test(content.trim()) || contentLines.some(line => /^\d+\.\s/.test(line.trim()));
+      const hasNumberedList = /^\d+\.\s/.test(content.trim()) || content.split('\n').some(line => /^\d+\.\s/.test(line.trim()));
       const hasWhenUserPattern = /when user/i.test(content);
       const hasIfUserPattern = /if user/i.test(content);
       const hasBotRepliesPattern = /(bot replies|reply with|respond with)/i.test(content);
 
-      // Count indicators
-      const chatIndicatorCount = chatIndicators.filter(indicator => lowerContent.includes(indicator)).length;
-      const promptIndicatorCount = promptIndicators.filter(indicator => lowerContent.includes(indicator)).length;
+      // Count indicators more efficiently
+      const chatIndicatorCount = (lowerContent.match(chatIndicators) || []).length;
+      const promptIndicatorCount = (lowerContent.match(promptIndicators) || []).length;
 
       // Determine if this is clearly an AI prompt based on multiple indicators
       const isLikelyAIPrompt = (
@@ -794,91 +913,16 @@ Use the above connected services information to understand what tools and data s
         chatIndicatorCount >= 1 && promptIndicatorCount === 0 && !hasNumberedList
       );
 
-      // console.log('Classification:', { isLikelyAIPrompt, isLikelyChatResponse });
-
       if (isLikelyAIPrompt && !isLikelyChatResponse) {
         // This looks like a structured AI prompt
         aiPrompt = content.trim();
         chatResponse = 'I\'ve created your AI prompt. You can see the details in the sidebar.';
-        // console.log('✅ Content classified as AI prompt - separated into sidebar');
       } else if (isLikelyChatResponse && !isLikelyAIPrompt) {
         // This is clearly a chat response
         chatResponse = content.trim();
-        // console.log('✅ Content classified as chat response only');
       } else {
-        // Ambiguous content - check for mixed content and try to separate
-        // console.log('⚠️ Ambiguous content detected, attempting separation...');
-
-        // Try to find where AI prompt might start within the content
-        const lines = contentLines;
-        let separationIndex = -1;
-
-        // Look for transitions that might indicate AI prompt start
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i].toLowerCase().trim();
-
-          // Check if this line starts what looks like an AI prompt
-          if (
-            /^\d+\.\s/.test(lines[i].trim()) &&
-            (line.includes('when user') || line.includes('if user') || line.includes('user says'))
-          ) {
-            separationIndex = i;
-            break;
-          }
-
-          // Check for explicit prompt indicators at line start
-          if (
-            line.startsWith('you are') ||
-            line.startsWith('act as') ||
-            line.startsWith('instructions:') ||
-            line.startsWith('system:')
-          ) {
-            separationIndex = i;
-            break;
-          }
-        }
-
-        if (separationIndex > 0) {
-          // Found separation point
-          const chatPart = lines.slice(0, separationIndex).join('\n').trim();
-          const promptPart = lines.slice(separationIndex).join('\n').trim();
-
-          if (chatPart.length > 0 && promptPart.length > 0) {
-            chatResponse = chatPart;
-            aiPrompt = promptPart;
-            console.log('✅ Successfully separated mixed content', {
-              chatLength: chatPart.length,
-              promptLength: promptPart.length
-            });
-          } else {
-            // Fallback to treating as chat response only
-            chatResponse = content.trim();
-            // console.log('⚠️ Separation failed, treating as chat response only');
-          }
-        } else {
-          // No clear separation found - default to chat response only to avoid contamination
-          chatResponse = content.trim();
-          // console.log('⚠️ No separation possible, defaulting to chat response only');
-        }
-      }
-    }
-
-    // Final validation - don't allow AI prompts to leak into chat
-    if (chatResponse) {
-      // Check if chat response accidentally contains AI prompt content
-      const suspiciousPatterns = [
-        /^\d+\.\s.*when user/i,
-        /respond with.*:\s*-\s*text:/i,
-        /bot replies with.*buttons:/i,
-        /quick replies.*\[.*\]/i
-      ];
-
-      const hasSuspiciousContent = suspiciousPatterns.some(pattern => pattern.test(chatResponse!));
-
-      if (hasSuspiciousContent && !aiPrompt) {
-        // console.log('🚨 Detected AI prompt content in chat response, moving to sidebar');
-        aiPrompt = chatResponse;
-        chatResponse = 'I\'ve created your AI prompt. You can see the details in the sidebar.';
+        // For ambiguous content, default to chat response to avoid contamination
+        chatResponse = content.trim();
       }
     }
 
@@ -899,7 +943,7 @@ Use the above connected services information to understand what tools and data s
    * @param chatId - The unique identifier for the chat session
    * @returns JSON string containing connected services information, or null if no services
    */
-  async function getConnectedServicesJson(chatId: string): Promise<string | null> {
+  function getConnectedServicesJson(chatId: string): string | null {
     try {
       const connectedServices: any = {
         chatId: chatId,
@@ -992,7 +1036,7 @@ Use the above connected services information to understand what tools and data s
     if (currentActiveChat) {
       chats.value = [currentActiveChat];
       // console.log('Cleared all chats except active one');
-      saveToTemplate();
+      debouncedSaveToTemplate();
       return true;
     }
     return false;

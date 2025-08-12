@@ -6,7 +6,6 @@ import type { Attachment } from '@/types';
 import FileUpload from '@/components/ui/FileUpload.vue';
 import { botsifyApi } from '@/services/botsifyApi';
 import McpConnectionModal from "@/components/chat/mcp/MCPConnectionModal.vue";
-import PublishAgentModal from "@/components/modal/PublishAgentModal.vue";
 import FileSearchModal from "@/components/modal/FileSearchModal.vue";
 import WebSearchModal from "@/components/modal/WebSearchModal.vue";
 
@@ -27,13 +26,10 @@ const attachments = ref<Attachment[]>([]);
 const showMCPModal = ref(false);
 const showMCPDropdown = ref(false);
 const showCustomServerOnOpen = ref(false);
-const publishAgentRef = ref<InstanceType<typeof PublishAgentModal> | null>(null)
 const fileSearchModalRef = ref<InstanceType<typeof FileSearchModal> | null>(null)
 const webSearchModalRef = ref<InstanceType<typeof WebSearchModal> | null>(null)
 
-const openPublishAgentModal = () => {
-  publishAgentRef.value?.openModal()
-}
+const loadingFor =  ref('');
 
 const openFileSearchModal = () => {
   fileSearchModalRef.value?.openModal()
@@ -42,11 +38,6 @@ const openFileSearchModal = () => {
 const openWebSearchModal = () => {
   webSearchModalRef.value?.openModal()
 }
-
-const loadingFor =  ref('');
-
-
-
 
 onMounted(async () => {
   await mcpStore.setIntialize();
@@ -337,16 +328,6 @@ const hideLoading = () => {
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
               </svg>
             </button>
-            <button
-              class="icon-button mcp-icon-button"
-              @click="openPublishAgentModal"
-              title="Connect to external services"
-              :disabled="loadingFor === 'fileUploadingFromPin' || chatStore.doInputDisable"
-            >
-              <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m10.051 8.102-3.778.322-1.994 1.994a.94.94 0 0 0 .533 1.6l2.698.316m8.39 1.617-.322 3.78-1.994 1.994a.94.94 0 0 1-1.595-.533l-.4-2.652m8.166-11.174a1.366 1.366 0 0 0-1.12-1.12c-1.616-.279-4.906-.623-6.38.853-1.671 1.672-5.211 8.015-6.31 10.023a.932.932 0 0 0 .162 1.111l.828.835.833.832a.932.932 0 0 0 1.111.163c2.008-1.102 8.35-4.642 10.021-6.312 1.475-1.478 1.133-4.77.855-6.385Zm-2.961 3.722a1.88 1.88 0 1 1-3.76 0 1.88 1.88 0 0 1 3.76 0Z"/>
-              </svg>
-            </button>
 
             <!-- New Dropdown Menu with 3 Options -->
             <div v-if="showMCPDropdown" class="mcp-dropdown" @click.stop>
@@ -423,7 +404,6 @@ const hideLoading = () => {
           :is-open="showMCPModal"
           @close="closeMCPModal"
       />
-      <PublishAgentModal ref="publishAgentRef"/>
       <FileSearchModal ref="fileSearchModalRef" :chatId="props.chatId" />
       <WebSearchModal ref="webSearchModalRef" :chatId="props.chatId" />
     </Teleport>

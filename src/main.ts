@@ -97,13 +97,25 @@ app.use(VueTelInput);
 installPermissions(app);
 
 window.$toast = useToast({position:'top-right'});
-window.$confirm = function (overrideOpt = {}, callback = () => {}) {
+window.$confirm = function (overrideOpt = {}, confirmCallback = () => {}, cancelCallback = () => {}) {
+  // Handle backward compatibility - if only 2 parameters are passed, treat the second as confirmCallback
+  if (typeof confirmCallback === 'function' && typeof cancelCallback !== 'function') {
+    // Old signature: (overrideOpt, callback)
+    cancelCallback = () => {};
+  } else if (typeof confirmCallback !== 'function') {
+    // Only one parameter passed: (overrideOpt)
+    confirmCallback = () => {};
+    cancelCallback = () => {};
+  }
+  
   Swal.fire({
     ...swalOption,
     ...overrideOpt,
   }).then((result) => {
     if (result.isConfirmed) {
-      callback();
+      confirmCallback();
+    } else if (result.dismiss === Swal.DismissReason.cancel) {
+      cancelCallback();
     }
   });
 };

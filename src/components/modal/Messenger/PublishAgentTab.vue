@@ -157,7 +157,7 @@ const connectAccount = async () => {
     const result = await refreshPermissions();
     if (result.success && 'data' in result && result.data?.redirect) {
       // Redirect to the URL provided by the API
-      window.open(result.data.redirect, '_blank');
+      // window.open(result.data.redirect, '_blank');
     } else {
       console.error('Failed to get redirect URL:', result.error);
     }
