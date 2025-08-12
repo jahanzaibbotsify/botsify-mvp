@@ -416,6 +416,7 @@ const openPartnerPortal = () => {
         
         <!-- Partner Portal Button for Whitelabel Users -->
         <button 
+          v-if="whitelabelStore.isWhitelabel && !whitelabelStore.isWhitelabelClient" 
           class="partner-portal-button" 
           @click="openPartnerPortal"
         >
@@ -499,7 +500,7 @@ const openPartnerPortal = () => {
 }
 
 .partner-portal-button:hover {
-  background-color: var(--color-secondary-hover);
+  background-color: var(--color-success-hover);
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
