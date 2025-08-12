@@ -106,6 +106,8 @@ export const usePublishStore = defineStore('publish', () => {
         loadingStates.value.publishStatus = false;
         cache.value.publishStatus = null;
         cacheValid.value.publishStatus = false;
+        cache.value.botDetails = null;
+        cacheValid.value.botDetails = false;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to save Telegram settings';

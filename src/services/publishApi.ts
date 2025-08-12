@@ -451,6 +451,7 @@ export class PublishApiService {
           client_secret: settings.client_secret || '',
           is_facebook: false,
           api_key: settings.api_key,
+          apikey: apiKey
         };
       }
 
