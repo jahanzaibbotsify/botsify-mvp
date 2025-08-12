@@ -20,27 +20,31 @@
             <div class="subscription-card">
               <div class="subscription-header">
                 <div class="plan-info">
-                  <h4>{{ currentPlan?.name || 'Free Plan' }}</h4>
-                  <p class="plan-description">{{ currentPlan?.description || 'Basic features for getting started' }}</p>
+                  <h4>{{ subscriptionData?.stripe_plan || 'Professional Plan' }}</h4>
+                  <p class="plan-description">{{ getPlanDescription(subscriptionData?.stripe_plan) }}</p>
                 </div>
                 <div class="plan-price">
-                  <span class="price-amount">${{ currentPlan?.price || 0 }}</span>
-                  <span class="price-period">{{ currentPlan?.billing === 'monthly' ? '/month' : currentPlan?.billing === 'yearly' ? '/year' : '' }}</span>
+                  <span class="price-amount">${{ getPlanPrice(subscriptionData?.stripe_plan) }}</span>
+                  <span class="price-period">{{ getBillingPeriod(subscriptionData?.stripe_plan) }}</span>
                 </div>
               </div>
               
               <div class="subscription-details">
                 <div class="detail-item">
                   <span class="label">Status:</span>
-                  <span class="value status" :class="subscriptionStatus">{{ subscriptionStatusText }}</span>
+                  <span class="value status" :class="subscriptionData?.status">{{ subscriptionData?.status || 'Unknown' }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="label">Next Billing:</span>
-                  <span class="value">{{ nextBillingDate }}</span>
+                  <span class="label">Created:</span>
+                  <span class="value">{{ formatDate(subscriptionData?.created_at) }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="label">Payment Method:</span>
-                  <span class="value">{{ paymentMethod }}</span>
+                  <span class="label">Last Updated:</span>
+                  <span class="value">{{ formatDate(subscriptionData?.updated_at) }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Quantity:</span>
+                  <span class="value">{{ subscriptionData?.quantity || 1 }}</span>
                 </div>
               </div>
   
@@ -52,78 +56,41 @@
             </div>
           </div>
   
-          <!-- Usage Summary -->
-          <div class="usage-section">
-            <h3>Current Usage</h3>
-            <div class="usage-grid">
-              <div class="usage-item">
-                <div class="usage-icon">
-                  <i class="pi pi-users"></i>
-                </div>
-                <div class="usage-info">
-                  <span class="usage-value">{{ currentUsage.users.toLocaleString() }}</span>
-                  <span class="usage-label">Users this month</span>
-                  <div class="usage-limit">of {{ currentPlan?.limits?.conversations === 'unlimited' ? '∞' : currentPlan?.limits?.conversations?.toLocaleString() || '5,000' }} limit</div>
-                </div>
-              </div>
-              <div class="usage-item">
-                <div class="usage-icon">
-                  <i class="pi pi-android"></i>
-                </div>
-                <div class="usage-info">
-                  <span class="usage-value">{{ currentUsage.agents }}</span>
-                  <span class="usage-label">Active Agents</span>
-                  <div class="usage-limit">of {{ currentPlan?.limits?.agents === 'unlimited' ? '∞' : currentPlan?.limits?.agents || 2 }} limit</div>
-                </div>
-              </div>
-              <div class="usage-item">
-                <div class="usage-icon">
-                  <i class="pi pi-chart-line"></i>
-                </div>
-                <div class="usage-info">
-                  <span class="usage-value">{{ currentUsage.conversations.toLocaleString() }}</span>
-                  <span class="usage-label">Conversations</span>
-                  <div class="usage-limit">this month</div>
-                </div>
-              </div>
-            </div>
-          </div>
-  
-          <!-- Invoice History -->
-          <div class="invoices-section">
+          <!-- Charges History -->
+          <div class="charges-section">
             <div class="section-header">
-              <h3>Invoice History</h3>
-              <button class="download-all-btn" @click="downloadAllInvoicesHandler">
+              <h3>Payment History</h3>
+              <button class="download-all-btn" @click="downloadAllChargesHandler">
                 <i class="pi pi-download"></i>
                 Download All
               </button>
             </div>
             
-            <div class="invoices-table">
+            <div class="charges-table">
               <div class="table-header">
                 <div class="header-cell">Date</div>
-                <div class="header-cell">Plan</div>
+                <div class="header-cell">Description</div>
                 <div class="header-cell">Amount</div>
                 <div class="header-cell">Status</div>
                 <div class="header-cell">Actions</div>
               </div>
               
-              <div v-if="invoices.length === 0" class="empty-state">
-                <i class="pi pi-file"></i>
-                <p>No invoices yet</p>
-                <span>Your billing history will appear here</span>
+              <div v-if="chargesData.length === 0" class="empty-state">
+                <i class="pi pi-credit-card"></i>
+                <p>No charges found</p>
+                <span>Your payment history will appear here</span>
               </div>
               
               <div v-else class="table-body">
-                <div v-for="invoice in invoices" :key="invoice.id" class="table-row">
-                  <div class="cell">{{ formatDate(invoice.date) }}</div>
-                  <div class="cell">{{ invoice.planName }}</div>
-                  <div class="cell">${{ invoice.amount.toFixed(2) }}</div>
+                <div v-for="charge in chargesData" :key="charge.id" class="table-row">
+                  <div class="cell">{{ formatDate(charge.created) }}</div>
+                  <div class="cell">{{ charge.description || 'Subscription payment' }}</div>
+                  <div class="cell">${{ (charge.amount / 100).toFixed(2) }}</div>
                   <div class="cell">
-                    <span class="status-badge" :class="invoice.status">{{ invoice.status }}</span>
+                    <span class="status-badge" :class="charge.status">{{ charge.status }}</span>
                   </div>
                   <div class="cell">
-                    <button class="download-btn" @click="downloadInvoiceHandler(invoice.id)">
+                    <button class="download-btn" @click="downloadChargeReceipt(charge.receipt_url)" title="Download Receipt">
                       <i class="pi pi-download"></i>
                     </button>
                   </div>
@@ -137,21 +104,60 @@
   </template>
   
   <script setup lang="ts">
-  import { ref, computed, onMounted } from 'vue'
+  import { ref, computed, onMounted, watch } from 'vue'
   import { useAuthStore } from '@/stores/authStore'
-  import type { PricingPlan } from '@/types/auth'
-  import { generateInvoiceData, downloadInvoice, downloadAllInvoices } from '@/utils/invoiceGenerator'
   
-  interface Invoice {
+  interface StripeCharge {
     id: string
-    date: Date
-    planName: string
     amount: number
-    status: 'paid' | 'pending' | 'failed'
+    currency: string
+    created: number
+    description: string
+    status: string
+    receipt_url: string
+    payment_method_details: {
+      card: {
+        brand: string
+        last4: string
+        exp_month: number
+        exp_year: number
+      }
+    }
+  }
+  
+  interface StripeSubscription {
+    id: number
+    user_id: number
+    name: string
+    stripe_id: string
+    stripe_plan: string
+    quantity: number
+    status: string
+    trial_ends_at: string | null
+    ends_at: string | null
+    next_charge_date: string | null
+    created_at: string
+    updated_at: string
+    paddle_cancel_url: string | null
+    paddle_update_url: string | null
+    paddle_checkout_id: string | null
+    subscription_plan_id: string | null
+    whitelabel_client: number
+  }
+  
+  interface BillingData {
+    charges: {
+      object: string
+      data: StripeCharge[]
+      has_more: boolean
+      url: string
+    }
+    stripe_subscription: StripeSubscription
   }
   
   interface Props {
     show: boolean
+    billingData?: BillingData | null
   }
   
   interface Emits {
@@ -163,75 +169,53 @@
   
   const authStore = useAuthStore()
   
-  // Mock current usage data
-  const currentUsage = ref({
-    users: 3247,
-    agents: 2,
-    conversations: 8932
+  // Computed properties
+  const chargesData = computed(() => {
+    return props.billingData?.charges?.data || []
   })
   
-  // Mock invoice data
-  const invoices = ref<Invoice[]>([
-    {
-      id: 'inv_2024_001',
-      date: new Date('2024-12-01'),
-      planName: 'Done for you',
-      amount: 149.00,
-      status: 'paid'
-    },
-    {
-      id: 'inv_2024_002', 
-      date: new Date('2024-11-01'),
-      planName: 'Done for you',
-      amount: 149.00,
-      status: 'paid'
-    },
-    {
-      id: 'inv_2024_003',
-      date: new Date('2024-10-01'),
-      planName: 'Do it yourself',
-      amount: 49.00,
-      status: 'paid'
-    },
-    {
-      id: 'inv_2024_004',
-      date: new Date('2024-09-01'),
-      planName: 'Do it yourself',
-      amount: 49.00,
-      status: 'paid'
-    },
-    {
-      id: 'inv_2024_005',
-      date: new Date('2024-08-01'),
-      planName: 'Done for you',
-      amount: 149.00,
-      status: 'paid'
-    },
-    {
-      id: 'inv_2024_006',
-      date: new Date('2024-07-01'),
-      planName: 'Custom',
-      amount: 299.00,
-      status: 'paid'
-    },
-    {
-      id: 'inv_2024_007',
-      date: new Date('2024-06-01'),
-      planName: 'Custom',
-      amount: 299.00,
-      status: 'paid'
+  const subscriptionData = computed(() => {
+    return props.billingData?.stripe_subscription || null
+  })
+  
+  // Helper functions
+  const getPlanDescription = (planName: string | undefined) => {
+    if (!planName) return 'Professional plan with advanced features'
+    
+    if (planName.includes('Professional')) {
+      return 'Professional service for scalable businesses with AI agents and advanced features'
+    } else if (planName.includes('Personal')) {
+      return 'Basic plan for personal use and small businesses'
+    } else if (planName.includes('Custom')) {
+      return 'Custom enterprise solution with dedicated support'
     }
-  ])
+    
+    return 'Professional plan with advanced features'
+  }
   
-  const currentPlan = computed(() => {
-    // Find the popular plan (Done for you) as default
-    return authStore.pricingPlans.find(plan => plan.isPopular) || authStore.pricingPlans[0]
-  })
+  const getPlanPrice = (planName: string | undefined) => {
+    if (!planName) return 149
+    
+    if (planName.includes('Annual')) {
+      return 1490
+    } else if (planName.includes('Personal')) {
+      return 49
+    } else if (planName.includes('Professional')) {
+      return 149
+    }
+    
+    return 149
+  }
   
-  const subscriptionStatus = computed(() => 'active')
-  const subscriptionStatusText = computed(() => 'Active')
-  const nextBillingDate = computed(() => 'January 1, 2025')
-  const paymentMethod = computed(() => '**** **** **** 4242 (Visa)')
+  const getBillingPeriod = (planName: string | undefined) => {
+    if (!planName) return '/month'
+    
+    if (planName.includes('Annual')) {
+      return '/year'
+    }
+    
+    return '/month'
+  }
   
   const closeModal = () => {
     emit('close')
@@ -241,7 +225,18 @@
     closeModal()
   }
   
-  const formatDate = (date: Date) => {
+  const formatDate = (dateString: string | number | undefined) => {
+    if (!dateString) return 'N/A'
+    
+    let date: Date
+    if (typeof dateString === 'number') {
+      // Unix timestamp
+      date = new Date(dateString * 1000)
+    } else {
+      // ISO string
+      date = new Date(dateString)
+    }
+    
     return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
       month: 'short',
@@ -249,54 +244,66 @@
     }).format(date)
   }
   
-  const downloadInvoiceHandler = async (invoiceId: string) => {
-    console.log('Downloading invoice:', invoiceId)
-    
-    // Find the invoice data
-    const invoice = invoices.value.find(inv => inv.id === invoiceId)
-    if (!invoice) {
-      window.$toast?.error('Invoice not found')
-      return
-    }
-    
-    try {
-      // Generate and download the invoice PDF
-      const invoiceData = generateInvoiceData(invoice.id, invoice.planName, invoice.amount, invoice.date)
-      window.$toast?.info('Generating PDF invoice...')
-      await downloadInvoice(invoiceData)
-      window.$toast?.success('PDF invoice downloaded successfully')
-    } catch (error) {
-      console.error('Error downloading invoice:', error)
-      window.$toast?.error('Failed to download PDF invoice')
+  const downloadChargeReceipt = (receiptUrl: string) => {
+    if (receiptUrl) {
+      window.open(receiptUrl, '_blank')
+    } else {
+      window.$toast?.error('Receipt not available')
     }
   }
   
-  const downloadAllInvoicesHandler = async () => {
-    console.log('Downloading all invoices...')
+  const downloadAllChargesHandler = async () => {
+    console.log('Downloading all charges...')
     
     try {
-      const invoiceList = invoices.value.map(invoice => ({
-        id: invoice.id,
-        planName: invoice.planName,
-        amount: invoice.amount,
-        date: invoice.date
-      }))
-      
-      window.$toast?.info(`Starting download of ${invoiceList.length} PDF invoices + CSV summary...`)
-      await downloadAllInvoices(invoiceList)
-      window.$toast?.success('All invoices downloaded successfully!')
+      // Create CSV content for all charges
+      const csvContent = generateChargesCSV(chargesData.value)
+      downloadCSV(csvContent, 'charges-history.csv')
+      window.$toast?.success('Charges history downloaded successfully!')
     } catch (error) {
-      console.error('Error downloading invoices:', error)
-      window.$toast?.error('Some invoices failed to download. Check console for details.')
+      console.error('Error downloading charges:', error)
+      window.$toast?.error('Failed to download charges history')
     }
+  }
+  
+  const generateChargesCSV = (charges: StripeCharge[]) => {
+    const headers = ['Date', 'Description', 'Amount', 'Status', 'Currency']
+    const rows = charges.map(charge => [
+      formatDate(charge.created),
+      charge.description || 'Subscription payment',
+      (charge.amount / 100).toFixed(2),
+      charge.status,
+      charge.currency.toUpperCase()
+    ])
+    
+    return [headers, ...rows].map(row => row.join(',')).join('\n')
+  }
+  
+  const downloadCSV = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
   }
   
   onMounted(() => {
     // Load billing data when modal opens
-    if (props.show) {
-      console.log('Loading billing data...')
+    if (props.show && props.billingData) {
+      console.log('Loading billing data:', props.billingData)
     }
   })
+  
+  // Watch for changes in billingData prop
+  watch(() => props.billingData, (newData) => {
+    if (newData) {
+      console.log('Billing data updated:', newData)
+    }
+  }, { immediate: true })
   </script>
   
   <style scoped>
@@ -373,14 +380,12 @@
   }
   
   .subscription-section,
-  .usage-section,
-  .invoices-section {
+  .charges-section {
     margin-bottom: var(--space-8);
   }
   
   .subscription-section h3,
-  .usage-section h3,
-  .invoices-section h3 {
+  .charges-section h3 {
     margin: 0 0 var(--space-4) 0;
     color: var(--color-text-primary);
     font-size: 1.25rem;
@@ -499,58 +504,6 @@
     color: white;
   }
   
-  .usage-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--space-4);
-  }
-  
-  .usage-item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-4);
-    padding: var(--space-4);
-    background: var(--color-bg-secondary);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-  }
-  
-  .usage-icon {
-    width: 48px;
-    height: 48px;
-    background: var(--color-primary);
-    border-radius: var(--radius-lg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1.25rem;
-  }
-  
-  .usage-info {
-    flex: 1;
-  }
-  
-  .usage-value {
-    display: block;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--color-text-primary);
-    line-height: 1.2;
-  }
-  
-  .usage-label {
-    display: block;
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
-    margin-bottom: var(--space-1);
-  }
-  
-  .usage-limit {
-    font-size: 0.75rem;
-    color: var(--color-text-tertiary);
-  }
-  
   .section-header {
     display: flex;
     justify-content: space-between;
@@ -577,7 +530,7 @@
     background: var(--color-primary-hover);
   }
   
-  .invoices-table {
+  .charges-table {
     background: var(--color-bg-secondary);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
@@ -586,7 +539,7 @@
   
   .table-header {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr auto;
+    grid-template-columns: 1fr 2fr 1fr 1fr auto;
     gap: var(--space-4);
     padding: var(--space-4);
     background: var(--color-bg-tertiary);
@@ -608,11 +561,16 @@
   
   .table-row {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr auto;
+    grid-template-columns: 1fr 2fr 1fr 1fr auto;
     gap: var(--space-4);
     padding: var(--space-4);
     border-bottom: 1px solid var(--color-border);
     transition: background-color var(--transition-normal);
+  }
+  
+  .cell:nth-child(2) {
+    word-break: break-word;
+    min-width: 0;
   }
   
   .table-row:hover {
@@ -639,7 +597,7 @@
     letter-spacing: 0.05em;
   }
   
-  .status-badge.paid {
+  .status-badge.succeeded {
     background: rgba(34, 197, 94, 0.1);
     color: var(--color-success);
   }
@@ -652,6 +610,21 @@
   .status-badge.failed {
     background: rgba(239, 68, 68, 0.1);
     color: var(--color-error);
+  }
+  
+  .status-badge.active {
+    background: rgba(34, 197, 94, 0.1);
+    color: var(--color-success);
+  }
+  
+  .status-badge.canceled {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-error);
+  }
+  
+  .status-badge.incomplete {
+    background: rgba(251, 191, 36, 0.1);
+    color: var(--color-warning);
   }
   
   .download-btn {
@@ -725,10 +698,6 @@
       grid-template-columns: 1fr;
     }
   
-    .usage-grid {
-      grid-template-columns: 1fr;
-    }
-  
     .table-header,
     .table-row {
       grid-template-columns: 1fr;
@@ -738,6 +707,10 @@
     .header-cell,
     .cell {
       padding: var(--space-2) 0;
+    }
+    
+    .cell:nth-child(2) {
+      word-break: normal;
     }
   }
   </style>

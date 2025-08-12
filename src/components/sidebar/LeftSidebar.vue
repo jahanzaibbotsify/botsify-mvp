@@ -9,6 +9,7 @@ import BookMeeting from '@/components/ui/BookMeeting.vue';
 import { botsifyApi } from '@/services/botsifyApi'
 import { BOTSIFY_WEB_URL } from '@/utils/config';
 import CalendlyModal from '../ui/CalendlyModal.vue';
+import BillingModal from '../modal/BillingModal.vue';
 
 
 const chatStore = useChatStore();
@@ -33,6 +34,8 @@ const selectedNavigationButton = computed(() => {
 const showDropdown = ref(false);
 const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
 const calendlyModalRef = ref<InstanceType<typeof CalendlyModal> | null>(null)
+const billingModalRef = ref<InstanceType<typeof BillingModal> | null>(null)
+const showBillingModal = ref(false)
 
 // Close dropdown when clicking outside
 const dropdownRef = ref<HTMLElement | null>(null);
@@ -207,19 +210,63 @@ const handleCalendly = () => {
   }
 }
 
+const closeBillingModal = () => {
+  showBillingModal.value = false
+  billingData.value = null
+}
+
 const billingLoading = ref(false)
+
+interface BillingData {
+  charges: {
+    object: string
+    data: any[]
+    has_more: boolean
+    url: string
+  }
+  stripe_subscription: {
+    id: number
+    user_id: number
+    name: string
+    stripe_id: string
+    stripe_plan: string
+    quantity: number
+    status: string
+    trial_ends_at: string | null
+    ends_at: string | null
+    next_charge_date: string | null
+    created_at: string
+    updated_at: string
+    paddle_cancel_url: string | null
+    paddle_update_url: string | null
+    paddle_checkout_id: string | null
+    subscription_plan_id: string | null
+    whitelabel_client: number
+  }
+}
+
+const billingData = ref<BillingData | null>(null)
 
 const handleManageBilling = async () => {
   billingLoading.value = true
   try {
     const res = await botsifyApi.manageBilling()
-    if (res && res.url) {
+    if (res && res.charges && res.stripe_subscription) {
+      // Store the billing data and show modal
+      billingData.value = res
+      showBillingModal.value = true
+    } else if(res && res.url) {
       window.open(res.url, '_blank')
     } else {
-      window.$toast?.error('Unable to open billing portal. Please try again later.')
+      // If no billing data, open the billing modal with empty data
+      billingData.value = null
+      showBillingModal.value = true
     }
   } catch (e) {
-    window.$toast?.error('Unable to open billing portal. Please try again later.')
+    console.error('Error fetching billing portal:', e)
+    // If API call fails, open the billing modal with empty data
+    billingData.value = null
+    showBillingModal.value = true
   } finally {
     billingLoading.value = false
   }
@@ -361,7 +408,12 @@ onUnmounted(() => {
     </div>
     <BookMeeting ref="bookMeetingRef"></BookMeeting>
     <CalendlyModal ref="calendlyModalRef"></CalendlyModal>
-    <User ref="userRef"></User>
+    <BillingModal 
+      ref="billingModalRef" 
+      :show="showBillingModal" 
+      :billing-data="billingData"
+      @close="closeBillingModal"
+    ></BillingModal>
   </aside>
 </template>
 
