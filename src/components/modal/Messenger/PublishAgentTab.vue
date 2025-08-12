@@ -227,6 +227,8 @@ const removeFbPagePermissions = async () => {
     } else {
       console.error('Failed to get redirect URL:', result.error);
     }
+    publishStore.clearFbPagesCache();
+    await loadFbPages();
   } catch (error) {
     console.error('Failed to refresh page permissions:', error);
   } finally {

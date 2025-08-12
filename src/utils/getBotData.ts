@@ -20,11 +20,11 @@ export async function getBotData() {
 
   if (!apikey || apikey === 'undefined' || apikey === 'null') {
     console.error('❌ No API key found');
-    return router.replace({ name: 'Unauthenticated' });
+    router.replace({ name: 'Unauthenticated' });
   }
 
   if(typeof route.name === 'undefined'){
-    return router.replace({ name: 'agent', params: { id: apikey } });
+    router.replace({ name: 'agent', params: { id: apikey } });
   }
 
   try {
@@ -80,11 +80,11 @@ export async function getBotData() {
 
     // Route restrictions
     if (route.name === 'conversation' && !roleStore.hasSubscription) {
-      return router.replace({ name: 'agent', params: { id: apikey } });
+      router.replace({ name: 'agent', params: { id: apikey } });
     }
 
     if (roleStore.isLiveChatAgent && route.name !== 'conversation') {
-      return router.replace({ name: 'conversation' });
+      router.replace({ name: 'conversation' });
     }
     
     isBotDataLoaded = true;

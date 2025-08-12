@@ -44,9 +44,7 @@ onMounted(async () => {
   if (apiKey) {
     botStore.setApiKey(apiKey);
   }
-  
-  initializeSidebar();
-
+  initializeSidebar()
   // Await the bot data loading
   try {
     await getBotData();
