@@ -49,7 +49,7 @@ interface InvoiceData {
     billingTo.setMonth(billingTo.getMonth() + 1)
     billingTo.setDate(0) // End of month
   
-    let items = []
+    let items:any = []
     
     if (planName === 'Done for you') {
       items = [
