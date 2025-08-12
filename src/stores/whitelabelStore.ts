@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { BOTSIFY_WEB_URL } from '@/utils/config'
 
 interface WhitelabelData {
   company_name: string
@@ -17,6 +18,7 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
 
   // Set whitelabel data from API response
   function setWhitelabelData(data: { is_whitelabel_client: boolean; whitelabel: WhitelabelData }) {
+    console.log(data, "data")
     isWhitelabelClient.value = data.is_whitelabel_client
     whitelabelData.value = data.whitelabel
 
@@ -63,9 +65,12 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
   const logo = computed(() => whitelabelData.value?.logo || null)
   const favicon = computed(() => whitelabelData.value?.favicon || null)
   const maskUrl = computed(() => whitelabelData.value?.mask_url || '')
+  const isWhitelabel = computed(() => whitelabelData.value !== null)
+  const partnerPortalUrl = computed(() => `${BOTSIFY_WEB_URL}/partner`)
 
   return {
     isWhitelabelClient,
+    isWhitelabel,
     whitelabelData,
     setWhitelabelData,
     applyWhitelabelColors,
@@ -75,6 +80,7 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
     secondaryColor,
     logo,
     favicon,
-    maskUrl
+    maskUrl,
+    partnerPortalUrl
   }
 }) 

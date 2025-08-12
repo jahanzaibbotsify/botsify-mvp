@@ -250,14 +250,22 @@ const billingData = ref<BillingData | null>(null)
 const handleManageBilling = async () => {
   billingLoading.value = true
   try {
+    console.log('Calling manageBilling API...')
     const res = await botsifyApi.manageBilling()
+    console.log('manageBilling API response:', res)
+    console.log('Response type:', typeof res)
+    console.log('Response keys:', res ? Object.keys(res) : 'null')
+    
     if (res && res.charges && res.stripe_subscription) {
+      console.log('Found charges and subscription, opening modal with data')
       // Store the billing data and show modal
       billingData.value = res
       showBillingModal.value = true
     } else if(res && res.url) {
+      console.log('Found URL, opening external link:', res.url)
       window.open(res.url, '_blank')
     } else {
+      console.log('No billing data found, opening modal with empty data')
       // If no billing data, open the billing modal with empty data
       billingData.value = null
       showBillingModal.value = true
@@ -308,6 +316,13 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
 });
+
+const openPartnerPortal = () => {
+  if (whitelabelStore.isWhitelabel && !whitelabelStore.isWhitelabelClient) {
+    window.open(whitelabelStore.partnerPortalUrl, '_blank');
+    closeDropdown();
+  }
+};
 </script>
 
 <template>
@@ -398,6 +413,17 @@ onUnmounted(() => {
             <span class="pricing-star">★</span>
           </div>
         </button>
+        
+        <!-- Partner Portal Button for Whitelabel Users -->
+        <button 
+          class="partner-portal-button" 
+          @click="openPartnerPortal"
+        >
+          <div class="button-content">
+            <span class="pricing-text">Partner Portal</span>
+            <i class="pi pi-external-link"></i>
+          </div>
+        </button>
     </div>
     <div v-else class="sidebar-pricing">
         <button class="pricing-button" @click="handleCalendly">
@@ -452,6 +478,34 @@ onUnmounted(() => {
   background-color: var(--color-primary-hover);
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
+}
+
+.partner-portal-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--color-secondary);
+  color: white;
+  border-radius: var(--radius-full);
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+  width: 100%;
+  margin-top: var(--space-2);
+  border: none;
+  cursor: pointer;
+}
+
+.partner-portal-button:hover {
+  background-color: var(--color-secondary-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.partner-portal-button .pi {
+  font-size: 0.875rem;
 }
 
 .pricing-star {

@@ -49,9 +49,9 @@
               </div>
   
               <div class="subscription-actions">
-                <button class="action-btn secondary">Change Plan</button>
-                <button class="action-btn secondary">Update Payment</button>
-                <button class="action-btn danger">Cancel Subscription</button>
+                <button class="action-btn secondary" @click="openChangePlanModal">Change Plan</button>
+                <button class="action-btn secondary" @click="openChangePaymentModal">Update Payment</button>
+                <button class="action-btn danger" @click="openCancellationModal">Cancel Subscription</button>
               </div>
             </div>
           </div>
@@ -101,11 +101,201 @@
         </div>
       </div>
     </div>
+
+    <!-- Change Plan Modal -->
+    <div v-if="showChangePlanModal" class="modal-overlay" @click="closeChangePlanModal">
+      <div class="sub-modal-content" @click.stop>
+        <div class="sub-modal-header">
+          <h3>Change Your Plan</h3>
+          <button class="close-button" @click="closeChangePlanModal">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+        <div class="sub-modal-body">
+          <div v-if="!changingPlan">
+            <!-- Whitelabel Client Plans -->
+            <div v-if="whitelabelStore.isWhitelabelClient">
+              <div v-for="(planName, planId) in availableWhitelabelPlans" :key="planId">
+                <button 
+                  v-show="currentPlanId !== planId" 
+                  class="plan-option-btn" 
+                  @click="selectPlan(planId)"
+                >
+                  {{ planName }}
+                </button>
+              </div>
+            </div>
+            
+            <!-- Regular Client Plans -->
+            <div v-else>
+              <!-- Personal Plan Monthly to Annual -->
+              <button 
+                v-show="currentPlanId === 'Personal-Plan'" 
+                class="plan-option-btn" 
+                @click="selectPlan('Personal-Plan-Annual')"
+              >
+                Personal Plan - $490/Year
+              </button>
+              
+              <!-- Personal Plan Annual to Monthly -->
+              <button 
+                v-show="currentPlanId === 'Personal-Plan-Annual'" 
+                class="plan-option-btn" 
+                @click="selectPlan('Personal-Plan')"
+              >
+                Personal Plan - $49/Month
+              </button>
+              
+              <!-- Upgrade to Professional Monthly -->
+              <button 
+                v-show="currentPlanId !== 'Professional-Plan'" 
+                class="plan-option-btn" 
+                @click="selectPlan('Professional-Plan')"
+              >
+                Professional Plan - $149/Month
+              </button>
+              
+              <!-- Upgrade to Professional Annual -->
+              <button 
+                v-show="currentPlanId !== 'Professional-Plan-Annual'" 
+                class="plan-option-btn" 
+                @click="selectPlan('Professional-Plan-Annual')"
+              >
+                Professional Plan - $1490/Year
+              </button>
+              
+              <!-- Downgrade Contact Message -->
+              <div v-if="!canDowngrade" class="downgrade-message">
+                <p>If you want to downgrade your plan, please contact us</p>
+                <a 
+                  class="contact-btn" 
+                  :href="getContactEmail()"
+                  target="_blank"
+                >
+                  Contact Us
+                </a>
+              </div>
+            </div>
+          </div>
+          
+          <div v-else class="loading-state">
+            <div class="spinner"></div>
+            <p>Processing...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Change Payment Method Modal -->
+    <div v-if="showChangePaymentModal" class="modal-overlay" @click="closeChangePaymentModal">
+      <div class="sub-modal-content" @click.stop>
+        <div class="sub-modal-header">
+          <h3>Update Payment Method</h3>
+          <button class="close-button" @click="closeChangePaymentModal">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+        <div class="sub-modal-body">
+          <form @submit.prevent="updatePaymentMethod">
+            <div class="form-group">
+              <label for="cardNumber">Card Number</label>
+              <input 
+                type="text" 
+                id="cardNumber" 
+                v-model="paymentForm.cardNumber" 
+                placeholder="1234 5678 9012 3456"
+                required
+              />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="expiry">Expiry Date</label>
+                <input 
+                  type="text" 
+                  id="expiry" 
+                  v-model="paymentForm.expiry" 
+                  placeholder="MM/YY"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="cvv">CVV</label>
+                <input 
+                  type="text" 
+                  id="cvv" 
+                  v-model="paymentForm.cvv" 
+                  placeholder="123"
+                  required
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="cardName">Name on Card</label>
+              <input 
+                type="text" 
+                id="cardName" 
+                v-model="paymentForm.cardName" 
+                placeholder="John Doe"
+                required
+              />
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" @click="closeChangePaymentModal">Cancel</button>
+              <button type="submit" class="btn-primary" :disabled="updatingPayment">
+                <span v-if="updatingPayment">Updating...</span>
+                <span v-else>Update Payment Method</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cancellation Modal -->
+    <div v-if="showCancellationModal" class="modal-overlay" @click="closeCancellationModal">
+      <div class="sub-modal-content" @click.stop>
+        <div class="sub-modal-header">
+          <h3>Cancel Subscription</h3>
+          <button class="close-button" @click="closeCancellationModal">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+        <div class="sub-modal-body">
+          <div class="cancellation-reasons">
+            <h4>Why are you cancelling?</h4>
+            <div class="reasons-list">
+              <label v-for="reason in cancellationReasons" :key="reason.key" class="reason-item">
+                <input 
+                  type="radio" 
+                  :value="reason.key" 
+                  v-model="selectedCancellationReason"
+                  name="cancellationReason"
+                />
+                <span>{{ reason.label }}</span>
+              </label>
+            </div>
+          </div>
+          <div class="cancellation-actions">
+            <button type="button" class="btn-secondary" @click="closeCancellationModal">Keep Subscription</button>
+            <button 
+              type="button" 
+              class="btn-danger" 
+              @click="confirmCancellation"
+              :disabled="!selectedCancellationReason || cancelling"
+            >
+              <span v-if="cancelling">Cancelling...</span>
+              <span v-else>Cancel Subscription</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </template>
   
   <script setup lang="ts">
   import { ref, computed, onMounted, watch } from 'vue'
-  import { useAuthStore } from '@/stores/authStore'
+  import { useWhitelabelStore } from '@/stores/whitelabelStore'
+  import { botsifyApi } from '@/services/botsifyApi'
   
   interface StripeCharge {
     id: string
@@ -146,13 +336,14 @@
   }
   
   interface BillingData {
-    charges: {
+    charges?: {
       object: string
       data: StripeCharge[]
       has_more: boolean
       url: string
-    }
-    stripe_subscription: StripeSubscription
+    } | StripeCharge[]
+    stripe_subscription?: StripeSubscription
+    subscription?: StripeSubscription
   }
   
   interface Props {
@@ -167,16 +358,116 @@
   const props = defineProps<Props>()
   const emit = defineEmits<Emits>()
   
-  const authStore = useAuthStore()
-  
   // Computed properties
-  const chargesData = computed(() => {
-    return props.billingData?.charges?.data || []
+  const chargesData = computed((): StripeCharge[] => {
+    console.log('Computing chargesData with billingData:', props.billingData)
+    console.log('billingData type:', typeof props.billingData)
+    console.log('billingData keys:', props.billingData ? Object.keys(props.billingData) : 'null')
+    
+    if (!props.billingData) {
+      console.log('No billingData provided')
+      return []
+    }
+    
+    // Try different possible data structures
+    let charges: StripeCharge[] = []
+    if (props.billingData.charges) {
+      if (Array.isArray(props.billingData.charges)) {
+        charges = props.billingData.charges
+        console.log('Found charges as direct array:', charges)
+      } else if (props.billingData.charges.data && Array.isArray(props.billingData.charges.data)) {
+        charges = props.billingData.charges.data
+        console.log('Found charges in charges.data:', charges)
+      } else {
+        console.log('No charges found in expected structure')
+      }
+    }
+    
+    console.log('Final chargesData:', charges)
+    return charges
+  })
+
+  const subscriptionData = computed((): StripeSubscription | null => {
+    console.log('Computing subscriptionData with billingData:', props.billingData)
+    console.log('billingData type:', typeof props.billingData)
+    console.log('billingData keys:', props.billingData ? Object.keys(props.billingData) : 'null')
+    
+    if (!props.billingData) {
+      console.log('No billingData provided')
+      return null
+    }
+    
+    // Try different possible data structures
+    let subscription: StripeSubscription | null = null
+    if (props.billingData.stripe_subscription) {
+      subscription = props.billingData.stripe_subscription
+      console.log('Found stripe_subscription:', subscription)
+    } else if (props.billingData.subscription) {
+      subscription = props.billingData.subscription
+      console.log('Found subscription (fallback):', subscription)
+    } else {
+      console.log('No subscription found in expected structure')
+    }
+    
+    console.log('Final subscriptionData:', subscription)
+    return subscription
   })
   
-  const subscriptionData = computed(() => {
-    return props.billingData?.stripe_subscription || null
+  // Modal states
+  const showChangePlanModal = ref(false)
+  const showChangePaymentModal = ref(false)
+  const showCancellationModal = ref(false)
+  
+  // Form states
+  const changingPlan = ref(false)
+  const updatingPayment = ref(false)
+  const cancelling = ref(false)
+  
+  // Form data
+  const paymentForm = ref({
+    cardNumber: '',
+    expiry: '',
+    cvv: '',
+    cardName: ''
   })
+  
+  const selectedCancellationReason = ref('')
+  
+  const cancellationReasons = ref([
+    { key: 'difficult_to_use', label: 'Difficult to use' },
+    { key: 'expensive', label: 'Do you think it\'s expensive?' },
+    { key: 'dont_need', label: 'Don\'t need it' },
+    { key: 'not_achieving_goal', label: 'Not able to achieve your goal?' }
+  ])
+  
+  const currentPlanId = computed(() => {
+    return subscriptionData.value?.stripe_plan || ''
+  })
+
+  const whitelabelStore = useWhitelabelStore()
+
+  const availableWhitelabelPlans = computed(() => {
+    if (whitelabelStore.isWhitelabelClient) {
+      return {
+        'Personal-Plan': 'Personal Plan - $49/Month',
+        'Personal-Plan-Annual': 'Personal Plan - $490/Year',
+        'Professional-Plan': 'Professional Plan - $149/Month',
+        'Professional-Plan-Annual': 'Professional Plan - $1490/Year'
+      }
+    }
+    return {}
+  })
+
+  const canDowngrade = computed(() => {
+    if (whitelabelStore.isWhitelabelClient) {
+      return false // Whitelabel clients cannot downgrade
+    }
+    return true
+  })
+
+  const getContactEmail = () => {
+    return 'mailto:support@botsify.ai'
+  }
   
   // Helper functions
   const getPlanDescription = (planName: string | undefined) => {
@@ -289,6 +580,124 @@
     a.click()
     document.body.removeChild(a)
     window.URL.revokeObjectURL(url)
+  }
+  
+  // Modal methods
+  const openChangePlanModal = () => {
+    showChangePlanModal.value = true
+  }
+  
+  const closeChangePlanModal = () => {
+    showChangePlanModal.value = false
+  }
+  
+  const openChangePaymentModal = () => {
+    showChangePaymentModal.value = true
+  }
+  
+  const closeChangePaymentModal = () => {
+    showChangePaymentModal.value = false
+    // Reset form
+    paymentForm.value = {
+      cardNumber: '',
+      expiry: '',
+      cvv: '',
+      cardName: ''
+    }
+  }
+  
+  const openCancellationModal = () => {
+    showCancellationModal.value = true
+  }
+  
+  const closeCancellationModal = () => {
+    showCancellationModal.value = false
+    selectedCancellationReason.value = ''
+  }
+  
+  // Plan selection
+  const selectPlan = async (planId: string) => {
+    if (planId === currentPlanId.value) return
+    
+    changingPlan.value = true
+    try {
+      // First check payment like in the original billing.vue
+      const paymentCheck = await botsifyApi.checkPayment()
+      if (!paymentCheck.success) {
+        window.$toast?.error('Payment check failed. Please try again later.')
+        return
+      }
+      
+      // Call API to change plan using botsifyApi
+      const response = await botsifyApi.changePlan({
+        plan: planId,
+        reason: 'User requested plan change'
+      })
+      
+      if (response.success) {
+        window.$toast?.success('Plan changed successfully!')
+        closeChangePlanModal()
+        // Emit event to refresh billing data
+        emit('close')
+      } else {
+        window.$toast?.error(response.message || 'Failed to change plan')
+      }
+    } catch (error) {
+      console.error('Error changing plan:', error)
+      window.$toast?.error('Failed to change plan. Please try again.')
+    } finally {
+      changingPlan.value = false
+    }
+  }
+  
+  // Update payment method
+  const updatePaymentMethod = async () => {
+    updatingPayment.value = true
+    try {
+      // Call API to update payment method using botsifyApi
+      const response = await botsifyApi.updatePaymentMethod(paymentForm.value)
+      
+      if (response.success) {
+        window.$toast?.success('Payment method updated successfully!')
+        closeChangePaymentModal()
+        // Emit event to refresh billing data
+        emit('close')
+      } else {
+        window.$toast?.error(response.message || 'Failed to update payment method')
+      }
+    } catch (error) {
+      console.error('Error updating payment method:', error)
+      window.$toast?.error('Failed to update payment method. Please try again.')
+    } finally {
+      updatingPayment.value = false
+    }
+  }
+  
+  // Confirm cancellation
+  const confirmCancellation = async () => {
+    if (!selectedCancellationReason.value) return
+    
+    cancelling.value = true
+    try {
+      // Call API to cancel subscription using botsifyApi
+      const response = await botsifyApi.cancelSubscription({
+        reason: selectedCancellationReason.value
+      })
+      
+      if (response.success) {
+        window.$toast?.success('Subscription cancelled successfully!')
+        closeCancellationModal()
+        // Emit event to refresh billing data
+        emit('close')
+      } else {
+        window.$toast?.error(response.message || 'Failed to cancel subscription')
+      }
+    } catch (error) {
+      console.error('Error cancelling subscription:', error)
+      window.$toast?.error('Failed to cancel subscription. Please try again.')
+    } finally {
+      cancelling.value = false
+    }
   }
   
   onMounted(() => {
@@ -711,6 +1120,267 @@
     
     .cell:nth-child(2) {
       word-break: normal;
+    }
+  }
+  
+  /* Modal Overlay Styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    backdrop-filter: blur(4px);
+  }
+  
+  .sub-modal-content {
+    background: var(--color-bg-primary);
+    border-radius: var(--radius-lg);
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--color-border);
+  }
+  
+  .sub-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-secondary);
+  }
+  
+  .sub-modal-header h3 {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+  
+  .sub-modal-body {
+    padding: var(--space-4);
+    max-height: calc(90vh - 80px);
+    overflow-y: auto;
+  }
+  
+  /* Plan Selection Styles */
+  .plan-option-btn {
+    width: 100%;
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-2);
+  }
+
+  .plan-option-btn:hover:not(:disabled) {
+    background: var(--color-bg-hover);
+    border-color: var(--color-primary);
+  }
+
+  .plan-option-btn:disabled {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-secondary);
+    cursor: not-allowed;
+  }
+
+  .downgrade-message {
+    margin-top: var(--space-4);
+    padding: var(--space-3);
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid var(--color-warning);
+    border-radius: var(--radius-md);
+    color: var(--color-warning);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: center;
+  }
+
+  .contact-btn {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .contact-btn:hover {
+    text-decoration: underline;
+  }
+
+  .loading-state {
+    text-align: center;
+    padding: var(--space-6);
+  }
+
+  .spinner {
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid var(--color-primary);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto var(--space-3);
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* Payment Form Styles */
+  .form-group {
+    margin-bottom: var(--space-4);
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: var(--space-2);
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+  
+  .form-group input {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
+    transition: border-color var(--transition-normal);
+  }
+  
+  .form-group input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+  
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+  }
+  
+  .form-actions {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: flex-end;
+    margin-top: var(--space-4);
+  }
+  
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    border: 1px solid transparent;
+  }
+  
+  .btn-primary {
+    background: var(--color-primary);
+    color: white;
+  }
+  
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+  }
+  
+  .btn-secondary {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    border-color: var(--color-border);
+  }
+  
+  .btn-secondary:hover {
+    background: var(--color-bg-hover);
+  }
+  
+  .btn-danger {
+    background: var(--color-error);
+    color: white;
+  }
+  
+  .btn-danger:hover:not(:disabled) {
+    background: #dc2626;
+  }
+  
+  .btn-primary:disabled,
+  .btn-danger:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  /* Cancellation Modal Styles */
+  .cancellation-reasons h4 {
+    margin: 0 0 var(--space-3) 0;
+    color: var(--color-text-primary);
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+  
+  .reasons-list {
+    margin-bottom: var(--space-4);
+  }
+  
+  .reason-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
+    cursor: pointer;
+    color: var(--color-text-primary);
+  }
+  
+  .reason-item input[type="radio"] {
+    margin: 0;
+  }
+  
+  .cancellation-actions {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: flex-end;
+  }
+  
+  /* Mobile Responsiveness for Modals */
+  @media (max-width: 768px) {
+    .sub-modal-content {
+      width: 95%;
+      margin: var(--space-4);
+    }
+    
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+    
+    .form-actions,
+    .cancellation-actions {
+      flex-direction: column;
+    }
+    
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger {
+      width: 100%;
     }
   }
   </style>
