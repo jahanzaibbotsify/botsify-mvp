@@ -1,0 +1,643 @@
+<script setup lang="ts">
+import { ref, onMounted, computed } from "vue";
+import { usePublishStore } from "../../../stores/publishStore";
+import { useBotStore } from "../../../stores/botStore";
+import Button from "../../../components/ui/Button.vue";
+
+// Props
+interface Props {
+  isLoading?: boolean;
+}
+
+withDefaults(defineProps<Props>(), {
+  isLoading: false
+});
+
+// Emits
+const emit = defineEmits<{
+  'create-new-page': [];
+  'refresh-page-permission': [];
+  'remove-page-permission': [];
+  'connect-account': [];
+  'page-connection-change': [];
+}>();
+
+const publishStore = usePublishStore();
+const botStore = useBotStore();
+
+// Load Facebook pages function
+const loadPages = async () => {
+  try {
+    await publishStore.getFbPages();
+  } catch (error) {
+    console.error('Failed to load Facebook pages:', error);
+  }
+};
+
+// Refresh Facebook page permissions function
+const refreshPermissions = async () => {
+  try {
+    const result = await publishStore.refreshFbPagePermission();
+    if (result.success && 'data' in result && result.data?.redirect) {
+      window.location.href = result.data.redirect;
+    }
+    return result;
+  } catch (error) {
+    console.error('Failed to refresh Facebook page permissions:', error);
+    return { success: false, error };
+  }
+};
+
+// Remove Facebook page permissions function
+const removePermissions = async () => {
+  try {
+    const result = await publishStore.removeFbPagePermission();
+    if (result.success && 'data' in result && result.data?.redirect) {
+      window.location.href = result.data.redirect;
+    }
+    return result;
+  } catch (error) {
+    console.error('Failed to remove Facebook page permissions:', error);
+    return { success: false, error };
+  }
+};
+
+// Connect Facebook page function
+const connectPage = async (type: string, pageId: string, pageName: string, accessToken: string) => {
+  try {
+    const result = await publishStore.connectionFbPage(type, pageId, pageName, accessToken);
+    if (result.success) {
+      emit('page-connection-change');
+    }
+    return result;
+  } catch (error) {
+    console.error('Failed to connect Facebook page:', error);
+    return { success: false, error };
+  }
+};
+
+// Computed properties to sync with store state
+const storePages = computed(() => publishStore.cache.facebookPages);
+const storePagesLoaded = computed(() => publishStore.cacheValid.facebookPages);
+const storeIsLoadingPages = computed(() => publishStore.loadingStates.facebookPages);
+
+// Computed pages data from store
+const pages = computed(() => {
+  if (!storePages.value) {
+    return [];
+  }
+  
+  // Check if we have pagesData structure (API response format)
+  if (storePages.value.pagesData && storePages.value.pagesData.data) {
+    const pagesData = storePages.value.pagesData.data;
+    if (Array.isArray(pagesData) && pagesData.length > 0) {
+      return pagesData.map((page: any) => ({
+        id: page.id,
+        name: page.name,
+        is_bot_page: !!page.connected_page_bot,
+        status: page.connected_page_bot ? 'connected' : 'disconnected',
+        botName: page.connected_page_bot || null,
+        accessToken: page.access_token || null,
+        category: page.category,
+        profile_picture_url: page.profile_picture_url || null
+      }));
+    }
+  } else if (Array.isArray(storePages.value) && storePages.value.length > 0) {
+    // Direct array structure (fallback)
+    return storePages.value.map((page: any) => ({
+      id: page.id,
+      name: page.name,
+      is_bot_page: page.is_bot_page || false,
+      status: page.status || 'disconnected',
+      botName: page.botName || null,
+      category: page.category,
+      profile_picture_url: page.profile_picture_url || null
+    }));
+  }
+  
+  return [];
+});
+
+// Computed show connect button
+const showConnectButton = computed(() => {
+  return !storePagesLoaded.value || pages.value.length === 0;
+});
+
+const isConnectLoading = ref(false);
+const isDisconnectLoading = ref(false);
+const isRefreshLoading = ref(false);
+const isRemoveLoading = ref(false);
+
+// Load Facebook pages
+const loadFbPages = async () => {
+  // Check if we're already loading
+  if (storeIsLoadingPages.value) {
+    return;
+  }
+  
+  try {
+    await loadPages();
+      emit('page-connection-change');
+    // The computed pages will automatically update when store data changes
+  } catch (error) {
+    console.error('Failed to load Facebook pages:', error);
+  }
+};
+
+// Actions
+const createNewPage = () => {
+  // Redirect to Facebook new page creation
+  window.open('https://www.facebook.com/pages', '_blank');
+  emit('create-new-page');
+};
+
+const connectAccount = async () => {
+  isConnectLoading.value = true;
+  try {
+    const result = await refreshPermissions();
+    if (result.success && 'data' in result && result.data?.redirect) {
+      // Redirect to the URL provided by the API
+      window.open(result.data.redirect, '_blank');
+    } else {
+      console.error('Failed to get redirect URL:', result.error);
+    }
+  } catch (error) {
+    console.error('Failed to connect account:', error);
+  } finally {
+    isConnectLoading.value = false;
+  }
+};
+
+const connectionPage = async (type: string, page: any) => {
+  if (type === 'connect') {
+    isConnectLoading.value = true;
+  } else if (type === 'disconnect') {
+    isDisconnectLoading.value = true;
+  }
+  try {
+    const result = await connectPage(type, page.id, page.name, page.accessToken);
+    if (result.success) {
+      // Clear cache and reload pages to update the status
+      publishStore.clearFbPagesCache();
+      await loadFbPages();
+      // Remove toast references for now
+      console.log('Page disconnected successfully!');
+    } else {
+      console.error('Failed to disconnect page:', result.error);
+    }
+  } catch (error) {
+    console.error('Failed to disconnect page:', error);
+  } finally {
+    isConnectLoading.value = false;
+    isDisconnectLoading.value = false;
+  }
+};
+
+
+const openFacebookPage = (pageId: string) => {
+  // Open Facebook page in new tab
+  window.open(`https://facebook.com/${pageId}`, '_blank');
+};
+
+const refreshFbPagePermissions = async () => {
+  isRefreshLoading.value = true;
+  try {
+    const result = await refreshPermissions();
+    if (result.success && 'data' in result && result.data?.redirect) {
+      // Redirect to the URL provided by the API
+      window.open(result.data.redirect, '_blank');
+    } else {
+      console.error('Failed to get redirect URL:', result.error);
+    }
+  } catch (error) {
+    console.error('Failed to refresh page permissions:', error);
+  } finally {
+    isRefreshLoading.value = false;
+  }
+};
+
+
+const removeFbPagePermissions = async () => {
+  isRemoveLoading.value = true;
+  try {
+    const result = await removePermissions();
+    if (result.success && 'data' in result && result.data?.redirect) {
+      // Redirect to the URL provided by the API
+      window.open(result.data.redirect, '_blank');
+    } else {
+      console.error('Failed to get redirect URL:', result.error);
+    }
+  } catch (error) {
+    console.error('Failed to refresh page permissions:', error);
+  } finally {
+    isRemoveLoading.value = false;
+  }
+};
+// Get initials from page name
+const getInitials = (name: string) => {
+  return name
+    .split(' ')
+    .map(word => word.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+};
+
+// Load data when component mounts
+onMounted(() => {
+  // Only load if not already loaded in store
+  if (!storePagesLoaded.value) {
+    loadFbPages();
+  }
+});
+
+// Expose methods for parent component
+defineExpose({
+  loadFbPages
+});
+</script>
+
+<template>
+  <div class="tab-panel">
+    <h3>Messenger integration</h3>
+    <p class="subtitle">Connect your Facebook pages to enable Messenger bot functionality</p>
+
+    <!-- Loading State -->
+    <div v-if="storeIsLoadingPages" class="loading-state">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p>Loading Facebook pages...</p>
+      </div>
+    </div>
+
+    <!-- Empty State / Connect Button -->
+    <div v-else-if="showConnectButton || pages.length === 0" class="empty-state">
+      <div class="empty-content">
+        <div class="empty-icon">
+          <i class="pi pi-facebook"></i>
+        </div>
+        <h4>No Facebook pages found</h4>
+        <p>Connect your Facebook account to manage your pages and enable Messenger bot functionality.</p>
+        <Button 
+          variant="primary"
+          :loading="isConnectLoading"
+          icon="pi pi-link"
+          @click="connectAccount"
+        >
+          {{ isConnectLoading ? 'Connecting...' : 'Connect Facebook account' }}
+        </Button>
+      </div>
+    </div>
+
+    <!-- Pages List -->
+    <div v-else>
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <Button 
+          variant="primary"
+          :loading="isRefreshLoading"
+          icon="pi pi-refresh"
+          @click="refreshFbPagePermissions"
+        >
+          {{ isRefreshLoading ? 'Refreshing...' : 'Refresh Permission' }}
+        </Button>
+        <Button 
+          variant="warning"
+          :loading="isRemoveLoading"
+          icon="pi pi-trash"
+          @click="removeFbPagePermissions"
+        >
+          {{ isRemoveLoading ? 'Updating...' : 'Remove Permission' }}
+        </Button>
+        <Button 
+          variant="secondary"
+          :loading="isConnectLoading"
+          icon="pi pi-plus"
+          @click="createNewPage"
+        >
+          Create new page
+        </Button>
+      </div>
+
+      <!-- Pages List -->
+      <div class="pages-list">
+        <div 
+          v-for="page in pages" 
+          :key="page.id"
+          class="page-card"
+        >
+          <div class="page-main">
+            <div class="page-avatar">
+              <img 
+                v-if="page.profile_picture_url" 
+                :src="page.profile_picture_url" 
+                :alt="page.name"
+                class="avatar-image"
+                @error="(event) => { const target = event.target as HTMLImageElement; if (target) target.style.display = 'none'; }"
+              />
+              <div v-else class="avatar-fallback">
+                {{ getInitials(page.name) }}
+              </div>
+            </div>
+            
+            <div class="page-content">
+              <div class="page-header">
+                <div class="page-title">
+                  <h4 class="page-name">{{ page.name }}</h4>
+                  <span v-if="page.category" class="page-category">{{ page.category }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="page-actions">
+            <div class="action-buttons">
+              <Button 
+                v-if="!page.is_bot_page"
+                variant="primary"
+                size="small"
+                :loading="isConnectLoading"
+                icon="pi pi-link"
+                @click="connectionPage('connect', page)"
+              >
+                Connect
+              </Button>
+              
+              <div v-else-if="page.botName === botStore.botName" class="connected-actions">
+                <Button 
+                  variant="success"
+                  size="small"
+                  :loading="isConnectLoading"
+                  icon="pi pi-refresh"
+                  @click="connectionPage('connect', page)"
+                >
+                  Reconnect
+                </Button>
+                
+                <Button 
+                  variant="error"
+                  size="small"
+                  :loading="isDisconnectLoading"
+                  icon="pi pi-times"
+                  @click="connectionPage('disconnect', page)"
+                >
+                  Disconnect
+                </Button>
+              </div>
+              
+              <span 
+                v-else
+                class="connected-text"
+              >
+                Connected to {{ page.botName }}
+              </span>
+            </div>
+            
+            <Button 
+              variant="secondary"
+              size="small"
+              icon="pi pi-external-link"
+              @click="openFacebookPage(page.id)"
+              title="Open Facebook page"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
+
+.subtitle {
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+/* Loading State */
+.loading-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.loading-content {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-bg-tertiary, #f3f4f6);
+  border-top: 3px solid var(--color-primary, #3b82f6);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-state p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.empty-content {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  opacity: 0.5;
+}
+
+.empty-state h4 {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+}
+
+.empty-state p {
+  margin: 0 0 24px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Header Actions */
+.header-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+/* Pages List */
+.pages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.page-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  background: var(--color-bg-secondary, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-lg, 12px);
+  transition: all var(--transition-normal, 0.2s ease);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+}
+
+.page-card:hover {
+  border-color: var(--color-primary, #3b82f6);
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06));
+  transform: translateY(-1px);
+}
+
+.page-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.page-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: var(--color-bg-tertiary, #f3f4f6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 2px solid var(--color-border, #e5e7eb);
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-fallback {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+  background-color: var(--color-bg-tertiary, #f3f4f6);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-content {
+  flex: 1;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.page-title {
+  display: grid;
+  align-items: center;
+  gap: 5px;
+}
+
+.page-name {
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+  font-size: 16px;
+  margin: 0;
+}
+
+.page-category {
+  color: var(--color-text-secondary, #6b7280);
+  font-weight: 500;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.page-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.connected-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.connected-text {
+  font-size: 12px;
+  color: var(--color-text-secondary, #6b7280);
+  font-style: italic;
+  padding: 8px 12px;
+  background: var(--color-bg-tertiary, #f3f4f6);
+  border-radius: var(--radius-sm, 4px);
+  border: 1px solid var(--color-border, #e5e7eb);
+}
+
+@media (max-width: 768px) {
+  .header-actions {
+    flex-direction: column;
+  }
+  
+  .page-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .page-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .action-buttons {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .connected-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .page-external-link {
+    margin-left: 0; /* Reset margin for smaller screens */
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+</style> 

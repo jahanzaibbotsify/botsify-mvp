@@ -117,32 +117,6 @@ const disconnectMCP = async (server: any) => {
 </template>
 
 <style scoped>
-
-.server-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-top: 8px;
-}
-
-.server-card {
-  background: var(--color-bg-secondary);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 16px 12px 12px 16px;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  min-height: 80px;
-  height: 100px;
-  min-width: 0;
-  box-sizing: border-box;
-  position: relative;
-}
-
 .server-card.add-new-card {
   border: 1.5px dashed var(--color-primary);
   background: var(--color-bg-tertiary);
@@ -176,30 +150,8 @@ const disconnectMCP = async (server: any) => {
   margin-bottom: 6px;
 }
 
-.server-card .server-icon {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-bg-tertiary);
-  border-radius: var(--radius-md);
-  margin-bottom: 6px;
-}
-
-.server-card .add-label,
-.server-card .text-sm {
-  font-size: 0.95rem;
-  font-weight: 500;
+.server-card .add-label {
   color: var(--color-primary);
-  text-align: left;
-  margin-top: 0;
-  margin-left: 0;
-  padding-left: 0;
-}
-
-.server-card .text-sm {
-  color: var(--color-text-primary);
 }
 
 .connected-badge {
@@ -254,18 +206,6 @@ const disconnectMCP = async (server: any) => {
   font-weight: 600;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   color: white;
-}
-
-@media (max-width: 767px) {
-  .server-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-  }
-
-  .server-card {
-    min-height: 100px;
-    padding: 20px 12px;
-  }
 }
 
 .server-actions {

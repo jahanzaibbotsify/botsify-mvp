@@ -1080,6 +1080,7 @@ export class BotsifyApiService {
   async manageBilling() {
     try {
       const {apiKey, user} = useBotStore();
+      console.log(user, apiKey)
       if(!user?.id){
         return {
           success: false,
