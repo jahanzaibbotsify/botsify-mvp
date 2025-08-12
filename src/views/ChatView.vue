@@ -9,10 +9,6 @@ import MessageInput from '@/components/chat/MessageInput.vue';
 import TypingIndicator from '@/components/chat/TypingIndicator.vue';
 import SystemMessageSender from '@/components/chat/SystemMessageSender.vue';
 import ChatHeader from '@/components/chat/ChatHeader.vue';
-import {axiosInstance} from "@/utils/axiosInstance.ts";
-import {getCurrentApiKey} from "@/utils/apiKeyUtils.ts";
-import {useWhitelabelStore} from "@/stores/whitelabelStore.ts";
-import {useBotStore} from "@/stores/botStore.ts";
 
 const router = useRouter();
 const roleStore = useRoleStore();
