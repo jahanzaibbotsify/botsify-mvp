@@ -65,6 +65,8 @@ const shouldDisableControls = computed(() => {
           :text="store.block.slides[index]?.title || ''"
           :error-text="store.errors.slides[index].title"
           :maxlength="store.template.type == 'generic' ? 150 : 1024"
+          :label="`SLIDE ${index + 1}`"
+          :variable-count="store.getVariableCount('slider', index)"
           @update:text="val => store.block.slides[index].title = val"
           @update:error-text="val => store.errors.slides[index].title = val"
           @add-variable="() => store.addVariable('slider', true, null, index)"

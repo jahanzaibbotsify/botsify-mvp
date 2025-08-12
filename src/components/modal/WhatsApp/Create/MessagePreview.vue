@@ -161,6 +161,7 @@ interface Props {
   botService?: string;
   default_image?: string;
   slides_default?: any[];
+  slides?: any[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -169,7 +170,8 @@ const props = withDefaults(defineProps<Props>(), {
   block: () => ({}),
   botService: 'facebookAPI',
   default_image: '',
-  slides_default: () => []
+  slides_default: () => [],
+  slides: () => []
 });
 
 // Emits
@@ -346,7 +348,8 @@ const buttons = computed(() => {
 });
 
 const slides = computed(() => {
-  return props.template.slides || [];
+  // Use the slides prop if provided, otherwise fall back to template slides
+  return props.slides && props.slides.length > 0 ? props.slides : (props.template.slides || []);
 });
 
 // Methods
@@ -391,11 +394,13 @@ const retrieveMedia = async (attachmentLink: string, slideIndex?: number) => {
 };
 
 const slideBodyText = (index = 0) => {
-  const slide = props.template.slides?.[index];
+  const slide = slides.value[index];
   if (!slide) return '';
   
   let result = slide.title || '';
-  const vars = slide.variables?.body || [];
+  // For carousel slides, check if variables exist in the template slides
+  const templateSlide = props.template.slides?.[index];
+  const vars = templateSlide?.variables?.body || [];
   
   vars.forEach((item: any) => {
     if (item.value !== '') {
@@ -406,7 +411,7 @@ const slideBodyText = (index = 0) => {
 };
 
 const slideButtonText = (slideIndex: number, buttonIndex: number) => {
-  const slide = props.template.slides?.[slideIndex];
+  const slide = slides.value[slideIndex];
   if (!slide) return '';
   
   const button = slide.buttons?.[buttonIndex];
@@ -414,8 +419,9 @@ const slideButtonText = (slideIndex: number, buttonIndex: number) => {
   
   let result = button.title || button.text || '';
   
-  // Check for button text variables in slide
-  const buttonTextVar = slide.variables?.buttonText;
+  // Check for button text variables in template slide
+  const templateSlide = props.template.slides?.[slideIndex];
+  const buttonTextVar = templateSlide?.variables?.button;
   if (buttonTextVar && buttonTextVar.value !== '') {
     result = result.replace(buttonTextVar.key, buttonTextVar.value);
     console.log('MessagePreview - replaced slide button text:', {
@@ -432,7 +438,7 @@ const slideButtonText = (slideIndex: number, buttonIndex: number) => {
 };
 
 const slideButtonUrl = (slideIndex: number, buttonIndex: number) => {
-  const slide = props.template.slides?.[slideIndex];
+  const slide = slides.value[slideIndex];
   if (!slide) return '';
   
   const button = slide.buttons?.[buttonIndex];
@@ -440,8 +446,9 @@ const slideButtonUrl = (slideIndex: number, buttonIndex: number) => {
   
   let url = button.url;
   
-  // Check for button URL variables in slide
-  const buttonUrlVar = slide.variables?.buttonUrl;
+  // Check for button URL variables in template slide
+  const templateSlide = props.template.slides?.[slideIndex];
+  const buttonUrlVar = templateSlide?.variables?.button;
   if (buttonUrlVar && buttonUrlVar.value !== '') {
     url = url.replace(buttonUrlVar.key, buttonUrlVar.value);
     console.log('MessagePreview - replaced slide button URL:', {
@@ -458,7 +465,7 @@ const slideButtonUrl = (slideIndex: number, buttonIndex: number) => {
 };
 
 const getSlideImage = (index: number) => {
-  const slide = props.template.slides?.[index];
+  const slide = slides.value[index];
   const attachmentLink = slide?.attachment_link || props.block?.slides?.[index]?.attachment_link;
   
   const cacheKey = `${index}_${attachmentLink}`;
@@ -471,7 +478,7 @@ const getSlideImage = (index: number) => {
 };
 
 const getSlideVideo = (index: number) => {
-  const slide = props.template.slides?.[index];
+  const slide = slides.value[index];
   const attachmentLink = slide?.attachment_link || props.block?.slides?.[index]?.attachment_link;
   
   const cacheKey = `${index}_${attachmentLink}`;
@@ -484,7 +491,7 @@ const getSlideVideo = (index: number) => {
 };
 
 const getSlideDocument = (index: number) => {
-  const slide = props.template.slides?.[index];
+  const slide = slides.value[index];
   const attachmentLink = slide?.attachment_link || props.block?.slides?.[index]?.attachment_link;
   
   const cacheKey = `${index}_${attachmentLink}`;
@@ -503,7 +510,7 @@ watch(() => props.template.attachment_link, (newLink) => {
   }
 });
 
-watch(() => props.template.slides, (newSlides) => {
+watch(() => slides.value, (newSlides) => {
   if (newSlides && props.template.type === 'generic') {
     newSlides.forEach((slide: any, index: number) => {
       if (slide.attachment_link) {
@@ -515,8 +522,8 @@ watch(() => props.template.slides, (newSlides) => {
 
 // Initialize media retrieval on mount
 onMounted(() => {
-  if (props.template.type === 'generic' && Array.isArray(props.template.slides)) {
-    props.template.slides.forEach((slide: any, index: number) => {
+  if (props.template.type === 'generic' && Array.isArray(slides.value)) {
+    slides.value.forEach((slide: any, index: number) => {
       if (slide.attachment_link) {
         retrieveMedia(slide.attachment_link, index);
       }

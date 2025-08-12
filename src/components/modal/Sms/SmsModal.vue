@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import {PublishModalLayout} from "@/components/ui";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import PublishAgentTab from "./PublishAgentTab.vue";
 import BroadcastTab from "./BroadcastTab.vue";
 import BroadcastReportTab from "./BroadcastReportTab.vue";
 import TemplateTab from "./TemplateTab.vue";
 import CreateTemplateModal from "./CreateTemplateModal.vue";
 import { usePublishStore } from "@/stores/publishStore";
+import { useTabManagement } from "@/composables/useTabManagement";
 
 // Define tabs
 const tabs = [
@@ -17,11 +18,10 @@ const tabs = [
 ];
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
-// Removed createTemplateModalRef as CreateTemplateModal is no longer imported
-const currentActiveTab = ref('publish-agent');
 const publishStore = usePublishStore();
 
-// Removed previousTab as CreateTemplateModal is no longer used
+// Use the tab management composable
+const { handleTabChange } = useTabManagement(tabs, 'publish-agent');
 
 // Tab component refs
 const publishAgentTabRef = ref<InstanceType<typeof PublishAgentTab> | null>(null);
@@ -61,13 +61,13 @@ const checkSmsConfiguration = async () => {
   }
 };
 
-// Computed tabs with disabled state
-const computedTabs = tabs.map(tab => ({
-  ...tab,
-  disabled: false
-}));
-
-// Removed currentActiveTabFromModal as it's no longer needed
+// Override computedTabs to include disabled state based on configuration
+const smsComputedTabs = computed(() => {
+  return tabs.map(tab => ({
+    ...tab,
+    disabled: tab.id !== 'publish-agent' && !isSmsConfigured.value
+  }));
+});
 
 const openModal = () => {
   modalRef.value?.openModal();
@@ -79,7 +79,6 @@ const openModal = () => {
   
   // Change tab directly
   handleTabChange(tabToOpen);
-  currentActiveTab.value = tabToOpen; // Ensure currentActiveTab is updated
 };
 
 const closeModal = () => {
@@ -90,16 +89,14 @@ const handleBack = () => {
   emit('back');
 };
 
-const handleTabChange = (tabId: string) => {
-  console.log('Tab changed to:', tabId);
+const onTabChange = (tabId: string) => {
+  console.log('SmsModal - Tab changed to:', tabId);
   
   // Only allow tab change if SMS is configured or if it's the publish agent tab
   if (tabId === 'publish-agent' || isSmsConfigured.value) {
-    currentActiveTab.value = tabId;
+    handleTabChange(tabId);
   }
 };
-
-// Publish Agent Tab Events - removed handleTestBot as it's not needed
 
 // Template Tab Events
 const handleCreateTemplate = () => {
@@ -127,8 +124,6 @@ const handleTemplateUpdated = (template: any) => {
   }
 };
 
-// Filter report - removed as it's handled directly in BroadcastReportTab
-
 const handleSaveSettings = async (settings: any) => {
   isLoading.value = true;
   try {
@@ -147,8 +142,6 @@ const handleSaveSettings = async (settings: any) => {
   }
 };
 
-// Pagination handler removed - handled directly in BroadcastReportTab
-
 defineExpose({ openModal, closeModal });
 </script>
 
@@ -156,12 +149,12 @@ defineExpose({ openModal, closeModal });
   <PublishModalLayout
     ref="modalRef"
     title="Sms integration"
-    :tabs="computedTabs"
+    :tabs="smsComputedTabs"
     icon="/bots/sms.png"
     max-width="1200px"
     default-tab="publish-agent"
     @back="handleBack"
-    @tab-change="handleTabChange"
+    @tab-change="onTabChange"
   >
     <template #default="{ activeTab }">
       <!-- Publish Agent Tab -->
@@ -248,4 +241,4 @@ defineExpose({ openModal, closeModal });
   color: var(--color-text-secondary, #6b7280);
   line-height: 1.5;
 }
-</style> 
+</style>

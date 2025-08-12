@@ -10,6 +10,7 @@ import BroadcastReportTab from "./BroadcastReportTab.vue";
 import TemplateTab from "./TemplateTab.vue";
 import CatalogTab from "./CatalogTab.vue";
 import CreateTemplateModal from "./Create/CreateTemplateModal.vue";
+import { useTabManagement } from "@/composables/useTabManagement";
 
 // Define tabs
 const tabs = [
@@ -22,7 +23,6 @@ const tabs = [
 ];
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
-const currentActiveTab = ref('publish-agent');
 
 // Stores
 const publishStore = usePublishStore();
@@ -45,6 +45,9 @@ const emit = defineEmits<{
 const isLoading = ref(false);
 const isWhatsAppConfigured = ref(false);
 const isCheckingConfiguration = ref(false);
+
+// Use the tab management composable
+const { currentTab, handleTabChange } = useTabManagement(tabs, 'publish-agent');
 
 // Determine bot service based on configuration
 const botService = computed(() => {
@@ -80,8 +83,8 @@ const loadProfileData = () => {
   }
 };
 
-// Computed tabs with disabled state
-const computedTabs = computed(() => {
+// Override computedTabs to include disabled state based on configuration
+const whatsappComputedTabs = computed(() => {
   return tabs.map(tab => {
     let disabled = false;
     
@@ -107,7 +110,7 @@ const openModal = () => {
   checkWhatsAppConfiguration();
   // Ensure we're on the correct tab and initialize it
   nextTick(() => {
-    handleTabChange(currentActiveTab.value);
+    handleTabChange(currentTab.value);
   });
 };
 
@@ -134,12 +137,12 @@ const handleBack = () => {
   emit('back');
 };
 
-const handleTabChange = (tabId: string) => {
-  console.log('Tab changed to:', tabId);
+const onTabChange = (tabId: string) => {
+  console.log('WhatsAppModal - Tab changed to:', tabId);
   
   // Only allow tab change if WhatsApp is configured or if it's the publish agent tab
   if (tabId === 'publish-agent' || isWhatsAppConfigured.value) {
-    currentActiveTab.value = tabId;
+    handleTabChange(tabId);
     
     // Load profile data when profile tab is selected
     if (tabId === 'profile' && publishStore.cache.botDetails?.dialog360) {
@@ -210,12 +213,12 @@ defineExpose({ openModal, closeModal });
   <PublishModalLayout
     ref="modalRef"
     title="WhatsApp integration"
-    :tabs="computedTabs"
+    :tabs="whatsappComputedTabs"
     icon="/bots/whatsapp.png"
     max-width="1200px"
     default-tab="publish-agent"
     @back="handleBack"
-    @tab-change="handleTabChange"
+    @tab-change="onTabChange"
   >
     <template #default="{ activeTab }">
       <!-- Publish Agent Tab -->
@@ -324,8 +327,6 @@ defineExpose({ openModal, closeModal });
   line-height: 1.5;
 }
 
-
-
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -345,5 +346,8 @@ defineExpose({ openModal, closeModal });
   animation: spin 1s linear infinite;
 }
 
-
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 </style>

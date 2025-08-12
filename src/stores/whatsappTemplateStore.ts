@@ -334,7 +334,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
       return !template.value.variables.header;
     } else if (section === 'body') {
       return true; // Body can have multiple variables
-    } else if (section === 'body_slide') {
+    } else if (section === 'slider') {
       return true; // Slide body can have multiple variables
     } else if (section.startsWith('button')) {
       const buttonIndex = parseInt(section.split('_')[1]);
@@ -352,15 +352,15 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     return true;
   };
 
-  const getVariableCount = (section: string): number => {
+  const getVariableCount = (section: string, slideIndex = 0): number => {
     if (section === 'header') {
       return template.value.variables.header ? 1 : 0;
     } else if (section === 'body') {
       return template.value.variables.body.length;
-    } else if (section === 'body_slide') {
-      // For body_slide, we need to check the specific slide
-      // This will be handled by the component that calls this function
-      return 0; // Placeholder - actual count will be determined by the slide index
+    } else if (section === 'slider') {
+      // For slider, check the specific slide variables
+      const slide = template.value.slides[slideIndex];
+      return slide?.variables?.body?.length || 0;
     } else if (section.startsWith('button')) {
       const buttonIndex = parseInt(section.split('_')[1]);
       const button = block.value.buttons[buttonIndex];
@@ -485,6 +485,9 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         if (blockButton && !blockButton.type) {
           blockButton.type = 'web_url';
         }
+        
+        // Re-check variables for this slide after button type change
+        checkForVariables('slider', slideIndex);
       }
     } else {
       const button = block.value.buttons?.[buttonIndex];
@@ -614,7 +617,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
       const newText = currentText.slice(0, cursorPos) + `{{${nextVarNum}}}` + currentText.slice(cursorPos);
       block.value.text = newText;
       checkForVariables('body');
-    } else if (section === 'body_slide') {
+    } else if (section === 'slider') {
       // Handle carousel slide body variables
       const slide = template.value.slides[slideIndex];
       const blockSlide = block.value.slides[slideIndex];
@@ -699,7 +702,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     }
   };
 
-  const removeVariable = (section?: string) => {
+  const removeVariable = (section?: string, slideIndex = 0) => {
     if (section === 'header') {
       const currentText = template.value.header_text || '';
       const newText = currentText.replace(/\{\{\d+\}\}/g, '');
@@ -712,20 +715,42 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
       template.value.variables.body = [];
     } else if (section?.startsWith('button')) {
       const buttonIndex = parseInt(section.split('_')[1]);
-      const button = block.value.buttons[buttonIndex];
-      if (!button) return;
+      const isGeneric = template.value.type === 'generic';
       
-             // Remove variables from title, text, and URL fields
-       const newTitle = (button.title || '').replace(/\{\{\d+\}\}/g, '');
-       const newText = (button.text || '').replace(/\{\{\d+\}\}/g, '');
-       const newUrl = (button.url || '').replace(/\{\{\d+\}\}/g, '');
-       
-       button.title = newTitle;
-       button.text = newText;
-       button.url = newUrl;
-      
-      // Update variables tracking
-      checkForVariables(`button_${buttonIndex}`);
+      if (isGeneric && slideIndex !== undefined && slideIndex >= 0) {
+        // Handle carousel slide button variables
+        const blockSlide = block.value.slides[slideIndex];
+        const button = blockSlide?.buttons?.[buttonIndex];
+        if (!button) return;
+        
+        // Remove variables from title, text, and URL fields
+        const newTitle = (button.title || '').replace(/\{\{\d+\}\}/g, '');
+        const newText = (button.text || '').replace(/\{\{\d+\}\}/g, '');
+        const newUrl = (button.url || '').replace(/\{\{\d+\}\}/g, '');
+        
+        button.title = newTitle;
+        button.text = newText;
+        button.url = newUrl;
+        
+        // Update variables tracking
+        checkForVariables(`button_${buttonIndex}`, slideIndex);
+      } else {
+        // Handle regular template button variables
+        const button = block.value.buttons[buttonIndex];
+        if (!button) return;
+        
+        // Remove variables from title, text, and URL fields
+        const newTitle = (button.title || '').replace(/\{\{\d+\}\}/g, '');
+        const newText = (button.text || '').replace(/\{\{\d+\}\}/g, '');
+        const newUrl = (button.url || '').replace(/\{\{\d+\}\}/g, '');
+        
+        button.title = newTitle;
+        button.text = newText;
+        button.url = newUrl;
+        
+        // Update variables tracking
+        checkForVariables(`button_${buttonIndex}`);
+      }
     }
   };
 
@@ -1067,7 +1092,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         template_specs: {
           category: cTemp.category,
           header: cTemp.header,
-          button_type: cTemp.category === 'AUTHENTICATION' ? 'otp' : (cTemp.type === 'media' ? 'cta' : 'qr'),
+          button_type: cTemp.category === 'AUTHENTICATION' ? 'otp' : (cTemp.type === 'media' ? 'cta' : 'postback'),
           footer_text: cTemp.footer_text,
           header_text: cTemp.header_text,
           variables: cTemp.variables || {},
@@ -1269,10 +1294,16 @@ const removeSlide = (index: number) => {
                     correspondingBlockSlide.buttons.pop();
                   }
                 }
+                
+                // Re-check variables for this slide after button changes
+                checkForVariables('slider', index);
               }
             }
           });
         }
+        
+        // Re-check variables for the current slide after button changes
+        checkForVariables('slider', slideIndex);
       }
     } else {
       template.value.total_buttons = template.value.button_type == 'cta' ? 2 : 3;
@@ -1343,6 +1374,9 @@ const removeSlide = (index: number) => {
           }
 
           blockSlide.buttons.push(newButton);
+          
+          // Re-check variables for this slide after adding button
+          checkForVariables('slider', slideIndex);
         }
       } else {
         // Add button to all slides (for backward compatibility)
@@ -1376,6 +1410,9 @@ const removeSlide = (index: number) => {
             }
 
             blockSlide.buttons.push(newButton);
+            
+            // Re-check variables for this slide after adding button
+            checkForVariables('slider', _idx);
           }
         });
       }
@@ -1406,12 +1443,18 @@ const removeSlide = (index: number) => {
         
         if (blockSlide && Array.isArray(blockSlide.buttons) && blockSlide.buttons.length > index) {
           blockSlide.buttons.splice(index, 1);
+          
+          // Re-check variables for this slide after removing button
+          checkForVariables('slider', slideIndex);
         }
       } else {
         // Remove button from all slides (for backward compatibility)
         block.value.slides.forEach((blockSlide, _idx) => {
           if (blockSlide && Array.isArray(blockSlide.buttons) && blockSlide.buttons.length > index) {
             blockSlide.buttons.splice(index, 1);
+            
+            // Re-check variables for this slide after removing button
+            checkForVariables('slider', _idx);
           }
         });
       }

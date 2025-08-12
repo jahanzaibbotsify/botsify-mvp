@@ -54,6 +54,7 @@
 
     <div class="emoji-footer">
       <p class="characters-count">{{ textValue.length }}/{{ maxlength }} characters</p>
+      <p v-if="variableCount > 0" class="characters-count">{{ variableCount }}/∞ variables</p>
     </div>
 
     <p class="text-danger" v-if="localErrorText"><small>{{ localErrorText }}</small></p>
@@ -72,6 +73,7 @@ interface Props {
   label?: string;
   placeholder?: string;
   maxlength?: number;
+  variableCount?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -79,7 +81,8 @@ const props = withDefaults(defineProps<Props>(), {
   errorText: '',
   label: 'BODY',
   placeholder: 'Type message you want to send...',
-  maxlength: 1024
+  maxlength: 1024,
+  variableCount: 0
 });
 
 // Emits

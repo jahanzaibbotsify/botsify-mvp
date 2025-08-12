@@ -56,7 +56,7 @@ const hasValidationErrors = computed(() => {
   // Check carousel slides
   for (let i = 0; i < store.template.slides.length; i++) {
     const slide = store.template.slides[i];
-    // const blockSlide = store.block.slides[i];
+    const blockSlide = store.block.slides[i];
     
     // Check slide body variables
     if (slide.variables?.body) {
@@ -67,6 +67,11 @@ const hasValidationErrors = computed(() => {
     
     // Check slide button variables
     if (slide.variables?.button && !slide.variables.button.value) {
+      return true;
+    }
+    
+    // Check slide media link if required (only for non-text headers)
+    if (slide.header !== 'text' && !blockSlide?.attachment_link) {
       return true;
     }
   }
@@ -126,7 +131,27 @@ const shouldShowError = (fieldName: string, index?: number, subField?: string): 
            !store.template.variables.button.value;
   } else if (fieldName === 'carouselSlide') {
     if (index !== undefined && subField) {
-      return touchedFields.value.carouselSlides[index]?.[subField] || false;
+      const isTouched = touchedFields.value.carouselSlides[index]?.[subField] || false;
+      if (!isTouched) return false;
+      
+      // Check for specific validation errors based on subField
+      if (subField === 'media') {
+        // Check if media link is required but missing
+        const slide = store.template.slides[index];
+        // Only show error if the slide header is not 'text' (i.e., it's image/video/document)
+        // and the attachment link is missing
+        return slide && slide.header !== 'text' && !store.block.slides[index]?.attachment_link;
+      } else if (subField.startsWith('body_')) {
+        // Check if body variable is required but missing
+        const varIndex = parseInt(subField.split('_')[1]);
+        const slide = store.template.slides[index];
+        return slide?.variables?.body?.[varIndex] && !slide.variables.body[varIndex].value;
+      } else if (subField === 'button') {
+        // Check if button variable is required but missing
+        const slide = store.template.slides[index];
+        return slide?.variables?.button && !slide.variables.button.value;
+      }
+      return false;
     }
   }
   return false;
@@ -325,7 +350,7 @@ const hasButtonVariables = (slide?: any, slideIndex?: number): boolean => {
               </div>
 
               <!-- Button Variables Section - Only show if button actually has variables -->
-              <div class="slide-section" v-if="slide.variables?.button && hasButtonVariables(slide, slideIndex)">
+              <div class="slide-section" v-if="slide.variables?.button">
                 <h5>Button Variables</h5>
                 <div class="variables-grid">
                   <div>
@@ -345,7 +370,7 @@ const hasButtonVariables = (slide?: any, slideIndex?: number): boolean => {
       </div>
 
       <!-- BUTTON VARIABLES - Only show if button actually has variables -->
-      <div v-if="store.template.variables.button && hasButtonVariables()" class="parameter-section">
+      <div v-if="store.template.variables.button" class="parameter-section">
           <h3>Button variables</h3>
           <div class="variables-grid">
           <div class="form-group">
@@ -368,6 +393,7 @@ const hasButtonVariables = (slide?: any, slideIndex?: number): boolean => {
         :template="store.template"
         :block="store.block"
         :variables="store.template.variables"
+        :slides="store.block.slides"
       />
     </div>
   </div>

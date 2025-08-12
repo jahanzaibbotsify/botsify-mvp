@@ -208,6 +208,10 @@ const handleChange = (value: any) => {
   line-height: 1;
 }
 
+.vue-select-container:deep(.control .value-container) {
+    height: 30px;
+}
+
 .vue-select-container:deep(.control .single-value) {
   color: var(--color-text-primary);
   display: flex;
