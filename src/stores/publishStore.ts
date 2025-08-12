@@ -103,6 +103,9 @@ export const usePublishStore = defineStore('publish', () => {
       const result = await publishApi.saveTelegramSettings(settings);
       
       if (result.success) {
+        loadingStates.value.publishStatus = false;
+        cache.value.publishStatus = null;
+        cacheValid.value.publishStatus = false;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to save Telegram settings';
@@ -392,6 +395,9 @@ export const usePublishStore = defineStore('publish', () => {
         if(settings.type === '360_dialog' && result.data.status === 'error'){
           return { success: false, error: result.data.message };
         }
+        loadingStates.value.publishStatus = false;
+        cache.value.publishStatus = null;
+        cacheValid.value.publishStatus = false;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || `Failed to save ${settings.type === '360_dialog' ? 'Dialog360' : 'Meta Cloud'} settings`;
@@ -766,6 +772,9 @@ export const usePublishStore = defineStore('publish', () => {
       const result = await publishApi.connectionFbPage(type, pageId, pageName, accessToken);
       
       if (result.success) {
+        loadingStates.value.publishStatus = false;
+        cache.value.publishStatus = null;
+        cacheValid.value.publishStatus = false;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to reconnect Facebook page';
@@ -787,6 +796,9 @@ export const usePublishStore = defineStore('publish', () => {
       const result = await publishApi.connectionInstaPage(type, pageId, pageName, accessToken);
       
       if (result.success) {
+        loadingStates.value.publishStatus = false;
+        cache.value.publishStatus = null;
+        cacheValid.value.publishStatus = false;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to reconnect Facebook page';

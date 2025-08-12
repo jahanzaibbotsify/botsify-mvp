@@ -421,6 +421,7 @@ export class PublishApiService {
     whatsapp_phone_id?: string | null;
   }): Promise<PublishResponse> {
     try {      
+      const {apiKey} = useBotStore();
       // Determine endpoint based on type
       const endpoint = settings.type === '360_dialog' 
         ? '/v1/bot/dialog360/connect'
@@ -436,7 +437,8 @@ export class PublishApiService {
           interactive_button: settings.interactive_buttons || false,
           webhook: settings.webhook || '',
           api_key: settings.api_key,
-          type: "360_dialog"
+          type: "360_dialog",
+          apikey: apiKey
         };
       } else {
         // Meta Cloud

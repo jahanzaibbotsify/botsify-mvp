@@ -413,32 +413,32 @@ defineExpose({
       <div v-if="!isLoadingBotDetails && !selectedProvider && showProviderSelection" class="no-provider-message">
         <p>Please select a WhatsApp provider to continue</p>
       </div>
+      <!-- Action Buttons -->
+      <div class="agent-action-buttons">
+        
+        <Button
+          variant="success"
+          size="medium"
+          :loading="testing"
+          :disabled="testing"
+          @click="handleTestBot"
+        >
+          {{ testing ? 'Testing...' : 'Test now on WhatsApp' }}
+        </Button>
+  
+        
+        <Button
+          variant="primary"
+          size="medium"
+          :loading="saving"
+          :disabled="saving"
+          @click="handleSaveSettings"
+        >
+          {{ saving ? 'Saving...' : 'Save Settings' }}
+        </Button>
+      </div>
     </div>
 
-    <!-- Action Buttons -->
-    <div class="agent-action-buttons">
-      
-      <Button
-        variant="success"
-        size="medium"
-        :loading="testing"
-        :disabled="testing"
-        @click="handleTestBot"
-      >
-        {{ testing ? 'Testing...' : 'Test now on WhatsApp' }}
-      </Button>
-
-      
-      <Button
-        variant="primary"
-        size="medium"
-        :loading="saving"
-        :disabled="saving"
-        @click="handleSaveSettings"
-      >
-        {{ saving ? 'Saving...' : 'Save Settings' }}
-      </Button>
-    </div>
   </div>
 </template>
 
