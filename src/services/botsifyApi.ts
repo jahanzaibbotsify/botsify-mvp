@@ -1155,10 +1155,16 @@ export class BotsifyApiService {
   }
 
   async updatePaymentMethod(payload: {
-    cardNumber: string;
-    expiry: string;
-    cvv: string;
-    cardName: string;
+    token: string;
+    plan: string;
+    coupon: string;
+    card: {
+      number: string;
+      name: string;
+      cvc: string;
+      exp_month: number;
+      exp_year: number;
+    };
   }): Promise<BotsifyResponse> {
     try {
       const response = await axiosInstance.post('/v1/billing/update-payment-method', payload);

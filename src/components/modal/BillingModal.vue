@@ -296,6 +296,16 @@
   import { ref, computed, onMounted, watch } from 'vue'
   import { useWhitelabelStore } from '@/stores/whitelabelStore'
   import { botsifyApi } from '@/services/botsifyApi'
+  import { STRIPE_API_KEY } from '@/utils/config'
+  
+  // Declare Stripe as a global variable
+  declare global {
+    interface Window {
+      Stripe: any
+    }
+  }
+
+  const Stripe = window.Stripe
   
   interface StripeCharge {
     id: string
@@ -582,6 +592,21 @@
     window.URL.revokeObjectURL(url)
   }
   
+  // Load Stripe script
+  const loadStripeScript = (): Promise<void> => {
+    if (typeof window.Stripe !== 'undefined') {
+      return Promise.resolve()
+    }
+    
+    return new Promise<void>((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = 'https://js.stripe.com/v2'
+      script.onload = () => resolve()
+      script.onerror = () => reject(new Error('Failed to load Stripe'))
+      document.head.appendChild(script)
+    })
+  }
+
   // Modal methods
   const openChangePlanModal = () => {
     showChangePlanModal.value = true
@@ -591,8 +616,15 @@
     showChangePlanModal.value = false
   }
   
-  const openChangePaymentModal = () => {
-    showChangePaymentModal.value = true
+  const openChangePaymentModal = async () => {
+    try {
+      // Load Stripe script if not already loaded
+      await loadStripeScript()
+      showChangePaymentModal.value = true
+    } catch (error) {
+      console.error('Failed to load Stripe:', error)
+      window.$toast?.error('Failed to load payment system. Please try again.')
+    }
   }
   
   const closeChangePaymentModal = () => {
@@ -652,23 +684,68 @@
   
   // Update payment method
   const updatePaymentMethod = async () => {
+    if (paymentForm.value.cardNumber === "" || paymentForm.value.cardName === "" || paymentForm.value.expiry === "" || paymentForm.value.cvv === "") {
+      window.$toast?.error('Please fill all card details')
+      return
+    }
+    
+    // Check if Stripe is loaded
+    if (typeof window.Stripe === 'undefined') {
+      window.$toast?.error('Stripe is not loaded. Please refresh the page and try again.')
+      return
+    }
+    
     updatingPayment.value = true
     try {
-      // Call API to update payment method using botsifyApi
-      const response = await botsifyApi.updatePaymentMethod(paymentForm.value)
+      // Generate Stripe token like in the original billing.vue
+      Stripe.setPublishableKey(STRIPE_API_KEY)
       
-      if (response.success) {
-        window.$toast?.success('Payment method updated successfully!')
-        closeChangePaymentModal()
-        // Emit event to refresh billing data
-        emit('close')
-      } else {
-        window.$toast?.error(response.message || 'Failed to update payment method')
+      // Parse expiry date (MM/YY format)
+      const expiry = paymentForm.value.expiry.split('/')
+      const ccData = {
+        number: paymentForm.value.cardNumber,
+        name: paymentForm.value.cardName,
+        cvc: paymentForm.value.cvv,
+        exp_month: parseInt(expiry[0]),
+        exp_year: parseInt(expiry[1])
       }
+      
+      // Create Stripe token
+      Stripe.card.createToken(ccData, async (status: string, response: any) => {
+        if (response.error) {
+          updatingPayment.value = false
+          window.$toast?.error(response.error.message || 'Card validation failed')
+        } else {
+          const token = response.id
+          
+          // Send token to API using botsifyApi
+          try {
+            const apiResponse = await botsifyApi.updatePaymentMethod({
+              token: token,
+              plan: currentPlanId.value,
+              coupon: '', // No coupon for payment method update
+              card: ccData
+            })
+            
+            if (apiResponse.success) {
+              window.$toast?.success('Payment method updated successfully!')
+              closeChangePaymentModal()
+              // Emit event to refresh billing data
+              emit('close')
+            } else {
+              window.$toast?.error(apiResponse.message || 'Failed to update payment method')
+            }
+          } catch (error) {
+            console.error('Error updating payment method:', error)
+            window.$toast?.error('Failed to update payment method. Please try again.')
+          } finally {
+            updatingPayment.value = false
+          }
+        }
+      })
     } catch (error) {
-      console.error('Error updating payment method:', error)
-      window.$toast?.error('Failed to update payment method. Please try again.')
-    } finally {
+      console.error('Error creating Stripe token:', error)
+      window.$toast?.error('Failed to process card details. Please try again.')
       updatingPayment.value = false
     }
   }
