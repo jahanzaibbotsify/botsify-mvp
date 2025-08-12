@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { publishApi } from "@/services/publishApi";
 import ModalLayout from "./ModalLayout.vue";
 import { ref, watch, readonly } from "vue";
 

@@ -1,8 +1,7 @@
 import { defineStore } from 'pinia';
-import { ref, computed, watch, nextTick } from 'vue';
-import { marked } from 'marked';
+import { ref, computed, nextTick } from 'vue';
 import { botsifyApi } from '@/services/botsifyApi';
-import type { Chat, Message, Attachment, Story, PromptVersion, GlobalPromptTemplate } from '@/types';
+import type { Chat, Message, Attachment, PromptVersion, GlobalPromptTemplate } from '@/types';
 import { useOpenAIStore } from './openaiStore';
 import { useMCPStore } from './mcpStore';
 import { useBotStore } from './botStore';
@@ -389,7 +388,6 @@ export const useChatStore = defineStore('chat', () => {
       }
     }
 
-    const endTime = Date.now();
     logPerformance('updateStory', startTime, `chat ${chatId}`);
     return chat.story;
   }
@@ -551,7 +549,6 @@ export const useChatStore = defineStore('chat', () => {
     
     doInputDisable.value = true;
     isTyping.value = true;
-    let streamedContent = '';
     let toolCalls: any[] = [];
 
     try {

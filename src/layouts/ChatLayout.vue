@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { ref, watch, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 import LeftSidebar from '@/components/sidebar/LeftSidebar.vue';
 import { useBotStore } from '@/stores/botStore';
@@ -9,7 +9,6 @@ import { useSidebarToggle } from '@/composables/useSidebarToggle';
 
 const chatStore = useChatStore();
 const route = useRoute();
-const router = useRouter();
 const botStore = useBotStore();
 
 const apiKey = route.params.id as string;

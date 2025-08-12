@@ -23,7 +23,7 @@ const messagesContainer = ref<HTMLElement | null>(null);
 
 // Use the chat management composable for better data access
 const { chat, latestPromptContent } = useChatManagement(props.chatId);
-
+console.log(latestPromptContent)
 // Check if we're on mobile and set initial collapsed state
 onMounted(() => {
   const isMobile = window.innerWidth <= 767;

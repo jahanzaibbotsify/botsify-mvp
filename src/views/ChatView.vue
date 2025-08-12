@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useRoleStore } from '@/stores/roleStore';
+import { useRoute } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 import StorySidebar from '@/components/sidebar/StorySidebar.vue';
 import ChatMessage from '@/components/chat/ChatMessage.vue';
@@ -13,9 +12,7 @@ import { useChatScroll } from '@/composables/useChatScroll';
 import { useChatSuggestions } from '@/composables/useChatSuggestions';
 import { useChatManagement } from '@/composables/useChatManagement';
 
-const router = useRouter();
 const route = useRoute();
-const roleStore = useRoleStore();
 const chatStore = useChatStore();
 
 const chatId = route.params.id as string;

@@ -50,7 +50,7 @@ const hasCatalogData = computed(() => {
 const getWhatsAppCloudDetails = async () => {
   // Use cached data if available
   if (publishStore.cacheValid.botDetails && publishStore.cache.botDetails) {
-    const details = publishStore.cache.botDetails;
+    // const details = publishStore.cache.botDetails;
     // Populate form with existing data
     if (whatsappCloudData.value) {
       webhookDetails.value.business_id = whatsappCloudData.value.business_id || '';
