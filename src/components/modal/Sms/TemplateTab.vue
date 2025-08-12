@@ -24,7 +24,8 @@ const isLoading = ref(false);
 
 // Local state
 const searchQuery = ref('');
-const deletingTemplateId = ref<number | null>(null);
+const deleteTemplateId = ref<number | null>(null);
+const cloneTemplateId = ref<number | null>(null);
 const currentPage = ref(1);
 const itemsPerPage = 20; // Match the API per_page default
 
@@ -72,7 +73,7 @@ const handleDeleteTemplate = async (id: number) => {
     text: 'Are you sure you want to delete this template?'
   },
     async () => {
-      deletingTemplateId.value = id;
+      deleteTemplateId.value = id;
       isLoading.value = true;
       try {
         console.log('Deleting template with ID:', id);
@@ -90,7 +91,7 @@ const handleDeleteTemplate = async (id: number) => {
       } catch (error) {
         console.error('Failed to delete template:', error);
       } finally {
-        deletingTemplateId.value = null;
+        deleteTemplateId.value = null;
         isLoading.value = false;
       }
     }
@@ -104,6 +105,7 @@ const handleCloneTemplate = async (id: number) => {
   },
     async () => {
       isLoading.value = true;
+      cloneTemplateId.value = id;
       try {
         console.log('Cloning template with ID:', id);
         const result = await publishStore.cloneSmsTemplate(id);
@@ -119,6 +121,7 @@ const handleCloneTemplate = async (id: number) => {
       } catch (error) {
         console.error('Failed to clone template:', error);
       } finally {
+        cloneTemplateId.value = null;
         isLoading.value = false;
       }
     }
@@ -170,12 +173,11 @@ const handlePageChange = (page: number) => {
   fetchTemplates(page, itemsPerPage);
 };
 
-
-// Watch for search query changes to trigger data fetching
-watch(searchQuery, () => {
+const handleSearch = () => {
   currentPage.value = 1; // Reset to first page
-  fetchTemplates(1, itemsPerPage); // Fetch with new search
-});
+  fetchTemplates(1, itemsPerPage, searchQuery.value); // Fetch with new search
+};
+
 
 // Load templates on mount
 onMounted(async () => {
@@ -198,6 +200,7 @@ defineExpose({
         <Input 
           v-model="searchQuery" 
           placeholder="Search templates..."
+          @input="handleSearch"
           searchable
         />
         
@@ -263,8 +266,6 @@ defineExpose({
                   iconOnly
                   @click="openEditModal(template)"
                   title="Edit template"
-                  :loading="deletingTemplateId === template.id"
-                  :disabled="deletingTemplateId === template.id"
                 />
                 <Button
                   variant="secondary"
@@ -273,16 +274,16 @@ defineExpose({
                   iconOnly
                   @click="template.id ? handleCloneTemplate(template.id) : () => console.log('No template ID for clone')"
                   title="Clone template"
-                  :loading="deletingTemplateId === template.id"
-                  :disabled="deletingTemplateId === template.id"
+                  :loading="cloneTemplateId === template.id"
+                  :disabled="cloneTemplateId === template.id"
                 />
                 <Button
                   variant="error-outline"
                   size="small"
-                  :icon="deletingTemplateId === template.id ? 'pi pi-spinner pi-spin' : 'pi pi-trash'"
+                  icon="pi pi-trash"
                   iconOnly
-                  :loading="deletingTemplateId === template.id"
-                  :disabled="deletingTemplateId === template.id"
+                  :loading="deleteTemplateId === template.id"
+                  :disabled="deleteTemplateId === template.id"
                   @click="template.id ? handleDeleteTemplate(template.id) : () => console.log('No template ID for delete')"
                   title="Delete template"
                 />

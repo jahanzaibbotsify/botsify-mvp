@@ -53,6 +53,7 @@ const isEditing = ref(false);
 const newKeyword = ref('');
 const isLoading = ref(false);
 const isVisible = ref(false);
+const deleteResponderId = ref<string | null>(null);
 
 // New responder form
 const newResponder = ref({
@@ -227,11 +228,7 @@ const cancelAddingNew = () => {
 
 const deleteAutoResponder = async (id: string) => {
   window.$confirm({
-    title: 'Delete Auto Responder',
     text: 'Are you sure you want to delete this auto responder?',
-    icon: 'warning',
-    confirmButtonText: 'Delete',
-    cancelButtonText: 'Cancel'
   }, () => {
     performDelete(id);
   });
@@ -239,6 +236,7 @@ const deleteAutoResponder = async (id: string) => {
 
 const performDelete = async (id: string) => {
   isLoading.value = true;
+  deleteResponderId.value = id;
   try {
     const result = await publishStore.deleteCommentResponder(id);
 
@@ -254,6 +252,7 @@ const performDelete = async (id: string) => {
     console.error('Failed to delete auto responder:', error);
     window.$toast.error('Failed to delete auto responder');
   } finally {
+    deleteResponderId.value = null;
     isLoading.value = false;
   }
 };
@@ -416,7 +415,6 @@ defineExpose({
       <div class="form-actions">
         <Button 
           variant="secondary"
-          :loading="isLoading"
           @click="cancelAddingNew"
         >
           Cancel
@@ -482,7 +480,6 @@ defineExpose({
       <div class="form-actions">
         <Button 
           variant="secondary"
-          :loading="isLoading"
           @click="cancelEditing"
         >
           Cancel
@@ -555,7 +552,8 @@ defineExpose({
                 <Button 
                   variant="error-outline"
                   size="small"
-                  :loading="isLoading"
+                  :loading="deleteResponderId === responder.id"
+                  :disabled="deleteResponderId === responder.id"
                   icon="pi pi-trash"
                   iconOnly
                   @click="deleteAutoResponder(responder.id)"

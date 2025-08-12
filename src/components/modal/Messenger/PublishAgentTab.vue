@@ -123,7 +123,10 @@ const showConnectButton = computed(() => {
   return !storePagesLoaded.value || pages.value.length === 0;
 });
 
-const isLoading = ref(false);
+const isConnectLoading = ref(false);
+const isDisconnectLoading = ref(false);
+const isRefreshLoading = ref(false);
+const isRemoveLoading = ref(false);
 
 // Load Facebook pages
 const loadFbPages = async () => {
@@ -149,7 +152,7 @@ const createNewPage = () => {
 };
 
 const connectAccount = async () => {
-  isLoading.value = true;
+  isConnectLoading.value = true;
   try {
     const result = await refreshPermissions();
     if (result.success && 'data' in result && result.data?.redirect) {
@@ -161,12 +164,16 @@ const connectAccount = async () => {
   } catch (error) {
     console.error('Failed to connect account:', error);
   } finally {
-    isLoading.value = false;
+    isConnectLoading.value = false;
   }
 };
 
 const connectionPage = async (type: string, page: any) => {
-  isLoading.value = true;
+  if (type === 'connect') {
+    isConnectLoading.value = true;
+  } else if (type === 'disconnect') {
+    isDisconnectLoading.value = true;
+  }
   try {
     const result = await connectPage(type, page.id, page.name, page.accessToken);
     if (result.success) {
@@ -181,7 +188,8 @@ const connectionPage = async (type: string, page: any) => {
   } catch (error) {
     console.error('Failed to disconnect page:', error);
   } finally {
-    isLoading.value = false;
+    isConnectLoading.value = false;
+    isDisconnectLoading.value = false;
   }
 };
 
@@ -192,7 +200,7 @@ const openFacebookPage = (pageId: string) => {
 };
 
 const refreshFbPagePermissions = async () => {
-  isLoading.value = true;
+  isRefreshLoading.value = true;
   try {
     const result = await refreshPermissions();
     if (result.success && 'data' in result && result.data?.redirect) {
@@ -204,13 +212,13 @@ const refreshFbPagePermissions = async () => {
   } catch (error) {
     console.error('Failed to refresh page permissions:', error);
   } finally {
-    isLoading.value = false;
+    isRefreshLoading.value = false;
   }
 };
 
 
 const removeFbPagePermissions = async () => {
-  isLoading.value = true;
+  isRemoveLoading.value = true;
   try {
     const result = await removePermissions();
     if (result.success && 'data' in result && result.data?.redirect) {
@@ -222,7 +230,7 @@ const removeFbPagePermissions = async () => {
   } catch (error) {
     console.error('Failed to refresh page permissions:', error);
   } finally {
-    isLoading.value = false;
+    isRemoveLoading.value = false;
   }
 };
 // Get initials from page name
@@ -245,7 +253,6 @@ onMounted(() => {
 
 // Expose methods for parent component
 defineExpose({
-  isLoading,
   loadFbPages
 });
 </script>
@@ -273,11 +280,11 @@ defineExpose({
         <p>Connect your Facebook account to manage your pages and enable Messenger bot functionality.</p>
         <Button 
           variant="primary"
-          :loading="isLoading"
+          :loading="isConnectLoading"
           icon="pi pi-link"
           @click="connectAccount"
         >
-          {{ isLoading ? 'Connecting...' : 'Connect Facebook account' }}
+          {{ isConnectLoading ? 'Connecting...' : 'Connect Facebook account' }}
         </Button>
       </div>
     </div>
@@ -288,23 +295,23 @@ defineExpose({
       <div class="header-actions">
         <Button 
           variant="primary"
-          :loading="isLoading"
+          :loading="isRefreshLoading"
           icon="pi pi-refresh"
           @click="refreshFbPagePermissions"
         >
-          {{ isLoading ? 'Refreshing...' : 'Refresh Permission' }}
+          {{ isRefreshLoading ? 'Refreshing...' : 'Refresh Permission' }}
         </Button>
         <Button 
           variant="warning"
-          :loading="isLoading"
+          :loading="isRemoveLoading"
           icon="pi pi-trash"
           @click="removeFbPagePermissions"
         >
-          {{ isLoading ? 'Updating...' : 'Remove Permission' }}
+          {{ isRemoveLoading ? 'Updating...' : 'Remove Permission' }}
         </Button>
         <Button 
           variant="secondary"
-          :loading="isLoading"
+          :loading="isConnectLoading"
           icon="pi pi-plus"
           @click="createNewPage"
         >
@@ -349,7 +356,7 @@ defineExpose({
                 v-if="!page.is_bot_page"
                 variant="primary"
                 size="small"
-                :loading="isLoading"
+                :loading="isConnectLoading"
                 icon="pi pi-link"
                 @click="connectionPage('connect', page)"
               >
@@ -360,7 +367,7 @@ defineExpose({
                 <Button 
                   variant="success"
                   size="small"
-                  :loading="isLoading"
+                  :loading="isConnectLoading"
                   icon="pi pi-refresh"
                   @click="connectionPage('connect', page)"
                 >
@@ -370,7 +377,7 @@ defineExpose({
                 <Button 
                   variant="error"
                   size="small"
-                  :loading="isLoading"
+                  :loading="isDisconnectLoading"
                   icon="pi pi-times"
                   @click="connectionPage('disconnect', page)"
                 >

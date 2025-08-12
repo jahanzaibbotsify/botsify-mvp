@@ -650,7 +650,6 @@ export const usePublishStore = defineStore('publish', () => {
       
       if (result.success) {
         if(result.data.status === 'error'){
-          window.$toast.error(result.data.message);
           return { success: false, error: result.data.message };
         }
         // Show success toast
@@ -664,9 +663,7 @@ export const usePublishStore = defineStore('publish', () => {
     } catch (err: any) {
       error.value = err.message || 'Failed to create SMS template';
       // Show error toast
-      if (window.$toast) {
-        window.$toast.error(error.value);
-      }
+      window.$toast.error(error.value);
       return { success: false, error: error.value };
     } finally {
       isLoading.value = false;
@@ -1085,6 +1082,8 @@ export const usePublishStore = defineStore('publish', () => {
       const result = await publishApi.cloneSmsTemplate(id);
 
       if (result.success) {
+        cache.value.templates = null;
+        cacheValid.value.templates = false;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to clone SMS template';

@@ -437,7 +437,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
                       />
                     </div>
 
-                    <div v-if="button.type === 'postback'" class="field-group">
+                    <div v-if="button.type === 'postback' && !isEditMode" class="field-group">
                       <label>Response text</label>
                       <Textarea
                         v-model="button.response"
@@ -449,7 +449,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
 
                     <div class="button-actions-footer">
                       <Button
-                        variant="secondary"
+                        variant="primary"
                         size="small"
                         @click="saveButtonEdit(index)"
                       >

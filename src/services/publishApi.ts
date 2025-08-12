@@ -360,6 +360,7 @@ export class PublishApiService {
         instagram_id: pageId,
         type,
         page_name,
+        instagram_username: page_name,
         access_token: accessToken,
         apikey: apiKey
       }, {

@@ -1089,6 +1089,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         name: cTemp.name || 'Template',
         text: dataBlock.text,
         language: dataBlock.language,
+        type: cTemp.type,
         template_specs: {
           category: cTemp.category,
           header: cTemp.header,
@@ -1103,6 +1104,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         buttons: formattedButtons,
         image_url: dataBlock.image_url,
         attachment_link: dataBlock.attachment_link,
+        video_url: dataBlock.video_url,
         // Preserve slides in block for carousel with new format
         ...(cTemp.type === 'generic' && { slides: formattedSlides })
       };

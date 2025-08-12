@@ -8,7 +8,10 @@ import Button from "@/components/ui/Button.vue";
 const publishStore = usePublishStore();
 
 // Local loading state
-const isLoading = ref(false);
+const isConnectLoading = ref(false);
+const isDisconnectLoading = ref(false);
+const isRefreshLoading = ref(false);
+const isRemoveLoading = ref(false);
 
 // Computed properties to sync with store state
 const storePages = computed(() => publishStore.cache.instagramPages);
@@ -62,7 +65,7 @@ const loadInstaPages = async () => {
 };
 
 const connectAccount = async () => {
-  isLoading.value = true;
+  isConnectLoading.value = true;
   try {
     const result = await publishStore.refreshFbPagePermission(true);
     if (result.success && result.data?.redirect) {
@@ -74,12 +77,16 @@ const connectAccount = async () => {
   } catch (error) {
     console.error('Failed to connect account:', error);
   } finally {
-    isLoading.value = false;
+    isConnectLoading.value = false;
   }
 };
 
 const connectionPage = async (type: string, page: any) => {
-  isLoading.value = true;
+  if (type === 'connect') {
+    isConnectLoading.value = true;
+  } else if (type === 'disconnect') {
+    isDisconnectLoading.value = true;
+  }
   try {
     const result = await publishStore.connectionInstaPage(type, page.id, page.name, page.accessToken);
     console.log('Connection result:', result);
@@ -102,7 +109,8 @@ const connectionPage = async (type: string, page: any) => {
       window.$toast.error('Failed to connect page');
     }
   } finally {
-    isLoading.value = false;
+    isConnectLoading.value = false;
+    isDisconnectLoading.value = false;
   }
 };
 
@@ -112,7 +120,7 @@ const openInstagramPage = (pageId: string) => {
 };
 
 const refreshFbPagePermissions = async () => {
-  isLoading.value = true;
+  isRefreshLoading.value = true;
   try {
     const result = await publishStore.refreshFbPagePermission(true);
     if (result.success && result.data?.redirect) {
@@ -124,12 +132,12 @@ const refreshFbPagePermissions = async () => {
   } catch (error) {
     console.error('Failed to refresh page permissions:', error);
   } finally {
-    isLoading.value = false;
+    isRefreshLoading.value = false;
   }
 };
 
 const removeFbPagePermissions = async () => {
-  isLoading.value = true;
+  isRemoveLoading.value = true;
   try {
     const result = await publishStore.removeFbPagePermission();
     if (result.success && result.data?.redirect) {
@@ -141,7 +149,7 @@ const removeFbPagePermissions = async () => {
   } catch (error) {
     console.error('Failed to remove page permissions:', error);
   } finally {
-    isLoading.value = false;
+    isRemoveLoading.value = false;
   }
 };
 
@@ -175,7 +183,6 @@ onMounted(() => {
 
 // Expose methods for parent component
 defineExpose({
-  isLoading,
   loadInstaPages
 });
 </script>
@@ -203,11 +210,11 @@ defineExpose({
         <p>Connect your Instagram account to manage your pages and enable Instagram bot functionality.</p>
         <Button 
           variant="primary"
-          :loading="isLoading"
+          :loading="isConnectLoading"
           icon="pi pi-link"
           @click="connectAccount"
         >
-          {{ isLoading ? 'Connecting...' : 'Connect Instagram account' }}
+          {{ isConnectLoading ? 'Connecting...' : 'Connect Instagram account' }}
         </Button>
       </div>
     </div>
@@ -218,19 +225,21 @@ defineExpose({
       <div class="header-actions">
         <Button 
           variant="primary"
-          :loading="isLoading"
+          :loading="isRefreshLoading"
+          :disabled="isRefreshLoading"
           icon="pi pi-refresh"
           @click="refreshFbPagePermissions"
         >
-          {{ isLoading ? 'Refreshing...' : 'Refresh Permission' }}
+          {{ isRefreshLoading ? 'Refreshing...' : 'Refresh Permission' }}
         </Button>
         <Button 
           variant="warning"
-          :loading="isLoading"
+          :loading="isRemoveLoading"
+          :disabled="isRemoveLoading"
           icon="pi pi-trash"
           @click="removeFbPagePermissions"
         >
-          {{ isLoading ? 'Updating...' : 'Remove Permission' }}
+          {{ isRemoveLoading ? 'Updating...' : 'Remove Permission' }}
         </Button>
       </div>
 
@@ -279,7 +288,8 @@ defineExpose({
                 <Button 
                   variant="success"
                   size="small"
-                  :loading="isLoading"
+                  :loading="isConnectLoading"
+                  :disabled="isConnectLoading"
                   icon="pi pi-refresh"
                   @click="connectionPage('connect', page)"
                 >
@@ -289,7 +299,8 @@ defineExpose({
                 <Button 
                   variant="error"
                   size="small"
-                  :loading="isLoading"
+                  :loading="isDisconnectLoading"
+                  :disabled="isDisconnectLoading"
                   icon="pi pi-times"
                   @click="connectionPage('disconnect', page)"
                 >
@@ -305,7 +316,8 @@ defineExpose({
                 v-else
                 variant="primary"
                 size="small"
-                :loading="isLoading"
+                :loading="isConnectLoading"
+                :disabled="isConnectLoading"
                 icon="pi pi-link"
                 @click="connectionPage('connect', page)"
               >

@@ -413,10 +413,10 @@ const handlePageChange = (page: number) => {
 };
 
 // Watch for search query changes to trigger data fetching
-watch(searchQuery, () => {
+const handleSearch = () => {
   currentPage.value = 1; // Reset to first page
   fetchTemplates(1, itemsPerPage); // Fetch with new search
-});
+};
 
 // Initialize templates when component is mounted
 onMounted(() => {
@@ -437,6 +437,7 @@ defineExpose({
         <Input 
           v-model="searchQuery" 
           placeholder="Search templates..."
+          @input="handleSearch"
           searchable
         />
         
