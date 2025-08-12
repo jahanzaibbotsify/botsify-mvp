@@ -454,14 +454,11 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     if (!template.value.header) {
       template.value.header = 'text';
     }
-  
     // Clear previous header content when type changes
-    template.value.header_text = '';
     template.value.variables.header = null;
     block.value.image_url = '';
     block.value.video_url = '';
     block.value.attachment_link = '';
-    errors.value.header = '';
   
     // Validate header requirement
     if (template.value.header !== 'text') {
@@ -1000,6 +997,10 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         cTemp.footer_text = '';
       }
 
+      if(cTemp.bodyIncludes.includes('header')) {
+        cTemp.type = cTemp.header;
+      }
+
       // If it is text template (or) if it is media template but header is removed
       if (cTemp.header === 'text' && cTemp.type !== 'generic') {
         (dataBlock as any).type = 'button';
@@ -1108,7 +1109,6 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         // Preserve slides in block for carousel with new format
         ...(cTemp.type === 'generic' && { slides: formattedSlides })
       };
-console.log("final template", templateData);
 
       const result = await publishApi.createTemplate(templateData);
       if (result.success) {

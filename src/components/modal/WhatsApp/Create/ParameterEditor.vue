@@ -53,28 +53,28 @@ const hasValidationErrors = computed(() => {
     return true;
   }
   
-  // Check carousel slides
-  for (let i = 0; i < store.template.slides.length; i++) {
-    const slide = store.template.slides[i];
-    const blockSlide = store.block.slides[i];
+  // // Check carousel slides
+  // for (let i = 0; i < store.template.slides.length; i++) {
+  //   const slide = store.template.slides[i];
+  //   const blockSlide = store.block.slides[i];
     
-    // Check slide body variables
-    if (slide.variables?.body) {
-      for (const variable of slide.variables.body) {
-        if (!variable.value) return true;
-      }
-    }
+  //   // Check slide body variables
+  //   if (slide.variables?.body) {
+  //     for (const variable of slide.variables.body) {
+  //       if (!variable.value) return true;
+  //     }
+  //   }
     
-    // Check slide button variables
-    if (slide.variables?.button && !slide.variables.button.value) {
-      return true;
-    }
+  //   // Check slide button variables
+  //   if (slide.variables?.button && !slide.variables.button.value) {
+  //     return true;
+  //   }
     
-    // Check slide media link if required (only for non-text headers)
-    if (slide.header !== 'text' && !blockSlide?.attachment_link) {
-      return true;
-    }
-  }
+  //   // Check slide media link if required (only for non-text headers)
+  //   if (slide.header !== 'text' && !blockSlide?.attachment_link) {
+  //     return true;
+  //   }
+  // }
   
   return false;
 });

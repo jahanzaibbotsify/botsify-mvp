@@ -505,7 +505,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
 
 <style scoped>
 .template-editor {
-  padding: var(--space-4);
+  padding: var(--space-3);
 }
 
 .form-layout {
