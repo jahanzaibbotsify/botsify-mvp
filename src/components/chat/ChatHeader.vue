@@ -82,7 +82,7 @@ import { useChatStore } from '@/stores/chatStore';
 import { useBotStore } from '@/stores/botStore';
 import { useRoleStore } from '@/stores/roleStore';
 import { getWebUrl } from '@/utils';
-import CalendlyModal from '@/components/ui/CalendlyModal.vue';
+import CalendlyModal from '@/components/modal/CalendlyModal.vue';
 import UserMenu from "@/components/auth/UserMenu.vue";
 
 interface Props {
