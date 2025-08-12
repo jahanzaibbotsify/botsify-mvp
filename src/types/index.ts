@@ -96,3 +96,6 @@ export interface ExtendedChat extends Chat {
 
 // Export conversation types
 export * from './conversation'
+
+// Export auth types
+export * from './auth'
