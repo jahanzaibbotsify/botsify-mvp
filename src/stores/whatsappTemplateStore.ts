@@ -995,13 +995,16 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         cTemp.header_text = '';
         cTemp.footer_text = '';
       }
-
+      
       // If it is text template (or) if it is media template but header is removed
       if (cTemp.header === 'text' && cTemp.type !== 'generic') {
         cTemp.type = 'button';
         dataBlock.image_url = '';
         dataBlock.video_url = '';
         dataBlock.attachment_link = '/theme/images/file-cover.png';
+      } 
+      if(cTemp.bodyIncludes.includes('header') && cTemp.header !== 'text'){
+        cTemp.type = cTemp.header;
       }
 
       // If it is not a text template (or) if template does not include header, remove header variable

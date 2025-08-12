@@ -414,8 +414,10 @@ const handlePageChange = (page: number) => {
 
 // Watch for search query changes to trigger data fetching
 const handleSearch = () => {
-  currentPage.value = 1; // Reset to first page
-  fetchTemplates(1, itemsPerPage); // Fetch with new search
+  setTimeout(() => {
+    currentPage.value = 1;
+    fetchTemplates(1, itemsPerPage);
+  }, 500);
 };
 
 // Initialize templates when component is mounted

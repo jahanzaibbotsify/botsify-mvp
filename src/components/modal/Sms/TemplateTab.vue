@@ -174,8 +174,10 @@ const handlePageChange = (page: number) => {
 };
 
 const handleSearch = () => {
-  currentPage.value = 1; // Reset to first page
-  fetchTemplates(1, itemsPerPage, searchQuery.value); // Fetch with new search
+  setTimeout(() => {
+    currentPage.value = 1;
+    fetchTemplates(1, itemsPerPage);
+  }, 500);
 };
 
 
