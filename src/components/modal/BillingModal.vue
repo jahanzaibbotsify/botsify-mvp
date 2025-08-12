@@ -712,6 +712,7 @@
       
       // Create Stripe token
       Stripe.card.createToken(ccData, async (status: string, response: any) => {
+        console.log(status, response)
         if (response.error) {
           updatingPayment.value = false
           window.$toast?.error(response.error.message || 'Card validation failed')

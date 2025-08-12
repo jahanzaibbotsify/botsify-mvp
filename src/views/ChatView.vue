@@ -110,7 +110,7 @@ function getBotDetails() {
           roleStore.setCurrentUser(response.data.data.user);
 
           // Set whitelabel data if user is a whitelabel client
-          if (response.data.data.user.is_whitelabel_client) {
+          if (response.data.data.user.whitelabel) {
             whitelabelStore.setWhitelabelData(response.data.data.user);
             // Set favicon if present
             if (response.data.data.user.whitelabel && response.data.data.user.whitelabel.favicon) {
