@@ -76,6 +76,7 @@ const updateLocalState = (details: any) => {
   }
   // Check if WhatsApp Cloud is configured
   else if (details.whatsapp_cloud) {
+    console.log(details.whatsapp_cloud, "asd")
     selectedProvider.value = 'meta';
     showProviderSelection.value = false;
     isDialog360Connected.value = false;

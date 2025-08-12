@@ -15,7 +15,7 @@ import { useTabManagement } from "@/composables/useTabManagement";
 // Define tabs
 const tabs = [
   { id: 'publish-agent', label: 'Publish agent' },
-  { id: 'profile', label: 'Profile' },
+  // { id: 'profile', label: 'Profile' },
   { id: 'template', label: 'Templates' },
   { id: 'broadcast', label: 'Broadcast' },
   { id: 'broadcast-report', label: 'Broadcast report' },
