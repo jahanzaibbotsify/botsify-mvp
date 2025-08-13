@@ -34,7 +34,10 @@ const currentPage = ref(1)
 const totalPages = ref(1)
 const totalAgents = ref(0)
 const hasMoreAgents = ref(false)
-const agentsPerPage = ref(20)
+const agentsPerPage = ref(20);
+const listAgentsResponse = ref({
+  limit_reached: true
+})
 
 
 /**
@@ -62,7 +65,7 @@ const getAgents = async (page: number = 1, append: boolean = false): Promise<voi
 
     if (response.data && response.data.bots) {
       const botsData = response.data.bots
-
+      listAgentsResponse.value = response.data;
       // Update pagination info
       currentPage.value = botsData.current_page || page
       totalPages.value = botsData.last_page || 1
@@ -232,7 +235,7 @@ const deleteAgent = (agent: any) => {
   activeMenuId.value = null
 
   window.$confirm({
-    text: `Are you sure you want to delete "${agent.name || 'Unnamed Agent'}"? This action cannot be undone.`,
+    text: `Are you sure you want to delete "${agent.name || 'Unnamed Agent'}"?`,
   }, async () => {
     try {
       const response = await axiosInstance.delete(`v1/delete-agent/${agent.id}`)
@@ -246,6 +249,7 @@ const deleteAgent = (agent: any) => {
         if (totalAgents.value > 0) {
           totalAgents.value--
         }
+        getAgents()
       } else {
         window.$toast?.error(response.data?.message || 'Failed to delete agent. Please try again.')
       }
@@ -394,9 +398,13 @@ const saveAgent = async () => {
       const response = await axiosInstance.post('v1/create-bot', {
         bot_name: trimmedName
       });
-
-      if (response.data && response.data.bot_id) {
-        window.$toast?.success('Agent created successfully!')
+      const responseData = response.data;
+      if (responseData && responseData.bot_id) {
+        window.$toast?.success('Agent created successfully!');
+        await selectBot({
+          token: responseData.bot_token,
+          apikey: responseData.bot_api_key
+        })
 
         // Refresh the agents list to show the new agent
         await getAgents(1, false)
@@ -623,7 +631,7 @@ onUnmounted(() => {
           </div>
 
           <!-- Create Agent Button - Only show on My Agents tab -->
-          <div v-if="activeTab === 'my-agents'" class="create-agent-wrapper">
+          <div v-if="activeTab === 'my-agents' && !listAgentsResponse?.limit_reached" class="create-agent-wrapper">
             <button @click="createAgent" class="create-agent-btn">
               <i class="pi pi-plus"></i>
               <span>Create Agent</span>
@@ -667,7 +675,7 @@ onUnmounted(() => {
           <div
               v-for="(agent, index) in filteredAgents"
               :key="agent.id"
-              class="agent-card"
+              class="agent-selection-card"
               :class="{
               premium: agent.isPremium,
               popular: agent.isPopular,
@@ -677,7 +685,7 @@ onUnmounted(() => {
               :style="{ '--card-delay': index * 0.02 + 's' }"
           >
             <!-- Agent Card -->
-            <div class="agent-card-content">
+            <div class="agent-selection-card-content">
               <!-- Agent Menu (Top Right Corner) -->
               <div class="agent-menu" v-if="activeTab === 'my-agents'">
                 <button @click="toggleAgentMenu(agent.id)" class="menu-trigger">
@@ -723,7 +731,6 @@ onUnmounted(() => {
                     <h3 class="agent-title" @click="selectBot(agent)" style="cursor:pointer">
                       {{ agent.name || 'Unnamed Agent' }}
                     </h3>
-                    <!-- Status Badge -->
                   </div>
                 <!-- Published Channels Badges -->
                 <div v-if="hasAnyPublish(agent.publish_status)" class="published-badges">
@@ -733,7 +740,11 @@ onUnmounted(() => {
                   </span>
                 </div>
                   <p class="agent-users">{{ botUsers[agent.id] !== undefined ? botUsers[agent.id] : 0 }} users</p>
-                  <div class="status-badge" :class="{ 'active': agent.active === 1, 'inactive': agent.active === 0 || !agent.active }">
+                </div>
+                
+                <!-- Status Badge - Moved to bottom -->
+                <div class="status-badge-container">
+                  <div class="status-badge-agent" :class="{ 'active': agent.active === 1, 'inactive': agent.active === 0 || !agent.active }">
                     <i class="pi" :class="agent.active === 1 ? 'pi-check-circle' : 'pi-times-circle'"></i>
                     <span>{{ agent.active === 1 ? 'Active' : 'Inactive' }}</span>
                   </div>
@@ -840,7 +851,7 @@ onUnmounted(() => {
 /* Hero Section */
 .hero-section {
   text-align: center;
-  padding: var(--space-2) var(--space-6) var(--space-6);
+  padding: var(--space-4) var(--space-6) var(--space-7) var(--space-6);
   color: white;
   position: relative;
   overflow: hidden;
@@ -890,7 +901,7 @@ onUnmounted(() => {
   z-index: 2;
   max-width: 1400px;
   margin: 0 auto;
-  padding: var(--space-4) var(--space-6);
+  padding: var(--space-4) var(--space-2);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1023,7 +1034,6 @@ onUnmounted(() => {
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-normal);
-  flex: 1;
   justify-content: center;
 }
 
@@ -1073,7 +1083,7 @@ onUnmounted(() => {
 
 .search-input {
   width: 100%;
-  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-8) + var(--space-1));
+  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-6) + var(--space-1));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background-color: var(--color-bg-tertiary);
@@ -1325,17 +1335,41 @@ onUnmounted(() => {
   gap: var(--space-6);
 }
 
+/* CSS Reset for AgentSelectionView to prevent conflicts */
+.agent-selection-view * {
+  box-sizing: border-box !important;
+}
+
+/* Override any conflicting styles from other views */
+.agent-selection-view .agent-selection-card {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+}
+
+.agent-selection-view .status-badge-container {
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+}
+
 /* Agent Cards */
-.agent-card {
-  background: white;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  animation: slideUp 0.3s ease-out;
-  animation-delay: var(--card-delay);
-  animation-fill-mode: both;
+.agents-grid .agent-selection-card {
+  background: white !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-lg) !important;
+  overflow: hidden !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
+  animation: slideUp 0.3s ease-out !important;
+  animation-delay: var(--card-delay) !important;
+  animation-fill-mode: both !important;
 }
 
 @keyframes slideUp {
@@ -1349,25 +1383,36 @@ onUnmounted(() => {
   }
 }
 
-.agent-card:hover {
+.agent-selection-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
-.agent-card-content {
+.agent-selection-card-content {
   position: relative;
   padding: var(--space-5);
   min-height: 180px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Agent Info Column */
 .agent-info-column {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  gap: var(--space-3);
-  width: 100%;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  gap: var(--space-3) !important;
+  width: 100% !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+}
+
+/* Status Badge Container - Positioned at bottom */
+.status-badge-container {
+  margin-top: auto !important;
+  padding-top: var(--space-3) !important;
+  flex-shrink: 0 !important;
 }
 
 /* Agent Avatar Section */
@@ -1411,31 +1456,31 @@ onUnmounted(() => {
   min-width: 0;
 }
 
-.status-badge {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 4px 10px;
-  border-radius: var(--radius-full);
-  font-size: 0.75rem;
-  font-weight: 500;
-  white-space: nowrap;
-  flex-shrink: 0;
+.status-badge-agent {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--space-1) !important;
+  padding: 4px 10px !important;
+  border-radius: var(--radius-full) !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
-.status-badge.active {
-  background-color: rgba(46, 204, 113, 0.1);
-  color: #27ae60;
-  border: 1px solid rgba(46, 204, 113, 0.2);
+.status-badge-agent.active {
+  background-color: rgba(46, 204, 113, 0.1) !important;
+  color: #27ae60 !important;
+  border: 1px solid rgba(46, 204, 113, 0.2) !important;
 }
 
-.status-badge.inactive {
-  background-color: rgba(231, 76, 60, 0.1);
-  color: #e74c3c;
-  border: 1px solid rgba(231, 76, 60, 0.2);
+.status-badge-agent.inactive {
+  background-color: rgba(231, 76, 60, 0.1) !important;
+  color: #e74c3c !important;
+  border: 1px solid rgba(231, 76, 60, 0.2) !important;
 }
 
-.status-badge i {
+.status-badge-agent i {
   font-size: 0.8rem;
 }
 
@@ -2264,7 +2309,7 @@ onUnmounted(() => {
   background: var(--color-bg-secondary);
 }
 
-[data-theme="dark"] .agent-card {
+[data-theme="dark"] .agent-selection-card {
   background: var(--color-bg-secondary);
   border-color: var(--color-border);
 }

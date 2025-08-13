@@ -149,7 +149,7 @@ const handleLogout = async () => {
   top: 100%;
   right: 0;
   margin-top: var(--space-2);
-  width: 240px;
+  width: 290px;
   background-color: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
