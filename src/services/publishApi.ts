@@ -131,13 +131,17 @@ export class PublishApiService {
   /**
    * Get SMS report
    */
-  async getSmsReport(page: number = 1): Promise<PublishResponse> {
+  async getSmsReport(page: number = 1, per_page: number = 20, query?: string, start_date?: string, end_date?: string): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.get('/v1/bot/sms/report', {
         params: {
           apikey: apiKey,
-          page: page
+          page: page,
+          per_page,
+          ...(query && { query: query.trim() }),
+          ...(start_date && { start_date: start_date }),
+          ...(end_date && { end_date: end_date })
         },
         timeout: 30000 // 30 seconds timeout
       });
@@ -327,6 +331,7 @@ export class PublishApiService {
         },
         timeout: 30000
       });
+      
       return { success: true, message: 'Page permissions refreshed successfully', data: response.data };
     } catch (error: any) {
       return { success: false, message: error.response?.data?.message || error.message || 'Failed to refresh page permissions', data: error.response?.data };

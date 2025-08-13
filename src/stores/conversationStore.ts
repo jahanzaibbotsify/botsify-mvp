@@ -283,13 +283,9 @@ export const useConversationStore = defineStore('conversation', () => {
       // Determine sender
       let sender: 'user' | 'assistant' = 'assistant';
       // Try to detect sender by from_user_id and selectedConversation user id
-      const fromUserId = (data.message && (data.message as any).from_user_id) || null;
-      const selectedUserId = (selectedConversation.value && (selectedConversation.value as any).user_id) || null;
-      if (fromUserId && selectedUserId && fromUserId === selectedUserId) {
-        sender = 'user';
-      } else if (data.message && (data.message as any).direction === 'to') {
+      if (data.direction === 'to') {
         sender = 'assistant';
-      } else if (data.message && (data.message as any).direction === 'from') {
+      } else if (data.direction === 'from') {
         sender = 'user';
       }
       
@@ -319,7 +315,7 @@ export const useConversationStore = defineStore('conversation', () => {
           status: 'sent',
         }
         messages.value.push(newMessage)
-        console.log('💬 Added message to current conversation:', newMessage)
+        // console.log('💬 Added message to current conversation:', newMessage)
       } else {
         console.log('⚠️ Duplicate message ignored:', { content, sender, timestamp: new Date() })
       }

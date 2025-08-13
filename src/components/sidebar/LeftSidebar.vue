@@ -194,10 +194,10 @@ const showZen = () => {
 
 // Function to open the BookMeeting modal
 const openBookMeetingModal = () => {
+  bookMeetingModalRef.value?.openModal()
+  closeDropdown();
   if (bookMeetingModalRef.value) {
     console.log('📦 bookMeetingModalRef exists')
-    bookMeetingModalRef.value.openModal()
-    closeDropdown();
   } else {
     console.warn('❌ bookMeetingModalRef is null')
   }
@@ -433,7 +433,7 @@ const openPartnerPortal = () => {
           </div>
         </button>
     </div>
-    <BookMeetingModal ref="BookMeetingModalModalRef"></BookMeetingModal>
+    <BookMeetingModal ref="bookMeetingModalRef"></BookMeetingModal>
     <CalendlyModal ref="calendlyModalRef"></CalendlyModal>
     <BillingModal 
       ref="billingModalRef" 

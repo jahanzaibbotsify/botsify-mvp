@@ -21,6 +21,7 @@ export interface FirebaseMessage {
     }
   }
   timestamp?: number
+  direction?: 'from' | 'to'
 }
 
 export interface FirebaseConversation {
