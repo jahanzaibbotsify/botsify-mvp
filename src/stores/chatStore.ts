@@ -217,7 +217,9 @@ export const useChatStore = defineStore('chat', () => {
          return false;
        }
 
-      if (activeAiPromptVersion.value && !activeAiPromptVersion.value?.version_id) {
+      if (activeAiPromptVersion.value && 
+        (!activeAiPromptVersion.value?.version_id || activeAiPromptVersion.value?.version_id === 0)
+      ) {
           activeAiPromptVersion.value.version_id = response.data.version_id;
       }
        
