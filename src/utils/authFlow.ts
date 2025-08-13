@@ -94,13 +94,17 @@ export function handlePostAuthRedirect(): string {
     return '/auth/login'
   }
 
+  if (authStore.isAppSumoUser || authStore.isBotAdmin) {
+    return '/select-agent';
+  }
+
   const user = authStore.user as any
-  if (!user.email_verified && !user.subs) {
+  if (!user.email_verified && !user.subs && !authStore.isAppSumoUser && !authStore.isBotAdmin) {
     return `/auth/verify-email?email=${encodeURIComponent(user.email || '')}`
   }
 
   const hasSubscription = checkUserSubscription(user)
-  if (!hasSubscription) {
+  if (!hasSubscription && !authStore.isBotAdmin && !authStore.isAppSumoUser) {
     return '/choose-plan'
   }
 

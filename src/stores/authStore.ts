@@ -18,7 +18,9 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null)
   const selectedPlan = ref<PricingPlan | null>(null)
   const selectedAgent = ref<any | null>(null)
-  const onboardingStep = ref<'signup' | 'pricing' | 'agent-selection' | 'completed'>('signup')
+  const onboardingStep = ref<'signup' | 'pricing' | 'agent-selection' | 'completed'>('signup');
+  const isBotAdmin = ref(false);
+  const isAppSumoUser = ref(false);
 
   // Computed
   const isAuthenticated = computed(() => !!user.value)
@@ -325,6 +327,8 @@ export const useAuthStore = defineStore('auth', () => {
     })
         .then(res => {
           const responseData = res.data;
+          isAppSumoUser.value = responseData.appsumoUser
+          isBotAdmin.value = responseData.botAdmin
           setAuthData(responseData.access_token, responseData.user)
           return responseData;
         }).catch(error => {
@@ -432,6 +436,8 @@ export const useAuthStore = defineStore('auth', () => {
     pricingPlans,
     agentCategories,
     agents,
+    isBotAdmin,
+    isAppSumoUser,
 
     // Computed
     isAuthenticated,
