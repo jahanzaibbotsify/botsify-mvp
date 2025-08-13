@@ -29,6 +29,7 @@ const serverLabel = ref('');
 const apiKey = ref('')
 const showApiKey = ref(false)
 const authType = ref('none');
+const file = ref(null);
 const isConnecting = ref(false);
 const error = ref<string | null>(null);
 const alreadyConnected = ref(false);
@@ -108,6 +109,20 @@ const removeHeader = (index: number) => {
   customHeaders.value.splice(index, 1)
 }
 
+const handleFileChange = (e: any) => {
+  file.value = e.target.files[0];
+
+  if (file.value && props.server && props.server.id === 'google-sheet') {
+    const reader = new FileReader();
+
+    reader.onload = function (e: any) {
+      const jsonText = e.target.result;
+      apiKey.value = btoa(jsonText);
+    };
+
+    reader.readAsText(file.value);
+  }
+}
 
 /**
  * Get the label for the authentication type
@@ -169,6 +184,10 @@ async function checkConnection() {
     console.error('Connection error:', err);
     if (err?.response?.data?.error.includes('401')) {
       error.value = "Unauthorized: Please check your API key or authentication method."
+    } else if (err?.response?.data?.error.includes('404')) {
+      error.value = "Server not found. Please check the MCP server URL and try again."
+    } else if(err?.response?.data?.error.includes('fetch failed')) {
+      error.value = "We couldn't reach the MCP server. Make sure it's running and the URL is correct."
     } else {
       error.value = err?.response?.data?.error || err?.message || 'Failed to connect to the server';
     }
@@ -396,6 +415,10 @@ onMounted(() => {
           </span>
           </div>
         </div>
+        <div class="pt-20" v-if="server && server.id === 'google-sheet'">
+          <input type="file" v-on:change="handleFileChange">
+          <div class="header-container pt-5" style="font-size: 11px; text-align: justify; margin: auto;">Hint: Upload Google Service Account Key. We’ll handle token generation.</div>
+        </div>
         <div class="pt-20" v-if="authType !== 'none' && authType !== 'custom_headers'">
           <div class="access-token-input">
           <span class="input-icon input-icon-left">
@@ -477,9 +500,7 @@ onMounted(() => {
         <div class="button-row">
           <button class="back-btn" @click="handleBack">
           <span class="icon-left">
-            <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path
-                d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round"/></svg>
+            <i class="pi pi-arrow-left"></i>
           </span>
             Back
           </button>
@@ -608,26 +629,6 @@ input {
   margin: 40px auto 0 auto;
   max-width: 500px;
   width: 100%;
-}
-
-.back-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #f5f5f5;
-  color: #222;
-  border: none;
-  border-radius: 10px;
-  padding: 0 20px;
-  height: 40px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.back-btn:hover {
-  background: #e9e9e9;
 }
 
 .connect-btn {

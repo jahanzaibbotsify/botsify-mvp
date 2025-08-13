@@ -27,13 +27,13 @@ if (apiKey) {
 }
 
 // Import OpenAI debug utility in development
-if (import.meta.env.DEV) {
-  import('./utils/openai-debug').then(({ OpenAIDebugger }) => {
-    // Make debugger available globally in development
-    (window as any).OpenAIDebugger = OpenAIDebugger;
-    console.log('🔧 OpenAI Debugger available globally as window.OpenAIDebugger');
-  });
-}
+// if (import.meta.env.DEV) {
+//   import('./utils/openai-debug').then(({ OpenAIDebugger }) => {
+//     // Make debugger available globally in development
+//     (window as any).OpenAIDebugger = OpenAIDebugger;
+//     console.log('🔧 OpenAI Debugger available globally as window.OpenAIDebugger');
+//   });
+// }
 
 const swalOption = {
   title: "Are you sure?",

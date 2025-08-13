@@ -5,10 +5,11 @@ import { useChatStore } from '@/stores/chatStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useRoleStore } from '@/stores/roleStore';
 import { useWhitelabelStore } from '@/stores/whitelabelStore';
-import BookMeeting from '@/components/ui/BookMeeting.vue';
+import BookMeetingModal from '@/components/modal/BookMeetingModal.vue';
+import CalendlyModal from '@/components/modal/CalendlyModal.vue';
 import { botsifyApi } from '@/services/botsifyApi'
-import { BOTSIFY_WEB_URL } from '@/utils/config';
-import CalendlyModal from '../ui/CalendlyModal.vue';
+import BillingModal from '@/components/modal/BillingModal.vue';
+import { getWebUrl } from '@/utils';
 
 
 const chatStore = useChatStore();
@@ -31,8 +32,10 @@ const selectedNavigationButton = computed(() => {
 });
 // const isMobile = computed(() => width.value < 768);
 const showDropdown = ref(false);
-const bookMeetingRef = ref<InstanceType<typeof BookMeeting> | null>(null)
+const bookMeetingModalRef = ref<InstanceType<typeof BookMeetingModal> | null>(null)
 const calendlyModalRef = ref<InstanceType<typeof CalendlyModal> | null>(null)
+const billingModalRef = ref<InstanceType<typeof BillingModal> | null>(null)
+const showBillingModal = ref(false)
 
 // Close dropdown when clicking outside
 const dropdownRef = ref<HTMLElement | null>(null);
@@ -87,50 +90,16 @@ const navigationButtons = computed(() => {
 
 // Help links for the help dropdown
 const navLinks = computed(() => {
+  // @ts-ignore
+  const baseUrl = getWebUrl();
   if (whitelabelStore.isWhitelabelClient) {
     // For whitelabel clients, show only Legacy Platform and Support
     return [
-      {
-        name: 'Legacy Platform',
-        url: whitelabelStore.whitelabelData?.mask_url 
-          ? `https://${whitelabelStore.whitelabelData.mask_url}/bot`
-          : `${BOTSIFY_WEB_URL}/bot`,
-        icon: 'pi pi-check-circle'
-      },
-      {
-        name: 'Support',
-        action: 'showZen',
-        icon: 'pi pi-question-circle'
-      }
-    ];
-  } else {
-    // For regular Botsify clients, show all links
-    return [
-      {
-        name: 'Legacy Platform',
-        url: `${BOTSIFY_WEB_URL}/bot`,
-        icon: 'pi pi-history'
-      },
-      {
-        name: 'Tutorials',
-        url: `https://www.youtube.com/@Botsify`,
-        icon: 'pi pi-play-circle'
-      },
-      {
-        name: 'API Documentation',
-        url: 'https://documenter.getpostman.com/view/13814537/TVmTdF7W#d1e2a194-6d34-4d64-8dff-9628a2dc1077',
-        icon: 'pi pi-code'
-      },
-      {
-        name: 'Documentation',
-        url: 'https://botsify.zendesk.com/hc/en-us',
-        icon: 'pi pi-book'
-      },
-      {
-        name: 'Book a Meeting',
-        action: 'bookMeeting',
-        icon: 'pi pi-calendar'
-      },
+      // {
+      //   name: 'Legacy Platform',
+      //   url: `${baseUrl}/bot`,
+      //   icon: 'pi pi-check-circle'
+      // },
       {
         name: 'Support',
         action: 'showZen',
@@ -138,6 +107,40 @@ const navLinks = computed(() => {
       }
     ];
   }
+
+  // For regular Botsify clients, show all links
+  return [
+    // {
+    //   name: 'Legacy Platform',
+    //   url: `${baseUrl}/bot`,
+    //   icon: 'pi pi-history'
+    // },
+    {
+      name: 'Tutorials',
+      url: 'https://www.youtube.com/@Botsify',
+      icon: 'pi pi-play-circle'
+    },
+    {
+      name: 'API Documentation',
+      url: 'https://documenter.getpostman.com/view/13814537/TVmTdF7W#d1e2a194-6d34-4d64-8dff-9628a2dc1077',
+      icon: 'pi pi-code'
+    },
+    {
+      name: 'Documentation',
+      url: 'https://botsify.zendesk.com/hc/en-us',
+      icon: 'pi pi-book'
+    },
+    {
+      name: 'Book a Meeting',
+      action: 'bookMeeting',
+      icon: 'pi pi-calendar'
+    },
+    {
+      name: 'Support',
+      action: 'showZen',
+      icon: 'pi pi-question-circle'
+    }
+  ];
 });
 
 const filteredChats = computed(() => {
@@ -198,12 +201,12 @@ const showZen = () => {
 
 // Function to open the BookMeeting modal
 const openBookMeetingModal = () => {
-  if (bookMeetingRef.value) {
-    console.log('📦 bookMeetingRef exists')
-    bookMeetingRef.value.openModal()
+  if (bookMeetingModalRef.value) {
+    console.log('📦 bookMeetingModalRef exists')
+    bookMeetingModalRef.value.openModal()
     closeDropdown();
   } else {
-    console.warn('❌ bookMeetingRef is null')
+    console.warn('❌ bookMeetingModalRef is null')
   }
 };
 
@@ -214,19 +217,71 @@ const handleCalendly = () => {
   }
 }
 
+const closeBillingModal = () => {
+  showBillingModal.value = false
+  billingData.value = null
+}
+
 const billingLoading = ref(false)
+
+interface BillingData {
+  charges: {
+    object: string
+    data: any[]
+    has_more: boolean
+    url: string
+  }
+  stripe_subscription: {
+    id: number
+    user_id: number
+    name: string
+    stripe_id: string
+    stripe_plan: string
+    quantity: number
+    status: string
+    trial_ends_at: string | null
+    ends_at: string | null
+    next_charge_date: string | null
+    created_at: string
+    updated_at: string
+    paddle_cancel_url: string | null
+    paddle_update_url: string | null
+    paddle_checkout_id: string | null
+    subscription_plan_id: string | null
+    whitelabel_client: number
+  }
+}
+
+const billingData = ref<BillingData | null>(null)
 
 const handleManageBilling = async () => {
   billingLoading.value = true
   try {
+    console.log('Calling manageBilling API...')
     const res = await botsifyApi.manageBilling()
-    if (res && res.url) {
+    console.log('manageBilling API response:', res)
+    console.log('Response type:', typeof res)
+    console.log('Response keys:', res ? Object.keys(res) : 'null')
+    
+    if (res && res.charges && res.stripe_subscription) {
+      console.log('Found charges and subscription, opening modal with data')
+      // Store the billing data and show modal
+      billingData.value = res
+      showBillingModal.value = true
+    } else if(res && res.url) {
+      console.log('Found URL, opening external link:', res.url)
       window.open(res.url, '_blank')
     } else {
-      window.$toast?.error('Unable to open billing portal. Please try again later.')
+      console.log('No billing data found, opening modal with empty data')
+      // If no billing data, open the billing modal with empty data
+      billingData.value = null
+      showBillingModal.value = true
     }
   } catch (e) {
-    window.$toast?.error('Unable to open billing portal. Please try again later.')
+    console.error('Error fetching billing portal:', e)
+    // If API call fails, open the billing modal with empty data
+    billingData.value = null
+    showBillingModal.value = true
   } finally {
     billingLoading.value = false
   }
@@ -268,6 +323,13 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
 });
+
+const openPartnerPortal = () => {
+  if (whitelabelStore.isWhitelabel && !whitelabelStore.isWhitelabelClient) {
+    window.open(whitelabelStore.partnerPortalUrl, '_blank');
+    closeDropdown();
+  }
+};
 </script>
 
 <template>
@@ -358,6 +420,18 @@ onUnmounted(() => {
             <span class="pricing-star">★</span>
           </div>
         </button>
+        
+        <!-- Partner Portal Button for Whitelabel Users -->
+        <button 
+          v-if="whitelabelStore.isWhitelabel && !whitelabelStore.isWhitelabelClient" 
+          class="partner-portal-button" 
+          @click="openPartnerPortal"
+        >
+          <div class="button-content">
+            <span class="pricing-text">Partner Portal</span>
+            <i class="pi pi-external-link"></i>
+          </div>
+        </button>
     </div>
     <div v-else class="sidebar-pricing">
         <button class="pricing-button" @click="handleCalendly">
@@ -366,9 +440,14 @@ onUnmounted(() => {
           </div>
         </button>
     </div>
-    <BookMeeting ref="bookMeetingRef"></BookMeeting>
+    <BookMeetingModal ref="BookMeetingModalModalRef"></BookMeetingModal>
     <CalendlyModal ref="calendlyModalRef"></CalendlyModal>
-    <User ref="userRef"></User>
+    <BillingModal 
+      ref="billingModalRef" 
+      :show="showBillingModal" 
+      :billing-data="billingData"
+      @close="closeBillingModal"
+    ></BillingModal>
   </aside>
 </template>
 
@@ -407,6 +486,34 @@ onUnmounted(() => {
   background-color: var(--color-primary-hover);
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
+}
+
+.partner-portal-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--color-secondary);
+  color: white;
+  border-radius: var(--radius-full);
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+  width: 100%;
+  margin-top: var(--space-2);
+  border: none;
+  cursor: pointer;
+}
+
+.partner-portal-button:hover {
+  background-color: var(--color-success-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.partner-portal-button .pi {
+  font-size: 0.875rem;
 }
 
 .pricing-star {
