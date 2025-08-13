@@ -127,19 +127,17 @@ defineExpose({
     >
       <div class="modal-header">
         <div class="modal-header-left">
+           
+            <!-- Back Button -->
+            <i
+              class="pi pi-arrow-left"
+              @click="handleBack"
+              style="cursor: pointer;"
+            />
           <img v-if="icon" :src="icon" width="28" height="28" alt="logo" class="modal-logo" />
           <h2>{{ props.title }}</h2>
         </div>
-        
-        <!-- Back Button -->
-        <Button 
-          variant="primary-outline"
-          size="small"
-          icon="pi pi-arrow-circle-left"
-          @click="handleBack"
-        >
-          Back
-        </Button>
+       
         
         <!-- Close Button -->
         <Button 

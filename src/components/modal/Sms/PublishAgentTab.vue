@@ -13,9 +13,8 @@ withDefaults(defineProps<Props>(), {
 
 // Emits
 const emit = defineEmits<{
-  'save-settings': [settings: any];
+  'check-configuration': [];
 }>();
-
 
 // Twilio fields
 const smsFields = ref({
@@ -134,11 +133,27 @@ const testBot = () => {
   }
 };
 
-const saveSettings = () => {
+const saveSettings = async() => {
   if (!validateForm()) {
     return;
   }
-  emit('save-settings', smsFields.value);
+
+  isLoading.value = true;
+  try {
+    const result = await publishStore.saveTwilioSettings(smsFields.value);
+    if (result.success) {
+      console.log('Twilio settings saved successfully');
+      // Recheck configuration after saving
+    
+      emit('check-configuration');
+    } else {
+      console.error('Failed to save Twilio settings:', result.error);
+    }
+  } catch (error) {
+    console.error('Failed to save Twilio settings:', error);
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 // Expose methods for parent component
@@ -171,10 +186,7 @@ defineExpose({
           size="medium"
           :error="errors.twilioAccountSid"
         />
-        <small v-if="errors.twilioAccountSid" class="error-text">
-          {{ errors.twilioAccountSid }}
-        </small>
-        <small v-else class="help-text">
+        <small class="help-text">
           Find this in your Twilio Console dashboard
         </small>
       </div>
@@ -189,10 +201,7 @@ defineExpose({
           size="medium"
           :error="errors.twilioAuthToken"
         />
-        <small v-if="errors.twilioAuthToken" class="error-text">
-          {{ errors.twilioAuthToken }}
-        </small>
-        <small v-else class="help-text">
+        <small class="help-text">
           Keep this secure - it's your authentication token
         </small>
       </div>
@@ -207,36 +216,33 @@ defineExpose({
           size="medium"
           :error="errors.twilioSmsNumber"
         />
-        <small v-if="errors.twilioSmsNumber" class="error-text">
-          {{ errors.twilioSmsNumber }}
-        </small>
-        <small v-else class="help-text">
+        <small class="help-text">
           The phone number you purchased from Twilio
         </small>
       </div>
+      <!-- Action Buttons -->
+      <div class="agent-action-buttons">
+        <!-- <Button 
+          variant="secondary"
+          size="medium"
+          :loading="isLoading"
+          @click="testBot"
+        >
+          {{ isLoading ? 'Testing...' : 'Test Agent' }}
+        </Button>
+         -->
+        <Button 
+          variant="primary"
+          size="medium"
+          :loading="isLoading"
+          :disabled="!isFormValid"
+          @click="saveSettings"
+        >
+          {{ isLoading ? 'Saving...' : 'Save Settings' }}
+        </Button>
+      </div>
     </div>
 
-    <!-- Action Buttons -->
-    <div class="agent-action-buttons">
-      <!-- <Button 
-        variant="secondary"
-        size="medium"
-        :loading="isLoading"
-        @click="testBot"
-      >
-        {{ isLoading ? 'Testing...' : 'Test Agent' }}
-      </Button>
-       -->
-      <Button 
-        variant="primary"
-        size="medium"
-        :loading="isLoading"
-        :disabled="!isFormValid"
-        @click="saveSettings"
-      >
-        {{ isLoading ? 'Saving...' : 'Save Settings' }}
-      </Button>
-    </div>
   </div>
 </template>
 
@@ -254,13 +260,6 @@ defineExpose({
 .help-text {
   font-size: 12px;
   color: var(--color-text-secondary, #6b7280);
-  margin-top: 4px;
-  display: block;
-}
-
-.error-text {
-  font-size: 12px;
-  color: var(--color-error, #ef4444);
   margin-top: 4px;
   display: block;
 }

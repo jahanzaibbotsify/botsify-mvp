@@ -368,7 +368,7 @@ const slideButtonText = (slideIndex: number, buttonIndex: number) => {
   
   // Check for button text variables in template slide
   const templateSlide = props.template.slides?.[slideIndex];
-  const buttonTextVar = templateSlide?.variables?.button;
+  const buttonTextVar = templateSlide?.variables?.buttonText;
   if (buttonTextVar && buttonTextVar.value !== '') {
     result = result.replace(buttonTextVar.key, buttonTextVar.value);
     console.log('MessagePreview - replaced slide button text:', {
@@ -413,6 +413,8 @@ const slideButtonUrl = (slideIndex: number, buttonIndex: number) => {
 
 const getSlideImage = (index: number) => {
   const slide = slides.value[index];
+  if (!slide) return '/theme/images/file-cover.png';
+  
   const attachmentLink = slide?.attachment_link || props.block?.slides?.[index]?.attachment_link;
   
   const cacheKey = `${index}_${attachmentLink}`;
@@ -424,18 +426,20 @@ const getSlideImage = (index: number) => {
   return isValidUrl ? attachmentLink : '/theme/images/file-cover.png';
 };
 
-const getSlideVideo = (index: number) => {
-  const slide = slides.value[index];
-  const attachmentLink = slide?.attachment_link || props.block?.slides?.[index]?.attachment_link;
-  
-  const cacheKey = `${index}_${attachmentLink}`;
-  if (slidesMediaCache.value[cacheKey]) {
-    return slidesMediaCache.value[cacheKey];
-  }
+  const getSlideVideo = (index: number) => {
+    const slide = slides.value[index];
+    if (!slide) return '/theme/images/file-cover.png';
+    
+    const attachmentLink = slide?.attachment_link || props.block?.slides?.[index]?.attachment_link;
+    
+    const cacheKey = `${index}_${attachmentLink}`;
+    if (slidesMediaCache.value[cacheKey]) {
+      return slidesMediaCache.value[cacheKey];
+    }
 
-  const isValidUrl = typeof attachmentLink === 'string' && /^https?:\/\/.+/.test(attachmentLink);
-  return isValidUrl ? attachmentLink : '/theme/images/file-cover.png';
-};
+    const isValidUrl = typeof attachmentLink === 'string' && /^https?:\/\/.+/.test(attachmentLink);
+    return isValidUrl ? attachmentLink : '/theme/images/file-cover.png';
+  };
 
 const getSlideDocument = (index: number) => {
   const slide = slides.value[index];

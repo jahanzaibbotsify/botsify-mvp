@@ -69,7 +69,8 @@ const openModalWithData = (templateData: any) => {
     // Restore the cloned data after initialization to prevent override
     store.template = { ...store.template, ...originalTemplate };
     store.block = { ...store.block, ...originalBlock };
-    
+    console.log(store.template, "store.template");
+    console.log(store.block, "store.block");
     if(['button', 'image', 'video', 'document'].includes(store.template.type)){
       store.template.type = 'media';
       if (store.template.header !== 'text') {

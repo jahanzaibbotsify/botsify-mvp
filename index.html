@@ -68,58 +68,40 @@
 
   
   <!-- Zendesk Widget -->
-  <script id="ze-snippet"
-    src="https://static.zdassets.com/ekr/snippet.js?key=91ab9e64-789b-4947-80f6-f2a9712a23b0"></script>
   <script type="text/javascript">
-    // Global Zendesk functions
-    window.zE = window.zE || function () {
-      (window.zE.q = window.zE.q || []).push(arguments);
+    window.zESettings = {
+      webWidget: {
+        position: { horizontal: 'left' },
+        offset: { horizontal: '70px', vertical: '15px' }
+      }
     };
-
-    // Initialize Zendesk widget
+  </script>
+  
+  <script id="ze-snippet"
+      src="https://static.zdassets.com/ekr/snippet.js?key=91ab9e64-789b-4947-80f6-f2a9712a23b0"></script>
+  
+  <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', function () {
       zE(function () {
         zE.hide();
       });
     });
-
-    // Global function to show Zendesk widget
+  
     window.showZen = function (userName = '', userEmail = '') {
       zE.activate();
-
-      // Configure widget settings
-      window.zESettings = {
-        webWidget: {
-          position: { horizontal: 'left' },
-          offset: { horizontal: '70px', vertical: '15px' }
-        }
-      };
-
-      // Prefill user information if provided
       if (userName || userEmail) {
         zE('webWidget', 'prefill', {
-          name: {
-            value: userName,
-            readOnly: !!userName
-          },
-          email: {
-            value: userEmail,
-            readOnly: !!userEmail
-          }
+          name: { value: userName, readOnly: !!userName },
+          email: { value: userEmail, readOnly: !!userEmail }
         });
       }
     };
-
-    // Global function to hide Zendesk widget
+  
     window.hideZen = function () {
       zE.hide();
     };
-
-    // Global function to open Zendesk widget
-    window.openZen = function () {
-      zE.activate();
-    };
   </script>
+  
 </body>
 
 </html>

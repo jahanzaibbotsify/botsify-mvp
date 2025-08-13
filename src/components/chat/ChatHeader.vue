@@ -89,6 +89,7 @@ import { getWebUrl } from '@/utils';
 import CalendlyModal from '@/components/modal/CalendlyModal.vue';
 import UserMenu from "@/components/auth/UserMenu.vue";
 import PublishAgentModal from "@/components/modal/PublishAgentModal.vue";
+import { eventBus } from '@/utils/eventBus';
 
 interface Props {
   chatId: string,
@@ -145,19 +146,15 @@ function deployAI() {
     window.$toast.error('No prompt content available to deploy. Please generate some content first.');
     return;
   }
-  window.$confirm({
-    text: "Are you sure you want to deploy it?",
-    confirmButtonText: "Yes, Deploy it!",
-    cancelButtonText: "Publish it!",
-    cancelButtonColor: "#10B981",
-    animation: false,
-  }, async () => {
-    // Confirm callback - deploy the AI
-    await deploying(props.latestPromptContent);
-  }, () => {
-    // Cancel callback - open publish agent modal
-    publishAgentRef.value?.openModal();
-  });
+  
+  // Emit event to open publish agent modal with deploy confirmation
+  eventBus.emit('deploy-agent:request');
+}
+
+// New function to handle deploy action from publish agent modal
+function handleDeployFromModal() {
+  // Deploy the AI
+  deploying(props.latestPromptContent);
 }
 
 async function deploying(content: string){
@@ -169,7 +166,6 @@ async function deploying(content: string){
       chatStore.createAiPromptVersionName()
     );
     if (result.success) {
-      window.$toast.success(`🚀 ${result.message}`);
       chatStore.updateStory(props.chatId, content, true);
       chatStore.updateActivePromptVersionId(result.data.version.id);
     } else {
@@ -231,11 +227,15 @@ function toggleBotNameDropdown() {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside);
+  eventBus.on('deploy-agent:confirm', () => {
+    handleDeployFromModal();
+  });
 });
 
 // Clean up on component unmount
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside);
+  eventBus.off('deploy-agent:confirm', handleDeployFromModal);
 });
 
 // function handleMouseLeave() {

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed } from "vue";
 import { Input, Badge, DateRange, Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Button, Pagination } from "@/components/ui";
 import { usePublishStore } from "@/stores/publishStore";
 import { formatTime } from "@/utils";
+import { onMounted } from "vue";
 
 // Store
 const publishStore = usePublishStore();
@@ -145,21 +146,16 @@ const handlePageChange = (page: number) => {
   fetchReportData();
 };
 
-// Watch for search query changes to trigger data fetching
-watch(searchQuery, () => {
-  currentPage.value = 1; // Reset to first page
-  fetchReportData(true); // Force refresh with new search
+const applyFilter = () => {
+  fetchReportData(true);
+}
+// Load data on mount
+onMounted(() => {
+  refreshData();
 });
-
-// Watch for date range changes to trigger data fetching
-watch(dateRange, () => {
-  currentPage.value = 1; // Reset to first page
-  fetchReportData(true); // Force refresh with new date range
-}, { deep: true });
 
 // Expose only necessary methods for parent component
 defineExpose({
-  fetchReportData,
   refreshData
 });
 </script>
@@ -192,6 +188,7 @@ defineExpose({
           variant="primary"
           size="medium"
           :loading="publishStore.isLoading"
+          @click="applyFilter"
         >
           {{ publishStore.isLoading ? 'Filtering...' : 'Apply filters' }}
         </Button>

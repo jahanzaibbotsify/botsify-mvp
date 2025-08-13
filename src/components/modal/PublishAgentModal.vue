@@ -204,7 +204,11 @@ const handleBackToMain = () => {
   }
 };
 
-// Event listeners
+const goBackToAgents = () => {
+  // This function is no longer needed as confirmation is removed
+};
+
+// Listen for deploy request from ChatHeader
 onMounted(() => {
   // Listen for status updates from child modals
   eventBus.on('agent:status-updated', (data) => {
@@ -212,7 +216,22 @@ onMounted(() => {
     // Refresh status if needed
     fetchPublishStatus();
   });
+  
+  // Listen for deploy request
+  eventBus.on('deploy-agent:request', () => {
+    openModal();
+  });
 });
+
+const handleDeploy = () => {
+  // Emit event to ChatHeader to handle the deploy
+  eventBus.emit('deploy-agent:confirm');
+  closeModal();
+};
+
+const closeModal = () => {
+  modalRef.value?.closeModal();
+};
 
 defineExpose({ openModal });
 </script>
@@ -221,27 +240,48 @@ defineExpose({ openModal });
   <!-- Main Agent Selection Modal -->
   <ModalLayout
     ref="modalRef"
-    title="Publish agent"
+    title=""
     max-width="650px"
+    :showCloseButton="true"
+    :hideHeader="true"
   >
-    <div class="server-grid">
-      <div
-        class="server-card"
-        v-for="agent in agents"
-        :key="agent.icon"
-        @click="handleAgentClick(agent.label)"
-        :class="{ 'active': agent.status === 'active' }"
-      >
-        <div class="server-icon">
-          <img :src="`/bots/${agent.icon}`" width="28" height="28" :alt="`${agent.label} icon`"/>
-        </div>
-        <div class="text-sm text-emphasis">
-          <div>{{ agent.label }}</div>
-        </div>
-        <!-- Only show badge for active status -->
-        <div v-if="agent.status === 'active'" class="status-badge active">
-          <i class="pi pi-check"></i>
-          Connected
+    <!-- Confirmation Message -->
+    <div class="confirmation-message">
+      <i class="pi pi-question-circle"></i>
+      <h3>Are you sure you want to publish it?</h3>
+      <p>This will deploy your AI agent and make it available for use.</p>
+    </div>
+    
+    <!-- Deploy Button -->
+    <div class="deploy-section">
+      <button class="action-button primary" @click="handleDeploy">
+        <i class="pi pi-play"></i>
+        Deploy Agent
+      </button>
+    </div>
+    
+    <!-- Agent Selection Grid -->
+    <div class="agents-section">
+      <h4>Publish to platforms:</h4>
+      <div class="server-grid">
+        <div
+          class="server-card"
+          v-for="agent in agents"
+          :key="agent.icon"
+          @click="handleAgentClick(agent.label)"
+          :class="{ 'active': agent.status === 'active' }"
+        >
+          <div class="server-icon">
+            <img :src="`/bots/${agent.icon}`" width="28" height="28" :alt="`${agent.label} icon`"/>
+          </div>
+          <div class="text-sm text-emphasis">
+            <div>{{ agent.label }}</div>
+          </div>
+          <!-- Only show badge for active status -->
+          <div v-if="agent.status === 'active'" class="status-badge active">
+            <i class="pi pi-check"></i>
+            Connected
+          </div>
         </div>
       </div>
     </div>
@@ -294,6 +334,21 @@ defineExpose({ openModal });
   position: relative;
   cursor: pointer;
   transition: all var(--transition-normal, 0.2s ease);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-tertiary);
+  text-align: center;
+}
+
+.server-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary);
+}
+
+.server-card .server-icon {
+  margin-bottom: var(--space-2);
 }
 
 .server-card .server-icon img {
@@ -302,27 +357,21 @@ defineExpose({ openModal });
   object-fit: contain;
 }
 
-/* Active card styling */
-.server-card.active {
-  border: 2px solid var(--color-secondary, #10b981);
-  background-color: var(--color-bg-secondary, #f9fafb);
-}
-
 /* Status Badge Styles */
 .status-badge {
   position: absolute;
-  top: 8px;
-  padding: 4px 7px;
+  top: 4px;
+  padding: 2px 4px;
   border-radius: var(--radius-sm, 4px);
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   background: var(--color-secondary, #10b981);
   color: white;
   z-index: 1;
-  right: 10px;
+  right: 6px;
 }
 
 .status-badge.active {
@@ -331,7 +380,13 @@ defineExpose({ openModal });
 }
 
 .status-badge i {
-  font-size: 10px;
+  font-size: 8px;
+}
+
+/* Active card styling */
+.server-card.active {
+  border: 2px solid var(--color-secondary, #10b981);
+  background-color: rgba(16, 185, 129, 0.1);
 }
 
 /* Tab Panel Styles */
@@ -656,5 +711,83 @@ select.form-input {
   .radio-group {
     gap: 16px;
   }
+}
+
+/* Confirmation View Styles - REMOVED - Now using single screen layout */
+
+/* Single Screen Layout Styles */
+.confirmation-message {
+  text-align: center;
+  margin-bottom: var(--space-6);
+}
+
+.confirmation-message i {
+  font-size: 48px;
+  color: var(--color-primary, #3b82f6);
+  margin-bottom: var(--space-4);
+  display: block;
+}
+
+.confirmation-message h3 {
+  margin: 0 0 var(--space-3) 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+}
+
+.confirmation-message p {
+  margin: 0;
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.deploy-section {
+  text-align: center;
+  margin-bottom: var(--space-6);
+}
+
+.deploy-section .action-button {
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-md, 8px);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal, 0.2s ease);
+  border: none;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 160px;
+  justify-content: center;
+  background: var(--color-success, #10b981);
+  color: white;
+}
+
+.deploy-section .action-button:hover {
+  background: var(--color-success-hover, #16a34a);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.agents-section {
+  border-top: 1px solid var(--color-border, #e5e7eb);
+  padding-top: var(--space-6);
+}
+
+.agents-section h4 {
+  margin: 0 0 var(--space-4) 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+  text-align: center;
+}
+
+.server-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
 }
 </style>

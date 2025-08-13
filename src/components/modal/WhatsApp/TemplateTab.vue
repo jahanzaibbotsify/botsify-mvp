@@ -75,22 +75,22 @@ const paginationData = ref<{
 // Methods
 const fetchTemplates = async (page: number = 1, perPage: number = 20) => { 
   // Check if we already have valid cached data for this exact request
-  if (publishStore.cacheValid.templates && 
-      publishStore.cache.templates && 
-      publishStore.cache.templates.page === page && 
-      publishStore.cache.templates.perPage === perPage &&
-      publishStore.cache.templates.query === searchQuery.value) {
+  if (publishStore.cacheValid.whatsappTemplates && 
+      publishStore.cache.whatsappTemplates && 
+      publishStore.cache.whatsappTemplates.page === page && 
+      publishStore.cache.whatsappTemplates.perPage === perPage &&
+      publishStore.cache.whatsappTemplates.query === searchQuery.value) {
     
     // Use cached data
-    templates.value = publishStore.cache.templates.data || [];
+    templates.value = publishStore.cache.whatsappTemplates.data || [];
     paginationData.value = {
-      page: publishStore.cache.templates.page || page,
-      perPage: publishStore.cache.templates.perPage || perPage,
-      total: publishStore.cache.templates.total || 0,
-      to: publishStore.cache.templates.to || 0,
-      prev_page_url: publishStore.cache.templates.prev_page_url || null
+      page: publishStore.cache.whatsappTemplates.page || page,
+      perPage: publishStore.cache.whatsappTemplates.perPage || perPage,
+      total: publishStore.cache.whatsappTemplates.total || 0,
+      to: publishStore.cache.whatsappTemplates.to || 0,
+      prev_page_url: publishStore.cache.whatsappTemplates.prev_page_url || null
     };
-    currentPage.value = publishStore.cache.templates.page || page;
+    currentPage.value = publishStore.cache.whatsappTemplates.page || page;
     
     console.log('Using cached templates data:', {
       currentPage: currentPage.value,
@@ -172,8 +172,13 @@ const deleteTemplate = async (id: number) => {
 
 const cloneTemplate = async (template: any) => {
   try {
+    console.log('Cloning template:', template);
+    
     // Process the template data for cloning
     const processedTemplate = processTemplateForClone(template);
+    
+    console.log('Processed template for cloning:', processedTemplate);
+    console.log('Carousel slides in clone:', processedTemplate.template?.slides);
     
     // Emit to close WhatsApp modal and open create modal with cloned data
     emit('close-whatsapp-modal');
@@ -209,24 +214,25 @@ const processTemplateForClone = (template: any) => {
     }
   }
 
-  // Create template data structure for cloning
-  const clonedTemplate = {
-    name: `${template.template_name || template.name || 'Template'} (Cloned)`,
-    category: templateData?.category || 'MARKETING',
-    type: 'text', // Default type, will be updated based on components
-    bodyIncludes: [] as string[],
-    header: 'text',
-    header_text: '',
-    footer_text: '',
-    slides: [] as any[],
-    button_type: 'postback',
-    total_buttons: 3,
-    variables: {
-      header: null as any,
-      body: [] as any[],
-      button: null as any
-    }
-  };
+     // Create template data structure for cloning
+   const clonedTemplate = {
+     name: `${template.template_name || template.name || 'Template'} (Cloned)`,
+     category: templateData?.category || 'MARKETING',
+     type: 'text', // Default type, will be updated based on components
+     bodyIncludes: [] as string[],
+     header: 'text',
+     header_text: '',
+     footer_text: '',
+     body_text: '', // Add body_text property
+     slides: [] as any[],
+     button_type: 'postback',
+     total_buttons: 3,
+     variables: {
+       header: null as any,
+       body: [] as any[],
+       button: null as any
+     }
+   };
 
   const clonedBlock = {
     language: template.language || 'en',
@@ -308,28 +314,30 @@ const processTemplateForClone = (template: any) => {
         
         // Extract buttons from the component
         if (component.buttons && Array.isArray(component.buttons)) {
-          clonedBlock.buttons = component.buttons.map((btn: any) => ({
-            api: 1,
-            error: false,
-            type: btn.type === 'QUICK_REPLY' ? 'postback' : 
-                  btn.type === 'URL' ? 'web_url' : 
-                  btn.type === 'PHONE_NUMBER' ? 'phone_number' : 'postback',
-            title: btn.text || btn.title || '',
-            text: btn.text || btn.title || '',
-            url: btn.url || '',
-            payload: btn.payload || '',
-            response: '',
-            value: btn.text || btn.title || ''
-          }));
+                     clonedBlock.buttons = component.buttons.map((btn: any) => ({
+             api: 1,
+             error: false,
+             type: btn.type === 'QUICK_REPLY' ? 'postback' : 
+                   btn.type === 'URL' ? 'web_url' : 
+                   btn.type === 'PHONE_NUMBER' ? 'phone_number' : 'postback',
+             title: btn.text || btn.title || '',
+             text: btn.text || btn.title || '',
+             url: btn.url || '',
+             payload: btn.payload || '',
+             response: '',
+             value: btn.text || btn.title || '',
+             phone_number: btn.phone_number || '' // Preserve phone number for phone_number buttons
+           }));
         }
       }
 
-      if (component.type === 'CAROUSEL' && component.cards?.length) {
-        clonedTemplate.type = 'generic';
-        clonedTemplate.bodyIncludes = ['body'];
+             if (component.type === 'CAROUSEL' && component.cards?.length) {
+         clonedTemplate.type = 'generic';
+         clonedTemplate.bodyIncludes = ['body'];
+         clonedTemplate.body_text = clonedBlock.text; // Preserve the main body text
         
-        clonedBlock.slides = [];
-        clonedTemplate.slides = [];
+         clonedBlock.slides = [];
+         clonedTemplate.slides = [];
 
         component.cards.forEach((card: any, index: number) => {
           const slide = {
@@ -352,32 +360,48 @@ const processTemplateForClone = (template: any) => {
             if (cardComponent.type === 'BODY') {
               slide.title = cardComponent.text;
             }
-            if (cardComponent.type === 'BUTTONS') {
-              slide.buttons = cardComponent.buttons.map((btn: any) => ({
-                api: 1,
-                error: false,
-                payload: btn.payload || '',
-                response: '',
-                signature_hash: '',
-                title: btn.text || btn.title || '',
-                type: btn.type === 'url' ? 'web_url' : 'phone_number',
-                url: btn.url || ''
-              }));
-            }
+                         if (cardComponent.type === 'BUTTONS') {
+               slide.buttons = cardComponent.buttons.map((btn: any) => {
+                 console.log('Processing carousel button:', btn);
+                 
+                 const convertedButton = {
+                   api: 1,
+                   error: false,
+                   payload: btn.payload || '',
+                   response: '',
+                   signature_hash: '',
+                   title: btn.text || btn.title || '',
+                   text: btn.text || btn.title || '', // Add text property for consistency
+                   type: btn.type === 'url' ? 'web_url' : 
+                         btn.type === 'phone_number' ? 'phone_number' : 'postback',
+                   url: btn.url || '',
+                   phone_number: btn.phone_number || '' // Preserve phone number for phone_number buttons
+                 };
+                 
+                 console.log('Converted button:', convertedButton);
+                 return convertedButton;
+               });
+             }
           });
 
-          const templateSlide = {
-            header: headerFormat,
-            button_type: 'cta',
-            total_buttons: slide.buttons.length,
-            variables: {
-              body: [],
-              button: null
-            }
-          };
+                     const templateSlide = {
+             header: headerFormat,
+             button_type: 'cta',
+             total_buttons: slide.buttons.length,
+             title: slide.title,
+             subtitle: slide.subtitle,
+             attachment_link: slide.attachment_link,
+             buttons: slide.buttons,
+             variables: {
+               body: [],
+               button: null,
+               buttonText: null,
+               buttonUrl: null
+             }
+           };
 
-          clonedBlock.slides.push(slide);
-          clonedTemplate.slides.push(templateSlide);
+           clonedBlock.slides.push(slide);
+           clonedTemplate.slides.push(templateSlide);
         });
       }
     });
@@ -487,6 +511,7 @@ const processTemplateForPreview = (template: any) => {
     name: template.template_name || template.name || '',
     category: template.category || 'MARKETING',
     type: 'text',
+    isGenericType: false, // Add this property
     bodyIncludes: [] as string[],
     header: 'text',
     header_text: '',
@@ -574,15 +599,16 @@ const processTemplateForPreview = (template: any) => {
         if (component.buttons && Array.isArray(component.buttons)) {
           processedTemplate.buttons = component.buttons.map((btn: any) => {
             // Convert WhatsApp button format to MessagePreview format
-            const convertedButton = {
-              text: btn.text || '',
-              title: btn.text || '',
-              type: btn.type === 'QUICK_REPLY' ? 'postback' : 
-                    btn.type === 'URL' ? 'web_url' : 
-                    btn.type === 'PHONE_NUMBER' ? 'phone_number' : 'postback',
-              url: btn.url || '',
-              value: btn.text || ''
-            };
+                         const convertedButton = {
+               text: btn.text || '',
+               title: btn.text || '',
+               type: btn.type === 'QUICK_REPLY' ? 'postback' : 
+                     btn.type === 'URL' ? 'web_url' : 
+                     btn.type === 'PHONE_NUMBER' ? 'phone_number' : 'postback',
+               url: btn.url || '',
+               value: btn.text || '',
+               phone_number: btn.phone_number || '' // Preserve phone number for phone_number buttons
+             };
             
             // Check if button text contains variables
             if (btn.text && btn.text.includes('{{')) {
@@ -609,6 +635,123 @@ const processTemplateForPreview = (template: any) => {
             return convertedButton;
           });
         }
+      }
+
+             if (component.type === 'CAROUSEL' && component.cards?.length) {
+         processedTemplate.type = 'generic';
+         processedTemplate.isGenericType = true; // Add this flag for MessagePreview
+         processedTemplate.bodyIncludes = ['body']; // Reset to only body for carousel
+        
+        // Process carousel slides
+        component.cards.forEach((card: any, index: number) => {
+          const slide = {
+            id: index + 1,
+            title: '',
+            subtitle: '',
+            type: 'button',
+            image_url: '',
+            attachment_link: '',
+            buttons: [] as any[],
+            variables: {
+              body: [] as any[],
+              button: null as any,
+              buttonText: null as any,
+              buttonUrl: null as any
+            }
+          };
+
+          let headerFormat = 'image'; // default
+
+          card.components.forEach((cardComponent: any) => {
+            if (cardComponent.type === 'HEADER' && cardComponent.example?.header_handle?.[0]) {
+              headerFormat = cardComponent.format.toLowerCase();
+              slide.attachment_link = cardComponent.example.header_handle[0];
+            }
+            if (cardComponent.type === 'BODY') {
+              slide.title = cardComponent.text;
+              
+              // Extract variables from body text
+              const result = cardComponent.text ? cardComponent.text.match(/{{\d+}}/g) : null;
+              if (result) {
+                const newBodyVar: any[] = [];
+                const alreadyAdded: string[] = [];
+                
+                result.forEach((variable: string) => {
+                  if (!alreadyAdded.includes(variable)) {
+                    alreadyAdded.push(variable);
+                    newBodyVar.push({
+                      key: variable,
+                      value: ''
+                    });
+                  }
+                });
+                slide.variables.body = newBodyVar;
+              }
+            }
+                         if (cardComponent.type === 'BUTTONS') {
+               slide.buttons = cardComponent.buttons.map((btn: any) => {
+                 const convertedButton = {
+                   api: 1,
+                   error: false,
+                   payload: btn.payload || '',
+                   response: '',
+                   signature_hash: '',
+                   title: btn.text || btn.title || '',
+                   text: btn.text || btn.title || '', // Add text property for MessagePreview
+                   type: btn.type === 'url' ? 'web_url' : 
+                         btn.type === 'phone_number' ? 'phone_number' : 'postback',
+                   url: btn.url || '',
+                   phone_number: btn.phone_number || '' // Preserve phone number for phone_number buttons
+                 };
+                
+                // Check if button text contains variables
+                if (btn.text && btn.text.includes('{{')) {
+                  const variables = btn.text.match(/{{(\d+)}}/g);
+                  if (variables && variables.length > 0) {
+                    slide.variables.buttonText = {
+                      key: variables[0],
+                      value: ''
+                    };
+                  }
+                }
+                
+                               // Check if button URL contains variables
+               if (btn.url && btn.url.includes('{{')) {
+                 const variables = btn.url.match(/{{(\d+)}}/g);
+                 if (variables && variables.length > 0) {
+                   slide.variables.buttonUrl = {
+                     key: variables[0],
+                     value: ''
+                   };
+                   // Also set button variable for URL (MessagePreview looks for this)
+                   slide.variables.button = {
+                     key: variables[0],
+                     value: ''
+                   };
+                 }
+               }
+                
+                return convertedButton;
+              });
+            }
+          });
+
+          const templateSlide = {
+            header: headerFormat,
+            button_type: 'cta',
+            total_buttons: slide.buttons.length,
+            variables: slide.variables
+          };
+
+          // Add the slide data to the processed template
+          processedTemplate.slides.push({
+            ...templateSlide,
+            title: slide.title,
+            subtitle: slide.subtitle,
+            attachment_link: slide.attachment_link,
+            buttons: slide.buttons
+          });
+        });
       }
     });
   }
@@ -666,9 +809,51 @@ const processTemplateForPreview = (template: any) => {
         // Add the button to the buttons array
         processedTemplate.buttons = [defaultButton];
       }
+
+             if (param.type === 'carousel') {
+         processedTemplate.type = 'generic';
+         processedTemplate.isGenericType = true; // Add this flag for MessagePreview
+         processedTemplate.bodyIncludes = ['body'];
+        
+        // Process carousel slides from params
+        if (param.parameters && Array.isArray(param.parameters)) {
+          param.parameters.forEach((slideParam: any, index: number) => {
+                         const templateSlide = {
+               header: 'image',
+               button_type: 'cta',
+               total_buttons: 1,
+               title: slideParam.text || `Slide ${index + 1}`,
+               buttons: [{
+                 title: 'Button',
+                 text: 'Button',
+                 type: 'postback',
+                 url: '',
+                 payload: ''
+               }],
+               variables: {
+                 body: [] as any[],
+                 button: null as any,
+                 buttonText: null as any,
+                 buttonUrl: null as any
+               }
+             };
+
+            // Extract variables from slide parameters
+            if (slideParam.type === 'text') {
+              templateSlide.variables.body.push({
+                key: slideParam.text || `{{${index + 1}}}`,
+                value: ''
+              });
+            }
+
+            processedTemplate.slides.push(templateSlide);
+          });
+        }
+      }
     });
   }
 
+  console.log('Final processed template:', processedTemplate);
   return processedTemplate;
 };
 
@@ -677,6 +862,9 @@ const previewTemplate = (template: any) => {
   
   // Process the template data for preview
   const processedTemplate = processTemplateForPreview(template);
+  
+  console.log('Processed template for preview:', processedTemplate);
+  console.log('Carousel slides:', processedTemplate.slides);
   
   // Set the preview data
   selectedPreviewTemplate.value = template;
@@ -704,9 +892,9 @@ const handleSearch = () => {
   setTimeout(() => {
     currentPage.value = 1;
     // Only clear cache if the search query is different from cached query
-    if (publishStore.cache.templates && publishStore.cache.templates.query !== searchQuery.value) {
-      publishStore.cache.templates = null;
-      publishStore.cacheValid.templates = false;
+    if (publishStore.cache.whatsappTemplates && publishStore.cache.whatsappTemplates.query !== searchQuery.value) {
+      publishStore.cache.whatsappTemplates = null;
+      publishStore.cacheValid.whatsappTemplates = false;
     }
     fetchTemplates(1, itemsPerPage);
   }, 1000);
@@ -715,19 +903,19 @@ const handleSearch = () => {
 // Initialize templates when component is mounted
 onMounted(() => {
   // Only fetch templates if we don't have valid cached data
-  if (!publishStore.cacheValid.templates || !publishStore.cache.templates) {
+  if (!publishStore.cacheValid.whatsappTemplates || !publishStore.cache.whatsappTemplates) {
     fetchTemplates(1, itemsPerPage);
   } else {
     // Use cached data
-    templates.value = publishStore.cache.templates.data || [];
+    templates.value = publishStore.cache.whatsappTemplates.data || [];
     paginationData.value = {
-      page: publishStore.cache.templates.page || 1,
-      perPage: publishStore.cache.templates.perPage || itemsPerPage,
-      total: publishStore.cache.templates.total || 0,
-      to: publishStore.cache.templates.to || 0,
-      prev_page_url: publishStore.cache.templates.prev_page_url || null
+      page: publishStore.cache.whatsappTemplates.page || 1,
+      perPage: publishStore.cache.whatsappTemplates.perPage || itemsPerPage,
+      total: publishStore.cache.whatsappTemplates.total || 0,
+      to: publishStore.cache.whatsappTemplates.to || 0,
+      prev_page_url: publishStore.cache.whatsappTemplates.prev_page_url || null
     };
-    currentPage.value = publishStore.cache.templates.page || 1;
+    currentPage.value = publishStore.cache.whatsappTemplates.page || 1;
   }
 });
 
@@ -771,7 +959,7 @@ defineExpose({
         
         <TableBody>
           <!-- Loading skeleton -->
-          <TableRow v-if="publishStore.loadingStates.templates" v-for="i in 5" :key="`skeleton-${i}`" skeleton>
+          <TableRow v-if="publishStore.loadingStates.whatsappTemplates" v-for="i in 5" :key="`skeleton-${i}`" skeleton>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
@@ -847,13 +1035,13 @@ defineExpose({
       </Table>
       
       <!-- Pagination -->
-      <div v-if="!publishStore.loadingStates.templates && paginatedTemplates.length > 0 && paginationData?.total && paginationData.total > 0" class="agent-pagination-section">
+      <div v-if="!publishStore.loadingStates.whatsappTemplates && paginatedTemplates.length > 0 && paginationData?.total && paginationData.total > 0" class="agent-pagination-section">
         <Pagination
           :current-page="currentPage || 1"
           :total-pages="totalPages || 1"
           :total-items="paginationData?.total || 0"
           :items-per-page="itemsPerPage || 20"
-                      :disabled="publishStore.loadingStates.templates || false"
+                      :disabled="publishStore.loadingStates.whatsappTemplates || false"
           @page-change="handlePageChange"
         />
       </div>
@@ -887,7 +1075,11 @@ defineExpose({
         <MessagePreview 
           v-if="previewTemplateData"
           :template="previewTemplateData"
-          :block="{ text: previewTemplateData.body_text || '', buttons: previewTemplateData.buttons || [] }"
+          :block="{ 
+            text: previewTemplateData.body_text || '', 
+            buttons: previewTemplateData.buttons || []
+          }"
+          :slides="previewTemplateData.slides || []"
           :show-title="false"
         />
       </div>
@@ -971,7 +1163,7 @@ defineExpose({
 .preview-content {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: var(--space-4);
-  background: var(--color-bg-secondary);
+  /* padding: var(--space-4); */
+  /* background: var(--color-bg-secondary); */
 }
 </style> 

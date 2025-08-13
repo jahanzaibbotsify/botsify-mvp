@@ -781,9 +781,8 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
 
   const createBlockSlide = () => {
     // Get the current button type from the first slide if it exists
-    const firstSlide = template.value.slides[0];
-    const currentButtonType = firstSlide?.button_type || 'postback';
-    
+    const currentButtonType = block.value.slides[0].buttons[0].type;
+    console.log(currentButtonType, "currentButtonType")
     // Get the next slide ID
     const nextId = block.value.slides.length + 1;
     
@@ -791,7 +790,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     const defaultButton = {
       api: 1,
       error: false,
-      type: currentButtonType === 'cta' ? 'web_url' : 'postback',
+      type: currentButtonType,
       title: '',
       response: '',
       payload: '',
@@ -1120,8 +1119,8 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         // Clear the templates cache in publishStore
         const { usePublishStore } = await import('@/stores/publishStore');
         const publishStore = usePublishStore();
-        publishStore.cache.templates = null;
-        publishStore.cacheValid.templates = false;
+        publishStore.cache.whatsappTemplates = null;
+        publishStore.cacheValid.whatsappTemplates = false;
         
         window.$toast?.success('Template created successfully!');
         return { success: true, data: templateData };
@@ -1227,6 +1226,7 @@ const addSlide = () => {
   
   // Ensure all slides have consistent button types
   const firstSlideButtonType = template.value.slides[0]?.button_type;
+  console.log(firstSlideButtonType, "firstSlideButtonType")
   if (firstSlideButtonType) {
     template.value.slides.forEach((slide: any, index: number) => {
       if (index > 0) { // Skip first slide as it's the reference

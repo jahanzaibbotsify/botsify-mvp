@@ -176,7 +176,7 @@ const handlePageChange = (page: number) => {
 const handleSearch = () => {
   setTimeout(() => {
     currentPage.value = 1;
-    publishStore.cache.templates = null; // Clear cache to force fresh fetch
+    publishStore.cache.smsTemplates = null; // Clear SMS templates cache to force fresh fetch
     // Fetch templates with the current search query
     fetchTemplates(1, itemsPerPage);
   }, 1000);
@@ -185,7 +185,22 @@ const handleSearch = () => {
 
 // Load templates on mount
 onMounted(async () => {
-  await fetchTemplates(currentPage.value, itemsPerPage);
+  // Check if we have valid SMS templates cache
+  if (!publishStore.cacheValid.smsTemplates || !publishStore.cache.smsTemplates) {
+    await fetchTemplates(currentPage.value, itemsPerPage);
+  } else {
+    // Use cached data
+    const cachedData = publishStore.cache.smsTemplates;
+    templates.value = cachedData.data || [];
+    paginationData.value = {
+      page: cachedData.page || 1,
+      perPage: cachedData.perPage || itemsPerPage,
+      total: cachedData.total || 0,
+      to: cachedData.to || 0,
+      prev_page_url: cachedData.prev_page_url || null
+    };
+    currentPage.value = cachedData.page || 1;
+  }
 });
 
 // Expose methods for parent component
@@ -229,7 +244,7 @@ defineExpose({
         
         <TableBody>
           <!-- Loading skeleton -->
-          <TableRow v-if="publishStore.loadingStates.templates" v-for="i in 5" :key="`skeleton-${i}`" skeleton>
+          <TableRow v-if="publishStore.loadingStates.smsTemplates" v-for="i in 5" :key="`skeleton-${i}`" skeleton>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="badge"></TableCell>
@@ -298,13 +313,13 @@ defineExpose({
       </Table>
       
       <!-- Pagination -->
-      <div v-if="!publishStore.loadingStates.templates && paginatedTemplates.length > 0 && paginationData?.total && paginationData.total > 0" class="agent-pagination-section">
+      <div v-if="!publishStore.loadingStates.smsTemplates && paginatedTemplates.length > 0 && paginationData?.total && paginationData.total > 0" class="agent-pagination-section">
         <Pagination
           :current-page="currentPage || 1"
           :total-pages="totalPages || 1"
           :total-items="paginationData?.total || 0"
           :items-per-page="itemsPerPage || 20"
-          :disabled="publishStore.loadingStates.templates || false"
+          :disabled="publishStore.loadingStates.smsTemplates || false"
           @page-change="handlePageChange"
         />
       </div>

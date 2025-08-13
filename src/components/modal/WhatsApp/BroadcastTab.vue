@@ -165,10 +165,10 @@ const fetchTemplates = async () => {
   console.log('BroadcastTab - fetchTemplates called');
   
   // Check if templates are already loaded in the store
-  if (publishStore.cacheValid.templates && publishStore.cache.templates && publishStore.cache.templates.data && publishStore.cache.templates.data.length > 0) {
+  if (publishStore.cacheValid.whatsappTemplates && publishStore.cache.whatsappTemplates && publishStore.cache.whatsappTemplates.data && publishStore.cache.whatsappTemplates.data.length > 0) {
     console.log('BroadcastTab - Using cached templates from store');
     // Filter templates to only include those with status === 1 (approved)
-    const approvedTemplates = publishStore.cache.templates.data.filter((template: any) => template.status === 1);
+    const approvedTemplates = publishStore.cache.whatsappTemplates.data.filter((template: any) => template.status === 1);
     templates.value = approvedTemplates.map((template: any) => ({
       ...template,
       label: template.template_name || template.name || template.id || `Template ${template.id}`,
@@ -287,6 +287,11 @@ const setTemplateVariable = () => {
     // Parse and assign params for AUTHENTICATION category
     templateData.value.category = 'AUTHENTICATION';
     
+    console.log('BroadcastTab - Processing AUTHENTICATION template:', {
+      params: params,
+      components: currTemplate.components
+    });
+    
     // Find the body parameter and use its text
     const bodyParam = params.find((param: any) => param.type === 'body');
     if (bodyParam && bodyParam.parameters && bodyParam.parameters.length > 0) {
@@ -316,6 +321,10 @@ const setTemplateVariable = () => {
               key: variable.text || '{{1}}',
               value: ''
             });
+            console.log('BroadcastTab - Added body variable for AUTHENTICATION:', {
+              key: variable.text || '{{1}}',
+              type: variable.type
+            });
           } else {
             // For other parameter types, use default key
             newBodyVar.push({
@@ -326,32 +335,30 @@ const setTemplateVariable = () => {
         });
       }
 
+      // For AUTHENTICATION templates, don't set button variables since OTP buttons don't need user input
+      // Just add buttons to bodyIncludes for display purposes
       if (param.type === 'button') {
         templateData.value.bodyIncludes.push('buttons');
-        param.parameters.forEach((variable: any) => {
-          if (variable.type === 'text') {
-            templateData.value.variables.button = {
-              index: 0,
-              key: variable.text || '{{1}}',
-              value: ''
-            };
-          } else {
-            templateData.value.variables.button = {
-              index: 0,
-              key: '{{1}}',
-              value: ''
-            };
-          }
-        });
+        console.log('BroadcastTab - Added buttons to bodyIncludes for AUTHENTICATION (no variables needed)');
+        // Don't create button variables for authentication templates
+        // OTP buttons are handled automatically by WhatsApp
       }
     });
   
     templateData.value.variables.body = newBodyVar;
-    templateData.value.bodyIncludes.push('buttons');
     // Get buttons from components if available
     if (currTemplate.components && currTemplate.components[1] && currTemplate.components[1].buttons) {
       templateData.value.buttons = currTemplate.components[1].buttons;
+      console.log('BroadcastTab - Set buttons for AUTHENTICATION template:', templateData.value.buttons);
     }
+    
+    console.log('BroadcastTab - Final AUTHENTICATION template data:', {
+      bodyText: templateData.value.body_text,
+      bodyVariables: templateData.value.variables.body,
+      buttonVariables: templateData.value.variables.button,
+      bodyIncludes: templateData.value.bodyIncludes,
+      buttons: templateData.value.buttons
+    });
   } else {
     // Handle other template types - First check if we have params
     if (params && params.length > 0) {
@@ -437,6 +444,11 @@ const setTemplateVariable = () => {
               };
             }
           });
+          
+          // Initialize buttons array if not exists
+          if (!templateData.value.buttons) {
+            templateData.value.buttons = [];
+          }
         }
       });
     } 
@@ -512,7 +524,8 @@ const setTemplateVariable = () => {
         if (component.type === 'BUTTONS') {
           templateData.value.bodyIncludes.push('buttons');
           templateData.value.buttons = component.buttons || [];
-          // Check for button variables in URLs
+          
+          // Check for button variables in URLs and text
           component.buttons.forEach((btn: any) => {
             if (btn.type === 'URL' && btn.url) {
               // Check if URL contains variables like {{1}}, {{2}}, etc.
@@ -526,6 +539,23 @@ const setTemplateVariable = () => {
                 console.log('Found button URL variable:', {
                   url: btn.url,
                   variable: urlVariables[0]
+                });
+              }
+            }
+            
+            // Check for button text variables
+            if (btn.text || btn.title) {
+              const buttonText = btn.text || btn.title || '';
+              const textVariables = buttonText.match(/{{\d+}}/g);
+              if (textVariables && textVariables.length > 0) {
+                // Create button text variable for the first variable found
+                templateData.value.variables.buttonText = {
+                  key: textVariables[0],
+                  value: ''
+                };
+                console.log('Found button text variable:', {
+                  text: buttonText,
+                  variable: textVariables[0]
                 });
               }
             }
@@ -591,7 +621,7 @@ const setTemplateVariable = () => {
               } else if (comp.type === 'BUTTONS') {
                 templateData.value.slides[index].buttons = comp.buttons || [];
                 
-                // Check for button variables in slide URLs
+                // Check for button variables in slide URLs - FIRST INSTANCE
                 comp.buttons.forEach((btn: any) => {
                   if (btn.type === 'url' && btn.url) {
                     // Check if URL contains variables like {{1}}, {{2}}, etc.
@@ -606,6 +636,24 @@ const setTemplateVariable = () => {
                         slideIndex: index,
                         url: btn.url,
                         variable: urlVariables[0]
+                      });
+                    }
+                  }
+                  
+                  // Check for button text variables in slides - FIRST INSTANCE
+                  if (btn.text || btn.title) {
+                    const buttonText = btn.text || btn.title || '';
+                    const textVariables = buttonText.match(/{{\d+}}/g);
+                    if (textVariables && textVariables.length > 0) {
+                      // Create button text variable for the first variable found
+                      templateData.value.slides[index].variables.buttonText = {
+                        key: textVariables[0],
+                        value: ''
+                      };
+                      console.log('Found slide button text variable:', {
+                        slideIndex: index,
+                        buttonText: buttonText,
+                        variable: textVariables[0]
                       });
                     }
                   }
@@ -751,7 +799,7 @@ const setTemplateVariable = () => {
               } else if (comp.type === 'BUTTONS') {
                 templateData.value.slides[index].buttons = comp.buttons || [];
                 
-                // Check for button variables in slide URLs
+                // Check for button variables in slide URLs - SECOND INSTANCE
                 comp.buttons.forEach((btn: any) => {
                   if (btn.type === 'url' && btn.url) {
                     // Check if URL contains variables like {{1}}, {{2}}, etc.
@@ -769,6 +817,24 @@ const setTemplateVariable = () => {
                       });
                     }
                   }
+                  
+                  // Check for button text variables in slides - SECOND INSTANCE
+                  if (btn.text || btn.title) {
+                    const buttonText = btn.text || btn.title || '';
+                    const textVariables = buttonText.match(/{{\d+}}/g);
+                    if (textVariables && textVariables.length > 0) {
+                      // Create button text variable for the first variable found
+                      templateData.value.slides[index].variables.buttonText = {
+                        key: textVariables[0],
+                        value: ''
+                      };
+                      console.log('Found slide button text variable:', {
+                        slideIndex: index,
+                        buttonText: buttonText,
+                        variable: textVariables[0]
+                      });
+                    }
+                  }
                 });
               }
             });
@@ -780,14 +846,12 @@ const setTemplateVariable = () => {
   
   console.log('Template data after parsing:', templateData.value);
   
-  // Update store with template data immediately
-  store.template = { ...templateData.value };
-  store.block.text = templateData.value.body_text || '';
+  // Update store with template data immediately using the proper method
+  updateStoreFromTemplateData();
   
   // Force reactivity update
   nextTick(() => {
-    store.template = { ...templateData.value };
-    store.block.text = templateData.value.body_text || '';
+    updateStoreFromTemplateData();
   });
   } catch (error) {
     console.error('Error setting template variable:', error);
@@ -1201,9 +1265,9 @@ const initializeTemplates = () => {
   console.log('BroadcastTab - Initializing templates...');
   
   // Check if templates are already loaded in the store
-  if (publishStore.cacheValid.templates && publishStore.cache.templates && publishStore.cache.templates.data && publishStore.cache.templates.data.length > 0) {
+  if (publishStore.cacheValid.whatsappTemplates && publishStore.cache.whatsappTemplates && publishStore.cache.whatsappTemplates.data && publishStore.cache.whatsappTemplates.data.length > 0) {
     console.log('BroadcastTab - Templates already loaded in store, using cached data');
-    const approvedTemplates = publishStore.cache.templates.data.filter((template: any) => template.status === 1);
+    const approvedTemplates = publishStore.cache.whatsappTemplates.data.filter((template: any) => template.status === 1);
     templates.value = approvedTemplates.map((template: any) => ({
       ...template,
       label: template.template_name || template.name || template.id || `Template ${template.id}`,
@@ -1220,31 +1284,14 @@ const initializeTemplates = () => {
 
 // Auto-initialize templates on mount
 onMounted(() => {
-  console.log('BroadcastTab - Component mounted, initializing templates...');
-  console.log('BroadcastTab - Initial state:', {
-    templates: templates.value.length,
-    isTemplatesLoaded: isTemplatesLoaded.value,
-    isLoadingTemplates: isLoadingTemplates.value,
-    storeTemplatesLoaded: publishStore.cacheValid.templates,
-    storeTemplatesCache: publishStore.cache.templates
-  });
-  
   // Add a small delay to ensure component is fully mounted and store is ready
   setTimeout(() => {
-    console.log('BroadcastTab - Delayed initialization starting...');
     initializeTemplates();
   }, 100);
 });
 
-// Watch for template data changes
-watch(templateData, (newValue) => {
-  // Update store with template data
-  store.template = { ...newValue };
-  store.block.text = newValue.body_text || '';
-}, { deep: true });
-
 // Watch for store template cache changes to auto-update local templates
-watch(() => publishStore.cache.templates, (newCache) => {
+watch(() => publishStore.cache.whatsappTemplates, (newCache) => {
   if (newCache && newCache.data && newCache.data.length > 0 && !isTemplatesLoaded.value) {
     console.log('BroadcastTab - Store template cache updated, updating local templates');
     const approvedTemplates = newCache.data.filter((template: any) => template.status === 1);
@@ -1258,9 +1305,9 @@ watch(() => publishStore.cache.templates, (newCache) => {
 }, { deep: true });
 
 // Watch for store loading state changes
-watch(() => publishStore.loadingStates.templates, (isLoading) => {
+watch(() => publishStore.loadingStates.whatsappTemplates, (isLoading) => {
   console.log('BroadcastTab - Store loading state changed:', isLoading);
-  if (!isLoading && !isTemplatesLoaded.value && publishStore.cache.templates?.data) {
+  if (!isLoading && !isTemplatesLoaded.value && publishStore.cache.whatsappTemplates?.data) {
     console.log('BroadcastTab - Store finished loading, initializing templates');
     initializeTemplates();
   }
@@ -1268,18 +1315,50 @@ watch(() => publishStore.loadingStates.templates, (isLoading) => {
 
 // Method to update store when variables change
 const updateStoreFromTemplateData = () => {
-  store.template = { ...templateData.value };
+  // Create a complete template object with all necessary data
+  const completeTemplate = {
+    ...templateData.value,
+    // Ensure buttons are properly synced
+    buttons: templateData.value.buttons || [],
+    // Ensure slides are properly synced with all their data
+    slides: templateData.value.slides || [],
+    // Ensure all variables are properly synced
+    variables: {
+      header: templateData.value.variables.header,
+      body: templateData.value.variables.body || [],
+      button: templateData.value.variables.button,
+      buttonText: templateData.value.variables.buttonText,
+      buttonUrl: templateData.value.variables.buttonUrl,
+      buttons: templateData.value.variables.buttons || []
+    },
+    // Ensure bodyIncludes is properly synced
+    bodyIncludes: templateData.value.bodyIncludes || ['body'],
+    // Ensure type and header are properly synced
+    type: templateData.value.type || 'text',
+    header: templateData.value.header || 'text',
+    // Ensure header_text and footer_text are properly synced
+    header_text: templateData.value.header_text || '',
+    footer_text: templateData.value.footer_text || '',
+    body_text: templateData.value.body_text || '',
+    // Ensure attachment_link and filename are properly synced
+    attachment_link: templateData.value.attachment_link || '',
+    filename: templateData.value.filename || ''
+  };
+
+  // Update store with complete template data
+  store.template = completeTemplate;
   store.block.text = templateData.value.body_text || '';
-  // Also sync attachment_link to block for MessagePreview
   store.block.attachment_link = templateData.value.attachment_link || '';
   
   console.log('BroadcastTab - updateStoreFromTemplateData:', {
     templateData: templateData.value,
+    completeTemplate: completeTemplate,
     storeTemplate: store.template,
     storeBlock: store.block,
     attachmentLink: templateData.value.attachment_link,
     variables: templateData.value.variables,
-    buttons: templateData.value.buttons
+    buttons: templateData.value.buttons,
+    slides: templateData.value.slides
   });
 };
 
@@ -1367,6 +1446,7 @@ const handleSendBroadcast = async () => {
         'your subscribers'
       }?`,
       confirmButtonText: "Yes, Send it!",
+    cancelButtonText: "Cancel"
     }, async () => {
       // Set loading state
       isBroadcastSending.value = true;
@@ -1396,7 +1476,6 @@ const handleSendBroadcast = async () => {
           if (publishStore.cache.broadcastReport) {
             publishStore.cacheValid.broadcastReport = false;
             publishStore.cache.broadcastReport = null;
-            console.log('Broadcast report cache cleared for revalidation');
           }
         } else {
           window.$toast?.error(result.error || 'Failed to schedule broadcast');
@@ -1434,7 +1513,7 @@ const handleSendBroadcast = async () => {
               v-model="selectedTemplate"
               :options="templates"
               :reduce="(template: any) => template"
-              :placeholder="showTemplateMessage"
+              :placeholder="showTemplateMessage || 'Select a template'"
               :loading="isLoadingTemplates"
               :disabled="isLoadingTemplates"
               @change="handleTemplateChange"
@@ -1621,17 +1700,29 @@ const handleSendBroadcast = async () => {
         </div>
 
         <!-- Button Variables -->
+        <!-- Note: AUTHENTICATION templates don't show button variables since OTP buttons are handled automatically by WhatsApp -->
         <div v-if="templateData.variables.button && templateData.category !== 'AUTHENTICATION'" class="variable-section">
           <h5>Button Variable</h5>
           <div class="variable-fields">
             <div class="form-group">
-              <label class="required-label">URL Button Variable - {{ templateData.variables.button.key }}</label>
+              <label class="required-label">Button Variable - {{ templateData.variables.button.key }}</label>
                              <Input
                  v-model="templateData.variables.button.value"
                  placeholder="Enter button variable value"
                  @input="updateStoreFromTemplateData"
                  :error="!templateData.variables.button.value ? 'This field is required' : ''"
                />
+            </div>
+          </div>
+        </div>
+        
+        <!-- Authentication Template Info -->
+        <div v-if="templateData.category === 'AUTHENTICATION'" class="variable-section">
+          <h5>Authentication Template Info</h5>
+          <div class="variable-fields">
+            <div class="info-message">
+              <i class="pi pi-info-circle"></i>
+              <span>OTP buttons are handled automatically by WhatsApp. You only need to provide the verification code variable above.</span>
             </div>
           </div>
         </div>
@@ -1721,6 +1812,7 @@ const handleSendBroadcast = async () => {
            :template="store.template"
            :block="store.block"
            :variables="store.template.variables"
+           :slides="store.template.slides"
          />
        </div>
    </div>
@@ -1999,6 +2091,25 @@ const handleSendBroadcast = async () => {
 
 .text-danger {
   color: var(--color-error);
+}
+
+.info-message {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.info-message i {
+  color: var(--color-primary);
+  margin-top: 2px;
+  flex-shrink: 0;
 }
 
 .media-input-group {

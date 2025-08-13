@@ -110,6 +110,18 @@ const truncateMessage = (message: string) => {
   return message.substring(0, 200) + '...';
 };
 
+const applyFilter = () => {
+  publishStore.loadingStates.broadcastReport = true;
+  publishStore.cache.broadcastReport = null;
+  fetchSmsReport(1);
+}
+
+
+// Load data on mount
+onMounted(() => {
+  fetchSmsReport();
+});
+
 // Expose methods for parent component
 defineExpose({
   fetchSmsReport,
@@ -118,10 +130,6 @@ defineExpose({
   totalItems
 });
 
-// Load data on mount
-onMounted(() => {
-  fetchSmsReport();
-});
 </script>
 
 <template>
@@ -152,6 +160,7 @@ onMounted(() => {
           variant="primary"
           size="medium"
           :loading="publishStore.isLoading"
+          @click="applyFilter"
         >
           {{ publishStore.isLoading ? 'Filtering...' : 'Apply filters' }}
         </Button>
@@ -225,7 +234,7 @@ onMounted(() => {
     </div>
 
     <!-- Pagination -->
-    <div v-if="totalPages > 1" class="agent-pagination-section">
+    <div class="agent-pagination-section">
       <Pagination
         :current-page="currentPage"
         :total-pages="totalPages"

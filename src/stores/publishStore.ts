@@ -9,7 +9,8 @@ export const usePublishStore = defineStore('publish', () => {
   
   // Unified cache system
   const cache = ref<{
-    templates: { data: any[]; page: number; perPage: number; total: number; to: number; prev_page_url: string | null; query?: string } | null;
+    whatsappTemplates: { data: any[]; page: number; perPage: number; total: number; to: number; prev_page_url: string | null; query?: string } | null;
+    smsTemplates: { data: any[]; page: number; perPage: number; total: number; to: number; prev_page_url: string | null; query?: string } | null;
     botDetails: any;
     broadcastReport: { data: any; key: string } | null;
     smsReport: { data: any; page: number } | null;
@@ -19,7 +20,8 @@ export const usePublishStore = defineStore('publish', () => {
     publishStatus: any;
     commentResponder: any;
   }>({
-    templates: null,
+    whatsappTemplates: null,
+    smsTemplates: null,
     botDetails: null,
     broadcastReport: null,
     smsReport: null,
@@ -32,7 +34,8 @@ export const usePublishStore = defineStore('publish', () => {
 
   // Loading states
   const loadingStates = ref({
-    templates: false,
+    whatsappTemplates: false,
+    smsTemplates: false,
     botDetails: false,
     broadcastReport: false,
     smsReport: false,
@@ -46,7 +49,8 @@ export const usePublishStore = defineStore('publish', () => {
 
   // Cache validity flags
   const cacheValid = ref({
-    templates: false,
+    whatsappTemplates: false,
+    smsTemplates: false,
     botDetails: false,
     broadcastReport: false,
     smsReport: false,
@@ -495,20 +499,19 @@ export const usePublishStore = defineStore('publish', () => {
 
   const fetchWhatsAppTemplates = async (page: number = 1, perPage: number = 20, query?: string) => {
     // Return cached templates if already loaded for the same page, per_page, and query
-    console.log('templatesCache', cache.value.templates);
-    if (cacheValid.value.templates && cache.value.templates && 
-        cache.value.templates.page === page && 
-        cache.value.templates.perPage === perPage &&
-        cache.value.templates.query === query) {
-      return { success: true, data: { status: 'success', templates: cache.value.templates } };
+    if (cacheValid.value.whatsappTemplates && cache.value.whatsappTemplates && 
+        cache.value.whatsappTemplates.page === page && 
+        cache.value.whatsappTemplates.perPage === perPage &&
+        cache.value.whatsappTemplates.query === query) {
+      return { success: true, data: { status: 'success', templates: cache.value.whatsappTemplates } };
     }
     
     // Prevent multiple simultaneous calls
-    if (loadingStates.value.templates) {
+    if (loadingStates.value.whatsappTemplates) {
       return { success: false, error: 'WhatsApp templates are already being loaded' };
     }
     
-    loadingStates.value.templates = true;
+    loadingStates.value.whatsappTemplates = true;
     error.value = null;
     
     try {
@@ -516,7 +519,7 @@ export const usePublishStore = defineStore('publish', () => {
       
       if (result.success) {
         // Cache the templates with pagination info and query
-        cache.value.templates = {
+        cache.value.whatsappTemplates = {
           data: result.data.templates?.data || [],
           page: page,
           perPage: perPage,
@@ -525,7 +528,7 @@ export const usePublishStore = defineStore('publish', () => {
           prev_page_url: result.data.templates?.prev_page_url || null,
           query: query
         };
-        cacheValid.value.templates = true;
+        cacheValid.value.whatsappTemplates = true;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to fetch WhatsApp templates';
@@ -543,26 +546,25 @@ export const usePublishStore = defineStore('publish', () => {
       }
       return { success: false, error: error.value };
     } finally {
-      loadingStates.value.templates = false;
+      loadingStates.value.whatsappTemplates = false;
     }
   };
 
   const fetchSmsTemplates = async (page: number = 1, perPage: number = 20, query?: string) => {
     // Return cached templates if already loaded for the same page, per_page, and query
-    console.log('smsTemplatesCache', cache.value.templates);
-    if (cacheValid.value.templates && cache.value.templates && 
-        cache.value.templates.page === page && 
-        cache.value.templates.perPage === perPage &&
-        cache.value.templates.query === query) {
-      return { success: true, data: { status: 'success', templates: cache.value.templates } };
+    if (cacheValid.value.smsTemplates && cache.value.smsTemplates && 
+        cache.value.smsTemplates.page === page && 
+        cache.value.smsTemplates.perPage === perPage &&
+        cache.value.smsTemplates.query === query) {
+      return { success: true, data: { status: 'success', templates: cache.value.smsTemplates } };
     }
     
     // Prevent multiple simultaneous calls
-    if (loadingStates.value.templates) {
+    if (loadingStates.value.smsTemplates) {
       return { success: false, error: 'SMS templates are already being loaded' };
     }
     
-    loadingStates.value.templates = true;
+    loadingStates.value.smsTemplates = true;
     error.value = null;
     
     try {
@@ -570,7 +572,7 @@ export const usePublishStore = defineStore('publish', () => {
       
       if (result.success) {
         // Cache the templates with pagination info and query
-        cache.value.templates = {
+        cache.value.smsTemplates = {
           data: result.data.templates?.data || [],
           page: page,
           perPage: perPage,
@@ -579,7 +581,7 @@ export const usePublishStore = defineStore('publish', () => {
           prev_page_url: result.data.templates?.prev_page_url || null,
           query: query
         };
-        cacheValid.value.templates = true;
+        cacheValid.value.smsTemplates = true;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to fetch SMS templates';
@@ -597,7 +599,7 @@ export const usePublishStore = defineStore('publish', () => {
       }
       return { success: false, error: error.value };
     } finally {
-      loadingStates.value.templates = false;
+      loadingStates.value.smsTemplates = false;
     }
   };
 
@@ -609,9 +611,10 @@ export const usePublishStore = defineStore('publish', () => {
       const result = await publishApi.deleteWhatsAppTemplate(id);
       
       if (result.success) {
-        cache.value.templates = null;
-        cacheValid.value.templates = false;
-        loadingStates.value.templates = false;
+        // Clear WhatsApp templates cache
+        cache.value.whatsappTemplates = null;
+        cacheValid.value.whatsappTemplates = false;
+        loadingStates.value.whatsappTemplates = false;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to delete WhatsApp template';
@@ -633,6 +636,11 @@ export const usePublishStore = defineStore('publish', () => {
       const result = await publishApi.deleteSmsTemplate(id);
       
       if (result.success) {
+        // Clear SMS templates cache
+        cache.value.smsTemplates = null;
+        cacheValid.value.smsTemplates = false;
+        loadingStates.value.smsTemplates = false;
+        
         // Show success toast
         if (window.$toast) {
           window.$toast.success('SMS template deleted successfully!');
@@ -671,7 +679,7 @@ export const usePublishStore = defineStore('publish', () => {
         }
         // Show success toast
         // Clear cache to force refresh
-        cacheValid.value.templates = false;
+        cacheValid.value.smsTemplates = false;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to create SMS template';
@@ -1077,20 +1085,19 @@ export const usePublishStore = defineStore('publish', () => {
     error.value = null;
 
     try {
-      console.log('Creating WhatsApp broadcast task with payload:', payload);
       const result = await publishApi.createWhatsappBroadcastTask(payload);
-      console.log('API result for WhatsApp broadcast task:', result);
 
       if (result.success) {
-        console.log('API call successful, returning success');
+        loadingStates.value.broadcastReport = false;
+        cache.value.broadcastReport = null;
+        cacheValid.value.broadcastReport = false;
+
         return { success: true, data: result.data };
       } else {
-        console.log('API call failed, returning error');
         error.value = result.message || 'Failed to create WhatsApp broadcast task';
         return { success: false, error: error.value };
       }
     } catch (err: any) {
-      console.error('Exception in createWhatsappBroadcastTask:', err);
       error.value = err.message || 'Failed to create WhatsApp broadcast task';
       return { success: false, error: error.value };
     } finally {
@@ -1106,8 +1113,8 @@ export const usePublishStore = defineStore('publish', () => {
       const result = await publishApi.cloneSmsTemplate(id);
 
       if (result.success) {
-        cache.value.templates = null;
-        cacheValid.value.templates = false;
+        cache.value.smsTemplates = null;
+        cacheValid.value.smsTemplates = false;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to clone SMS template';
@@ -1133,6 +1140,9 @@ export const usePublishStore = defineStore('publish', () => {
     try {
       const result = await publishApi.sendSmsBroadcast(payload);
       if (result.success) {
+        loadingStates.value.smsReport = false;
+        cache.value.smsReport = null;
+        cacheValid.value.smsReport = false;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to send SMS broadcast';

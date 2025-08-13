@@ -8,12 +8,14 @@ interface Props {
   showCloseButton?: boolean
   closable?: boolean
   icon?: string
+  hideHeader?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   maxWidth: '500px',
   showCloseButton: true,
-  closable: true
+  closable: true,
+  hideHeader: false
 })
 
 const emit = defineEmits<{
@@ -86,7 +88,19 @@ defineExpose({
       :style="{ maxWidth: props.maxWidth }"
       @click.stop
     >
-      <div class="modal-header">
+      <!-- Floating Close Button when header is hidden -->
+      <Button 
+        v-if="showCloseButton && hideHeader" 
+        variant="secondary"
+        size="small"
+        icon="pi pi-times"
+        icon-only
+        @click="closeModal"
+        class="floating-close-button"
+      />
+      
+      <!-- Header (only shown when not hidden) -->
+      <div v-if="!hideHeader" class="modal-header">
         <div class="modal-header-left">
           <img v-if="icon" :src="icon" width="28" height="28" alt="logo" class="modal-logo" />
           <h2>{{ props.title }}</h2>
@@ -134,6 +148,7 @@ defineExpose({
   border: 1px solid var(--color-border);
   max-height: 90vh;
   overflow-y: auto;
+  position: relative;
 }
 
 .modal-header {
@@ -162,6 +177,16 @@ defineExpose({
 
 .modal-body {
   padding: var(--space-4);
+}
+
+.floating-close-button {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 10;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
 }
 
 @keyframes fadeIn {

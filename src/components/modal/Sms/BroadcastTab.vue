@@ -215,6 +215,7 @@ const sendBroadcast = async () => {
   window.$confirm({
     text: 'Are you sure you want to send this broadcast? You won\'t be able to undo this action!',
     confirmButtonText: "Yes, Send it!",
+    cancelButtonText: "Cancel"
   }, () => {
     // User confirmed - proceed with broadcast
     executeBroadcast();

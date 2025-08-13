@@ -1,30 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
-import Button from "@/components/ui/Button.vue";
-import VueSelect from "@/components/ui/VueSelect.vue";
-import Textarea from "@/components/ui/Textarea.vue";
-import Table from "@/components/ui/Table.vue";
-import TableHead from "@/components/ui/TableHead.vue";
-import TableBody from "@/components/ui/TableBody.vue";
-import TableRow from "@/components/ui/TableRow.vue";
-import TableCell from "@/components/ui/TableCell.vue";
-import TableHeader from "@/components/ui/TableHeader.vue";
-
-// Props
-interface Props {
-  isLoading?: boolean;
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  isLoading: false
-});
-
-// Emits
-defineEmits<{
-  'save-settings': [settings: any];
-  'send-message': [message: any];
-}>();
+import { Button, VueSelect, Textarea, Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Pagination } from "@/components/ui"
 
 // Store
 const publishStore = usePublishStore();
@@ -52,7 +29,6 @@ const isAddingNew = ref(false);
 const isEditing = ref(false);
 const newKeyword = ref('');
 const isLoading = ref(false);
-const isVisible = ref(false);
 const isPluginLoading = ref(false);
 const deleteResponderId = ref<string | null>(null);
 
@@ -82,24 +58,6 @@ const postOptions = computed(() => {
     value: post.id,
     label: post.message || `Post ${post.id}`
   }));
-});
-
-
-
-// Watch for visibility changes
-watch(() => props.isLoading, (newValue) => {
-  if (!newValue && !isVisible.value) {
-    isVisible.value = true;
-    // Load data when component becomes visible
-    if (!storeCommentRespondersLoaded.value) {
-      loadCommentResponders();
-    } else if (storeCommentResponders.value) {
-      transformAndSetData();
-    }
-    
-    // Load plugin data
-    loadPluginData();
-  }
 });
 
 const loadPluginData = async () => {
@@ -377,13 +335,6 @@ defineExpose({
     <div v-if="isAddingNew" class="add-form">
       <div class="form-header">
         <h4>Create new auto responder</h4>
-        <Button 
-          variant="error-outline"
-          size="small"
-          icon="pi pi-times"
-          iconOnly
-          @click="cancelAddingNew"
-        />
       </div>
 
       <div class="form-group">
@@ -440,13 +391,6 @@ defineExpose({
     <div v-if="isEditing" class="edit-form">
       <div class="form-header">
         <h4>Edit auto responder</h4>
-        <Button 
-          variant="error-outline"
-          size="small"
-          icon="pi pi-times"
-          iconOnly
-          @click="cancelEditing"
-        />
       </div>
 
       <div class="form-group">
@@ -570,6 +514,16 @@ defineExpose({
           </TableRow>
         </TableBody>
       </Table>
+
+      <div class="agent-pagination-section">
+        <Pagination
+          :current-page="1"
+          :total-pages="1"
+          :total-items="autoResponders.length || 0"
+          :items-per-page="20"
+          :disabled="false"
+        />
+      </div>
     </div>
   </div>
 </template>

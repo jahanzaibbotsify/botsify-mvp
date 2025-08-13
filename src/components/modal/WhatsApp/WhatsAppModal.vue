@@ -16,11 +16,11 @@ import { useTabManagement } from "@/composables/useTabManagement";
 const tabs = [
   { id: 'publish-agent', label: 'Publish agent' },
   // { id: 'profile', label: 'Profile' },
-  { id: 'test-bot', label: 'Test Bot' },
   { id: 'template', label: 'Templates' },
   { id: 'broadcast', label: 'Broadcast' },
   { id: 'broadcast-report', label: 'Broadcast report' },
-  { id: 'catalog', label: 'Catalog' }
+  { id: 'catalog', label: 'Catalog' },
+  { id: 'test-bot', label: 'Test Bot' }
 ];
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);

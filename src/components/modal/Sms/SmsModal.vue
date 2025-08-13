@@ -124,23 +124,6 @@ const handleTemplateUpdated = (template: any) => {
   }
 };
 
-const handleSaveSettings = async (settings: any) => {
-  isLoading.value = true;
-  try {
-    const result = await publishStore.saveTwilioSettings(settings);
-    if (result.success) {
-      console.log('Twilio settings saved successfully');
-      // Recheck configuration after saving
-      await checkSmsConfiguration();
-    } else {
-      console.error('Failed to save Twilio settings:', result.error);
-    }
-  } catch (error) {
-    console.error('Failed to save Twilio settings:', error);
-  } finally {
-    isLoading.value = false;
-  }
-};
 
 defineExpose({ openModal, closeModal });
 </script>
@@ -163,7 +146,7 @@ defineExpose({ openModal, closeModal });
         ref="publishAgentTabRef"
         :is-loading="isLoading"
         :is-checking-configuration="isCheckingConfiguration"
-        @save-settings="handleSaveSettings"
+        @check-configuration="checkSmsConfiguration"
       />
 
       <!-- Template Tab -->
