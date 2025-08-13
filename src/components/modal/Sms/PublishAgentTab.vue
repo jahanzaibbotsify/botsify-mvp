@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {Input, Button} from "@/components/ui";
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 // Props
 interface Props {
@@ -24,10 +24,24 @@ const smsFields = ref({
   twilioSmsNumber: '',
 });
 
+// Validation state
+const errors = ref({
+  twilioAccountSid: '',
+  twilioAuthToken: '',
+  twilioSmsNumber: '',
+});
+
 const publishStore = usePublishStore();
 
 // Loading state
 const isLoading = ref(false);
+
+// Computed property to check if all required fields are filled
+const isFormValid = computed(() => {
+  return smsFields.value.twilioAccountSid.trim() !== '' &&
+         smsFields.value.twilioAuthToken.trim() !== '' &&
+         smsFields.value.twilioSmsNumber.trim() !== '';
+});
 
 // Load existing Twilio settings from store cache
 const loadTwilioSettings = () => {
@@ -38,6 +52,8 @@ const loadTwilioSettings = () => {
       twilioAuthToken: twilioConfig.auth_token || '',
       twilioSmsNumber: twilioConfig.number || '',
     };
+    // Clear errors when loading settings
+    clearErrors();
   }
 };
 
@@ -53,6 +69,52 @@ watch(() => publishStore.loadingStates.thirdPartyConfig, (newValue, oldValue) =>
 watch(() => publishStore.cache.thirdPartyConfig, () => {
   loadTwilioSettings();
 }, { immediate: true });
+
+// Validation methods
+const validateForm = () => {
+  clearErrors();
+  let isValid = true;
+
+  // Validate Twilio Account SID
+  if (!smsFields.value.twilioAccountSid.trim()) {
+    errors.value.twilioAccountSid = 'Twilio account SID is required';
+    isValid = false;
+  } else if (smsFields.value.twilioAccountSid.trim().length < 10) {
+    errors.value.twilioAccountSid = 'Account SID must be at least 10 characters';
+    isValid = false;
+  }
+
+  // Validate Twilio Auth Token
+  if (!smsFields.value.twilioAuthToken.trim()) {
+    errors.value.twilioAuthToken = 'Twilio auth token is required';
+    isValid = false;
+  } else if (smsFields.value.twilioAuthToken.trim().length < 10) {
+    errors.value.twilioAuthToken = 'Auth token must be at least 10 characters';
+    isValid = false;
+  }
+
+  // Validate Twilio SMS Number
+  if (!smsFields.value.twilioSmsNumber.trim()) {
+    errors.value.twilioSmsNumber = 'Twilio SMS number is required';
+    isValid = false;
+  } else {
+    const phoneRegex = /^\+[1-9]\d{1,14}$/;
+    if (!phoneRegex.test(smsFields.value.twilioSmsNumber.trim())) {
+      errors.value.twilioSmsNumber = 'Please enter a valid phone number with country code (e.g., +1234567890)';
+      isValid = false;
+    }
+  }
+
+  return isValid;
+};
+
+const clearErrors = () => {
+  errors.value = {
+    twilioAccountSid: '',
+    twilioAuthToken: '',
+    twilioSmsNumber: '',
+  };
+};
 
 const testBot = () => {
   isLoading.value = true;
@@ -73,9 +135,7 @@ const testBot = () => {
 };
 
 const saveSettings = () => {
-  if (!smsFields.value.twilioAccountSid || !smsFields.value.twilioAuthToken || 
-      !smsFields.value.twilioSmsNumber) {
-    console.error('All Twilio fields are required');
+  if (!validateForm()) {
     return;
   }
   emit('save-settings', smsFields.value);
@@ -109,8 +169,12 @@ defineExpose({
           type="text"
           placeholder="Enter your Twilio account SID"
           size="medium"
+          :error="errors.twilioAccountSid"
         />
-        <small class="help-text">
+        <small v-if="errors.twilioAccountSid" class="error-text">
+          {{ errors.twilioAccountSid }}
+        </small>
+        <small v-else class="help-text">
           Find this in your Twilio Console dashboard
         </small>
       </div>
@@ -123,8 +187,12 @@ defineExpose({
           type="password"
           placeholder="Enter your Twilio auth token"
           size="medium"
+          :error="errors.twilioAuthToken"
         />
-        <small class="help-text">
+        <small v-if="errors.twilioAuthToken" class="error-text">
+          {{ errors.twilioAuthToken }}
+        </small>
+        <small v-else class="help-text">
           Keep this secure - it's your authentication token
         </small>
       </div>
@@ -137,8 +205,12 @@ defineExpose({
           type="tel"
           placeholder="Enter your Twilio phone number"
           size="medium"
+          :error="errors.twilioSmsNumber"
         />
-        <small class="help-text">
+        <small v-if="errors.twilioSmsNumber" class="error-text">
+          {{ errors.twilioSmsNumber }}
+        </small>
+        <small v-else class="help-text">
           The phone number you purchased from Twilio
         </small>
       </div>
@@ -159,6 +231,7 @@ defineExpose({
         variant="primary"
         size="medium"
         :loading="isLoading"
+        :disabled="!isFormValid"
         @click="saveSettings"
       >
         {{ isLoading ? 'Saving...' : 'Save Settings' }}
@@ -181,6 +254,13 @@ defineExpose({
 .help-text {
   font-size: 12px;
   color: var(--color-text-secondary, #6b7280);
+  margin-top: 4px;
+  display: block;
+}
+
+.error-text {
+  font-size: 12px;
+  color: var(--color-error, #ef4444);
   margin-top: 4px;
   display: block;
 }

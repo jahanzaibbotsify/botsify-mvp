@@ -18,11 +18,6 @@ withDefaults(defineProps<Props>(), {
 const publishStore = usePublishStore();
 const botStore = useBotStore();
 
-// Emits
-const emit = defineEmits<{
-  'test-bot': [];
-}>();
-
 // Reactive data
 const selectedProvider = ref<'meta' | 'dialog360' | null>(null);
 const botDetails = ref<any>(null);
@@ -31,7 +26,6 @@ const showProviderSelection = ref(true);
 const isDialog360Connected = ref(false);
 const isMetaConnected = ref(false);
 const saving = ref(false);
-const testing = ref(false);
 
 // Meta Cloud integration state
 const showMetaIntegration = ref(false);
@@ -233,11 +227,6 @@ const handleSaveSettings = async () => {
   }
 };
 
-// Add these methods to the script section
-const handleTestBot = () => {
-  emit('test-bot');
-};
-
 // Expose only necessary methods for parent component
 defineExpose({
   selectedProvider: () => selectedProvider.value
@@ -415,19 +404,7 @@ defineExpose({
         <p>Please select a WhatsApp provider to continue</p>
       </div>
       <!-- Action Buttons -->
-      <div class="agent-action-buttons">
-        
-        <Button
-          variant="success"
-          size="medium"
-          :loading="testing"
-          :disabled="testing"
-          @click="handleTestBot"
-        >
-          {{ testing ? 'Testing...' : 'Test now on WhatsApp' }}
-        </Button>
-  
-        
+      <div class="agent-action-buttons" v-if="!showProviderSelection">        
         <Button
           variant="primary"
           size="medium"

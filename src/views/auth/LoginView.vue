@@ -74,10 +74,9 @@ const handleSubmit = async () => {
   authStore.clearError()
   
   const response = await authStore.login(form);
-  console.log(response)
-  
+
   if (response.user) {
-    const redirectPath = handlePostAuthRedirect()
+    const redirectPath = handlePostAuthRedirect();
     router.push(redirectPath)
   } else {
     window.$toast?.error(response?.data.error)

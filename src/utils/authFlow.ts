@@ -88,19 +88,23 @@ function checkUserSubscription(user: any): boolean {
  * @returns string - the path to redirect to
  */
 export function handlePostAuthRedirect(): string {
-  const authStore = useAuthStore()
+  const authStore = useAuthStore();
+  const user = authStore.user as any
   
-  if (!authStore.isAuthenticated || !authStore.user) {
+  if (!authStore.isAuthenticated || !user) {
     return '/auth/login'
   }
 
-  const user = authStore.user as any
-  if (!user.email_verified && !user.subs) {
+  if (user.is_appsumo || user.is_bot_admin || user.subs) {
+    return '/select-agent';
+  }
+
+  if (!user.email_verified && !user.subs && !user.is_appsumo && !user.is_bot_admin) {
     return `/auth/verify-email?email=${encodeURIComponent(user.email || '')}`
   }
 
   const hasSubscription = checkUserSubscription(user)
-  if (!hasSubscription) {
+  if (!hasSubscription && !user.is_bot_admin && !user.is_appsumo) {
     return '/choose-plan'
   }
 

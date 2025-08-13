@@ -27,9 +27,7 @@ const formData = ref({
 // User segments options
 const userSegments = [
   { value: '', label: 'Select user segment' },
-  { value: 'male', label: 'Male' },
-  { value: 'store-online', label: 'Store Online' },
-  { value: 'only-subscribe-user', label: 'Only Subscribe User' }
+  { value: 'only-subscribe-user', label: 'All users' }
 ];
 
 // Message tag options
@@ -80,7 +78,7 @@ defineExpose({
 
     <div class="form-section">
       <div class="form-group">
-        <label for="user-segment">User Segments</label>
+        <label for="user-segment">User segments</label>
         <VueSelect
           :model-value="formData.userSegment"
           @update:model-value="(value: string | string[]) => handleSelectChange('userSegment', value)"
@@ -91,7 +89,7 @@ defineExpose({
       </div>
 
       <div class="form-group">
-        <label for="message-tag">Select Message Tag</label>
+        <label for="message-tag">Select message tag</label>
         <VueSelect
           :model-value="formData.messageTag"
           @update:model-value="(value: string | string[]) => handleSelectChange('messageTag', value)"

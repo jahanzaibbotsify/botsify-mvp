@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watchEffect, onUnmounted } from 'vue'
+import Button from './Button.vue'
 
 interface Props {
   title: string
@@ -90,9 +91,14 @@ defineExpose({
           <img v-if="icon" :src="icon" width="28" height="28" alt="logo" class="modal-logo" />
           <h2>{{ props.title }}</h2>
         </div>
-        <button class="modal-close" @click="closeModal">
-          <i class="pi pi-times"></i>
-        </button>
+        <Button 
+          v-if="showCloseButton" 
+          variant="secondary"
+          size="small"
+          icon="pi pi-times"
+          icon-only
+          @click="closeModal"
+        />
       </div>
       
       <div class="modal-body">
@@ -137,12 +143,14 @@ defineExpose({
   padding: var(--space-4);
   border-bottom: 1px solid var(--color-border);
   background: linear-gradient(to right, rgba(0, 163, 255, 0.05), transparent);
+  gap: var(--space-3);
 }
 
 .modal-header-left {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  flex: 1;
 }
 
 .modal-header h2 {
@@ -150,21 +158,6 @@ defineExpose({
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--color-text-primary);
-}
-
-.modal-close {
-  background: transparent;
-  border: none;
-  padding: var(--space-1);
-  color: var(--color-text-tertiary);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: all var(--transition-normal);
-}
-
-.modal-close:hover {
-  color: var(--color-text-secondary);
-  background: var(--color-bg-tertiary);
 }
 
 .modal-body {

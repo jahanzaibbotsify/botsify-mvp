@@ -106,8 +106,10 @@ export const usePublishStore = defineStore('publish', () => {
         loadingStates.value.publishStatus = false;
         cache.value.publishStatus = null;
         cacheValid.value.publishStatus = false;
-        cache.value.botDetails = null;
-        cacheValid.value.botDetails = false;
+
+        loadingStates.value.thirdPartyConfig = false;
+        cache.value.thirdPartyConfig = null;
+        cacheValid.value.thirdPartyConfig = false;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to save Telegram settings';
@@ -134,16 +136,19 @@ export const usePublishStore = defineStore('publish', () => {
       
       if (result.success) {
         // Show success toast
-        if (window.$toast) {
-          window.$toast.success('Twilio settings saved successfully!');
-        }
+        window.$toast.success('Twilio settings saved successfully!');
+        loadingStates.value.publishStatus = false;
+        cache.value.publishStatus = null; 
+        cacheValid.value.publishStatus = false;
+
+        loadingStates.value.thirdPartyConfig = false;
+        cache.value.thirdPartyConfig = null;
+        cacheValid.value.thirdPartyConfig = false;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to save Twilio settings';
         // Show error toast
-        if (window.$toast) {
-          window.$toast.error(error.value);
-        }
+        window.$toast.error(error.value);
         return { success: false, error: error.value };
       }
     } catch (err: any) {
@@ -336,7 +341,7 @@ export const usePublishStore = defineStore('publish', () => {
     }
   };
 
-  const getSmsReport = async (page: number = 1) => {
+  const getSmsReport = async (page: number = 1, per_page: number = 20, query?: string, start_date?: string, end_date?: string) => {
     // Return cached SMS report if already loaded for the same page
     if (cacheValid.value.smsReport && cache.value.smsReport && cache.value.smsReport.page === page) {
       return { success: true, data: cache.value.smsReport.data };
@@ -351,7 +356,7 @@ export const usePublishStore = defineStore('publish', () => {
     error.value = null;
     
     try {
-      const result = await publishApi.getSmsReport(page);
+      const result = await publishApi.getSmsReport(page, per_page, query, start_date, end_date);
       
       if (result.success) {
         // Cache the SMS report with page info
@@ -400,6 +405,10 @@ export const usePublishStore = defineStore('publish', () => {
         loadingStates.value.publishStatus = false;
         cache.value.publishStatus = null;
         cacheValid.value.publishStatus = false;
+
+        loadingStates.value.botDetails = false;
+        cache.value.botDetails = null;
+        cacheValid.value.botDetails = false;
         return { success: true, data: result.data };
       } else {
         error.value = result.message || `Failed to save ${settings.type === '360_dialog' ? 'Dialog360' : 'Meta Cloud'} settings`;
@@ -777,6 +786,15 @@ export const usePublishStore = defineStore('publish', () => {
         loadingStates.value.publishStatus = false;
         cache.value.publishStatus = null;
         cacheValid.value.publishStatus = false;
+
+        loadingStates.value.facebookPages = false;
+        cache.value.facebookPages = null;
+        cacheValid.value.facebookPages = false;
+
+        loadingStates.value.instagramPages = false;
+        cache.value.instagramPages = null;
+        cacheValid.value.instagramPages = false;
+        
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to reconnect Facebook page';

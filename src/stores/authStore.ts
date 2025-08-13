@@ -18,7 +18,7 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null)
   const selectedPlan = ref<PricingPlan | null>(null)
   const selectedAgent = ref<any | null>(null)
-  const onboardingStep = ref<'signup' | 'pricing' | 'agent-selection' | 'completed'>('signup')
+  const onboardingStep = ref<'signup' | 'pricing' | 'agent-selection' | 'completed'>('signup');
 
   // Computed
   const isAuthenticated = computed(() => !!user.value)
@@ -337,9 +337,9 @@ export const useAuthStore = defineStore('auth', () => {
       'agentic-login': 1
     })
         .then(res => {
-          const responseData = res.data;
-          setAuthData(responseData.access_token, responseData.user)
-          return responseData;
+          const authUser = res.data.user;
+          setAuthData(authUser.access_token, authUser)
+          return res.data;
         }).catch(error => {
           console.log(error)
           setError(error?.response?.data?.error);

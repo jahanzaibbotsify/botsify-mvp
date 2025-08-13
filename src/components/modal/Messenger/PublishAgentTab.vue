@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from "vue";
 import { usePublishStore } from "../../../stores/publishStore";
 import { useBotStore } from "../../../stores/botStore";
 import Button from "../../../components/ui/Button.vue";
+import { APP_URL } from "@/utils/config";
 
 // Props
 interface Props {
@@ -38,9 +39,6 @@ const loadPages = async () => {
 const refreshPermissions = async () => {
   try {
     const result = await publishStore.refreshFbPagePermission();
-    if (result.success && 'data' in result && result.data?.redirect) {
-      window.location.href = result.data.redirect;
-    }
     return result;
   } catch (error) {
     console.error('Failed to refresh Facebook page permissions:', error);
@@ -52,9 +50,6 @@ const refreshPermissions = async () => {
 const removePermissions = async () => {
   try {
     const result = await publishStore.removeFbPagePermission();
-    if (result.success && 'data' in result && result.data?.redirect) {
-      window.location.href = result.data.redirect;
-    }
     return result;
   } catch (error) {
     console.error('Failed to remove Facebook page permissions:', error);
@@ -137,7 +132,7 @@ const loadFbPages = async () => {
   
   try {
     await loadPages();
-      emit('page-connection-change');
+    emit('page-connection-change');
     // The computed pages will automatically update when store data changes
   } catch (error) {
     console.error('Failed to load Facebook pages:', error);
@@ -156,13 +151,18 @@ const connectAccount = async () => {
   try {
     const result = await refreshPermissions();
     if (result.success && 'data' in result && result.data?.redirect) {
-      // Redirect to the URL provided by the API
-      // window.open(result.data.redirect, '_blank');
+      openAuthPopup(result.data.redirect, 'connection');
     } else {
       console.error('Failed to get redirect URL:', result.error);
+      if (window.$toast) {
+        window.$toast.error(result.error || 'Failed to get authentication URL');
+      }
     }
   } catch (error) {
     console.error('Failed to connect account:', error);
+    if (window.$toast) {
+      window.$toast.error('Failed to connect Facebook account');
+    }
   } finally {
     isConnectLoading.value = false;
   }
@@ -180,19 +180,25 @@ const connectionPage = async (type: string, page: any) => {
       // Clear cache and reload pages to update the status
       publishStore.clearFbPagesCache();
       await loadFbPages();
-      // Remove toast references for now
-      console.log('Page disconnected successfully!');
+      if (window.$toast) {
+        window.$toast.success('Page connected successfully!');
+      }
     } else {
-      console.error('Failed to disconnect page:', result.error);
+      console.error('Failed to connect page:', result.error);
+      if (window.$toast) {
+        window.$toast.error(result.error || 'Failed to connect page');
+      }
     }
   } catch (error) {
-    console.error('Failed to disconnect page:', error);
+    console.error('Failed to connect page:', error);
+    if (window.$toast) {
+      window.$toast.error('Failed to connect page');
+    }
   } finally {
     isConnectLoading.value = false;
     isDisconnectLoading.value = false;
   }
 };
-
 
 const openFacebookPage = (pageId: string) => {
   // Open Facebook page in new tab
@@ -204,37 +210,45 @@ const refreshFbPagePermissions = async () => {
   try {
     const result = await refreshPermissions();
     if (result.success && 'data' in result && result.data?.redirect) {
-      // Redirect to the URL provided by the API
-      window.open(result.data.redirect, '_blank');
+      openAuthPopup(result.data.redirect, 'permission refresh');
     } else {
       console.error('Failed to get redirect URL:', result.error);
+      if (window.$toast) {
+        window.$toast.error(result.error || 'Failed to get authentication URL');
+      }
     }
   } catch (error) {
     console.error('Failed to refresh page permissions:', error);
+    if (window.$toast) {
+      window.$toast.error('Failed to refresh Facebook permissions');
+    }
   } finally {
     isRefreshLoading.value = false;
   }
 };
 
-
 const removeFbPagePermissions = async () => {
   isRemoveLoading.value = true;
   try {
     const result = await removePermissions();
-    if (result.success && 'data' in result && result.data?.redirect) {
-      // Redirect to the URL provided by the API
-      window.open(result.data.redirect, '_blank');
-    } else {
-      console.error('Failed to get redirect URL:', result.error);
+    if (result.success) {
+      publishStore.clearFbPagesCache();
+      await loadFbPages();
+      if (window.$toast) {
+        window.$toast.success('Page disconnected successfully!');
+      }
     }
-    publishStore.clearFbPagesCache();
-    await loadFbPages();
+    return result;
   } catch (error) {
     console.error('Failed to refresh page permissions:', error);
+    if (window.$toast) {
+      window.$toast.error('Failed to remove Facebook permissions');
+    }
   } finally {
     isRemoveLoading.value = false;
   }
 };
+
 // Get initials from page name
 const getInitials = (name: string) => {
   return name
@@ -244,6 +258,66 @@ const getInitials = (name: string) => {
     .toUpperCase()
     .slice(0, 2);
 };
+
+// Utility function to handle popup windows for authentication
+const openAuthPopup = (url: string, action: string) => {
+  const popup = window.open(
+    url,
+    'facebook_auth',
+    'width=600,height=700,scrollbars=yes,resizable=yes'
+  );
+  
+  if (!popup) {
+    if (window.$toast) {
+      window.$toast.error('Popup blocked! Please allow popups for this site.');
+    }
+    return null;
+  }
+  
+  const messageHandler = (event: MessageEvent) => {
+    if (event.origin !== window.location.origin) {
+      return;
+    }
+    
+    if (event.data.type === 'FB_CONNECT_SUCCESS') {
+      popup.close();
+      window.removeEventListener('message', messageHandler);
+      loadFbPages();
+      window.$toast?.success(`Facebook ${action} completed successfully!`);
+    } else if (event.data.type === 'FACEBOOK_AUTH_ERROR') {
+      popup.close();
+      window.removeEventListener('message', messageHandler);
+      window.$toast?.error(event.data.message || `Failed to ${action} Facebook`);
+    }
+  };
+  
+  window.addEventListener('message', messageHandler);
+  
+  const checkClosed = setInterval(() => {
+    try {
+      // ✅ Check if popup navigated back to APP_URL
+      if (popup.location.origin === APP_URL) {
+        popup.close();
+        clearInterval(checkClosed);
+        window.removeEventListener('message', messageHandler);
+        loadFbPages();
+        window.$toast?.success(`Facebook ${action} completed successfully!`);
+      }
+    } catch {
+      // Ignore cross-origin access errors until it comes back to our domain
+    }
+
+    // ✅ Also check if manually closed
+    if (popup.closed) {
+      clearInterval(checkClosed);
+      window.removeEventListener('message', messageHandler);
+      loadFbPages();
+    }
+  }, 1000);
+  
+  return popup;
+};
+
 
 // Load data when component mounts
 onMounted(() => {
@@ -642,4 +716,4 @@ defineExpose({
     justify-content: flex-end;
   }
 }
-</style> 
+</style>

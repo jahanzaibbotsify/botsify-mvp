@@ -8,7 +8,6 @@ import { handleApiError } from '@/utils/errorHandler';
 
 export const useOpenAIStore = defineStore('openai', () => {
   // Try to get API key from environment variables first, then fallback to localStorage
-  const authToken = getInitialToken();
   // Reactive state - no OpenAI client here to avoid private member issues
   const error = ref<string | null>(null);
   const rateLimited = ref(false);
@@ -129,7 +128,7 @@ export const useOpenAIStore = defineStore('openai', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}` 
+          'Authorization': `Bearer ${getInitialToken()}` 
         },
         body: JSON.stringify(requestData)
       });
@@ -294,7 +293,7 @@ If unsure about structure or limits, ask the user in the ---CHAT_RESPONSE--- sec
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
+            'Authorization': `Bearer ${getInitialToken()}`
           },
           body: JSON.stringify({
             apikey : getCurrentApiKey(),
