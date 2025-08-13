@@ -103,9 +103,9 @@ const selectedTemplate = ref<any>(null);
 // User segments
 const userSegments = [
   { value: '', label: 'Select user segment' },
-  { value: 'subscribed', label: 'Subscribed Users' },
-  { value: 'upload', label: 'Upload User' },
-  { value: 'single', label: 'Single User' }
+  { value: 'subscribed', label: 'All users' },
+  { value: 'upload', label: 'Upload users' },
+  { value: 'single', label: 'Single user' }
 ];
 
 // Computed properties
@@ -226,7 +226,6 @@ const handleTemplateChange = () => {
 
 const setTemplateVariable = () => {
   if (!selectedTemplate.value) return;
-
   try {
     // Reset template data
     templateData.value = {
@@ -284,7 +283,6 @@ const setTemplateVariable = () => {
   // Set template name and category
   templateData.value.name = currTemplate.template_name || currTemplate.name || '';
   templateData.value.category = currTemplate.category || 'MARKETING';
-  
   if (currTemplate.category === 'AUTHENTICATION') {
     // Parse and assign params for AUTHENTICATION category
     templateData.value.category = 'AUTHENTICATION';
@@ -350,7 +348,6 @@ const setTemplateVariable = () => {
   
     templateData.value.variables.body = newBodyVar;
     templateData.value.bodyIncludes.push('buttons');
-    
     // Get buttons from components if available
     if (currTemplate.components && currTemplate.components[1] && currTemplate.components[1].buttons) {
       templateData.value.buttons = currTemplate.components[1].buttons;
@@ -443,10 +440,9 @@ const setTemplateVariable = () => {
         }
       });
     } 
+
     if (templateDataFromData && templateDataFromData.components) {
       // Use data field if available
-      console.log('Processing template with data:', templateDataFromData);
-      
       templateDataFromData.components.forEach((component: any) => {
         if (component.type === 'HEADER') {
           templateData.value.bodyIncludes.push('header');
@@ -516,7 +512,6 @@ const setTemplateVariable = () => {
         if (component.type === 'BUTTONS') {
           templateData.value.bodyIncludes.push('buttons');
           templateData.value.buttons = component.buttons || [];
-          
           // Check for button variables in URLs
           component.buttons.forEach((btn: any) => {
             if (btn.type === 'URL' && btn.url) {

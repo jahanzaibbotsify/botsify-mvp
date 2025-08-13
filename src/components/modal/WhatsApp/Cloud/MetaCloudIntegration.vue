@@ -53,6 +53,7 @@
         :on-complete="completeIntegration"
         :on-prev="prevStep"
         :webhook-url="webhookUrl"
+        :verify-token="botStore.botId"
       />
     </div>
   </div>
@@ -92,7 +93,7 @@ const formData = ref({
 
 // Computed webhook URL
 const webhookUrl = computed(() => {
-  return `${window.location.origin}/api/webhook/whatsapp/${botStore.botId}`;
+  return `https://webhook.osam.one/whatsapp/webhook?bot_id=${botStore.botId}`;
 });
 
 // Navigation methods

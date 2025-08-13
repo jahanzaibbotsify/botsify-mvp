@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, provide } from "vue";
+import { ref, provide, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
 import { Button, Input } from "@/components/ui";
@@ -29,7 +29,23 @@ const telegramForm = ref({
   telegramChatbotUrl: ''
 });
 
+// Validation state
+const errors = ref({
+  accessToken: '',
+  botName: '',
+  telegramNumber: '',
+  telegramChatbotUrl: ''
+});
+
 const { currentTab, computedTabs, handleTabChange } = useTabManagement(tabs, 'publish');
+
+// Computed property to check if all required fields are filled
+const isFormValid = computed(() => {
+  return telegramForm.value.accessToken.trim() !== '' &&
+         telegramForm.value.botName.trim() !== '' &&
+         telegramForm.value.telegramNumber.trim() !== '' &&
+         telegramForm.value.telegramChatbotUrl.trim() !== '';
+});
 
 // Load existing Telegram settings
 const loadTelegramSettings = async () => {
@@ -55,6 +71,8 @@ const loadTelegramSettings = async () => {
 const openModal = () => {
   modalRef.value?.openModal();
   loadTelegramSettings();
+  // Clear errors when opening modal
+  clearErrors();
 };
 
 const closeModal = () => {
@@ -71,10 +89,79 @@ const onTabChange = (tabId: string) => {
   handleTabChange(tabId);
 };
 
+// Validation methods
+const validateForm = () => {
+  clearErrors();
+  let isValid = true;
+
+  // Validate access token
+  if (!telegramForm.value.accessToken.trim()) {
+    errors.value.accessToken = 'Access token is required';
+    isValid = false;
+  } else if (telegramForm.value.accessToken.length < 10) {
+    errors.value.accessToken = 'Access token must be at least 10 characters';
+    isValid = false;
+  }
+
+  // Validate bot name
+  if (!telegramForm.value.botName.trim()) {
+    errors.value.botName = 'Agent name is required';
+    isValid = false;
+  } else if (telegramForm.value.botName.length < 2) {
+    errors.value.botName = 'Agent name must be at least 2 characters';
+    isValid = false;
+  }
+
+  // Validate telegram number (required)
+  if (!telegramForm.value.telegramNumber.trim()) {
+    errors.value.telegramNumber = 'Telegram number is required';
+    isValid = false;
+  } else {
+    const phoneRegex = /^\+[1-9]\d{1,14}$/;
+    if (!phoneRegex.test(telegramForm.value.telegramNumber.trim())) {
+      errors.value.telegramNumber = 'Please enter a valid phone number with country code (e.g., +1234567890)';
+      isValid = false;
+    }
+  }
+
+  // Validate chatbot URL (required)
+  if (!telegramForm.value.telegramChatbotUrl.trim()) {
+    errors.value.telegramChatbotUrl = 'Telegram agent URL is required';
+    isValid = false;
+  } else {
+    try {
+      const url = new URL(telegramForm.value.telegramChatbotUrl.trim());
+      if (!url.protocol.startsWith('http')) {
+        errors.value.telegramChatbotUrl = 'URL must start with http:// or https://';
+        isValid = false;
+      } else if (!url.hostname.includes('t.me')) {
+        errors.value.telegramChatbotUrl = 'URL must be a valid Telegram URL (e.g., https://t.me/username)';
+        isValid = false;
+      } else if (!url.pathname || url.pathname === '/') {
+        errors.value.telegramChatbotUrl = 'URL must include a username (e.g., https://t.me/username)';
+        isValid = false;
+      }
+    } catch {
+      errors.value.telegramChatbotUrl = 'Please enter a valid URL';
+      isValid = false;
+    }
+  }
+
+  return isValid;
+};
+
+const clearErrors = () => {
+  errors.value = {
+    accessToken: '',
+    botName: '',
+    telegramNumber: '',
+    telegramChatbotUrl: ''
+  };
+};
+
 // Methods
 const handleSaveTelegramSettings = async () => {
-  if (!telegramForm.value.accessToken || !telegramForm.value.botName) {
-    console.error('Access Token and Bot Name are required');
+  if (!validateForm()) {
     return;
   }
 
@@ -84,6 +171,7 @@ const handleSaveTelegramSettings = async () => {
     
     if (result.success) {
       console.log('Telegram settings saved successfully');
+      clearErrors();
       // You can add a toast notification here
       if (window.$toast) {
         window.$toast.success('Telegram settings saved successfully!');
@@ -146,6 +234,7 @@ defineExpose({ openModal, closeModal });
               type="text"
               placeholder="Enter your Telegram bot access token"
               size="medium"
+              :error="errors.accessToken"
             />
             <small class="help-text">
               Get this from @BotFather on Telegram
@@ -160,6 +249,7 @@ defineExpose({ openModal, closeModal });
               type="text"
               placeholder="Enter your agent name"
               size="medium"
+              :error="errors.botName"
             />
           </div>
           
@@ -171,6 +261,7 @@ defineExpose({ openModal, closeModal });
               type="tel"
               placeholder="Enter your Telegram phone number"
               size="medium"
+              :error="errors.telegramNumber"
             />
             <small class="help-text">
               Include country code (e.g., +1234567890)
@@ -185,6 +276,7 @@ defineExpose({ openModal, closeModal });
               type="url"
               placeholder="https://t.me/your_agent_username"
               size="medium"
+              :error="errors.telegramChatbotUrl"
             />
             <small class="help-text">
               The URL where users can access your agent
@@ -199,6 +291,7 @@ defineExpose({ openModal, closeModal });
           variant="primary"
           size="medium"
           :loading="isLoading || publishStore.loadingStates.thirdPartyConfig"
+          :disabled="!isFormValid"
           @click="handleSaveTelegramSettings"
         >
           {{ (isLoading || publishStore.loadingStates.thirdPartyConfig) ? 'Saving...' : 'Save' }}

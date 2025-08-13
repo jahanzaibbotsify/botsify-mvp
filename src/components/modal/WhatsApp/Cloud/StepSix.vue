@@ -142,18 +142,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed } from 'vue';
 import { Button } from '@/components/ui';
 
 interface Props {
   onComplete: () => void;
   onPrev: () => void;
   webhookUrl: string;
+  verifyToken: string;
 }
 
 const props = defineProps<Props>();
 
-const verifyToken = ref('your-verify-token'); // This should come from props or store
+const verifyToken = computed(() => {
+  return props.verifyToken;
+});
 
 const copyToClipboard = async (text: string) => {
   try {
