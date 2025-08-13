@@ -220,6 +220,7 @@ export const useChatStore = defineStore('chat', () => {
       if (activeAiPromptVersion.value && 
         (!activeAiPromptVersion.value?.version_id || activeAiPromptVersion.value?.version_id === 0)
       ) {
+        console.log(activeAiPromptVersion.value, "activeAiPromptVersion.value")
           activeAiPromptVersion.value.version_id = response.data.version_id;
       }
        
