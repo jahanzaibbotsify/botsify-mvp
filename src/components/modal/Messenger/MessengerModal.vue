@@ -134,7 +134,7 @@ defineExpose({ openModal, closeModal });
 
       <!-- Comment Auto Responder Tab -->
       <CommentAutoResponderTab 
-        v-show="activeTab === 'comment-auto-responder' && isConfigured"
+        v-if="activeTab === 'comment-auto-responder' && isConfigured"
         ref="commentAutoResponderTabRef"
         :is-loading="isLoading"
         @save-settings="handleSaveAutoResponder"

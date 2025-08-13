@@ -4,7 +4,7 @@ import ChatMessage from './ChatMessage.vue'
 import MessageSkeleton from './MessageSkeleton.vue'
 import ImageModal from './ImageModal.vue'
 import type { Message } from '@/types'
-import { formatTime } from '@/utils'
+import { formatDate } from '@/utils'
 
 const props = defineProps<{
   messages: Message[]
@@ -59,7 +59,7 @@ const groupedMessages = computed(() => {
     }
     
     // Get formatted date for this message
-    const messageDate = formatTime(message.timestamp)
+    const messageDate = formatDate(message.timestamp)
     
     if (messageDate !== currentDate) {
       if (currentGroup.length > 0) {

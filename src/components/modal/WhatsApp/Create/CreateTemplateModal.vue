@@ -79,6 +79,24 @@ const openModalWithData = (templateData: any) => {
       }
     }
     
+    if (store.template.category === 'AUTHENTICATION') {
+      // Auto-fill authentication template
+      store.template.bodyIncludes = ['body', 'buttons'];
+      store.block.text = '{{1}} is your verification code. For security do not share this code.';
+      store.template.footer_text = 'This code will expire in 1 minutes.';
+      store.template.button_type = 'otp';
+      store.template.variables.body = [{ key: '{{1}}', value: '' }];
+      store.template.type = 'media'
+      store.block.buttons = [{
+        type: 'copy_code',
+        text: '',
+        value: '',
+        title: '',
+        url: '',
+        response: ''
+      }];
+    }
+
     // Check for variables after populating data
     if (templateData.template.header_text) {
       store.checkForVariables('header');

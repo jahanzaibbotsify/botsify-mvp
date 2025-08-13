@@ -77,13 +77,13 @@
                     <label class="field-label">Temporary Access Token</label>
                     <div class="token-display">
                       <span class="token-text">EAABwzLixnjYBO...</span>
-                      <Button 
+                      <!-- <Button 
                         variant="secondary"
                         size="small"
                         @click="copyToken"
                       >
                         Copy
-                      </Button>
+                      </Button> -->
                     </div>
                   </div>
                 </div>
@@ -126,10 +126,10 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const copyToken = () => {
-  // This would copy the actual token
-  window.$toast?.success('Token copied to clipboard');
-};
+// const copyToken = () => {
+//   // This would copy the actual token
+//   window.$toast?.success('Token copied to clipboard');
+// };
 
 const nextStep = () => {
   props.onNext();

@@ -187,23 +187,11 @@ const slidesMediaCache = ref<{ [key: string]: string }>({});
 const headerText = computed(() => {
   let result = props.template.header_text || '';
   const variable = props.template.variables?.header;
-  
-  console.log('MessagePreview - headerText computed:', {
-    originalText: result,
-    headerVar: variable,
-    templateHeaderText: props.template.header_text
-  });
-  
+
   if (variable && variable.value !== '') {
     // Replace the variable placeholder with the actual value
-    const beforeReplace = result;
+    // const beforeReplace = result;
     result = result.replace(variable.key, variable.value);
-    console.log('MessagePreview - replaced header variable:', {
-      key: variable.key,
-      value: variable.value,
-      before: beforeReplace,
-      after: result
-    });
   }
   
   return result;
@@ -226,15 +214,6 @@ const bodyText = computed(() => {
 
 const mediaSrc = computed(() => {
   const link = props.block?.attachment_link || props.template.attachment_link;
-  
-  console.log('MessagePreview - mediaSrc computed:', {
-    blockAttachmentLink: props.block?.attachment_link,
-    templateAttachmentLink: props.template.attachment_link,
-    finalLink: link,
-    templateType: props.template.type,
-    templateHeader: props.template.header,
-    bodyIncludes: props.template.bodyIncludes
-  });
   
   // Check if we have a cached version
   if (mediaCache.value[link]) {
@@ -270,43 +249,24 @@ const showButtons = computed(() => {
 
 const buttons = computed(() => {
   const buttons = props.block?.buttons || props.template.buttons || [];
-  
-  console.log('MessagePreview - buttons computed:', {
-    buttons: buttons,
-    blockButtons: props.block?.buttons,
-    templateButtons: props.template.buttons,
-    templateVariables: props.template.variables,
-    buttonUrlVar: props.template.variables?.buttonUrl,
-    buttonTextVar: props.template.variables?.buttonText
-  });
-  
   // Replace variables in button URLs and text
-  return buttons.map((button: any) => {
+  return buttons.map((button: any, index: number) => {
     let updatedButton = { ...button };
-    
     // Replace variables in button URL
+    if ((!button.text && !button.title) && props.template?.buttons?.[index]) {
+      updatedButton.text = props.template.buttons[index]?.text || '';
+      updatedButton.title = props.template.buttons[index]?.title || '';
+    }
+
     if (button.url) {
       let url = button.url;
       const buttonUrlVar = props.template.variables?.buttonUrl;
-      
-      console.log('MessagePreview - processing button URL:', {
-        originalUrl: button.url,
-        buttonUrlVar: buttonUrlVar,
-        buttonType: button.type
-      });
-      
       if (buttonUrlVar && buttonUrlVar.value !== '') {
         url = url.replace(buttonUrlVar.key, buttonUrlVar.value);
-        console.log('MessagePreview - replaced URL:', {
-          originalUrl: button.url,
-          newUrl: url,
-          key: buttonUrlVar.key,
-          value: buttonUrlVar.value
-        });
       }
       updatedButton.url = url;
     }
-    
+
     // Replace variables in button text
     if (button.text || button.title) {
       let text = button.text || button.title || '';

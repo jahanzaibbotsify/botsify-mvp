@@ -244,7 +244,7 @@ const getPageNumbers = computed(() => {
             <td>{{ user.country }}</td>
             <td>{{ user.phone_number || 'N/A' }}</td>
             <td>
-              <span class="status-badge" :class="user.status.toLowerCase()">
+              <span class="ustatus-badge" :class="user.status.toLowerCase()">
                 {{ user.status }}
               </span>
             </td>
@@ -631,7 +631,7 @@ const getPageNumbers = computed(() => {
   color: var(--color-error);
 }
 
-.status-badge {
+.ustatus-badge {
   padding: 6px 12px;
   border-radius: 12px;
   font-size: 13px;
@@ -640,12 +640,12 @@ const getPageNumbers = computed(() => {
   white-space: nowrap;
 }
 
-.status-badge.active {
+.ustatus-badge.active {
   background-color: #dcfce7;
   color: #166534;
 }
 
-.status-badge.inactive {
+.ustatus-badge.inactive {
   background-color: #fef2f2;
   color: #dc2626;
 }

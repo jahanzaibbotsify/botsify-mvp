@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
-import { Table, TableHead, TableBody, TableHeader, TableCell, Badge } from "@/components/ui";
+import { Table, TableHead, TableBody, TableHeader, TableCell, Badge,  Input, Button, DateRange } from "@/components/ui";
 import { formatTime } from "@/utils";
-
 
 defineEmits<{
   'page-change': [page: number];
@@ -12,11 +11,29 @@ defineEmits<{
 const publishStore = usePublishStore();
 
 // Reactive data
+const searchQuery = ref('');
+
+// Set default date range: end date as today, start date as 1 month before
+const getDefaultDateRange = () => {
+  const today = new Date();
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(today.getMonth() - 1);
+  
+  return {
+    start: oneMonthAgo.toISOString().split('T')[0],
+    end: today.toISOString().split('T')[0]
+  };
+};
+
+const dateRange = ref(getDefaultDateRange());
+
+// Reactive data
 const reportData = ref<any>(null);
 const currentPage = ref(1);
 const totalPages = ref(1);
 const totalItems = ref(0);
 const isLoading = ref(false);
+
 
 // Stats cards data
 const statsCards = ref([
@@ -47,7 +64,7 @@ const statsCards = ref([
 const fetchSmsReport = async (page: number = 1) => {
   isLoading.value = true;
   try {
-    const result = await publishStore.getSmsReport(page);
+    const result = await publishStore.getSmsReport(page, 20, searchQuery.value, dateRange.value.start, dateRange.value.end);
     if (result.success && result.data) {
       reportData.value = result.data;
       currentPage.value = result.data.messages?.current_page || 1;
@@ -112,6 +129,34 @@ onMounted(() => {
     <h3>SMS report</h3>
     <p class="subtitle">View SMS delivery analytics and reports</p>
     
+        <!-- Filters -->
+    <div class="filters-section">
+      <div class="filter-group">
+        <Input 
+          v-model="searchQuery"
+          searchable
+          icon-position="left"
+          placeholder="Search by template name or number..."
+        />
+      </div>
+      
+      <div class="filter-group">
+        <DateRange
+          v-model="dateRange"
+          label="Date Range"
+        />
+      </div>
+      
+      <div class="filter-group">
+        <Button
+          variant="primary"
+          size="medium"
+          :loading="publishStore.isLoading"
+        >
+          {{ publishStore.isLoading ? 'Filtering...' : 'Apply filters' }}
+        </Button>
+      </div>
+    </div>
     <!-- Stats Cards -->
     <div class="stats-section">
       <div 
@@ -211,6 +256,22 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-secondary, #6b7280);
+}
+
+
+.filters-section {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  align-items: end;
+}
+
+.filter-group {
+  flex: 1;
+}
+
+.filter-group:last-child {
+  flex: 0 0 auto;
 }
 
 /* Stats Cards */
