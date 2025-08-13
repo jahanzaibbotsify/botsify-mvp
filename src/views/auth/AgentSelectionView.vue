@@ -731,7 +731,6 @@ onUnmounted(() => {
                     <h3 class="agent-title" @click="selectBot(agent)" style="cursor:pointer">
                       {{ agent.name || 'Unnamed Agent' }}
                     </h3>
-                    <!-- Status Badge -->
                   </div>
                 <!-- Published Channels Badges -->
                 <div v-if="hasAnyPublish(agent.publish_status)" class="published-badges">
@@ -741,6 +740,10 @@ onUnmounted(() => {
                   </span>
                 </div>
                   <p class="agent-users">{{ botUsers[agent.id] !== undefined ? botUsers[agent.id] : 0 }} users</p>
+                </div>
+                
+                <!-- Status Badge - Moved to bottom -->
+                <div class="status-badge-container">
                   <div class="status-badge" :class="{ 'active': agent.active === 1, 'inactive': agent.active === 0 || !agent.active }">
                     <i class="pi" :class="agent.active === 1 ? 'pi-check-circle' : 'pi-times-circle'"></i>
                     <span>{{ agent.active === 1 ? 'Active' : 'Inactive' }}</span>
@@ -1365,6 +1368,8 @@ onUnmounted(() => {
   position: relative;
   padding: var(--space-5);
   min-height: 180px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Agent Info Column */
@@ -1375,6 +1380,13 @@ onUnmounted(() => {
   text-align: left;
   gap: var(--space-3);
   width: 100%;
+  flex: 1;
+}
+
+/* Status Badge Container - Positioned at bottom */
+.status-badge-container {
+  margin-top: auto;
+  padding-top: var(--space-3);
 }
 
 /* Agent Avatar Section */
