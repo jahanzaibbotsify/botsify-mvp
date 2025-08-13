@@ -204,10 +204,6 @@ const handleBackToMain = () => {
   }
 };
 
-const goBackToAgents = () => {
-  // This function is no longer needed as confirmation is removed
-};
-
 // Listen for deploy request from ChatHeader
 onMounted(() => {
   // Listen for status updates from child modals
