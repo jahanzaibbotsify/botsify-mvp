@@ -10,7 +10,8 @@ const router = useRouter()
 
 const selectedPlanId = ref<string | null>(null)
 const billingCycle = ref<'monthly' | 'annually'>('monthly')
-const isLoggingOut = ref(false)
+const isLoggingOut = ref(false);
+const loading = ref(false);
 
 // Show all plans with dynamic pricing
 const allPlans = computed(() => {
@@ -36,13 +37,15 @@ const allPlans = computed(() => {
  */
 const handlePlanSelect = async (plan: PricingPlan) => {
   selectedPlanId.value = plan.id;
+  loading.value = true;
   const priceId = plan.prices ? plan.prices[billingCycle.value] : null
 
   const response = await axiosInstance.get(`v1/stripe/checkout-session/${priceId}`);
 
   if (response.data.redirect) {
-    window.open(response.data.redirect)
+    window.open(response.data.redirect);
   }
+  loading.value = false
 }
 
 const bookDemo = () => {
@@ -185,17 +188,17 @@ const handleLogout = async () => {
            <div class="plan-action">
             <button
               class="plan-button"
-              :disabled="authStore.isLoading"
+              :disabled="loading"
+              @click="plan.prices ? handlePlanSelect(plan) : bookDemo()"
             >
-              <span v-if="authStore.isLoading && selectedPlanId === plan.id" class="loading-spinner"></span>
+              <span v-if="loading && selectedPlanId === plan.id" class="loading-spinner"></span>
               <template v-else>
-                <div v-if="plan.prices"
-                     @click="handlePlanSelect(plan)">
+                <div v-if="plan.prices">
                    <span class="button-text">
                     Subscribe
                   </span>
                 </div>
-                <div v-else @click="bookDemo">
+                <div v-else>
                   <span class="button-text">
                     Book A Demo
                   </span>
