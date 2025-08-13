@@ -212,6 +212,11 @@ router.beforeEach(async (to, from, next) => {
       return next()
     }
 
+    // Prevent infinite redirects by checking if we're already going to the redirect path
+    if (from.path === to.path) {
+      return next()
+    }
+
     const authFlow = checkAuthFlow();
     
     // Prevent infinite redirects by checking if we're already going to the redirect path
@@ -219,12 +224,17 @@ router.beforeEach(async (to, from, next) => {
     if (
       authFlow.shouldRedirect && 
       authFlow.redirectPath !== to.path &&
-      !(to.name === 'subscription-success' && authFlow.redirectPath === '/choose-plan')
+      !(to.name === 'subscription-success' && authFlow.redirectPath === '/choose-plan') &&
+      !(to.name === 'choose-plan' && authFlow.redirectPath === '/choose-plan') && // Prevent redirecting to same page
+      !(to.path === '/choose-plan' && authFlow.redirectPath === '/choose-plan') // Additional check for path
     ) {
+      console.log('Redirecting to:', authFlow.redirectPath, 'from:', from.path, 'to:', to.path, 'reason:', authFlow.reason)
       return next({ path: authFlow.redirectPath, replace: true })
     }
 
-    if (to.path !== '/select-agent') {
+    // Avoid bot details fetch on routes where API key is not required
+    // Running this on /choose-plan causes a redirect to /select-agent when no API key is present
+    if (to.path !== '/select-agent' && to.path !== '/choose-plan') {
       getBotDetails();
     }
 
