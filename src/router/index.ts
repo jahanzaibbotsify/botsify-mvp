@@ -4,6 +4,7 @@ import {axiosInstance} from "@/utils/axiosInstance.ts";
 import {useWhitelabelStore} from "@/stores/whitelabelStore.ts";
 import {useBotStore} from "@/stores/botStore.ts";
 import {useRoleStore} from "@/stores/roleStore.ts";
+import {useAuthStore} from "@/stores/authStore.ts";
 const routes: RouteRecordRaw[] = [
   // Auth Routes (with AuthLayout)
   {
@@ -60,7 +61,7 @@ const routes: RouteRecordRaw[] = [
     path: '/choose-plan',
     name: 'choose-plan',
     component: () => import('../views/auth/PricingView.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: false }
   },
   {
     path: '/subscription/success/:planId',
@@ -80,7 +81,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/AgentLandingView.vue'),
     meta: { requiresAuth: false }
   },
-  // Main App Routes  
+  // Main App Routes
   {
     path: '',
     component: () => import('../layouts/ChatLayout.vue'),
@@ -204,32 +205,39 @@ async function getBotDetails() {
 // @ts-ignore Navigation guards
 router.beforeEach(async (to, from, next) => {
   try {
-    const { checkAuthFlow } = await import('@/utils/authFlow')
-
+    const authStore = useAuthStore();
+    const user = authStore.user as any;
     const requiresAuth = to.meta?.requiresAuth;
 
+    // If route doesn't require auth, allow navigation
     if (!requiresAuth) {
-      return next()
+      return next();
+    }
+
+    // Check if user is authenticated
+    if (!authStore.isAuthenticated || !authStore.user) {
+      return next({ path: '/auth/login' });
+    }
+
+    // Check email verification and subscription status
+    if (!user.email_verified && !user.subs) {
+      return next({ path: `/auth/verify-email?email=${encodeURIComponent(user.email || '')}` });
+    }
+
+    // Allow access to subscription-related routes even without subscription
+    if (to.path.startsWith('/subscription/')) {
+      return next();
+    }
+
+    // If email is verified but no subscription, redirect to plan selection
+    // Only redirect if we're not already going to choose-plan to prevent infinite loops
+    if (user.email_verified && !user.subs && to.path !== '/choose-plan' && !to.path.startsWith('/subscription/')) {
+      return next({ path: '/choose-plan' });
     }
 
     // Prevent infinite redirects by checking if we're already going to the redirect path
     if (from.path === to.path) {
-      return next()
-    }
-
-    const authFlow = checkAuthFlow();
-    
-    // Prevent infinite redirects by checking if we're already going to the redirect path
-    // Also prevent redirecting from subscription-success to choose-plan
-    if (
-      authFlow.shouldRedirect && 
-      authFlow.redirectPath !== to.path &&
-      !(to.name === 'subscription-success' && authFlow.redirectPath === '/choose-plan') &&
-      !(to.name === 'choose-plan' && authFlow.redirectPath === '/choose-plan') && // Prevent redirecting to same page
-      !(to.path === '/choose-plan' && authFlow.redirectPath === '/choose-plan') // Additional check for path
-    ) {
-      console.log('Redirecting to:', authFlow.redirectPath, 'from:', from.path, 'to:', to.path, 'reason:', authFlow.reason)
-      return next({ path: authFlow.redirectPath, replace: true })
+      return next();
     }
 
     // Avoid bot details fetch on routes where API key is not required
@@ -238,10 +246,11 @@ router.beforeEach(async (to, from, next) => {
       getBotDetails();
     }
 
-    next()
+    // Allow navigation to proceed
+    return next();
   } catch (error) {
-    console.error('Error in navigation guard:', error)
-    next()
+    console.error('Error in navigation guard:', error);
+    return next();
   }
 })
 
