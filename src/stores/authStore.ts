@@ -19,8 +19,6 @@ export const useAuthStore = defineStore('auth', () => {
   const selectedPlan = ref<PricingPlan | null>(null)
   const selectedAgent = ref<any | null>(null)
   const onboardingStep = ref<'signup' | 'pricing' | 'agent-selection' | 'completed'>('signup');
-  const isBotAdmin = ref(false);
-  const isAppSumoUser = ref(false);
 
   // Computed
   const isAuthenticated = computed(() => !!user.value)
@@ -326,11 +324,9 @@ export const useAuthStore = defineStore('auth', () => {
       'agentic-login': 1
     })
         .then(res => {
-          const responseData = res.data;
-          isAppSumoUser.value = responseData.appsumoUser
-          isBotAdmin.value = responseData.botAdmin
-          setAuthData(responseData.access_token, responseData.user)
-          return responseData;
+          const authUser = res.data.user;
+          setAuthData(authUser.access_token, authUser)
+          return res.data;
         }).catch(error => {
           console.log(error)
           setError(error?.response?.data?.error);
@@ -436,8 +432,6 @@ export const useAuthStore = defineStore('auth', () => {
     pricingPlans,
     agentCategories,
     agents,
-    isBotAdmin,
-    isAppSumoUser,
 
     // Computed
     isAuthenticated,
