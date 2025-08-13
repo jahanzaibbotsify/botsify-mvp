@@ -9,10 +9,6 @@ import MessageInput from '@/components/chat/MessageInput.vue';
 import TypingIndicator from '@/components/chat/TypingIndicator.vue';
 import SystemMessageSender from '@/components/chat/SystemMessageSender.vue';
 import ChatHeader from '@/components/chat/ChatHeader.vue';
-import {axiosInstance} from "@/utils/axiosInstance.ts";
-import {getCurrentApiKey} from "@/utils/apiKeyUtils.ts";
-import {useWhitelabelStore} from "@/stores/whitelabelStore.ts";
-import {useBotStore} from "@/stores/botStore.ts";
 
 const router = useRouter();
 const roleStore = useRoleStore();
@@ -91,58 +87,8 @@ function sendSuggestion(suggestion: string) {
   chatStore.addMessage(chatId.value, suggestion, 'user');
 }
 
-function getBotDetails() {
-  const apikey =  route.params.id || getCurrentApiKey();
-  if (!apikey) {
-    router.push('/select-agent')
-  } else {
-    // @ts-ignore
-    useBotStore().setApiKey(apikey);
-  }
-  return axiosInstance.get(`/v1/bot/get-data?apikey=${apikey}`)
-      .then(response => {
-
-        const roleStore = useRoleStore();
-        const whitelabelStore = useWhitelabelStore();
-
-        // Set user role and permissions
-        if (response.data.data.user) {
-          roleStore.setCurrentUser(response.data.data.user);
-
-          // Set whitelabel data if user is a whitelabel client
-          if (response.data.data.user.whitelabel) {
-            whitelabelStore.setWhitelabelData(response.data.data.user);
-            // Set favicon if present
-            if (response.data.data.user.whitelabel && response.data.data.user.whitelabel.favicon) {
-              let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-              if (!link) {
-                link = document.createElement('link');
-                link.rel = 'icon';
-                document.head.appendChild(link);
-              }
-              link.href = response.data.data.user.whitelabel.favicon;
-            }
-          }
-        }
-        const botStore = useBotStore();
-        botStore.setApiKeyConfirmed(true);
-        botStore.setBotId(response.data.data.bot.id);
-        botStore.setUser(response.data.data.user);
-        botStore.setBotName(response.data.data.bot.name);
-
-        return response.data.data;
-      })
-      .catch(error => {
-        console.error('API request error:', error);
-        router.push('/select-agent');
-        useBotStore().clearApiKey()
-        return false;
-      });
-}
-
 
 onMounted(async () => {
-  await getBotDetails();
   // Prevent live chat agents from accessing this page
   if (roleStore.isLiveChatAgent) {
     console.log('🔄 Live chat agent redirected from ChatView to conversation page');

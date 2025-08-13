@@ -83,15 +83,16 @@ const navigationButtons = computed(() => {
 
 // Help links for the help dropdown
 const navLinks = computed(() => {
+  // @ts-ignore
   const baseUrl = getWebUrl();
   if (whitelabelStore.isWhitelabelClient) {
     // For whitelabel clients, show only Legacy Platform and Support
     return [
-      {
-        name: 'Legacy Platform',
-        url: `${baseUrl}/bot`,
-        icon: 'pi pi-check-circle'
-      },
+      // {
+      //   name: 'Legacy Platform',
+      //   url: `${baseUrl}/bot`,
+      //   icon: 'pi pi-check-circle'
+      // },
       {
         name: 'Support',
         action: 'showZen',
@@ -102,11 +103,11 @@ const navLinks = computed(() => {
 
   // For regular Botsify clients, show all links
   return [
-    {
-      name: 'Legacy Platform',
-      url: `${baseUrl}/bot`,
-      icon: 'pi pi-history'
-    },
+    // {
+    //   name: 'Legacy Platform',
+    //   url: `${baseUrl}/bot`,
+    //   icon: 'pi pi-history'
+    // },
     {
       name: 'Tutorials',
       url: 'https://www.youtube.com/@Botsify',
