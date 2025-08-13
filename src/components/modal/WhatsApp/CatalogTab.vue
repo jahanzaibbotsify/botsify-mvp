@@ -48,6 +48,24 @@ const hasCatalogData = computed(() => {
 
 // Methods
 const getWhatsAppCloudDetails = async () => {
+  // Use cached data if available
+  if (publishStore.cacheValid.botDetails && publishStore.cache.botDetails) {
+    // const details = publishStore.cache.botDetails;
+    // Populate form with existing data
+    if (whatsappCloudData.value) {
+      webhookDetails.value.business_id = whatsappCloudData.value.business_id || '';
+      webhookDetails.value.catalog_access_token = whatsappCloudData.value.catalog_access_token || '';
+      webhookDetails.value.order_webhook = whatsappCloudData.value.order_webhook || '';
+      webhookDetails.value.catalog_id = whatsappCloudData.value.catalog_id || null;
+    }
+    
+    // Load catalog data if we have access token
+    if (hasAccessToken.value) {
+      await loadCatalogData();
+    }
+    return;
+  }
+  
   loading.value = true;
   try {
     const result = await publishStore.getBotDetails();

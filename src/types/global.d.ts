@@ -15,7 +15,7 @@ declare global {
     };
     Swal: typeof Swal
     $toast: ToastInterface;
-    $confirm: (overrideOpt?: any, callback?: () => void) => void;
+    $confirm: (overrideOpt?: any, confirmCallback?: () => void, cancelCallback?: () => void) => void;
   }
 }
 

@@ -23,7 +23,7 @@ const emit = defineEmits<{
   'clone-template': [block: any];
   'preview-template': [block: any];
   'copy-payload': [block: any];
-  'open-create-modal': [];
+  'open-create-modal': [clonedData?: any];
   'close-whatsapp-modal': [];
   'search-templates': [params: { query: string; page: number }];
   'set-templates': [templatesData: any];
@@ -74,6 +74,31 @@ const paginationData = ref<{
 
 // Methods
 const fetchTemplates = async (page: number = 1, perPage: number = 20) => { 
+  // Check if we already have valid cached data for this exact request
+  if (publishStore.cacheValid.templates && 
+      publishStore.cache.templates && 
+      publishStore.cache.templates.page === page && 
+      publishStore.cache.templates.perPage === perPage &&
+      publishStore.cache.templates.query === searchQuery.value) {
+    
+    // Use cached data
+    templates.value = publishStore.cache.templates.data || [];
+    paginationData.value = {
+      page: publishStore.cache.templates.page || page,
+      perPage: publishStore.cache.templates.perPage || perPage,
+      total: publishStore.cache.templates.total || 0,
+      to: publishStore.cache.templates.to || 0,
+      prev_page_url: publishStore.cache.templates.prev_page_url || null
+    };
+    currentPage.value = publishStore.cache.templates.page || page;
+    
+    console.log('Using cached templates data:', {
+      currentPage: currentPage.value,
+      paginationData: paginationData.value
+    });
+    return;
+  }
+  
   try {
     const result = await publishStore.fetchWhatsAppTemplates(page, perPage, searchQuery.value);
     if (result.success && result.data && result.data.templates && result.data.templates.data && Array.isArray(result.data.templates.data)) {
@@ -111,10 +136,10 @@ const fetchTemplates = async (page: number = 1, perPage: number = 20) => {
   }
 };
 
-const openCreateModal = () => {
+const openCreateModal = (clonedData?: any) => {
   // Emit to close WhatsApp modal and open create modal
   emit('close-whatsapp-modal');
-  emit('open-create-modal');
+  emit('open-create-modal', clonedData);
 };
 
 const deleteTemplate = async (id: number) => {
@@ -145,32 +170,294 @@ const deleteTemplate = async (id: number) => {
   } 
 };
 
-// const cloneTemplate = async (template: any) => {
-//   try {
-//     // Create a clone of the template
-//     const clonedTemplate = {
-//       ...template,
-//       id: undefined, // Remove ID so it creates a new one
-//       template_name: `${template.template_name || template.name} (Copy)`,
-//       name: `${template.template_name || template.name} (Copy)`,
-//       created_at: new Date().toISOString().split('T')[0],
-//       status: 0 // Set as not approved initially
-//     };
+const cloneTemplate = async (template: any) => {
+  try {
+    // Process the template data for cloning
+    const processedTemplate = processTemplateForClone(template);
     
-//     // Call the API to create the cloned template
-//     const result = await publishApi.createTemplate(clonedTemplate);
-//     if (result.success) {
-//       window.$toast?.success('Template cloned successfully!');
-//       // Refresh templates to show the new cloned template
-//       fetchTemplates(currentPage.value, itemsPerPage);
-//     } else {
-//       window.$toast?.error('Failed to clone template');
-//     }
-//   } catch (error) {
-//     console.error('Failed to clone template:', error);
-//     window.$toast?.error('Failed to clone template');
-//   }
-// };
+    // Emit to close WhatsApp modal and open create modal with cloned data
+    emit('close-whatsapp-modal');
+    emit('open-create-modal', processedTemplate);
+    
+    window.$toast?.success('Template cloned successfully!');
+  } catch (error) {
+    console.error('Failed to clone template:', error);
+    window.$toast?.error('Failed to clone template');
+  }
+};
+
+const processTemplateForClone = (template: any) => {
+  // Parse the template data if it's a string
+  let templateData = null;
+  if (template.data) {
+    try {
+      templateData = typeof template.data === 'string' ? JSON.parse(template.data) : template.data;
+    } catch (e) {
+      console.warn('Failed to parse template data:', e);
+      templateData = null;
+    }
+  }
+
+  // Parse params if they exist
+  let params = [];
+  if (template.params) {
+    try {
+      params = typeof template.params === 'string' ? JSON.parse(template.params) : template.params;
+    } catch (e) {
+      console.warn('Failed to parse template params:', e);
+      params = [];
+    }
+  }
+
+  // Create template data structure for cloning
+  const clonedTemplate = {
+    name: `${template.template_name || template.name || 'Template'} (Cloned)`,
+    category: templateData?.category || 'MARKETING',
+    type: 'text', // Default type, will be updated based on components
+    bodyIncludes: [] as string[],
+    header: 'text',
+    header_text: '',
+    footer_text: '',
+    slides: [] as any[],
+    button_type: 'postback',
+    total_buttons: 3,
+    variables: {
+      header: null as any,
+      body: [] as any[],
+      button: null as any
+    }
+  };
+
+  const clonedBlock = {
+    language: template.language || 'en',
+    text: '',
+    image_url: '',
+    video_url: '',
+    attachment_link: '',
+    buttons: [] as any[],
+    slides: [] as any[]
+  };
+
+  // Process template data from components
+  if (templateData && templateData.components) {
+    templateData.components.forEach((component: any) => {
+      if (component.type === 'HEADER') {
+        clonedTemplate.bodyIncludes.push('header');
+        const componentType = component.format ? component.format.toLowerCase() : 'text';
+        clonedTemplate.type = componentType === 'button' ? 'media' : componentType;
+        clonedTemplate.header = componentType;
+        
+        if (componentType === 'text') {
+          clonedTemplate.header_text = component.text || '';
+          
+          // Extract variables from header text
+          const result = component.text ? component.text.match(/{{\d+}}/g) : null;
+          if (result && result.length > 0) {
+            clonedTemplate.variables.header = {
+              key: result[0],
+              value: ''
+            };
+          } else {
+            clonedTemplate.variables.header = null;
+          }
+        } else {
+          clonedTemplate.variables.header = null;
+          clonedTemplate.header_text = '';
+          
+          // Handle media header
+          if (component.example?.header_handle?.[0]) {
+            clonedBlock.attachment_link = component.example.header_handle[0];
+          }
+        }
+      }
+
+      if (component.type === 'BODY') {
+        clonedTemplate.bodyIncludes.push('body');
+        clonedBlock.text = component.text || '';
+        
+        // Extract variables from body text
+        const result = component.text ? component.text.match(/{{\d+}}/g) : null;
+        
+        if (result) {
+          const newBodyVar: any[] = [];
+          const alreadyAdded: string[] = [];
+          
+          result.forEach((variable: string) => {
+            if (!alreadyAdded.includes(variable)) {
+              alreadyAdded.push(variable);
+              newBodyVar.push({
+                key: variable,
+                value: ''
+              });
+            }
+          });
+
+          clonedTemplate.variables.body = newBodyVar;
+        } else {
+          clonedTemplate.variables.body = [];
+        }
+      }
+
+      if (component.type === 'FOOTER') {
+        clonedTemplate.bodyIncludes.push('footer');
+        clonedTemplate.footer_text = component.text || '';
+      }
+
+      if (component.type === 'BUTTONS') {
+        clonedTemplate.bodyIncludes.push('buttons');
+        
+        // Extract buttons from the component
+        if (component.buttons && Array.isArray(component.buttons)) {
+          clonedBlock.buttons = component.buttons.map((btn: any) => ({
+            api: 1,
+            error: false,
+            type: btn.type === 'QUICK_REPLY' ? 'postback' : 
+                  btn.type === 'URL' ? 'web_url' : 
+                  btn.type === 'PHONE_NUMBER' ? 'phone_number' : 'postback',
+            title: btn.text || btn.title || '',
+            text: btn.text || btn.title || '',
+            url: btn.url || '',
+            payload: btn.payload || '',
+            response: '',
+            value: btn.text || btn.title || ''
+          }));
+        }
+      }
+
+      if (component.type === 'CAROUSEL' && component.cards?.length) {
+        clonedTemplate.type = 'generic';
+        clonedTemplate.bodyIncludes = ['body'];
+        
+        clonedBlock.slides = [];
+        clonedTemplate.slides = [];
+
+        component.cards.forEach((card: any, index: number) => {
+          const slide = {
+            id: index + 1,
+            title: '',
+            subtitle: '',
+            type: 'button',
+            image_url: '',
+            attachment_link: '',
+            buttons: [] as any[]
+          };
+
+          let headerFormat = 'image'; // default
+
+          card.components.forEach((cardComponent: any) => {
+            if (cardComponent.type === 'HEADER' && cardComponent.example?.header_handle?.[0]) {
+              headerFormat = cardComponent.format.toLowerCase();
+              slide.attachment_link = cardComponent.example.header_handle[0];
+            }
+            if (cardComponent.type === 'BODY') {
+              slide.title = cardComponent.text;
+            }
+            if (cardComponent.type === 'BUTTONS') {
+              slide.buttons = cardComponent.buttons.map((btn: any) => ({
+                api: 1,
+                error: false,
+                payload: btn.payload || '',
+                response: '',
+                signature_hash: '',
+                title: btn.text || btn.title || '',
+                type: btn.type === 'url' ? 'web_url' : 'phone_number',
+                url: btn.url || ''
+              }));
+            }
+          });
+
+          const templateSlide = {
+            header: headerFormat,
+            button_type: 'cta',
+            total_buttons: slide.buttons.length,
+            variables: {
+              body: [],
+              button: null
+            }
+          };
+
+          clonedBlock.slides.push(slide);
+          clonedTemplate.slides.push(templateSlide);
+        });
+      }
+    });
+  }
+
+  // Process params if no components data
+  if (params && params.length > 0 && !templateData) {
+    params.forEach((param: any) => {
+      if (param.type === 'body') {
+        clonedTemplate.bodyIncludes.push('body');
+        clonedBlock.text = param.parameters[0]?.text || '';
+        
+        const newBodyVar: any[] = [];
+        param.parameters.forEach((variable: any) => {
+          if (variable.type === 'text') {
+            newBodyVar.push({
+              key: variable.text || '{{1}}',
+              value: ''
+            });
+          } else {
+            newBodyVar.push({
+              key: '{{1}}',
+              value: ''
+            });
+          }
+        });
+        clonedTemplate.variables.body = newBodyVar;
+      }
+
+      if (param.type === 'button') {
+        clonedTemplate.bodyIncludes.push('buttons');
+        
+        // Create a default button structure for params-based templates
+        const defaultButton = {
+          text: '',
+          title: '',
+          type: 'postback',
+          url: '',
+          value: '',
+          response: '',
+          payload: ''
+        };
+        
+        param.parameters.forEach((variable: any) => {
+          if (variable.type === 'text') {
+            clonedTemplate.variables.button = {
+              key: variable.text || '{{1}}',
+              value: ''
+            };
+            
+            // Set the button text
+            defaultButton.text = variable.text || '';
+            defaultButton.title = variable.text || '';
+            defaultButton.value = variable.text || '';
+          }
+        });
+        
+        // Add the button to the buttons array
+        clonedBlock.buttons = [defaultButton];
+      }
+    });
+  }
+
+  // Handle authentication template special case
+  if (clonedTemplate.category === 'AUTHENTICATION') {
+    clonedTemplate.footer_text = "This code will expire in 1 minutes.";
+    clonedTemplate.bodyIncludes = ['body', 'buttons'];
+    clonedTemplate.button_type = 'otp';
+    
+    // Update button type for authentication
+    if (clonedBlock.buttons.length > 0) {
+      clonedBlock.buttons[0].type = 'copy_code';
+    }
+  }
+
+  return {
+    template: clonedTemplate,
+    block: clonedBlock
+  };
+};
 
 const processTemplateForPreview = (template: any) => {
   // Parse the template data if it's a string
@@ -416,14 +703,32 @@ const handlePageChange = (page: number) => {
 const handleSearch = () => {
   setTimeout(() => {
     currentPage.value = 1;
+    // Only clear cache if the search query is different from cached query
+    if (publishStore.cache.templates && publishStore.cache.templates.query !== searchQuery.value) {
+      publishStore.cache.templates = null;
+      publishStore.cacheValid.templates = false;
+    }
     fetchTemplates(1, itemsPerPage);
-  }, 500);
+  }, 1000);
 };
 
 // Initialize templates when component is mounted
 onMounted(() => {
-  // Fetch templates on mount to ensure they're loaded
-  fetchTemplates(1, itemsPerPage);
+  // Only fetch templates if we don't have valid cached data
+  if (!publishStore.cacheValid.templates || !publishStore.cache.templates) {
+    fetchTemplates(1, itemsPerPage);
+  } else {
+    // Use cached data
+    templates.value = publishStore.cache.templates.data || [];
+    paginationData.value = {
+      page: publishStore.cache.templates.page || 1,
+      perPage: publishStore.cache.templates.perPage || itemsPerPage,
+      total: publishStore.cache.templates.total || 0,
+      to: publishStore.cache.templates.to || 0,
+      prev_page_url: publishStore.cache.templates.prev_page_url || null
+    };
+    currentPage.value = publishStore.cache.templates.page || 1;
+  }
 });
 
 // Expose only necessary methods for parent component
@@ -501,14 +806,14 @@ defineExpose({
             <TableCell>{{ new Date(template.created_at).toLocaleDateString() }}</TableCell>
             <TableCell>
               <div class="action-buttons">
-                <!-- <Button
+                <Button
                   variant="primary-outline"
                   size="small"
                   icon="pi pi-copy"
                   iconOnly
                   @click="cloneTemplate(template)"
                   title="Clone template"
-                /> -->
+                />
                 <Button
                   variant="success-outline"
                   size="small"

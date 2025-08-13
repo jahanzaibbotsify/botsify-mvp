@@ -404,16 +404,6 @@ const openPartnerPortal = () => {
     </div>
 
     <div v-if="roleStore.canManageBillingWithSubscription" class="sidebar-pricing">
-        <button class="pricing-button" @click="handleManageBilling" :disabled="billingLoading">
-          <div class="button-content">
-            <span class="pricing-text">
-              <template v-if="billingLoading">Processing...</template>
-              <template v-else>Manage Billing</template>
-            </span>
-            <span class="pricing-star">★</span>
-          </div>
-        </button>
-        
         <!-- Partner Portal Button for Whitelabel Users -->
         <button 
           v-if="whitelabelStore.isWhitelabel && !whitelabelStore.isWhitelabelClient" 
@@ -423,6 +413,16 @@ const openPartnerPortal = () => {
           <div class="button-content">
             <span class="pricing-text">Partner Portal</span>
             <i class="pi pi-external-link"></i>
+          </div>
+        </button>
+
+        <button v-else class="pricing-button" @click="handleManageBilling" :disabled="billingLoading">
+          <div class="button-content">
+            <span class="pricing-text">
+              <template v-if="billingLoading">Processing...</template>
+              <template v-else>Manage Billing</template>
+            </span>
+            <span class="pricing-star">★</span>
           </div>
         </button>
     </div>
@@ -500,7 +500,6 @@ const openPartnerPortal = () => {
 }
 
 .partner-portal-button:hover {
-  background-color: var(--color-success-hover);
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }

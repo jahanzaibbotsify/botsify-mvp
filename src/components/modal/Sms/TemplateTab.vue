@@ -176,8 +176,10 @@ const handlePageChange = (page: number) => {
 const handleSearch = () => {
   setTimeout(() => {
     currentPage.value = 1;
+    publishStore.cache.templates = null; // Clear cache to force fresh fetch
+    // Fetch templates with the current search query
     fetchTemplates(1, itemsPerPage);
-  }, 500);
+  }, 1000);
 };
 
 

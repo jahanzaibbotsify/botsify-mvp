@@ -214,6 +214,9 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
 
   // Update header text watch to include character limit and list management
   watch(() => template.value.header_text, (newValue: string) => {
+    if(template.value.header !== 'text'){
+      return;
+    }
     if (newValue.length > 60) {
       template.value.header_text = newValue.substring(0, 60);
     }
@@ -459,11 +462,10 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     block.value.image_url = '';
     block.value.video_url = '';
     block.value.attachment_link = '';
-  
     // Validate header requirement
     if (template.value.header !== 'text') {
       errors.value.header = '';
-    } else if (!template.value.header_text) {
+    } else if (template.value.header === 'text' && !template.value.header_text) {
       errors.value.header = 'The template header field is required';
     }
   };

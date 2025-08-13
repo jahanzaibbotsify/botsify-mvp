@@ -70,6 +70,10 @@
       <UserMenu/>
     </div>
     <CalendlyModal ref="bookMeetingRef"></CalendlyModal>
+    
+    <Teleport to="body">
+      <PublishAgentModal ref="publishAgentRef"/>
+    </Teleport>
   </div>
 </template>
 
@@ -84,6 +88,7 @@ import { useRoleStore } from '@/stores/roleStore';
 import { getWebUrl } from '@/utils';
 import CalendlyModal from '@/components/modal/CalendlyModal.vue';
 import UserMenu from "@/components/auth/UserMenu.vue";
+import PublishAgentModal from "@/components/modal/PublishAgentModal.vue";
 
 interface Props {
   chatId: string,
@@ -102,6 +107,7 @@ const showBotNameDropdown = ref(false);
 const dropdownRef = ref<HTMLDivElement | null>(null);
 const lastOpenedDropdownId = ref<string | undefined>('');
 const bookMeetingRef = ref<InstanceType<typeof CalendlyModal> | null>(null)
+const publishAgentRef = ref<InstanceType<typeof PublishAgentModal> | null>(null)
 
 const emit = defineEmits<{
   toggleStorySidebar: [];
@@ -142,18 +148,24 @@ function deployAI() {
   window.$confirm({
     text: "Are you sure you want to deploy it?",
     confirmButtonText: "Yes, Deploy it!",
-    cancelButtonText: "No, Cancel",
+    cancelButtonText: "Publish it!",
+    cancelButtonColor: "#10B981",
     animation: false,
   }, async () => {
+    // Confirm callback - deploy the AI
     await deploying(props.latestPromptContent);
+  }, () => {
+    // Cancel callback - open publish agent modal
+    publishAgentRef.value?.openModal();
   });
 }
 
 async function deploying(content: string){
   isDeployingAI.value = true;
   try {
+    console.log(chatStore.activeAiPromptVersion, "activeAiPromptVersion..")
     const result = await botsifyApi.deployAiAgent(
-      chatStore.activeAiPromptVersion?.version_id ?? 0,
+      chatStore.activeAiPromptVersion?.version_id ?? parseInt(chatStore.activeAiPromptVersion?.id ?? '0'),
       chatStore.createAiPromptVersionName()
     );
     if (result.success) {
@@ -179,7 +191,10 @@ function handleReset(type: string) {
     text: "Are you sure you want to clear the conversation?",
     confirmButtonText: confirmButtonText
   }, async() => {
+    // Confirm callback - clear chat messages
     chatStore.clearChatMessages()
+  }, () => {
+    // Cancel callback - do nothing
   });
 }
 

@@ -2,14 +2,13 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { ConfigurationTask, ConfigurationResponse, ConfigurationResponseData, ApiRequestData, ChatMessage, ApiError } from '../types/openai'
 import { useBotStore } from './botStore';
-import { BOTSIFY_AUTH_TOKEN, BOTSIFY_BASE_URL } from '@/utils/config';
+import { BOTSIFY_BASE_URL, getInitialToken } from '@/utils/config';
 import { handleApiError } from '@/utils/errorHandler';
 
 
 export const useOpenAIStore = defineStore('openai', () => {
   // Try to get API key from environment variables first, then fallback to localStorage
-  const authToken = BOTSIFY_AUTH_TOKEN;
-  
+  const authToken = getInitialToken();
   // Reactive state - no OpenAI client here to avoid private member issues
   const error = ref<string | null>(null);
   const rateLimited = ref(false);

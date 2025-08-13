@@ -1,23 +1,28 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
-import { useSidebarStore } from '@/stores/sidebarStore';
 import LeftSidebar from '@/components/sidebar/LeftSidebar.vue';
-import { useWindowSize } from '@vueuse/core';
 import { useBotStore } from '@/stores/botStore';
-
+import { getBotData } from '@/utils/getBotData';
+import { useSidebarToggle } from '@/composables/useSidebarToggle';
 
 const chatStore = useChatStore();
-const sidebarStore = useSidebarStore();
 const route = useRoute();
-const { width } = useWindowSize();
-const overlay = ref(false);
-const apiKeyStore = useBotStore()
+const botStore = useBotStore();
 
-const apiKey = route.params.id as string // the :id from /agent/:id
-const isMobile = computed(() => width.value < 768);
-const selectedNavigationButton = ref('Agent'); 
+const apiKey = route.params.id as string;
+const selectedNavigationButton = ref('Agent');
+
+// Use the sidebar toggle composable
+const {
+  isMobile,
+  shouldShowOverlay,
+  sidebarToggleIcon,
+  toggleSidebar,
+  initializeSidebar,
+  sidebarStore
+} = useSidebarToggle();
 
 // Watch for route changes to set the active chat
 watch(() => route.params.id, (newId) => {
@@ -30,52 +35,29 @@ watch(() => route.params.id, (newId) => {
 watch(() => route.path, () => {
   if (isMobile.value) {
     sidebarStore.closeSidebar();
-    overlay.value = false;
-  }
-});
-
-// Watch screen size changes
-watch(isMobile, (newValue) => {
-  if (newValue) {
-    sidebarStore.closeSidebar();
-  } else {
-    sidebarStore.openSidebar();
-  }
-  overlay.value = false;
-});
-
-// Watch sidebar state to toggle overlay
-watch(() => sidebarStore.isOpen, (isOpen) => {
-  if (isMobile.value) {
-    overlay.value = isOpen;
   }
 });
 
 // Initialize sidebar state based on screen size
-onMounted(() => {
-   if (apiKey) {
-    apiKeyStore.setApiKey(apiKey)
-  } 
-  if (isMobile.value) {
-    sidebarStore.closeSidebar();
-  } else {
-    sidebarStore.openSidebar();
+onMounted(async () => {
+  if (apiKey) {
+    botStore.setApiKey(apiKey);
+  }
+  initializeSidebar()
+  // Await the bot data loading
+  try {
+    await getBotData();
+  } catch (error) {
+    console.error('Failed to load bot data:', error);
   }
 });
-
-const toggleSidebar = () => {
-  sidebarStore.toggleSidebar();
-  if (isMobile.value) {
-    overlay.value = sidebarStore.isOpen;
-  }
-};
 </script>
 
 <template>
   <div class="chat-layout">
     <!-- Overlay for mobile sidebar -->
     <div 
-      v-if="overlay" 
+      v-if="shouldShowOverlay" 
       class="sidebar-overlay" 
       @click="toggleSidebar"
     ></div>
@@ -89,14 +71,7 @@ const toggleSidebar = () => {
       :aria-label="sidebarStore.isOpen ? 'Close sidebar' : 'Open sidebar'"
       :title="sidebarStore.isOpen ? 'Close sidebar' : 'Open sidebar'"
     >
-      <svg v-if="!sidebarStore.isOpen" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-        <line x1="9" y1="3" x2="9" y2="21"></line>
-      </svg>
-      <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-      </svg>
+      <i :class="sidebarToggleIcon" style="font-size: 20px;"></i>
     </button>
 
     <!-- Content wrapper that contains both sidebar and main content -->
@@ -106,14 +81,15 @@ const toggleSidebar = () => {
         :select-button="selectedNavigationButton" 
         :class="{ 'open': sidebarStore.isOpen }"
         @select-button="selectedNavigationButton = $event" 
-        />
+      />
+      
       <!-- Main Content -->
       <main class="main-content">
         <router-view />
       </main>
     </div>
     
-    <!-- Desktop sidebar toggle button - hide sidebar -->
+    <!-- Desktop sidebar toggle buttons -->
     <button 
       v-if="!isMobile && sidebarStore.isOpen"
       class="desktop-sidebar-toggle icon-button"
@@ -121,10 +97,9 @@ const toggleSidebar = () => {
       :aria-label="'Hide sidebar'"
       :title="'Hide sidebar'"
     >
-      <i class="pi pi-angle-left"></i>
+      <i class="pi pi-angle-left" style="font-size: 16px;"></i>
     </button>
     
-    <!-- Desktop sidebar toggle button - show sidebar -->
     <button 
       v-if="!isMobile && !sidebarStore.isOpen"
       class="show-sidebar-toggle icon-button"
@@ -132,7 +107,7 @@ const toggleSidebar = () => {
       :aria-label="'Show sidebar'"
       :title="'Show sidebar'"
     >
-      <i class="pi pi-angle-right"></i>
+      <i class="pi pi-angle-right" style="font-size: 16px;"></i>
     </button>
   </div>
 </template>
@@ -161,9 +136,6 @@ const toggleSidebar = () => {
   background-color: var(--color-bg-primary);
 }
 
-/* Desktop layout adjustments */
-/* Removed margin-left approach - sidebar now handles its own hide/show */
-
 .sidebar-overlay {
   position: fixed;
   top: 0;
@@ -173,16 +145,6 @@ const toggleSidebar = () => {
   background-color: rgba(0, 0, 0, 0.5);
   z-index: calc(var(--z-fixed) + 5);
   backdrop-filter: blur(2px);
-}
-
-.header-actions {
-  position: fixed;
-  top: var(--space-3);
-  right: var(--space-3);
-  z-index: var(--z-fixed);
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
 }
 
 .sidebar-toggle {
@@ -204,11 +166,6 @@ const toggleSidebar = () => {
 .sidebar-toggle:hover {
   background-color: var(--color-bg-active);
   box-shadow: var(--shadow-md);
-}
-
-.sidebar-toggle:focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
 }
 
 .desktop-sidebar-toggle {
@@ -281,12 +238,6 @@ const toggleSidebar = () => {
   
   .sidebar-toggle.shifted {
     left: var(--space-3);
-  }
-  
-  .header-actions {
-    top: var(--space-3);
-    right: var(--space-3);
-    z-index: calc(var(--z-fixed) + 10);
   }
 
   .desktop-sidebar-toggle, .show-sidebar-toggle {

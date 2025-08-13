@@ -150,8 +150,10 @@ const handleActiveTabUpdate = (value: string | string[]) => {
 }
 
 const handleSearch = (query: string) => {
+ setTimeout(() => {
   emit('update:searchQuery', query)
   emit('search', query)
+ }, 1000)
 }
 
 const handleScroll = (event: Event) => {
@@ -186,10 +188,10 @@ const getUnreadCount = (conversation: ExtendedChat) => {
       <h2 class="sidebar-title">Conversations</h2>
       <div class="search-container">
         <Input 
-          v-model="searchQuery" 
+          :model-value="searchQuery" 
           placeholder="Search conversations..."
           searchable
-          @search="handleSearch"
+          @update:model-value="handleSearch"
         />
       </div>
     </div>
