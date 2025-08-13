@@ -53,8 +53,7 @@ withDefaults(defineProps<Props>(), {
 
 const conversationStore = useConversationStore()
 const userName = computed(() => conversationStore.selectedConversation?.title)
-const status = computed(() => conversationStore.selectedConversation?.active_for_bot ?? 0)
-
+const status = computed(() => conversationStore.selectedConversation?.active_for_bot ?? 1)
 const selectedStatus = ref(status.value)
 
 // Status options for VueSelect
@@ -77,8 +76,10 @@ const handleStatusChange = async (value: number | (number | undefined)[] | undef
     const response = await conversationStore.changeBotActivation(statusValue)
     if (response?.success) {
       // Success - status updated
+      window.$toast.success('Status updated successfully')
     } else {
       // Error - status will be shown in red text
+      window.$toast.error('Status update failed')
     }
   } catch (error) {
     console.error('Error changing bot status:', error)

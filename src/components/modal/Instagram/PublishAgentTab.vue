@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 import Button from "@/components/ui/Button.vue";
+import { APP_URL } from "@/utils/config";
 
 // Props - removed isLoading as it's not needed from parent
 
@@ -69,13 +70,18 @@ const connectAccount = async () => {
   try {
     const result = await publishStore.refreshFbPagePermission(true);
     if (result.success && result.data?.redirect) {
-      // Redirect to the URL provided by the API
-      window.open(result.data.redirect, '_blank');
+      openAuthPopup(result.data.redirect, 'connection');
     } else {
       console.error('Failed to get redirect URL:', result.error);
+      if (window.$toast) {
+        window.$toast.error(result.error || 'Failed to get authentication URL');
+      }
     }
   } catch (error) {
     console.error('Failed to connect account:', error);
+    if (window.$toast) {
+      window.$toast.error('Failed to connect Instagram account');
+    }
   } finally {
     isConnectLoading.value = false;
   }
@@ -124,13 +130,18 @@ const refreshFbPagePermissions = async () => {
   try {
     const result = await publishStore.refreshFbPagePermission(true);
     if (result.success && result.data?.redirect) {
-      // Redirect to the URL provided by the API
-      window.open(result.data.redirect, '_blank');
+      openAuthPopup(result.data.redirect, 'permission refresh');
     } else {
       console.error('Failed to get redirect URL:', result.error);
+      if (window.$toast) {
+        window.$toast.error(result.error || 'Failed to get authentication URL');
+      }
     }
   } catch (error) {
     console.error('Failed to refresh page permissions:', error);
+    if (window.$toast) {
+      window.$toast.error('Failed to refresh Instagram permissions');
+    }
   } finally {
     isRefreshLoading.value = false;
   }
@@ -141,13 +152,18 @@ const removeFbPagePermissions = async () => {
   try {
     const result = await publishStore.removeFbPagePermission();
     if (result.success && result.data?.redirect) {
-      // Redirect to the URL provided by the API
-      window.open(result.data.redirect, '_blank');
+      openAuthPopup(result.data.redirect, 'permission removal');
     } else {
       console.error('Failed to get redirect URL:', result.error);
+      if (window.$toast) {
+        window.$toast.error(result.error || 'Failed to get authentication URL');
+      }
     }
   } catch (error) {
     console.error('Failed to remove page permissions:', error);
+    if (window.$toast) {
+      window.$toast.error('Failed to remove Instagram permissions');
+    }
   } finally {
     isRemoveLoading.value = false;
   }
@@ -161,6 +177,67 @@ const getInitials = (name: string) => {
     .join('')
     .toUpperCase()
     .slice(0, 2);
+};
+
+// Utility function to handle popup windows for authentication
+const openAuthPopup = (url: string, action: string) => {
+  const popup = window.open(
+    url,
+    'instagram_auth',
+    'width=600,height=700,scrollbars=yes,resizable=yes'
+  );
+  
+  if (!popup) {
+    if (window.$toast) {
+      window.$toast.error('Popup blocked! Please allow popups for this site.');
+    }
+    return null;
+  }
+  
+  // Listen for messages from the popup
+  
+  const messageHandler = (event: MessageEvent) => {
+    if (event.origin !== window.location.origin) {
+      return;
+    }
+    
+    if (event.data.type === 'INSTAGRAM_AUTH_SUCCESS') {
+      popup.close();
+      window.removeEventListener('message', messageHandler);
+      loadInstaPages();
+      window.$toast?.success(`Facebook ${action} completed successfully!`);
+    } else if (event.data.type === 'INSTAGRAM_AUTH_ERROR') {
+      popup.close();
+      window.removeEventListener('message', messageHandler);
+      window.$toast?.error(event.data.message || `Failed to ${action} Facebook`);
+    }
+  };
+  
+  window.addEventListener('message', messageHandler);
+  
+  const checkClosed = setInterval(() => {
+    try {
+      // ✅ Check if popup navigated back to APP_URL
+      if (popup.location.origin === APP_URL) {
+        popup.close();
+        clearInterval(checkClosed);
+        window.removeEventListener('message', messageHandler);
+        loadInstaPages();
+        window.$toast?.success(`Instagram ${action} completed successfully!`);
+      }
+    } catch {
+      // Ignore cross-origin access errors until it comes back to our domain
+    }
+
+    // ✅ Also check if manually closed
+    if (popup.closed) {
+      clearInterval(checkClosed);
+      window.removeEventListener('message', messageHandler);
+      loadInstaPages();
+    }
+  }, 1000);
+  
+  return popup;
 };
 
 // Format follower count

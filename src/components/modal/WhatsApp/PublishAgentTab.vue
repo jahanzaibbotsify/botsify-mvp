@@ -233,11 +233,6 @@ const handleSaveSettings = async () => {
   }
 };
 
-// Add these methods to the script section
-const handleTestBot = () => {
-  emit('test-bot');
-};
-
 // Expose only necessary methods for parent component
 defineExpose({
   selectedProvider: () => selectedProvider.value
@@ -415,21 +410,8 @@ defineExpose({
         <p>Please select a WhatsApp provider to continue</p>
       </div>
       <!-- Action Buttons -->
-      <div class="agent-action-buttons">
-        
+      <div class="agent-action-buttons" v-if="!showProviderSelection">        
         <Button
-          variant="success"
-          size="medium"
-          :loading="testing"
-          :disabled="testing"
-          @click="handleTestBot"
-        >
-          {{ testing ? 'Testing...' : 'Test now on WhatsApp' }}
-        </Button>
-  
-        
-        <Button
-          v-if="!showProviderSelection"
           variant="primary"
           size="medium"
           :loading="saving"

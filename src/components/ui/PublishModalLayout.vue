@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import ModalLayout from "./ModalLayout.vue";
-import { ref, watch, readonly } from "vue";
+import { ref, watch, readonly, watchEffect, onUnmounted } from "vue";
+import Button from "./Button.vue";
 
 interface Tab {
   id: string;
@@ -27,8 +27,7 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-
-const modalRef = ref<InstanceType<typeof ModalLayout> | null>(null);
+const showModal = ref(false);
 const activeTab = ref(props.defaultTab || props.tabs[0]?.id || '');
 
 defineSlots<{
@@ -50,11 +49,11 @@ watch(() => props.tabs, (newTabs) => {
 }, { deep: true });
 
 const openModal = () => {
-  modalRef.value?.openModal();
+  showModal.value = true;
 };
 
 const closeModal = () => {
-  modalRef.value?.closeModal();
+  showModal.value = false;
 };
 
 const handleBack = () => {
@@ -79,6 +78,38 @@ const handleTabChange = (tabId: string) => {
   }
 };
 
+const handleOverlayClick = (event: MouseEvent) => {
+  const target = event.target as HTMLElement;
+  if (target.classList.contains('modal-overlay')) {
+    closeModal();
+  }
+};
+
+const handleEscapeKey = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && showModal.value) {
+    closeModal();
+  }
+};
+
+// Add/remove escape key listener when modal opens/closes
+watchEffect(() => {
+  if (showModal.value) {
+    document.addEventListener('keydown', handleEscapeKey);
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.removeEventListener('keydown', handleEscapeKey);
+    // Restore body scroll when modal is closed
+    document.body.style.overflow = '';
+  }
+});
+
+// Cleanup on component unmount
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleEscapeKey);
+  document.body.style.overflow = '';
+});
+
 // Expose methods and reactive properties
 defineExpose({ 
   openModal, 
@@ -88,18 +119,41 @@ defineExpose({
 </script>
 
 <template>
-  <ModalLayout
-    ref="modalRef"
-    :title="title"
-    :icon="icon"
-    :max-width="maxWidth"
-    @close="handleClose"
-  >
-    <div class="bot-modal-content">
-      <!-- Header with Close Button -->
+  <div v-if="showModal" class="modal-overlay" @click="handleOverlayClick">
+    <div 
+      class="modal-content" 
+      :style="{ maxWidth: props.maxWidth }"
+      @click.stop
+    >
       <div class="modal-header">
-        <div class="header-content">
-          <!-- Tabs Header - Only show when there are multiple tabs -->
+        <div class="modal-header-left">
+          <img v-if="icon" :src="icon" width="28" height="28" alt="logo" class="modal-logo" />
+          <h2>{{ props.title }}</h2>
+        </div>
+        
+        <!-- Back Button -->
+        <Button 
+          variant="primary-outline"
+          size="small"
+          icon="pi pi-arrow-circle-left"
+          @click="handleBack"
+        >
+          Back
+        </Button>
+        
+        <!-- Close Button -->
+        <Button 
+          variant="secondary"
+          size="small"
+          icon="pi pi-times"
+          icon-only
+          @click="closeModal"
+        />
+      </div>
+      
+      <div class="modal-body">
+        <div class="bot-modal-content">
+          <!-- Header with Tabs -->
           <div class="tabs-header">
             <button
               v-for="tab in tabs"
@@ -117,38 +171,69 @@ defineExpose({
               {{ tab.label }}
             </button>
           </div>
-          
-          <!-- Close Button -->
-            <button 
-              class="close-btn" 
-              @click="handleBack"
-              type="button"
-              aria-label="Close modal"
-            >
-              <i class="pi pi-arrow-circle-left"></i>
-            </button>
+
+          <!-- Tab Content Slot -->
+          <div class="tab-content" role="tabpanel">
+            <slot name="default" :activeTab="activeTab" :tabs="tabs" />
+          </div>
         </div>
       </div>
-
-      <!-- Tab Content Slot -->
-      <div class="tab-content" role="tabpanel">
-        <slot name="default" :activeTab="activeTab" :tabs="tabs" />
-      </div>
     </div>
-  </ModalLayout>
+  </div>
 </template>
 
 <style scoped>
-/* CSS Variables fallbacks */
-:root {
-  --color-border: #e5e7eb;
-  --color-text-secondary: #6b7280;
-  --color-text-primary: #111827;
-  --color-primary: #3b82f6;
-  --color-bg-secondary: #f9fafb;
-  --color-bg-tertiary: #f3f4f6;
-  --radius-md: 8px;
-  --transition-normal: 0.2s ease-in-out;
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  background-image: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.6) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+}
+
+.modal-content {
+  width: 90%;
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-border);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(to right, rgba(0, 163, 255, 0.05), transparent);
+  gap: var(--space-3);
+}
+
+.modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.modal-body {
+  padding: var(--space-4);
 }
 
 .bot-modal-content {
@@ -159,17 +244,6 @@ defineExpose({
   box-sizing: border-box;
 }
 
-.modal-header {
-  margin-bottom: 20px;
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--space-3, 12px);
-}
-
 .tabs-header {
   display: flex;
   border-bottom: 1px solid var(--color-border, #e5e7eb);
@@ -178,34 +252,7 @@ defineExpose({
   -ms-overflow-style: none; /* IE and Edge */
   background: transparent;
   position: relative;
-  flex: 1;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  padding: 8px;
-  cursor: pointer;
-  font-size: 18px;
-  color: var(--color-text-secondary, #6b7280);
-  border-radius: var(--radius-md, 8px);
-  transition: all var(--transition-normal, 0.2s ease-in-out);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-}
-
-.close-btn:hover {
-  color: var(--color-text-primary, #111827);
-  background: var(--color-bg-secondary, #f9fafb);
-}
-
-.close-btn:focus {
-  outline: 0;
-  box-shadow: 0 0 0 2px var(--color-primary, #3b82f6);
+  margin-bottom: 20px;
 }
 
 .tabs-header::-webkit-scrollbar {
@@ -310,17 +357,21 @@ defineExpose({
   .bot-modal-content {
     min-height: 280px;
   }
-
+  
   .modal-header {
-    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: var(--space-2);
   }
-
-  .header-content {
-    gap: var(--space-2, 8px);
+  
+  .modal-header-left {
+    order: 1;
+    flex: 1 1 100%;
+    margin-bottom: var(--space-2);
   }
   
   .tabs-header {
     padding-bottom: 0;
+    width: 100%;
   }
   
   .tab-button {
@@ -332,12 +383,6 @@ defineExpose({
   .tab-content {
     min-height: 180px;
   }
-  
-  .close-btn {
-    min-width: 32px;
-    height: 32px;
-    font-size: 16px;
-  }
 }
 
 @media (max-width: 480px) {
@@ -346,7 +391,7 @@ defineExpose({
   }
   
   .modal-header {
-    margin-bottom: 12px;
+    padding: var(--space-3);
   }
   
   .tab-button {
@@ -357,12 +402,6 @@ defineExpose({
   
   .tab-content {
     min-height: 160px;
-  }
-  
-  .close-btn {
-    min-width: 28px;
-    height: 28px;
-    font-size: 14px;
   }
 }
 

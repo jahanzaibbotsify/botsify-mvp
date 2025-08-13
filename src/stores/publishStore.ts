@@ -341,7 +341,7 @@ export const usePublishStore = defineStore('publish', () => {
     }
   };
 
-  const getSmsReport = async (page: number = 1) => {
+  const getSmsReport = async (page: number = 1, per_page: number = 20, query?: string, start_date?: string, end_date?: string) => {
     // Return cached SMS report if already loaded for the same page
     if (cacheValid.value.smsReport && cache.value.smsReport && cache.value.smsReport.page === page) {
       return { success: true, data: cache.value.smsReport.data };
@@ -356,7 +356,7 @@ export const usePublishStore = defineStore('publish', () => {
     error.value = null;
     
     try {
-      const result = await publishApi.getSmsReport(page);
+      const result = await publishApi.getSmsReport(page, per_page, query, start_date, end_date);
       
       if (result.success) {
         // Cache the SMS report with page info

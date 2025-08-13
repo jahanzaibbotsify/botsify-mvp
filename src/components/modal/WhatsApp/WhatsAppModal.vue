@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, nextTick } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
-import { useBotStore } from "@/stores/botStore";
-import {PublishModalLayout } from "@/components/ui";
+import { PublishModalLayout } from "@/components/ui";
 import PublishAgentTab from "./PublishAgentTab.vue";
+import TestBotTab from "./TestBotTab.vue";
 import ProfileTab from "./ProfileTab.vue";
 import BroadcastTab from "./BroadcastTab.vue";
 import BroadcastReportTab from "./BroadcastReportTab.vue";
@@ -16,6 +16,7 @@ import { useTabManagement } from "@/composables/useTabManagement";
 const tabs = [
   { id: 'publish-agent', label: 'Publish agent' },
   // { id: 'profile', label: 'Profile' },
+  { id: 'test-bot', label: 'Test Bot' },
   { id: 'template', label: 'Templates' },
   { id: 'broadcast', label: 'Broadcast' },
   { id: 'broadcast-report', label: 'Broadcast report' },
@@ -26,7 +27,6 @@ const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
 
 // Stores
 const publishStore = usePublishStore();
-const botStore = useBotStore();
 
 // Tab component refs
 const publishAgentTabRef = ref<InstanceType<typeof PublishAgentTab> | null>(null);
@@ -95,7 +95,7 @@ const whatsappComputedTabs = computed(() => {
   return tabs.map(tab => {
     let disabled = false;
     
-    if (tab.id === 'publish-agent') {
+    if (tab.id === 'publish-agent' || tab.id === 'test-bot') {
       disabled = false; // Always enabled
     } else if (tab.id === 'profile') {
       // Profile tab is only enabled when Dialog360 is configured
@@ -208,13 +208,6 @@ const onTabChange = (tabId: string) => {
   }
 };
 
-// Publish Bot Tab Events
-const handleTestBot = async () => {
-  // Open WhatsApp with test message
-  const whatsappUrl = `https://web.whatsapp.com/send?phone=923313014733&text=Start%20Bot%${botStore.botId}`;
-  window.open(whatsappUrl, '_blank');
-};
-
 const handleFilterReport = (filters: any) => {
   console.log('Filtering report:', filters);
 };
@@ -247,8 +240,10 @@ defineExpose({ openModal, closeModal });
         v-show="activeTab === 'publish-agent'"
         ref="publishAgentTabRef"
         :is-loading="isLoading"
-        @test-bot="handleTestBot"
       />
+
+      <!-- Test Bot Tab -->
+      <TestBotTab v-if="activeTab === 'test-bot'" />
 
       <!-- Profile Tab (only for Dialog360) -->
       <ProfileTab 
