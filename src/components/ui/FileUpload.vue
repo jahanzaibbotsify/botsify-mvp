@@ -13,6 +13,7 @@ const props = defineProps<{
   enablePreview?: boolean;
   emitRawFile?: boolean; // emit File or Attachment[]
   text: string;
+  error?: string;
 }>();
 
 const emit = defineEmits<{
@@ -111,7 +112,10 @@ const handleFiles = async (files: File[]) => {
 <template>
   <div
     class="file-upload"
-    :class="{ active: dragActive }"
+    :class="{ 
+      active: dragActive,
+      'file-upload--error': props.error 
+    }"
     @click="openFileDialog"
     @drop="handleDrop"
     @dragover="handleDragOver"
@@ -135,6 +139,11 @@ const handleFiles = async (files: File[]) => {
         </span>
       </div>
     </div>
+    
+    <!-- Error Message -->
+    <div v-if="props.error" class="file-upload-error">
+      {{ props.error }}
+    </div>
   </div>
 </template>
 
@@ -151,6 +160,11 @@ const handleFiles = async (files: File[]) => {
 
 .file-upload.active {
   border-color: var(--color-primary);
+  background-color: var(--color-bg-tertiary);
+}
+
+.file-upload--error {
+  border-color: var(--color-error);
   background-color: var(--color-bg-tertiary);
 }
 
@@ -185,5 +199,12 @@ const handleFiles = async (files: File[]) => {
 .secondary-text {
   font-size: 0.875rem;
   color: var(--color-text-secondary);
+}
+
+.file-upload-error {
+  margin-top: var(--space-2);
+  font-size: 0.75rem;
+  color: var(--color-error);
+  line-height: 1.4;
 }
 </style>

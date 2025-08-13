@@ -146,7 +146,7 @@ export class OpenAIDebugger {
   }
 }
 
-// Auto-run basic diagnostics in development
-if (import.meta.env.DEV) {
-  console.log('🔧 OpenAI Debug Utils loaded. Use OpenAIDebugger.runFullDiagnostic() to test setup.');
-} 
+// // Auto-run basic diagnostics in development
+// if (import.meta.env.DEV) {
+//   console.log('🔧 OpenAI Debug Utils loaded. Use OpenAIDebugger.runFullDiagnostic() to test setup.');
+// } 

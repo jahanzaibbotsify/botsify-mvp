@@ -1,4 +1,6 @@
+import { useWhitelabelStore } from '@/stores/whitelabelStore';
 import moment from 'moment-timezone';
+import { BOTSIFY_WEB_URL } from './config';
 
 export const currentTime = () => {
   return moment.utc().format('YYYY-MM-DD HH:mm:ss');
@@ -41,4 +43,12 @@ export const getPlatformClass = (platform: string = '') => {
       default:
         return 'pi pi-globe'
     }
+  }
+
+  export const getWebUrl = () => {
+    const whitelabelStore = useWhitelabelStore();
+    if (whitelabelStore.isWhitelabelClient && whitelabelStore.maskUrl) {
+      return whitelabelStore.maskUrl;
+    }
+    return BOTSIFY_WEB_URL;
   }

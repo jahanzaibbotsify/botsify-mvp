@@ -1080,6 +1080,7 @@ export class BotsifyApiService {
   async manageBilling() {
     try {
       const {apiKey, user} = useBotStore();
+      console.log(user, apiKey)
       if(!user?.id){
         return {
           success: false,
@@ -1099,6 +1100,121 @@ export class BotsifyApiService {
     } catch (error) {
       console.error("Failed to manage billing:", error);
       throw error;
+    }
+  }
+
+  async changePlan(payload: { plan: string; reason: string }): Promise<BotsifyResponse> {
+    try {
+      const response = await axiosInstance.post('/v1/change/plan', payload);
+      if (response.data.status === 'success') {
+        return {
+          success: true,
+          message: 'Plan changed successfully',
+          data: response.data
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data.message || 'Failed to change plan',
+          data: response.data
+        };
+      }
+    } catch (error: any) {
+      console.error('Plan change error:', error);
+      return {
+        success: false,
+        message: 'Failed to change plan. Please try again.',
+        data: error
+      };
+    }
+  }
+
+  async checkPayment(): Promise<BotsifyResponse> {
+    try {
+      const response = await axiosInstance.post('/v1/check/payment');
+      if (response.data.status === 'success') {
+        return {
+          success: true,
+          message: 'Payment check successful',
+          data: response.data
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data.message || 'Payment check failed',
+          data: response.data
+        };
+      }
+    } catch (error: any) {
+      console.error('Payment check error:', error);
+      return {
+        success: false,
+        message: 'Payment check failed. Please try again.',
+        data: error
+      };
+    }
+  }
+
+  async updatePaymentMethod(payload: {
+    token: string;
+    plan: string;
+    coupon: string;
+    card: {
+      number: string;
+      name: string;
+      cvc: string;
+      exp_month: number;
+      exp_year: number;
+    };
+  }): Promise<BotsifyResponse> {
+    try {
+      const response = await axiosInstance.post('/v1/billing/update-payment-method', payload);
+      if (response.data.status === 'success') {
+        return {
+          success: true,
+          message: 'Payment method updated successfully',
+          data: response.data
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data.message || 'Failed to update payment method',
+          data: response.data
+        };
+      }
+    } catch (error: any) {
+      console.error('Payment method update error:', error);
+      return {
+        success: false,
+        message: 'Failed to update payment method. Please try again.',
+        data: error
+      };
+    }
+  }
+
+  async cancelSubscription(payload: { reason: string }): Promise<BotsifyResponse> {
+    try {
+      const response = await axiosInstance.post('/v1/billing/cancel-subscription', payload);
+      if (response.data.status === 'success') {
+        return {
+          success: true,
+          message: 'Subscription cancelled successfully',
+          data: response.data
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data.message || 'Failed to cancel subscription',
+          data: response.data
+        };
+      }
+    } catch (error: any) {
+      console.error('Subscription cancellation error:', error);
+      return {
+        success: false,
+        message: 'Failed to cancel subscription. Please try again.',
+        data: error
+      };
     }
   }
 }
