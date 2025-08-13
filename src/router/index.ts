@@ -209,45 +209,92 @@ router.beforeEach(async (to, from, next) => {
     const user = authStore.user as any;
     const requiresAuth = to.meta?.requiresAuth;
 
-    // If route doesn't require auth, allow navigation
-    if (!requiresAuth) {
-      return next();
-    }
-
     // Check if user is authenticated
-    if (!authStore.isAuthenticated || !authStore.user) {
+    if (authStore.isAuthenticated && (authStore.user?.email_verified || authStore.isAppSumoUser || authStore.isBotAdmin)) {
+      // Authenticated users trying to access auth pages should be redirected
+      if (to.path.startsWith('/auth/') || to.path === '/unauthenticated') {
+        // If user has subscription, redirect to agent selection
+        if (user.subs) {
+          return next({ path: '/select-agent' });
+        }
+        // If user is verified but no subscription, redirect to plan selection
+        if (user.email_verified && !user.subs && !authStore.isAppSumoUser && !authStore.isBotAdmin) {
+          // Avoid redirect loop if already on choose-plan
+          if (to.path !== '/choose-plan') {
+            return next({ path: '/choose-plan' });
+          }
+          return next();
+        }
+        // If user is not verified, redirect to email verification
+        if (!user.email_verified && !authStore.isAppSumoUser && !authStore.isBotAdmin) {
+          // Avoid redirect loop if already on verify-email
+          if (!to.path.startsWith('/auth/verify-email')) {
+            return next({ path: `/auth/verify-email?email=${encodeURIComponent(user.email || '')}` });
+          }
+          return next();
+        }
+        // Allow other auth pages through only if none of the above redirects applied
+        return next();
+      }
+
+      // For subscribed users, never allow /choose-plan even if the route is public
+      if (user.subs && to.path === '/choose-plan') {
+        if (from.path === '/select-agent') {
+          return next();
+        }
+        return next({ path: '/select-agent' });
+      }
+
+      // If route doesn't require auth, allow navigation (after critical redirects above)
+      if (!requiresAuth) {
+        return next();
+      }
+
+      // Check email verification and subscription status
+      if (!user.email_verified && !user.subs && !authStore.isAppSumoUser && !authStore.isBotAdmin) {
+        if (!to.path.startsWith('/auth/verify-email')) {
+          return next({ path: `/auth/verify-email?email=${encodeURIComponent(user.email || '')}` });
+        }
+        return next();
+      }
+
+      // Allow access to subscription-related routes even without subscription
+      if (to.path.startsWith('/subscription/')) {
+        return next();
+      }
+
+      // If email is verified but no subscription, redirect to plan selection
+      // Only redirect if we're not already going to choose-plan to prevent infinite loops
+      if (user.email_verified && !user.subs && !authStore.isAppSumoUser && !authStore.isBotAdmin && !to.path.startsWith('/subscription/')) {
+        if (to.path !== '/choose-plan') {
+          return next({ path: '/choose-plan' });
+        }
+        return next();
+      }
+
+      // Prevent infinite redirects by checking if we're already going to the redirect path
+      if (from.path === to.path) {
+        return next();
+      }
+
+      // Avoid bot details fetch on routes where API key is not required
+      // Running this on /choose-plan causes a redirect to /select-agent when no API key is present
+      if (to.path !== '/select-agent' && to.path !== '/choose-plan') {
+        getBotDetails();
+      }
+
+      // Allow navigation to proceed
+      return next();
+    } else {
+      // Unauthenticated users
+      // If route doesn't require auth, allow navigation
+      if (!requiresAuth) {
+        return next();
+      }
+
+      // Redirect unauthenticated users to login
       return next({ path: '/auth/login' });
     }
-
-    // Check email verification and subscription status
-    if (!user.email_verified && !user.subs) {
-      return next({ path: `/auth/verify-email?email=${encodeURIComponent(user.email || '')}` });
-    }
-
-    // Allow access to subscription-related routes even without subscription
-    if (to.path.startsWith('/subscription/')) {
-      return next();
-    }
-
-    // If email is verified but no subscription, redirect to plan selection
-    // Only redirect if we're not already going to choose-plan to prevent infinite loops
-    if (user.email_verified && !user.subs && to.path !== '/choose-plan' && !to.path.startsWith('/subscription/')) {
-      return next({ path: '/choose-plan' });
-    }
-
-    // Prevent infinite redirects by checking if we're already going to the redirect path
-    if (from.path === to.path) {
-      return next();
-    }
-
-    // Avoid bot details fetch on routes where API key is not required
-    // Running this on /choose-plan causes a redirect to /select-agent when no API key is present
-    if (to.path !== '/select-agent' && to.path !== '/choose-plan') {
-      getBotDetails();
-    }
-
-    // Allow navigation to proceed
-    return next();
   } catch (error) {
     console.error('Error in navigation guard:', error);
     return next();
