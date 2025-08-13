@@ -3,7 +3,7 @@ import { computed, ref, watch, onMounted, nextTick } from 'vue';
 import { useChatStore } from '@/stores/chatStore';
 import { marked } from 'marked';
 import BotsifyLoader from '@/components/ui/BotsifyLoader.vue';
-
+import { useChatManagement } from '@/composables/useChatManagement';
 
 const props = defineProps<{
   chatId: string;
@@ -19,10 +19,11 @@ const isEditing = ref(false);
 const editContent = ref('');
 const showVersionHistory = ref(false);
 const showTemplateManager = ref(false);
-// const newTemplateName = ref('');
 const messagesContainer = ref<HTMLElement | null>(null);
 
-
+// Use the chat management composable for better data access
+const { chat, latestPromptContent } = useChatManagement(props.chatId);
+console.log(latestPromptContent)
 // Check if we're on mobile and set initial collapsed state
 onMounted(() => {
   const isMobile = window.innerWidth <= 767;
@@ -30,10 +31,7 @@ onMounted(() => {
 });
 
 const story = computed(() => {
-  const chat = chatStore.chats.find(c => c.id === props.chatId);
-  const storyData = chat?.story;
-  console.log('Story data computed:', storyData);
-  return storyData;
+  return chat.value?.story;
 });
 
 const isAIPromptGenerating = computed(() => chatStore.isAIPromptGenerating);
@@ -141,23 +139,6 @@ function deleteVersion(versionId: string) {
   });
 }
 
-// function saveAsTemplate() {
-//   if (!story.value?.content || !newTemplateName.value.trim()) {
-//     window.$toast.error('Please enter a template name and ensure there is prompt content to save.');
-//     return;
-//   }
-
-//   chatStore.createGlobalPromptTemplate(
-//     newTemplateName.value.trim(),
-//     story.value.content,
-//     false
-//   );
-
-//   newTemplateName.value = '';
-//   showTemplateManager.value = false;
-//   window.$toast.success('Template saved successfully!');
-// }
-
 function loadTemplate(templateId: string) {
   const template = chatStore.globalPromptTemplates.find(t => t.id === templateId);
   if (template) {
@@ -184,12 +165,6 @@ function setAsDefaultTemplate(templateId: string) {
 function formatVersionDate(date: Date) {
   return new Date(date).toLocaleString();
 }
-
-// function clearAllVersionHistory() {
-//   window.$confirm({}, () => {
-//     chatStore.clearVersionHistory(props.chatId);
-//   });
-// }
 
 const scrollToBottom = async () => {
   await nextTick();

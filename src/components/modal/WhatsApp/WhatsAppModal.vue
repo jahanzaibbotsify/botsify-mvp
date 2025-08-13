@@ -15,7 +15,7 @@ import { useTabManagement } from "@/composables/useTabManagement";
 // Define tabs
 const tabs = [
   { id: 'publish-agent', label: 'Publish agent' },
-  { id: 'profile', label: 'Profile' },
+  // { id: 'profile', label: 'Profile' },
   { id: 'template', label: 'Templates' },
   { id: 'broadcast', label: 'Broadcast' },
   { id: 'broadcast-report', label: 'Broadcast report' },
@@ -61,6 +61,13 @@ const botService = computed(() => {
 
 // Check if WhatsApp is configured
 const checkWhatsAppConfiguration = async () => {
+  // Only check if we don't have valid cached data
+  if (publishStore.cacheValid.botDetails && publishStore.cache.botDetails) {
+    // Use cached data to determine configuration
+    isWhatsAppConfigured.value = !!(publishStore.cache.botDetails.dialog360 || publishStore.cache.botDetails.whatsapp_cloud);
+    return;
+  }
+  
   isCheckingConfiguration.value = true;
   try {
     const result = await publishStore.getBotDetails();
@@ -107,7 +114,15 @@ const whatsappComputedTabs = computed(() => {
 
 const openModal = () => {
   modalRef.value?.openModal();
-  checkWhatsAppConfiguration();
+  
+  // Only check configuration if we don't have valid cached data
+  if (!publishStore.cacheValid.botDetails || !publishStore.cache.botDetails) {
+    checkWhatsAppConfiguration();
+  } else {
+    // Use cached data to determine configuration
+    isWhatsAppConfigured.value = !!(publishStore.cache.botDetails.dialog360 || publishStore.cache.botDetails.whatsapp_cloud);
+  }
+  
   // Ensure we're on the correct tab and initialize it
   nextTick(() => {
     handleTabChange(currentTab.value);
@@ -125,8 +140,14 @@ const openCreateTemplateModal = () => {
 };
 
 // Template Tab Events
-const handleTemplateOpenCreateModal = () => {
-  openCreateTemplateModal();
+const handleTemplateOpenCreateModal = (clonedData?: any) => {
+  if (clonedData) {
+    // Open create template modal with cloned data
+    createTemplateModalRef.value?.openModalWithData(clonedData);
+  } else {
+    // Open create template modal normally
+    openCreateTemplateModal();
+  }
 };
 
 const handleTemplateCloseWhatsAppModal = () => {

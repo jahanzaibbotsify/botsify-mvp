@@ -27,9 +27,24 @@ onMounted(async () => {
 
 // Load profile data for Dialog360
 const loadProfileData = async () => {
-  if (publishStore.cache.botDetails?.dialog360) {
+  // Use cached data if available
+  if (publishStore.cacheValid.botDetails && publishStore.cache.botDetails?.dialog360) {
     profileText.value = publishStore.cache.botDetails.dialog360.profile || '';
     profileImage.value = null; // Reset image selection
+    return;
+  }
+  
+  // Only fetch if not already cached
+  if (!publishStore.cacheValid.botDetails || !publishStore.cache.botDetails) {
+    try {
+      const result = await publishStore.getBotDetails();
+      if (result.success && result.data?.dialog360) {
+        profileText.value = result.data.dialog360.profile || '';
+        profileImage.value = null;
+      }
+    } catch (error) {
+      console.error('Failed to load profile data:', error);
+    }
   }
 };
 

@@ -34,12 +34,15 @@ export function checkAuthFlow(): AuthFlowResult {
     }
   }
 
-  const hasSubscription = checkUserSubscription(user)
-  if (!hasSubscription) {
-    return {
-      shouldRedirect: true,
-      redirectPath: '/choose-plan',
-      reason: 'No active subscription'
+  // Only check subscription if email is verified
+  if (user.email_verified) {
+    const hasSubscription = checkUserSubscription(user)
+    if (!hasSubscription) {
+      return {
+        shouldRedirect: true,
+        redirectPath: '/choose-plan',
+        reason: 'No active subscription'
+      }
     }
   }
 

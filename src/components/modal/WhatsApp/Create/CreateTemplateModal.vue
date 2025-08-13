@@ -47,9 +47,69 @@ const openModal = () => {
 
 const openModalWithData = (templateData: any) => {
   modalRef.value?.openModal();
-  console.log(templateData)
-  // Populate with template data
-  // Implementation for cloning
+  console.log('Opening modal with cloned data:', templateData);
+  
+  if (templateData && templateData.template && templateData.block) {
+    // Store the original cloned data to restore after initialization
+    const originalTemplate = { ...templateData.template };
+    const originalBlock = { ...templateData.block };
+    
+    // Populate the store with cloned data
+    store.template = { ...store.template, ...templateData.template };
+    store.block = { ...store.block, ...templateData.block };
+    
+    // Reset views to show the fields step
+    store.views.fields = 'current';
+    store.views.settings = 'hidden';
+    
+    // Call onChangeCategory and onChangeTemplateType to ensure proper initialization
+    store.onChangeCategory();
+    store.onChangeTemplateType();
+    
+    // Restore the cloned data after initialization to prevent override
+    store.template = { ...store.template, ...originalTemplate };
+    store.block = { ...store.block, ...originalBlock };
+    
+    if(['button', 'image', 'video', 'document'].includes(store.template.type)){
+      store.template.type = 'media';
+      if (store.template.header !== 'text') {
+        store.errors.header = '';
+      } else if (store.template.header === 'text' && !store.template.header_text) {
+        store.errors.header = 'The template header field is required';
+      }
+    }
+    
+    // Check for variables after populating data
+    if (templateData.template.header_text) {
+      store.checkForVariables('header');
+    }
+    if (templateData.block.text) {
+      store.checkForVariables('body');
+    }
+    
+    // Check for button variables
+    if (templateData.block.buttons && templateData.block.buttons.length > 0) {
+      templateData.block.buttons.forEach((button: any, index: number) => {
+        console.log(button)
+        store.checkForVariables(`button_${index}`);
+      });
+    }
+    
+    // Check for slide variables if it's a carousel
+    if (templateData.template.type === 'generic' && templateData.block.slides) {
+      templateData.block.slides.forEach((slide: any, slideIndex: number) => {
+        if (slide.title) {
+          store.checkForVariables('slider', slideIndex);
+        }
+        if (slide.buttons) {
+          slide.buttons.forEach((button: any, buttonIndex: number) => {
+            console.log(button)
+            store.checkForVariables(`button_${buttonIndex}`, slideIndex);
+          });
+        }
+      });
+    }
+  }
 };
 
 const closeModal = () => {

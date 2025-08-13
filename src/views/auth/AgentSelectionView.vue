@@ -630,12 +630,27 @@ onUnmounted(() => {
             </h2>
           </div>
 
-          <!-- Create Agent Button - Only show on My Agents tab -->
-          <div v-if="activeTab === 'my-agents' && !listAgentsResponse?.limit_reached" class="create-agent-wrapper">
-            <button @click="createAgent" class="create-agent-btn">
-              <i class="pi pi-plus"></i>
-              <span>Create Agent</span>
-            </button>
+          <!-- Create Agent Button - Always show but disable when limit reached -->
+          <div v-if="activeTab === 'my-agents'" class="create-agent-wrapper">
+            <div class="create-agent-section">
+              <div 
+                class="create-agent-tooltip"
+                :class="{ 'disabled-tooltip': listAgentsResponse?.limit_reached }"
+              >
+                <button 
+                  @click="createAgent" 
+                  class="create-agent-btn"
+                  :class="{ 'disabled': listAgentsResponse?.limit_reached }"
+                  :disabled="listAgentsResponse?.limit_reached"
+                >
+                  <i class="pi pi-plus"></i>
+                  <span>Create Agent</span>
+                </button>
+                <div v-if="listAgentsResponse?.limit_reached" class="tooltip">
+                  Agent Limit Reached — Upgrade your plan to create more agents
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -664,10 +679,24 @@ onUnmounted(() => {
             <i class="pi pi-refresh"></i>
             <span>Reset Search</span>
           </button>
-          <button v-else-if="!isLoadingAgents && activeTab === 'my-agents'" @click="createAgent" class="add-agent-btn">
-            <i class="pi pi-plus"></i>
-            <span>Create Agent</span>
-          </button>
+          <div 
+            v-else-if="!isLoadingAgents && activeTab === 'my-agents'"
+            class="create-agent-tooltip"
+            :class="{ 'disabled-tooltip': listAgentsResponse?.limit_reached }"
+          >
+            <button 
+              @click="createAgent" 
+              class="add-agent-btn"
+              :class="{ 'disabled': listAgentsResponse?.limit_reached }"
+              :disabled="listAgentsResponse?.limit_reached"
+            >
+              <i class="pi pi-plus"></i>
+              <span>Create Agent</span>
+            </button>
+            <div v-if="listAgentsResponse?.limit_reached" class="tooltip">
+              Agent Limit Reached — Upgrade your plan to create more agents
+            </div>
+          </div>
         </div>
 
         <!-- Agents Grid -->
@@ -675,7 +704,7 @@ onUnmounted(() => {
           <div
               v-for="(agent, index) in filteredAgents"
               :key="agent.id"
-              class="agent-card"
+              class="agent-selection-card"
               :class="{
               premium: agent.isPremium,
               popular: agent.isPopular,
@@ -685,7 +714,7 @@ onUnmounted(() => {
               :style="{ '--card-delay': index * 0.02 + 's' }"
           >
             <!-- Agent Card -->
-            <div class="agent-card-content">
+            <div class="agent-selection-card-content">
               <!-- Agent Menu (Top Right Corner) -->
               <div class="agent-menu" v-if="activeTab === 'my-agents'">
                 <button @click="toggleAgentMenu(agent.id)" class="menu-trigger">
@@ -744,7 +773,7 @@ onUnmounted(() => {
                 
                 <!-- Status Badge - Moved to bottom -->
                 <div class="status-badge-container">
-                  <div class="status-badge" :class="{ 'active': agent.active === 1, 'inactive': agent.active === 0 || !agent.active }">
+                  <div class="status-badge-agent" :class="{ 'active': agent.active === 1, 'inactive': agent.active === 0 || !agent.active }">
                     <i class="pi" :class="agent.active === 1 ? 'pi-check-circle' : 'pi-times-circle'"></i>
                     <span>{{ agent.active === 1 ? 'Active' : 'Inactive' }}</span>
                   </div>
@@ -851,7 +880,7 @@ onUnmounted(() => {
 /* Hero Section */
 .hero-section {
   text-align: center;
-  padding: var(--space-4) var(--space-6) var(--space-7) var(--space-6);
+  padding: 0 var(--space-6) var(--space-7) var(--space-6);
   color: white;
   position: relative;
   overflow: hidden;
@@ -999,6 +1028,13 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
+.create-agent-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-end;
+}
+
 .create-agent-btn {
   display: flex;
   align-items: center;
@@ -1015,11 +1051,51 @@ onUnmounted(() => {
   box-shadow: 0 2px 4px rgba(0, 163, 255, 0.2);
 }
 
-.create-agent-btn:hover {
+.create-agent-btn:hover:not(:disabled) {
   background: var(--color-primary-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 163, 255, 0.3);
 }
+
+.create-agent-btn:disabled,
+.create-agent-btn.disabled {
+  background: var(--color-bg-hover);
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  border: 1px solid var(--color-border);
+  pointer-events: none; /* allow tooltip wrapper to receive hover */
+}
+
+/* Limit Status Badge */
+.limit-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--radius-md);
+  color: var(--color-error);
+  font-size: 0.75rem;
+  font-weight: 500;
+  max-width: 280px;
+}
+
+.limit-badge i {
+  font-size: 0.875rem;
+  color: var(--color-error);
+}
+
+.limit-info {
+  color: var(--color-text-secondary);
+  font-size: 0.7rem;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+
 
 .tab-button {
   display: flex;
@@ -1323,9 +1399,74 @@ onUnmounted(() => {
   transition: all var(--transition-normal);
 }
 
-.add-agent-btn:hover {
+.add-agent-btn:hover:not(:disabled) {
   background: var(--color-primary-hover);
   transform: translateY(-2px);
+}
+
+.add-agent-btn:disabled,
+.add-agent-btn.disabled {
+  background: var(--color-bg-hover);
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+  transform: none;
+  border: 1px solid var(--color-border);
+  pointer-events: none; /* allow tooltip wrapper to receive hover */
+}
+
+/* No Results Limit Info */
+.no-results-limit-info {
+  margin-top: var(--space-3);
+  display: flex;
+  justify-content: center;
+}
+
+.no-results-limit-info .limit-badge {
+  max-width: 320px;
+  text-align: center;
+}
+
+/* Tooltip wrapper */
+.create-agent-tooltip {
+  display: inline-flex;
+  position: relative;
+  align-items: center;
+}
+
+/* Custom tooltip styling */
+.create-agent-tooltip .tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: rgba(239, 68, 68, 0.1); /* subtle red background */
+  color: var(--color-error);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  z-index: 1000;
+}
+
+.create-agent-tooltip .tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 12px;
+  border-width: 6px;
+  border-style: solid;
+  border-color: rgba(239, 68, 68, 0.1) transparent transparent transparent;
+}
+
+.create-agent-tooltip:hover .tooltip {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* Agents Grid */
@@ -1335,17 +1476,41 @@ onUnmounted(() => {
   gap: var(--space-6);
 }
 
+/* CSS Reset for AgentSelectionView to prevent conflicts */
+.agent-selection-view * {
+  box-sizing: border-box !important;
+}
+
+/* Override any conflicting styles from other views */
+.agent-selection-view .agent-selection-card {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+}
+
+.agent-selection-view .status-badge-container {
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+}
+
 /* Agent Cards */
-.agent-card {
-  background: white;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  animation: slideUp 0.3s ease-out;
-  animation-delay: var(--card-delay);
-  animation-fill-mode: both;
+.agents-grid .agent-selection-card {
+  background: white !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-lg) !important;
+  overflow: hidden !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
+  animation: slideUp 0.3s ease-out !important;
+  animation-delay: var(--card-delay) !important;
+  animation-fill-mode: both !important;
 }
 
 @keyframes slideUp {
@@ -1359,12 +1524,12 @@ onUnmounted(() => {
   }
 }
 
-.agent-card:hover {
+.agent-selection-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
-.agent-card-content {
+.agent-selection-card-content {
   position: relative;
   padding: var(--space-5);
   min-height: 180px;
@@ -1374,19 +1539,21 @@ onUnmounted(() => {
 
 /* Agent Info Column */
 .agent-info-column {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  gap: var(--space-3);
-  width: 100%;
-  flex: 1;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  gap: var(--space-3) !important;
+  width: 100% !important;
+  flex: 1 !important;
+  min-height: 0 !important;
 }
 
 /* Status Badge Container - Positioned at bottom */
 .status-badge-container {
-  margin-top: auto;
-  padding-top: var(--space-3);
+  margin-top: auto !important;
+  padding-top: var(--space-3) !important;
+  flex-shrink: 0 !important;
 }
 
 /* Agent Avatar Section */
@@ -1430,31 +1597,31 @@ onUnmounted(() => {
   min-width: 0;
 }
 
-.status-badge {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 4px 10px;
-  border-radius: var(--radius-full);
-  font-size: 0.75rem;
-  font-weight: 500;
-  white-space: nowrap;
-  flex-shrink: 0;
+.status-badge-agent {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--space-1) !important;
+  padding: 4px 10px !important;
+  border-radius: var(--radius-full) !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
-.status-badge.active {
-  background-color: rgba(46, 204, 113, 0.1);
-  color: #27ae60;
-  border: 1px solid rgba(46, 204, 113, 0.2);
+.status-badge-agent.active {
+  background-color: rgba(46, 204, 113, 0.1) !important;
+  color: #27ae60 !important;
+  border: 1px solid rgba(46, 204, 113, 0.2) !important;
 }
 
-.status-badge.inactive {
-  background-color: rgba(231, 76, 60, 0.1);
-  color: #e74c3c;
-  border: 1px solid rgba(231, 76, 60, 0.2);
+.status-badge-agent.inactive {
+  background-color: rgba(231, 76, 60, 0.1) !important;
+  color: #e74c3c !important;
+  border: 1px solid rgba(231, 76, 60, 0.2) !important;
 }
 
-.status-badge i {
+.status-badge-agent i {
   font-size: 0.8rem;
 }
 
@@ -2283,7 +2450,7 @@ onUnmounted(() => {
   background: var(--color-bg-secondary);
 }
 
-[data-theme="dark"] .agent-card {
+[data-theme="dark"] .agent-selection-card {
   background: var(--color-bg-secondary);
   border-color: var(--color-border);
 }

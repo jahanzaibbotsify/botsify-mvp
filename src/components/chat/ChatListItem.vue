@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { Chat } from '@/types';
+import { useChatManagement } from '@/composables/useChatManagement';
 
 const props = defineProps<{
   chat: Chat;
   isActive: boolean;
 }>();
+
+// Use the chat management composable for better data access
+const { chat: managedChat } = useChatManagement(props.chat.id);
 
 // Truncate message if it's too long
 const truncatedMessage = computed(() => {
@@ -14,18 +18,37 @@ const truncatedMessage = computed(() => {
     ? props.chat.lastMessage.substring(0, 40) + '...'
     : props.chat.lastMessage;
 });
+
+// Get the latest message content from the managed chat if available
+const latestMessageContent = computed(() => {
+  if (managedChat.value?.messages && managedChat.value.messages.length > 0) {
+    const lastMessage = managedChat.value.messages[managedChat.value.messages.length - 1];
+    if (lastMessage?.content) {
+      const content = typeof lastMessage.content === 'string' 
+        ? lastMessage.content 
+        : JSON.stringify(lastMessage.content);
+      return content.length > 40 ? content.substring(0, 40) + '...' : content;
+    }
+  }
+  return truncatedMessage.value;
+});
+
+// Check if chat has unread messages
+const hasUnreadMessages = computed(() => {
+  return props.chat.unread || (managedChat.value?.messages && managedChat.value.messages.length > 0);
+});
 </script>
 
 <template>
   <div 
     class="chat-list-item" 
-    :class="{ active: isActive, unread: chat.unread }"
+    :class="{ active: isActive, unread: hasUnreadMessages }"
   >
     <div class="content">
       <div class="title-row">
         <h3 class="title">{{ chat.title }}</h3>
       </div>
-      <p class="preview">{{ truncatedMessage }}</p>
+      <p class="preview">{{ latestMessageContent }}</p>
     </div>
   </div>
 </template>

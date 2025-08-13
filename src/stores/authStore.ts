@@ -404,6 +404,9 @@ export const useAuthStore = defineStore('auth', () => {
         selectedAgent.value = null
         localStorage.removeItem('auth_remember')
         localStorage.removeItem('bot_api_key')
+        localStorage.removeItem('accessToken')
+        localStorage.removeItem('user')
+        localStorage.removeItem('bot_api_key')
         clearError()
       }).catch(error => {
         console.log(error);

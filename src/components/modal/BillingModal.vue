@@ -20,12 +20,12 @@
             <div class="subscription-card">
               <div class="subscription-header">
                 <div class="plan-info">
-                  <h4>{{ subscriptionData?.stripe_plan || 'Professional Plan' }}</h4>
-                  <p class="plan-description">{{ getPlanDescription(subscriptionData?.stripe_plan) }}</p>
+                  <h4>{{ getActualPlanName }}</h4>
+                  <p class="plan-description">{{ getPlanDescription(getActualPlanName) }}</p>
                 </div>
                 <div class="plan-price">
-                  <span class="price-amount">${{ getPlanPrice(subscriptionData?.stripe_plan) }}</span>
-                  <span class="price-period">{{ getBillingPeriod(subscriptionData?.stripe_plan) }}</span>
+                  <span class="price-amount">${{ getPlanPrice(getActualPlanName) }}</span>
+                  <span class="price-period">{{ getBillingPeriod(getActualPlanName) }}</span>
                 </div>
               </div>
               
@@ -128,9 +128,14 @@
             
             <!-- Regular Client Plans -->
             <div v-else>
+              <!-- Debug info -->
+              <div style="font-size: 0.75rem; color: var(--color-text-tertiary); margin-bottom: var(--space-3); padding: var(--space-2); background: var(--color-bg-tertiary); border-radius: var(--radius-sm);">
+                Debug: Current Plan ID = "{{ currentPlanId }}" | Type: {{ typeof currentPlanId }}
+              </div>
+              
               <!-- Personal Plan Monthly to Annual -->
               <button 
-                v-show="currentPlanId === 'Personal-Plan'" 
+                v-show="currentPlanId === 'Personal Plan'" 
                 class="plan-option-btn" 
                 @click="selectPlan('Personal-Plan-Annual')"
               >
@@ -148,7 +153,7 @@
               
               <!-- Upgrade to Professional Monthly -->
               <button 
-                v-show="currentPlanId !== 'Professional-Plan'" 
+                v-show="currentPlanId !== 'Professional Plan'" 
                 class="plan-option-btn" 
                 @click="selectPlan('Professional-Plan')"
               >
@@ -343,6 +348,17 @@
     paddle_checkout_id: string | null
     subscription_plan_id: string | null
     whitelabel_client: number
+    // Stripe-specific fields
+    items?: {
+      data: Array<{
+        plan: {
+          name: string
+        }
+      }>
+    }
+    plan?: {
+      name: string
+    }
   }
   
   interface BillingData {
@@ -370,12 +386,7 @@
   
   // Computed properties
   const chargesData = computed((): StripeCharge[] => {
-    console.log('Computing chargesData with billingData:', props.billingData)
-    console.log('billingData type:', typeof props.billingData)
-    console.log('billingData keys:', props.billingData ? Object.keys(props.billingData) : 'null')
-    
     if (!props.billingData) {
-      console.log('No billingData provided')
       return []
     }
     
@@ -384,26 +395,16 @@
     if (props.billingData.charges) {
       if (Array.isArray(props.billingData.charges)) {
         charges = props.billingData.charges
-        console.log('Found charges as direct array:', charges)
       } else if (props.billingData.charges.data && Array.isArray(props.billingData.charges.data)) {
         charges = props.billingData.charges.data
-        console.log('Found charges in charges.data:', charges)
-      } else {
-        console.log('No charges found in expected structure')
       }
     }
     
-    console.log('Final chargesData:', charges)
     return charges
   })
 
   const subscriptionData = computed((): StripeSubscription | null => {
-    console.log('Computing subscriptionData with billingData:', props.billingData)
-    console.log('billingData type:', typeof props.billingData)
-    console.log('billingData keys:', props.billingData ? Object.keys(props.billingData) : 'null')
-    
     if (!props.billingData) {
-      console.log('No billingData provided')
       return null
     }
     
@@ -411,16 +412,43 @@
     let subscription: StripeSubscription | null = null
     if (props.billingData.stripe_subscription) {
       subscription = props.billingData.stripe_subscription
-      console.log('Found stripe_subscription:', subscription)
     } else if (props.billingData.subscription) {
       subscription = props.billingData.subscription
-      console.log('Found subscription (fallback):', subscription)
-    } else {
-      console.log('No subscription found in expected structure')
     }
     
-    console.log('Final subscriptionData:', subscription)
     return subscription
+  })
+
+  // Helper function to get the actual plan name from Stripe subscription
+  const getActualPlanName = computed(() => {
+    if (!subscriptionData.value) return 'Unknown Plan'
+    
+    console.log('Getting actual plan name from subscriptionData:', subscriptionData.value)
+    
+    // Check if this is a Stripe subscription object with items
+    if (subscriptionData.value.items && Array.isArray(subscriptionData.value.items.data)) {
+      const firstItem = subscriptionData.value.items.data[0]
+      console.log('First subscription item:', firstItem)
+      if (firstItem && firstItem.plan && firstItem.plan.name) {
+        console.log('Found plan name in items:', firstItem.plan.name)
+        return firstItem.plan.name
+      }
+    }
+    
+    // Fallback to plan object if available
+    if (subscriptionData.value.plan && subscriptionData.value.plan.name) {
+      console.log('Found plan name in plan object:', subscriptionData.value.plan.name)
+      return subscriptionData.value.plan.name
+    }
+    
+    // Fallback to stripe_plan if available
+    if (subscriptionData.value.stripe_plan) {
+      console.log('Found plan name in stripe_plan:', subscriptionData.value.stripe_plan)
+      return subscriptionData.value.stripe_plan
+    }
+    
+    console.log('No plan name found, returning Unknown Plan')
+    return 'Unknown Plan'
   })
   
   // Modal states
@@ -451,7 +479,9 @@
   ])
   
   const currentPlanId = computed(() => {
-    return subscriptionData.value?.stripe_plan || ''
+    const planName = getActualPlanName.value
+    console.log('Current plan name:', planName)
+    return planName || ''
   })
 
   const whitelabelStore = useWhitelabelStore()
@@ -497,6 +527,18 @@
   const getPlanPrice = (planName: string | undefined) => {
     if (!planName) return 149
     
+    // Handle Stripe plan names
+    if (planName === 'Personal Plan') {
+      return 49
+    } else if (planName === 'Personal-Plan-Annual') {
+      return 490
+    } else if (planName === 'Professional Plan') {
+      return 149
+    } else if (planName === 'Professional-Plan-Annual') {
+      return 1490
+    }
+    
+    // Fallback to old logic
     if (planName.includes('Annual')) {
       return 1490
     } else if (planName.includes('Personal')) {
@@ -511,6 +553,12 @@
   const getBillingPeriod = (planName: string | undefined) => {
     if (!planName) return '/month'
     
+    // Handle Stripe plan names
+    if (planName === 'Personal-Plan-Annual' || planName === 'Professional-Plan-Annual') {
+      return '/year'
+    }
+    
+    // Fallback to old logic
     if (planName.includes('Annual')) {
       return '/year'
     }
@@ -554,8 +602,6 @@
   }
   
   const downloadAllChargesHandler = async () => {
-    console.log('Downloading all charges...')
-    
     try {
       // Create CSV content for all charges
       const csvContent = generateChargesCSV(chargesData.value)
@@ -723,7 +769,7 @@
           try {
             const apiResponse = await botsifyApi.updatePaymentMethod({
               token: token,
-              plan: currentPlanId.value,
+              plan: getActualPlanName.value,
               coupon: '', // No coupon for payment method update
               card: ccData
             })
@@ -781,14 +827,14 @@
   onMounted(() => {
     // Load billing data when modal opens
     if (props.show && props.billingData) {
-      console.log('Loading billing data:', props.billingData)
+      // Billing data loaded
     }
   })
   
   // Watch for changes in billingData prop
   watch(() => props.billingData, (newData) => {
     if (newData) {
-      console.log('Billing data updated:', newData)
+      // Billing data updated
     }
   }, { immediate: true })
   </script>
