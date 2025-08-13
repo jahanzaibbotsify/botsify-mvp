@@ -34,6 +34,8 @@ const getUpdatedUser = async () => {
         if (res.data.user && res.data.user.subs) {
           authStore.setAuthData(null, res.data.user);
           createAgent();
+        } else {
+          router.push('/choose-plan')
         }
       }).catch(error => {
         console.log(error)
