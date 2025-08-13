@@ -163,8 +163,9 @@ function deployAI() {
 async function deploying(content: string){
   isDeployingAI.value = true;
   try {
+    console.log(chatStore.activeAiPromptVersion, "activeAiPromptVersion..")
     const result = await botsifyApi.deployAiAgent(
-      chatStore.activeAiPromptVersion?.version_id ?? 0,
+      chatStore.activeAiPromptVersion?.version_id ?? parseInt(chatStore.activeAiPromptVersion?.id ?? '0'),
       chatStore.createAiPromptVersionName()
     );
     if (result.success) {

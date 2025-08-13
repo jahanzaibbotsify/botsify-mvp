@@ -48,6 +48,7 @@ export const useChatStore = defineStore('chat', () => {
     let versionId = '';
     let activeVersionId = '';
     let activeVersionContent = '';
+    console.log(aiPromptVersions, "aiPromptVersions..")
     const StoredVersions = aiPromptVersions.map((ver: any) => {
       let prompt;
       if (typeof ver.ai_prompt === 'string') {
@@ -64,6 +65,7 @@ export const useChatStore = defineStore('chat', () => {
       if (ver.is_active) {
         activeVersionContent = prompt;
         activeVersionId = versionId
+        activeAiPromptVersion.value = ver;
       }
       return {
         id: versionId,

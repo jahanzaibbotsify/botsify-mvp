@@ -140,8 +140,14 @@ const openCreateTemplateModal = () => {
 };
 
 // Template Tab Events
-const handleTemplateOpenCreateModal = () => {
-  openCreateTemplateModal();
+const handleTemplateOpenCreateModal = (clonedData?: any) => {
+  if (clonedData) {
+    // Open create template modal with cloned data
+    createTemplateModalRef.value?.openModalWithData(clonedData);
+  } else {
+    // Open create template modal normally
+    openCreateTemplateModal();
+  }
 };
 
 const handleTemplateCloseWhatsAppModal = () => {
