@@ -384,9 +384,9 @@ const clearFieldError = (field: string) => {
           <span class="checkbox-custom"></span>
           <span class="checkbox-label">
             I agree to the 
-            <router-link to="/terms-conditions" target="_blank" class="terms-link">Terms & Conditions</router-link>
+            <a href="https://botsify.com/terms-and-conditions" target="_blank" class="terms-link">Terms & Conditions</a>
             and 
-            <router-link to="/privacy-policy" target="_blank" class="terms-link">Privacy Policy</router-link>
+            <a href="https://botsify.com/privacy-policy" target="_blank" class="terms-link">Privacy Policy</a>
             <span class="required">*</span>
           </span>
         </label>

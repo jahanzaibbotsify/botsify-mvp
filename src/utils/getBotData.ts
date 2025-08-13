@@ -15,12 +15,12 @@ export async function getBotData() {
 
   if (isBotDataLoaded) return;
 
-  const paramKey = route.name === 'agent' ? route.params.id as string : '';
+  const paramKey = route.name === 'agent' ? route.params?.id as string : '';
   const apikey = paramKey || getCurrentApiKey() || '';
 
   if (!apikey || apikey === 'undefined' || apikey === 'null') {
     console.error('❌ No API key found');
-    router.replace({ name: 'Unauthenticated' });
+    router.push('/select-agent');
   }
 
   if(typeof route.name === 'undefined'){
