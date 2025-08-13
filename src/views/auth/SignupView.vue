@@ -822,4 +822,16 @@ const clearFieldError = (field: string) => {
 [data-theme="dark"] .checkbox-wrapper.error .checkbox-custom {
   border-color: var(--color-error);
 }
+
+:deep(.vue-tel-input .vti__input) {
+  width: 100%;
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  transition: all var(--transition-normal);
+  font-family: inherit;
+}
+
+:deep(.vue-tel-input .vti__input::placeholder) {
+  color: var(--color-text-tertiary);
+}
 </style> 
