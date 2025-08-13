@@ -90,6 +90,7 @@ const openModalWithData = (templateData: any) => {
     // Check for button variables
     if (templateData.block.buttons && templateData.block.buttons.length > 0) {
       templateData.block.buttons.forEach((button: any, index: number) => {
+        console.log(button)
         store.checkForVariables(`button_${index}`);
       });
     }
@@ -102,6 +103,7 @@ const openModalWithData = (templateData: any) => {
         }
         if (slide.buttons) {
           slide.buttons.forEach((button: any, buttonIndex: number) => {
+            console.log(button)
             store.checkForVariables(`button_${buttonIndex}`, slideIndex);
           });
         }
