@@ -880,7 +880,7 @@ onUnmounted(() => {
 /* Hero Section */
 .hero-section {
   text-align: center;
-  padding: var(--space-2) var(--space-6) var(--space-7) var(--space-6);
+  padding: 0 var(--space-6) var(--space-7) var(--space-6);
   color: white;
   position: relative;
   overflow: hidden;
