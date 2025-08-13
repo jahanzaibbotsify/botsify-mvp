@@ -18,11 +18,6 @@ withDefaults(defineProps<Props>(), {
 const publishStore = usePublishStore();
 const botStore = useBotStore();
 
-// Emits
-const emit = defineEmits<{
-  'test-bot': [];
-}>();
-
 // Reactive data
 const selectedProvider = ref<'meta' | 'dialog360' | null>(null);
 const botDetails = ref<any>(null);
@@ -31,7 +26,6 @@ const showProviderSelection = ref(true);
 const isDialog360Connected = ref(false);
 const isMetaConnected = ref(false);
 const saving = ref(false);
-const testing = ref(false);
 
 // Meta Cloud integration state
 const showMetaIntegration = ref(false);

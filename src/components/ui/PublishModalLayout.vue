@@ -61,9 +61,9 @@ const handleBack = () => {
   emit('back');
 };
 
-const handleClose = () => {
-  emit('close');
-};
+// const handleClose = () => {
+//   emit('close');
+// };
 
 const handleTabChange = (tabId: string) => {
   // Check if the tab is disabled

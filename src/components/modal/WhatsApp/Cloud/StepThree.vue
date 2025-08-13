@@ -126,10 +126,10 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const copyToken = () => {
-  // This would copy the actual token
-  window.$toast?.success('Token copied to clipboard');
-};
+// const copyToken = () => {
+//   // This would copy the actual token
+//   window.$toast?.success('Token copied to clipboard');
+// };
 
 const nextStep = () => {
   props.onNext();

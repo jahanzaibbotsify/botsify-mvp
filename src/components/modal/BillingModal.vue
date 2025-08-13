@@ -690,9 +690,9 @@
   }
   
   // Check if Stripe is available
-  const isStripeLoaded = computed(() => {
-    return typeof window.Stripe !== 'undefined'
-  })
+  // const isStripeLoaded = computed(() => {
+  //   return typeof window.Stripe !== 'undefined'
+  // })
   
   const closeChangePaymentModal = () => {
     showChangePaymentModal.value = false
