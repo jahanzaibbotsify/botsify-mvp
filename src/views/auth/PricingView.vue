@@ -248,7 +248,7 @@ const handleLogout = async () => {
   z-index: 2;
   max-width: 1400px;
   margin: 0 auto;
-  padding: var(--space-8) var(--space-3);
+  padding: var(--space-4) var(--space-3);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -315,7 +315,7 @@ const handleLogout = async () => {
 /* Hero Section */
 .hero-section {
   text-align: center;
-  padding: var(--space-2) var(--space-6) var(--space-7);
+  padding: 0 var(--space-4) var(--space-7) var(--space-4);
   color: white;
   position: relative;
   overflow: hidden;
