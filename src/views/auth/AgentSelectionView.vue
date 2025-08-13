@@ -34,7 +34,10 @@ const currentPage = ref(1)
 const totalPages = ref(1)
 const totalAgents = ref(0)
 const hasMoreAgents = ref(false)
-const agentsPerPage = ref(20)
+const agentsPerPage = ref(20);
+const listAgentsResponse = ref({
+  limit_reached: true
+})
 
 
 /**
@@ -62,7 +65,7 @@ const getAgents = async (page: number = 1, append: boolean = false): Promise<voi
 
     if (response.data && response.data.bots) {
       const botsData = response.data.bots
-
+      listAgentsResponse.value = response.data;
       // Update pagination info
       currentPage.value = botsData.current_page || page
       totalPages.value = botsData.last_page || 1
@@ -232,7 +235,7 @@ const deleteAgent = (agent: any) => {
   activeMenuId.value = null
 
   window.$confirm({
-    text: `Are you sure you want to delete "${agent.name || 'Unnamed Agent'}"? This action cannot be undone.`,
+    text: `Are you sure you want to delete "${agent.name || 'Unnamed Agent'}"?`,
   }, async () => {
     try {
       const response = await axiosInstance.delete(`v1/delete-agent/${agent.id}`)
@@ -246,6 +249,7 @@ const deleteAgent = (agent: any) => {
         if (totalAgents.value > 0) {
           totalAgents.value--
         }
+        getAgents()
       } else {
         window.$toast?.error(response.data?.message || 'Failed to delete agent. Please try again.')
       }
@@ -394,9 +398,13 @@ const saveAgent = async () => {
       const response = await axiosInstance.post('v1/create-bot', {
         bot_name: trimmedName
       });
-
-      if (response.data && response.data.bot_id) {
-        window.$toast?.success('Agent created successfully!')
+      const responseData = response.data;
+      if (responseData && responseData.bot_id) {
+        window.$toast?.success('Agent created successfully!');
+        await selectBot({
+          token: responseData.bot_token,
+          apikey: responseData.bot_api_key
+        })
 
         // Refresh the agents list to show the new agent
         await getAgents(1, false)
@@ -623,7 +631,7 @@ onUnmounted(() => {
           </div>
 
           <!-- Create Agent Button - Only show on My Agents tab -->
-          <div v-if="activeTab === 'my-agents'" class="create-agent-wrapper">
+          <div v-if="activeTab === 'my-agents' && !listAgentsResponse?.limit_reached" class="create-agent-wrapper">
             <button @click="createAgent" class="create-agent-btn">
               <i class="pi pi-plus"></i>
               <span>Create Agent</span>

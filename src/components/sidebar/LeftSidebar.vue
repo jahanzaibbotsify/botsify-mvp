@@ -83,13 +83,13 @@ const navLinks = computed(() => {
   if (whitelabelStore.isWhitelabelClient) {
     // For whitelabel clients, show only Legacy Platform and Support
     return [
-      {
-        name: 'Legacy Platform',
-        url: whitelabelStore.whitelabelData?.mask_url 
-          ? `https://${whitelabelStore.whitelabelData.mask_url}/bot`
-          : `${BOTSIFY_WEB_URL}/bot`,
-        icon: 'pi pi-check-circle'
-      },
+      // {
+      //   name: 'Legacy Platform',
+      //   url: whitelabelStore.whitelabelData?.mask_url
+      //     ? `https://${whitelabelStore.whitelabelData.mask_url}/bot`
+      //     : `${BOTSIFY_WEB_URL}/bot`,
+      //   icon: 'pi pi-check-circle'
+      // },
       {
         name: 'Support',
         action: 'showZen',
@@ -99,11 +99,11 @@ const navLinks = computed(() => {
   } else {
     // For regular Botsify clients, show all links
     return [
-      {
-        name: 'Legacy Platform',
-        url: `${BOTSIFY_WEB_URL}/bot`,
-        icon: 'pi pi-history'
-      },
+      // {
+      //   name: 'Legacy Platform',
+      //   url: `${BOTSIFY_WEB_URL}/bot`,
+      //   icon: 'pi pi-history'
+      // },
       {
         name: 'Tutorials',
         url: `https://www.youtube.com/@Botsify`,
