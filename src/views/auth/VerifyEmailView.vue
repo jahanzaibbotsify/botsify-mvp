@@ -60,6 +60,7 @@ const startResendCooldown = () => {
  * Updates user verification status and redirects if authenticated
  */
 const verifyEmailWithToken = async (token: string) => {
+  if (isVerifying.value) return;
   isVerifying.value = true
   verificationError.value = null
 
