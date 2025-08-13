@@ -53,6 +53,7 @@ const isEditing = ref(false);
 const newKeyword = ref('');
 const isLoading = ref(false);
 const isVisible = ref(false);
+const isPluginLoading = ref(false);
 const deleteResponderId = ref<string | null>(null);
 
 // New responder form
@@ -103,12 +104,17 @@ watch(() => props.isLoading, (newValue) => {
 
 const loadPluginData = async () => {
   try {
+    if(isPluginLoading.value) return;
+    console.log("loadPluginData");
+    isPluginLoading.value = true;
     const result = await publishStore.loadDataForPlugins("posts");
     if (result.success && result.data) {
       setPluginData(result.data);
     }
   } catch (error) {
     console.error('Failed to load plugin data:', error);
+  } finally {
+    isPluginLoading.value = false;
   }
 };
 

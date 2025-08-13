@@ -265,14 +265,14 @@ defineExpose({ openModal, closeModal });
       
       <!-- Broadcast Tab -->
       <BroadcastTab 
-        v-show="activeTab === 'broadcast' && isWhatsAppConfigured"
+        v-if="activeTab === 'broadcast' && isWhatsAppConfigured"
         ref="broadcastTabRef"
         :is-loading="isLoading"
       />
 
       <!-- Broadcast Report Tab -->
       <BroadcastReportTab 
-        v-show="activeTab === 'broadcast-report' && isWhatsAppConfigured"
+        v-if="activeTab === 'broadcast-report' && isWhatsAppConfigured"
         ref="broadcastReportTabRef"
         :is-loading="isLoading"
         @filter-report="handleFilterReport"
@@ -280,7 +280,7 @@ defineExpose({ openModal, closeModal });
 
       <!-- Template Tab -->
       <TemplateTab
-        v-show="activeTab === 'template' && isWhatsAppConfigured"
+        v-if="activeTab === 'template' && isWhatsAppConfigured"
         ref="templateTabRef"
         @open-create-modal="handleTemplateOpenCreateModal"
         @close-whatsapp-modal="handleTemplateCloseWhatsAppModal"
@@ -288,7 +288,7 @@ defineExpose({ openModal, closeModal });
 
       <!-- Catalog Tab -->
       <CatalogTab 
-        v-show="activeTab === 'catalog' && isWhatsAppConfigured"
+        v-if="activeTab === 'catalog' && isWhatsAppConfigured"
         ref="catalogTabRef"
         :is-loading="isLoading"
         @update-product="handleUpdateProduct"

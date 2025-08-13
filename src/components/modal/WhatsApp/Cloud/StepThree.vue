@@ -77,13 +77,13 @@
                     <label class="field-label">Temporary Access Token</label>
                     <div class="token-display">
                       <span class="token-text">EAABwzLixnjYBO...</span>
-                      <Button 
+                      <!-- <Button 
                         variant="secondary"
                         size="small"
                         @click="copyToken"
                       >
                         Copy
-                      </Button>
+                      </Button> -->
                     </div>
                   </div>
                 </div>

@@ -429,6 +429,7 @@ defineExpose({
   
         
         <Button
+          v-if="!showProviderSelection"
           variant="primary"
           size="medium"
           :loading="saving"

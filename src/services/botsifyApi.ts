@@ -1103,7 +1103,7 @@ export class BotsifyApiService {
     }
   }
 
-  async changePlan(payload: { plan: string; reason: string }): Promise<BotsifyResponse> {
+  async changePlan(payload: { plan: string; reason: string; provider?: string }): Promise<BotsifyResponse> {
     try {
       const response = await axiosInstance.post('/v1/change/plan', payload);
       if (response.data.status === 'success') {

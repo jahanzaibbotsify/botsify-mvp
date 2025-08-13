@@ -323,7 +323,7 @@ export class PublishApiService {
         params: { 
           apikey: apiKey,
           instagram: instagram || false,
-          redirect: `${APP_URL}/agent/${apiKey}`
+          redirect: `https://dev.botsify.com`
         },
         timeout: 30000
       });

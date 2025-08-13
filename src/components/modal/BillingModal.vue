@@ -209,6 +209,9 @@
                 id="cardNumber" 
                 v-model="paymentForm.cardNumber" 
                 placeholder="1234 5678 9012 3456"
+                maxlength="19"
+                @input="formatCardNumber"
+                @blur="validateCardNumber"
                 required
               />
             </div>
@@ -220,6 +223,9 @@
                   id="expiry" 
                   v-model="paymentForm.expiry" 
                   placeholder="MM/YY"
+                  maxlength="5"
+                  @input="formatExpiry"
+                  @blur="validateExpiry"
                   required
                 />
               </div>
@@ -230,6 +236,9 @@
                   id="cvv" 
                   v-model="paymentForm.cvv" 
                   placeholder="123"
+                  maxlength="4"
+                  @input="formatCVV"
+                  @blur="validateCVV"
                   required
                 />
               </div>
@@ -309,8 +318,6 @@
       Stripe: any
     }
   }
-
-  const Stripe = window.Stripe
   
   interface StripeCharge {
     id: string
@@ -647,7 +654,16 @@
     return new Promise<void>((resolve, reject) => {
       const script = document.createElement('script')
       script.src = 'https://js.stripe.com/v2'
-      script.onload = () => resolve()
+      script.onload = () => {
+        // Wait a bit for Stripe to initialize
+        setTimeout(() => {
+          if (typeof window.Stripe !== 'undefined') {
+            resolve()
+          } else {
+            reject(new Error('Stripe failed to initialize'))
+          }
+        }, 100)
+      }
       script.onerror = () => reject(new Error('Failed to load Stripe'))
       document.head.appendChild(script)
     })
@@ -673,6 +689,11 @@
     }
   }
   
+  // Check if Stripe is available
+  const isStripeLoaded = computed(() => {
+    return typeof window.Stripe !== 'undefined'
+  })
+  
   const closeChangePaymentModal = () => {
     showChangePaymentModal.value = false
     // Reset form
@@ -681,6 +702,67 @@
       expiry: '',
       cvv: '',
       cardName: ''
+    }
+  }
+  
+  // Form formatting functions
+  const formatCardNumber = (event: Event) => {
+    const target = event.target as HTMLInputElement
+    let value = target.value.replace(/\s/g, '').replace(/\D/g, '')
+    
+    // Limit to 16 digits
+    value = value.slice(0, 16)
+    
+    // Add spaces every 4 digits
+    value = value.replace(/(\d{4})(?=\d)/g, '$1 ')
+    
+    paymentForm.value.cardNumber = value
+  }
+  
+  const formatExpiry = (event: Event) => {
+    const target = event.target as HTMLInputElement
+    let value = target.value.replace(/\D/g, '')
+    
+    // Limit to 4 digits
+    value = value.slice(0, 4)
+    
+    // Add slash after 2 digits
+    if (value.length >= 2) {
+      value = value.slice(0, 2) + '/' + value.slice(2)
+    }
+    
+    paymentForm.value.expiry = value
+  }
+  
+  const formatCVV = (event: Event) => {
+    const target = event.target as HTMLInputElement
+    let value = target.value.replace(/\D/g, '')
+    
+    // Limit to 4 digits (some cards have 4-digit CVV)
+    value = value.slice(0, 4)
+    
+    paymentForm.value.cvv = value
+  }
+  
+  // Validation functions
+  const validateCardNumber = () => {
+    const cardNumber = paymentForm.value.cardNumber.replace(/\s/g, '')
+    if (cardNumber.length < 13 || cardNumber.length > 19) {
+      window.$toast?.error('Card number must be between 13 and 19 digits')
+    }
+  }
+  
+  const validateExpiry = () => {
+    const expiry = paymentForm.value.expiry
+    if (expiry && !/^\d{2}\/\d{2}$/.test(expiry)) {
+      window.$toast?.error('Please use MM/YY format for expiry date')
+    }
+  }
+  
+  const validateCVV = () => {
+    const cvv = paymentForm.value.cvv
+    if (cvv && (cvv.length < 3 || cvv.length > 4)) {
+      window.$toast?.error('CVV must be 3 or 4 digits')
     }
   }
   
@@ -744,21 +826,34 @@
     updatingPayment.value = true
     try {
       // Generate Stripe token like in the original billing.vue
-      Stripe.setPublishableKey(STRIPE_API_KEY)
+      window.Stripe.setPublishableKey(STRIPE_API_KEY)
       
       // Parse expiry date (MM/YY format)
       const expiry = paymentForm.value.expiry.split('/')
+      if (expiry.length !== 2) {
+        window.$toast?.error('Invalid expiry date format. Please use MM/YY format.')
+        updatingPayment.value = false
+        return
+      }
+      
       const ccData = {
-        number: paymentForm.value.cardNumber,
+        number: paymentForm.value.cardNumber.replace(/\s/g, ''),
         name: paymentForm.value.cardName,
         cvc: paymentForm.value.cvv,
         exp_month: parseInt(expiry[0]),
-        exp_year: parseInt(expiry[1])
+        exp_year: 2000 + parseInt(expiry[1]) // Convert YY to YYYY
+      }
+      
+      // Validate card data
+      if (isNaN(ccData.exp_month) || isNaN(ccData.exp_year) || ccData.exp_month < 1 || ccData.exp_month > 12) {
+        window.$toast?.error('Invalid expiry date. Please use MM/YY format.')
+        updatingPayment.value = false
+        return
       }
       
       // Create Stripe token
-      Stripe.card.createToken(ccData, async (status: string, response: any) => {
-        console.log(status, response)
+      window.Stripe.card.createToken(ccData, async (status: string, response: any) => {
+        console.log('Stripe token response:', status, response)
         if (response.error) {
           updatingPayment.value = false
           window.$toast?.error(response.error.message || 'Card validation failed')
@@ -1393,6 +1488,14 @@
   .form-group input:focus {
     outline: none;
     border-color: var(--color-primary);
+  }
+  
+  .form-group input.error {
+    border-color: var(--color-error);
+  }
+  
+  .form-group input.valid {
+    border-color: var(--color-success);
   }
   
   .form-row {

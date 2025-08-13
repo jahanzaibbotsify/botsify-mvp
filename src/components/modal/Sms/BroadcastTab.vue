@@ -39,7 +39,7 @@ const fullTemplates = ref<Array<any>>([]);
 
 // User segments with proper structure
 const userSegments = ref([
-  { value: '-1', label: 'Only Subscribed Users (All users who have talked to Bot)' },
+  { value: '-1', label: 'All users' },
   { value: 'file', label: 'Upload Users File' }
 ]);
 
@@ -363,15 +363,15 @@ defineExpose({
                 <div v-if="broadcastForm.userSegment === '-1'" class="subscribed-users-info">
                   <div v-if="isLoadingSubscribedUsers" class="loading-indicator">
                     <i class="pi pi-spin pi-spinner"></i>
-                    <span>Loading subscribed users...</span>
+                    <span>Loading users...</span>
                   </div>
                   <div v-else-if="subscribedUsers.length > 0" class="users-count">
                     <i class="pi pi-check-circle"></i>
-                    <span>{{ subscribedUsers.length }} subscribed users</span>
+                    <span>{{ subscribedUsers.length }} users</span>
                   </div>
                   <div v-else class="no-users">
                     <i class="pi pi-exclamation-triangle"></i>
-                    <span>No subscribed users found</span>
+                    <span>No users found</span>
                   </div>
                 </div>
                 </div>

@@ -103,9 +103,9 @@ const selectedTemplate = ref<any>(null);
 // User segments
 const userSegments = [
   { value: '', label: 'Select user segment' },
-  { value: 'subscribed', label: 'Subscribed Users' },
-  { value: 'upload', label: 'Upload User' },
-  { value: 'single', label: 'Single User' }
+  { value: 'subscribed', label: 'All users' },
+  { value: 'upload', label: 'Upload users' },
+  { value: 'single', label: 'Single user' }
 ];
 
 // Computed properties
