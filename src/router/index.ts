@@ -215,7 +215,7 @@ router.beforeEach(async (to, from, next) => {
       if (to.path.startsWith('/auth/') || to.path === '/unauthenticated') {
         // If user has subscription, redirect to agent selection
         if (user.subs) {
-          return next({ path: '/select-agent' });
+          return next({ path: '/' });
         }
         // If user is verified but no subscription, redirect to plan selection
         if (user.email_verified && !user.subs && !user.is_appsumo && !user.is_bot_admin) {
@@ -242,7 +242,7 @@ router.beforeEach(async (to, from, next) => {
         if (from.path === '/select-agent') {
           return next();
         }
-        return next({ path: '/select-agent' });
+        return next({ path: '/' });
       }
 
       // If route doesn't require auth, allow navigation (after critical redirects above)

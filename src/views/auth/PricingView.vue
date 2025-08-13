@@ -9,7 +9,7 @@ const authStore = useAuthStore()
 const router = useRouter()
 
 const selectedPlanId = ref<string | null>(null)
-const billingCycle = ref<'monthly' | 'annually'>('monthly')
+const billingCycle = ref<'monthly' | 'annually'>('annually')
 const isLoggingOut = ref(false);
 const loading = ref(false);
 
@@ -174,13 +174,12 @@ const handleLogout = async () => {
                 <span class="amount">{{ plan.price }}</span>
               </div>
               <span class="price-period">
-                per {{ billingCycle === 'annually' ? 'month' : 'month' }}
-                <span v-if="billingCycle === 'annually'" class="billing-note">(billed annually)</span>
+                per {{ billingCycle === 'annually' ? 'year' : 'month' }}
               </span>
             </div>
             
             <div v-if="billingCycle === 'annually' && plan.discount?.yearlyPrice && !plan.isContactSales" class="price-discount">
-              <span class="annual-savings">${{ plan.discount.yearlyPrice }} (Billed Annually & save 2 months)</span>
+              <span class="annual-savings">(Billed Annually & save 2 months)</span>
               <span class="discount-badge">17% OFF</span>
             </div>
           </div>
