@@ -50,15 +50,6 @@ const clearAllFilters = () => {
 const toggleCollapse = () => {
   emit('toggle-collapse')
 }
-
-const getInputType = (filter: DataAnalysisFilter): string => {
-  switch (filter.type) {
-    case 'date': return 'date'
-    case 'number': return 'number'
-    case 'text': return 'text'
-    default: return 'text'
-  }
-}
 </script>
 
 <template>

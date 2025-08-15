@@ -31,7 +31,7 @@ export interface LLMResponse {
 export interface TableColumn {
   key: string
   label: string
-  type: 'text' | 'number' | 'date' | 'boolean' | 'link'
+  type: 'text' | 'number' | 'date' | 'boolean' | 'link' | 'badge'
   sortable?: boolean
   filterable?: boolean
 }
@@ -43,4 +43,26 @@ export interface DataAnalysisState {
   columns: TableColumn[]
   filters: DataAnalysisFilter[]
   currentRequest: DataAnalysisRequest | null
+}
+
+// New types for analytics response structure
+export interface AnalyticsResponse {
+  data: any[] | ChartData[]
+  previewType: 'table' | 'chart' | string
+  filter?: string
+  dateRange?: {
+    startDate: string
+    endDate: string
+  }
+  apiPath?: string
+}
+
+export interface ChartData {
+  label: string
+  value: number | string
+}
+
+export interface TableData {
+  rows: any[]
+  columns?: TableColumn[]
 }

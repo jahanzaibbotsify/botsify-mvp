@@ -1,9 +1,24 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import dayjs from 'dayjs'
 import VueSelect from "vue3-select-component"
 import DateRange from '@/components/ui/DateRange.vue'
 import { useDataAnalysisStore } from '@/stores/dataAnalysisStore'
 import { useSidebarStore } from '@/stores/sidebarStore'
+
+interface Props {
+  availableFilters?: string[]
+  filterData?: Record<string, any>
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  availableFilters: () => [],
+  filterData: () => ({})
+})
+
+const emit = defineEmits<{
+  'filter-changed': [filters: Record<string, any>]
+}>()
 
 const dataAnalysisStore = useDataAnalysisStore()
 const sidebarStore = useSidebarStore()
@@ -13,30 +28,78 @@ const shouldShowMobileLayout = computed(() => {
   return window.innerWidth <= 768 || sidebarStore.isOpen
 })
 
-// Filter options configuration - matching user table exactly
-const filterOptions = [
-  { label: 'All Statuses', value: 'all' },
-  { label: 'Active Users', value: 'active' },
-  { label: 'Inactive Users', value: 'inactive' },
-]
+// Dynamic filter options based on available filters
+const filterOptions = computed(() => {
+  if (props.availableFilters.includes('status')) {
+    return [
+      { label: 'All Statuses', value: 'all' },
+      { label: 'Active Users', value: 'active' },
+      { label: 'Inactive Users', value: 'inactive' },
+      { label: 'Pending Users', value: 'pending' }
+    ]
+  }
+  return []
+})
 
-const segmentOptions = [
-  { label: 'All Platforms', value: 'all' },
-  { label: 'SMS Users', value: 'sms' },
-  { label: 'WhatsApp Users', value: 'whatsapp' },
-  { label: 'Facebook Users', value: 'facebook' },
-  { label: 'Website Users', value: 'website' },
-  { label: 'Instagram Users', value: 'instagram' },
-  { label: 'Telegram Users', value: 'telegram' },
-]
+const segmentOptions = computed(() => {
+  if (props.availableFilters.includes('platform')) {
+    return [
+      { label: 'All Platforms', value: 'all' },
+      { label: 'SMS Users', value: 'sms' },
+      { label: 'WhatsApp Users', value: 'whatsapp' },
+      { label: 'Facebook Users', value: 'facebook' },
+      { label: 'Website Users', value: 'website' },
+      { label: 'Instagram Users', value: 'instagram' },
+      { label: 'Telegram Users', value: 'telegram' },
+    ]
+  }
+  return []
+})
+
+// UI date range value for DateRange component (expects strings YYYY-MM-DD)
+const uiDateRangeValue = computed(() => {
+  if (!props.availableFilters.includes('dateRange')) {
+    return { start: '', end: '' }
+  }
+  const startIso: string | undefined = props.filterData?.dateRange?.startDate
+  const endIso: string | undefined = props.filterData?.dateRange?.endDate
+  const start = startIso ? dayjs(startIso).format('YYYY-MM-DD') : ''
+  const end = endIso ? dayjs(endIso).format('YYYY-MM-DD') : ''
+  return { start, end }
+})
+
+const searchValue = computed(() => {
+  if (props.availableFilters.includes('search')) {
+    return props.filterData.search || ''
+  }
+  return ''
+})
+
+const statusValue = computed(() => {
+  if (props.availableFilters.includes('status')) {
+    return props.filterData.status || 'all'
+  }
+  return 'all'
+})
+
+const platformValue = computed(() => {
+  if (props.availableFilters.includes('platform')) {
+    return props.filterData.platform || 'all'
+  }
+  return 'all'
+})
 
 // Generic handler for filter updates
-const updateFilter = (key: keyof typeof dataAnalysisStore.filterState, value: any): void => {
-  dataAnalysisStore.updateFilter({ [key]: value })
+const updateFilter = (key: string, value: any): void => {
+  // Create updated filters object
+  const updatedFilters = { ...props.filterData, [key]: value }
+  
+  // Emit the filter change to parent
+  emit('filter-changed', updatedFilters)
 }
 
 // Handle VueSelect values (can be single value or array)
-const handleSelectChange = (key: keyof typeof dataAnalysisStore.filterState, value: string | string[]): void => {
+const handleSelectChange = (key: string, value: string | string[]): void => {
   const singleValue = Array.isArray(value) ? value[0] : value
   updateFilter(key, singleValue)
 }
@@ -47,19 +110,17 @@ const handleSearchChange = (event: Event): void => {
   const searchValue = target.value
   
   // Update the search input immediately for UI responsiveness
-  dataAnalysisStore.updateSearch(searchValue)
+  updateFilter('search', searchValue)
 }
 
 // Handle date range updates
-const handleDateRangeChange = (dateRange: { startDate: Date, endDate: Date } | null): void => {
-  if (dateRange) {
-    dataAnalysisStore.updateFilter({
-      dateRange: {
-        startDate: dateRange.startDate,
-        endDate: dateRange.endDate
-      }
-    })
+const onDateChange = (value: { start: string; end: string }) => {
+  // Convert back to ISO start-of-day
+  const updated = {
+    startDate: value.start ? dayjs(value.start).startOf('day').toISOString() : '',
+    endDate: value.end ? dayjs(value.end).endOf('day').toISOString() : ''
   }
+  updateFilter('dateRange', updated)
 }
 
 // Handle export data button click
@@ -70,15 +131,16 @@ const handleExport = () => {
 </script>
 
 <template>
-  <div class="controls-section">
+  <div class="controls-section" v-if="availableFilters.length > 0">
     <!-- Desktop Layout -->
     <div class="desktop-controls">
       <div class="search-controls">
-        <div class="search-box">
+        <!-- Search Filter -->
+        <div class="search-box" v-if="availableFilters.includes('search')">
           <input 
             type="text" 
             placeholder="Search data..." 
-            :value="dataAnalysisStore.filterState.search"
+            :value="searchValue"
             @input="handleSearchChange"
           >
           <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -87,35 +149,58 @@ const handleExport = () => {
           </svg>
         </div>
         
-        <div class="filter-dropdown" v-show="!shouldShowMobileLayout">
+        <!-- Status Filter -->
+        <div class="filter-dropdown" v-if="availableFilters.includes('status')" v-show="!shouldShowMobileLayout">
           <VueSelect
-            :model-value="dataAnalysisStore.filterState.filter"
-            @update:model-value="(value: string | string[]) => handleSelectChange('filter', value)"
+            :model-value="statusValue"
+            @update:model-value="(value) => handleSelectChange('status', value)"
             :options="filterOptions"
             placeholder="Filter by status"
             :multiple="false"
           />
         </div>
         
-        <div class="segment-dropdown">
+        <!-- Platform Filter -->
+        <div class="segment-dropdown" v-if="availableFilters.includes('platform')">
           <VueSelect
-            :model-value="dataAnalysisStore.filterState.segment"
-            @update:model-value="(value: string | string[]) => handleSelectChange('segment', value)"
+            :model-value="platformValue"
+            @update:model-value="(value) => handleSelectChange('platform', value)"
             :options="segmentOptions"
             placeholder="Filter by platform"
             :multiple="false"
           />
         </div>
 
-        <div class="date-range">
+        <!-- Date Range Filter -->
+        <div class="date-range" v-if="availableFilters.includes('dateRange')">
           <DateRange 
-            :fromDate="new Date()"
-            :toDate="new Date()"
-            :get-from-date="handleDateRangeChange"
-            autoPlay
-            opens="left"
-            @update="handleDateRangeChange"
+            :model-value="uiDateRangeValue"
+            @update:model-value="onDateChange"
           />
+        </div>
+
+        <!-- Numeric Filter -->
+        <div class="numeric-filter" v-if="availableFilters.includes('numeric')">
+          <input 
+            type="number" 
+            placeholder="Numeric value..."
+            :value="filterData.numeric || ''"
+            @input="(e: any) => updateFilter('numeric', e.target.value)"
+            class="numeric-input"
+          />
+        </div>
+
+        <!-- Boolean Filter -->
+        <div class="boolean-filter" v-if="availableFilters.includes('boolean')">
+          <select 
+            :value="filterData.boolean || 'all'"
+            @change="(e: any) => updateFilter('boolean', e.target.value)"
+            class="boolean-select"
+          >
+            <option value="all">All</option>
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
         </div>
       </div>
       
@@ -221,6 +306,32 @@ const handleExport = () => {
   font-size: 13px;
 }
 
+.numeric-filter,
+.boolean-filter {
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
+.numeric-input,
+.boolean-select {
+  width: 100%;
+  height: 44px;
+  padding: 12px 16px;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  font-size: 13px;
+  background-color: white;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.numeric-input:focus,
+.boolean-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0, 163, 255, 0.1);
+}
+
 .action-controls {
   display: flex;
   align-items: center;
@@ -273,6 +384,11 @@ const handleExport = () => {
   
   .date-range {
     min-width: 140px;
+  }
+  
+  .numeric-filter,
+  .boolean-filter {
+    min-width: 100px;
   }
 }
 

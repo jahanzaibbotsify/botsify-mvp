@@ -139,7 +139,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
-import type { PricingPlan } from '@/types/auth'
 import { generateInvoiceData, downloadInvoice, downloadAllInvoices } from '@/utils/invoiceGenerator'
 
 interface Invoice {
