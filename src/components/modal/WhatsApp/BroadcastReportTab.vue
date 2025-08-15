@@ -162,7 +162,7 @@ defineExpose({
           v-model="searchQuery"
           searchable
           icon-position="left"
-          placeholder="Search by template name or number..."
+          placeholder="Search..."
         />
       </div>
       

@@ -168,8 +168,10 @@ defineExpose({
 
     <!-- Loading State -->
     <div v-if="isCheckingConfiguration" class="loading-state">
-      <div class="loading-spinner"></div>
-      <span>Loading SMS settings...</span>
+      <div class="loading-content">
+          <div class="loading-spinner"></div>
+          <p>Loading sms configuration...</p>
+        </div>
     </div>
 
     <!-- Form Content -->

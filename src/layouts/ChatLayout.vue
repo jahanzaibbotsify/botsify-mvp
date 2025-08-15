@@ -45,9 +45,9 @@ onMounted(async () => {
 
 <template>
   <div v-if="botStore.isLoading" class="loading-overlay">
-    <div class="loading-state">
+    <div class="loading-content">
       <div class="loading-spinner"></div>
-      <!-- <span>Loading...</span> -->
+      <span>Loading...</span>
     </div>
   </div>
   <div v-else>
