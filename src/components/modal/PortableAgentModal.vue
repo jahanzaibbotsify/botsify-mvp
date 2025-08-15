@@ -102,7 +102,7 @@ defineExpose({ openModal, closeModal });
     <template #default="{ activeTab }">
       <!-- Publish Tab -->
       <div v-if="activeTab === 'publish'" class="tab-panel">
-        <h3>Portable agent configuration</h3>
+        <h3>Agent as an MCP</h3>
         <!-- <p class="subtitle">MCP server information</p> -->
         
         <div class="form-section">
