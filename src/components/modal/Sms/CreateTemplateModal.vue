@@ -291,7 +291,7 @@ const buttonTypes = [
 // Event listeners
 onMounted(() => {
   // Listen for template creation events
-  eventBus.on('template:created', () => {
+  eventBus.on('template:created', ( ) => {
     // Refresh templates in parent
     eventBus.emit('sms:template:refresh');
   });
@@ -382,7 +382,6 @@ defineExpose({ openModal, closeModal, openModalWithData });
                         iconOnly
                         @click="editButton(index)"
                         title="Edit button"
-                        class="edit-btn"
                       />
                       <Button
                         variant="error-outline"
@@ -391,7 +390,6 @@ defineExpose({ openModal, closeModal, openModalWithData });
                         iconOnly
                         @click="removeButton(index)"
                         title="Remove button"
-                        class="delete-btn"
                       />
                     </div>
                   </div>
@@ -399,7 +397,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
                   <!-- Button Fields (shown when editing) -->
                   <div v-if="button.isEditing" class="button-fields">
                     <!-- Button Title -->
-                    <div class="field-group">
+                    <div class="form-group">
                       <label>Button title</label>
                       <Input
                         v-model="button.title"
@@ -409,7 +407,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
                     </div>
 
                     <!-- Button Type Specific Fields -->
-                    <div v-if="button.type === 'url'" class="field-group">
+                    <div v-if="button.type === 'url'" class="form-group">
                       <label>URL</label>
                       <Input
                         v-model="button.url"
@@ -440,15 +438,15 @@ defineExpose({ openModal, closeModal, openModalWithData });
                     </div>
 
                     <div class="button-actions-footer">
-                      <Button
+                      <!-- <Button
                         variant="primary"
                         size="small"
                         @click="saveButtonEdit(index)"
                       >
                         Save
-                      </Button>
+                      </Button> -->
                       <Button
-                        variant="error-outline"
+                        variant="error"
                         size="small"
                         @click="cancelButtonEdit(index)"
                       >
@@ -511,45 +509,6 @@ defineExpose({ openModal, closeModal, openModalWithData });
   flex-direction: column;
   gap: var(--space-4);
 }
-
-.form-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.form-group label {
-  font-weight: 600;
-  color: var(--color-text-primary);
-  margin-bottom: var(--space-1);
-}
-
-.form-input {
-  font-family: inherit;
-  font-size: 0.875rem;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background-color: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-  transition: border-color var(--transition-normal);
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.form-input.error {
-  border-color: var(--color-error);
-}
-
 
 /* Buttons Section */
 .buttons-header {
@@ -616,26 +575,10 @@ defineExpose({ openModal, closeModal, openModalWithData });
   gap: var(--space-1);
 }
 
-.edit-btn, .delete-btn {
-  padding: var(--space-1);
-}
-
 .button-fields {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-}
-
-.field-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.field-group label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--color-text-primary);
 }
 
 .button-actions-footer {

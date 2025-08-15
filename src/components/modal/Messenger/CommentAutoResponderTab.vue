@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 import { Button, VueSelect, Textarea, Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Pagination } from "@/components/ui"
+import Input from "@/components/ui/Input.vue";
 
 // Store
 const publishStore = usePublishStore();
@@ -29,7 +30,6 @@ const isAddingNew = ref(false);
 const isEditing = ref(false);
 const newKeyword = ref('');
 const isLoading = ref(false);
-const isPluginLoading = ref(false);
 const deleteResponderId = ref<string | null>(null);
 
 // Pagination data
@@ -66,34 +66,7 @@ const postOptions = computed(() => {
   }));
 });
 
-const loadPluginData = async () => {
-  try {
-    if(isPluginLoading.value || posts.value.length > 0) return;
-    isPluginLoading.value = true;
-    const result = await publishStore.loadDataForPlugins("posts");
-    if (result.success && result.data) {
-      setPluginData(result.data);
-    }
-  } catch (error) {
-    console.error('Failed to load plugin data:', error);
-  } finally {
-    isPluginLoading.value = false;
-  }
-};
-
-
-
-const setPluginData = (data: any) => {
-  if (!data || !data.facebook_posts) {
-    return;
-  }
-  
-  // Set posts from API response
-  posts.value = data.facebook_posts.data || [];
-};
-
 const startAddingNew = async () => {
-  await loadPluginData();
   isAddingNew.value = true;
   isEditing.value = false; // Hide edit form when opening create form
   newResponder.value = {
@@ -104,7 +77,6 @@ const startAddingNew = async () => {
 };
 
 const startEditing = async (responder: AutoResponder) => {
-  await loadPluginData();
   isEditing.value = true;
   isAddingNew.value = false; // Hide create form when opening edit form
   editResponder.value = {
@@ -250,7 +222,8 @@ const transformAndSetData = () => {
   }
   
   const optins = storeCommentResponders.value.data.optins || {};
-  
+  posts.value = storeCommentResponders.value.data.facebook_posts.data || [];
+
   // Set pagination data
   currentPage.value = optins.current_page || 1;
   totalPages.value = optins.last_page || 1;
@@ -323,12 +296,8 @@ defineExpose({
 
     <!-- Loading State -->
     <div v-if="storeIsLoadingCommentResponders" class="loading-state">
-      <div class="loading-content">
-        <div class="loading-spinner">
-          <i class="pi pi-spin pi-spinner"></i>
-        </div>
-        <p>Loading auto responders...</p>
-      </div>
+        <div class="loader-spinner"></div>
+        <span>Loading autoresponder...</span>
     </div>
 
     <!-- Empty State -->
@@ -358,11 +327,10 @@ defineExpose({
 
       <div class="form-group">
         <label>Keywords (comma separated)</label>
-        <input 
+        <Input 
           v-model="newResponder.keywords"
           type="text"
           placeholder="help, support, pricing"
-          class="form-input"
         />
         <small class="help-text">Enter keywords separated by commas</small>
       </div>
@@ -414,11 +382,10 @@ defineExpose({
 
       <div class="form-group">
         <label>Keywords (comma separated)</label>
-        <input 
+        <Input 
           v-model="editResponder.keywords"
           type="text"
           placeholder="help, support, pricing"
-          class="form-input"
         />
         <small class="help-text">Enter keywords separated by commas</small>
       </div>
@@ -478,7 +445,6 @@ defineExpose({
           Add New
         </Button>
       </div>
-      
       <Table>
         <TableHead>
           <TableRow>
@@ -499,7 +465,7 @@ defineExpose({
             </TableCell>
             <TableCell>
               <div class="post-cell">
-                {{ posts.find(p => p.id === responder.selectedPost)?.message || 'Unknown post' }}
+                {{ postOptions.find(p => p.value === responder.selectedPost)?.label || 'Unknown post' }}
               </div>
             </TableCell>
             <TableCell>
@@ -550,38 +516,6 @@ defineExpose({
 
 <style scoped>
 /* Component-specific styles only - common styles moved to PublishAgentModal.vue */
-
-.subtitle {
-  margin: 0 0 20px 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-secondary, #6b7280);
-}
-
-/* Loading State */
-.loading-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--color-text-secondary, #6b7280);
-}
-
-.loading-content {
-  max-width: 400px;
-  margin: 0 auto;
-}
-
-.loading-spinner {
-  font-size: 48px;
-  margin-bottom: 20px;
-  color: var(--color-primary, #3b82f6);
-}
-
-.loading-state p {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--color-text-primary, #111827);
-}
 
 /* Empty State */
 .empty-state {
@@ -645,46 +579,12 @@ defineExpose({
   color: var(--color-text-primary, #111827);
 }
 
-.help-text {
-  font-size: 12px;
-  color: var(--color-text-secondary, #6b7280);
-  margin-top: 4px;
-  display: block;
-}
 
 .form-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
   margin-top: 20px;
-}
-
-/* Form Inputs */
-.form-input {
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  background-color: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-  transition: border-color var(--transition-normal);
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.form-group {
-  margin-bottom: var(--space-4);
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: var(--space-2);
-  font-weight: 500;
-  color: var(--color-text-primary);
 }
 
 /* Section Header */

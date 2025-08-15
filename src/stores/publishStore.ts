@@ -131,6 +131,7 @@ export const usePublishStore = defineStore('publish', () => {
     twilioAccountSid: string;
     twilioAuthToken: string;
     twilioSmsNumber: string;
+    twilioSenderId: string;
   }) => {
     isLoading.value = true;
     error.value = null;

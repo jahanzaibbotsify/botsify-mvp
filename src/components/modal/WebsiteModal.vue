@@ -332,7 +332,6 @@ defineExpose({ openModal, closeModal });
 
 .form-label {
   display: block;
-  margin-bottom: 12px;
   font-weight: 500;
   color: var(--color-text-primary, #111827);
   font-size: 14px;

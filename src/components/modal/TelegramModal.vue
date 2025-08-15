@@ -72,7 +72,7 @@ const openModal = () => {
   modalRef.value?.openModal();
   loadTelegramSettings();
   // Clear errors when opening modal
-  clearErrors();
+  // clearErrors();
 };
 
 const closeModal = () => {
@@ -237,7 +237,7 @@ defineExpose({ openModal, closeModal });
               :error="errors.accessToken"
             />
             <small class="help-text">
-              Get this from @BotFather on Telegram
+              Get this from @BotFather on <a href="https://bot-file-upload-eu-1.s3.eu-west-1.amazonaws.com/templates/images/Telegram-Chatbot-Botsify_120323_1709726199.pdf" target="_blank">Telegram</a>
             </small>
           </div>
           
@@ -293,7 +293,7 @@ defineExpose({ openModal, closeModal });
             :disabled="!isFormValid"
             @click="handleSaveTelegramSettings"
           >
-            {{ (isLoading || publishStore.loadingStates.thirdPartyConfig) ? 'Saving...' : 'Save' }}
+            {{ (isLoading || publishStore.loadingStates.thirdPartyConfig) ? 'Saving...' : 'Save Settings' }}
           </Button>
         </div>
       </div>
@@ -301,53 +301,3 @@ defineExpose({ openModal, closeModal });
     
   </PublishModalLayout>
 </template>
-
-<style scoped>
-.subtitle {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-secondary, #6b7280);
-}
-
-.form-section {
-  margin-top: 20px;
-}
-
-.help-text {
-  font-size: 12px;
-  color: var(--color-text-secondary, #6b7280);
-  margin-top: 4px;
-  display: block;
-}
-
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  gap: var(--space-3);
-  color: var(--color-text-secondary);
-}
-
-.loader-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--color-border);
-  border-top: 3px solid var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@media (max-width: 640px) {
-  .form-group {
-    margin-bottom: 16px;
-  }
-}
-</style> 

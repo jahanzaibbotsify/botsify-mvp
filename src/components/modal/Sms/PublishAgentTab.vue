@@ -21,6 +21,7 @@ const smsFields = ref({
   twilioAccountSid: '',
   twilioAuthToken: '',
   twilioSmsNumber: '',
+  twilioSenderId: '',
 });
 
 // Validation state
@@ -50,9 +51,8 @@ const loadTwilioSettings = () => {
       twilioAccountSid: twilioConfig.sid || '',
       twilioAuthToken: twilioConfig.auth_token || '',
       twilioSmsNumber: twilioConfig.number || '',
+      twilioSenderId: twilioConfig.sender_id || '',
     };
-    // Clear errors when loading settings
-    clearErrors();
   }
 };
 
@@ -163,7 +163,7 @@ defineExpose({
 
 <template>
   <div class="tab-panel">
-    <h3>Publish your agent</h3>
+    <h3>SMS agent configuration</h3>
     <p class="subtitle">Choose your SMS provider and configure settings</p>
 
     <!-- Loading State -->
@@ -185,7 +185,7 @@ defineExpose({
           :error="errors.twilioAccountSid"
         />
         <small class="help-text">
-          Find this in your Twilio Console dashboard
+          Find this in your <a href="https://www.twilio.com/en-us/sms/pricing/us" target="_blank">Twilio Console dashboard</a>
         </small>
       </div>
       
@@ -215,9 +215,22 @@ defineExpose({
           :error="errors.twilioSmsNumber"
         />
         <small class="help-text">
-          The phone number you purchased from Twilio
+          The phone number you purchased from <a href="https://support.twilio.com/hc/en-us/articles/223180048-How-to-Add-and-Remove-a-Verified-Phone-Number-or-Caller-ID-with-Twilio" target="_blank">Twilio</a>
         </small>
       </div>
+
+      
+      <div class="form-group">
+        <label for="twilio-sender-id">Twilio Sender ID</label>
+        <Input 
+          id="twilio-sender-id"
+          v-model="smsFields.twilioSenderId"
+          type="tel"
+          placeholder="Enter your Twilio sender iD"
+          size="medium"
+        />
+      </div>
+
       <!-- Action Buttons -->
       <div class="agent-action-buttons">
         <!-- <Button 
@@ -243,91 +256,3 @@ defineExpose({
 
   </div>
 </template>
-
-<style scoped>
-/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
-
-.form-section {
-  margin-top: 20px;
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
-.help-text {
-  font-size: 12px;
-  color: var(--color-text-secondary, #6b7280);
-  margin-top: 4px;
-  display: block;
-}
-
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  gap: var(--space-3);
-  color: var(--color-text-secondary);
-}
-
-.loader-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--color-border);
-  border-top: 3px solid var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.provider-selection {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.provider-button {
-  flex: 1;
-  padding: 12px 16px;
-  border: 2px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-bg-secondary, #f9fafb);
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal, 0.2s ease);
-  font-family: inherit;
-}
-
-.provider-button:hover {
-  border-color: var(--color-primary, #3b82f6);
-  background: var(--color-bg-tertiary, #f3f4f6);
-}
-
-.provider-button.active {
-  border-color: var(--color-primary, #3b82f6);
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.provider-form {
-  margin-bottom: 24px;
-}
-
-@media (max-width: 640px) {
-  .provider-selection {
-    flex-direction: column;
-  }
-  
-  .provider-button {
-    width: 100%;
-  }
-}
-</style> 

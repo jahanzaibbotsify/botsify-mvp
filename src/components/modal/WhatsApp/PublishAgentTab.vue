@@ -456,7 +456,7 @@ defineExpose({
   border-radius: var(--radius-md, 8px);
   background: var(--color-bg-secondary, #f9fafb);
   color: var(--color-text-primary, #111827);
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-normal, 0.2s ease);
@@ -479,24 +479,12 @@ defineExpose({
 
 .provider-icon {
   /* width: 30px; */
-  height: 20px;
+  height: 40px;
   margin-right: 8px;
 }
 
 .provider-form {
   margin-bottom: 24px;
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-primary, #111827);
 }
 
 .form-checkbox {
@@ -516,30 +504,6 @@ defineExpose({
 
 .checkbox-label span {
   margin-left: 8px;
-}
-
-.loading-state {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 200px; /* Adjust as needed */
-  background-color: var(--color-bg-secondary, #f9fafb);
-  border-radius: var(--radius-md, 8px);
-  padding: 20px;
-}
-
-.loading-content {
-  text-align: center;
-}
-
-.loading-spinner {
-  border: 4px solid var(--color-border, #e5e7eb);
-  border-top: 4px solid var(--color-primary, #3b82f6);
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 10px auto;
 }
 
 @keyframes spin {

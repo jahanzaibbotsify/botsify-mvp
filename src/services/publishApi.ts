@@ -96,6 +96,7 @@ export class PublishApiService {
     twilioAccountSid: string;
     twilioAuthToken: string;
     twilioSmsNumber: string;
+    twilioSenderId: string;
   }): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
@@ -103,6 +104,7 @@ export class PublishApiService {
         sid: settings.twilioAccountSid,
         auth_token: settings.twilioAuthToken,
         number: settings.twilioSmsNumber,
+        sender_id: settings.twilioSenderId,
         apikey: apiKey
       }, {
         timeout: 30000 // 30 seconds timeout
