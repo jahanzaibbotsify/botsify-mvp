@@ -24,6 +24,7 @@ export const useConversationStore = defineStore('conversation', () => {
   const chatTypeFilter = ref<'all' | 'my' | 'other'>('all')
   const sortOrder = ref<'asc' | 'desc'>('desc')
   const loading = ref(false)
+  const isSearching = ref(false)
   const error = ref<string | null>(null)
   const limitReached = ref(false)
   const isLoadingMore = ref(false)
@@ -41,6 +42,9 @@ export const useConversationStore = defineStore('conversation', () => {
 
   // Cache expiration time (5 minutes)
   const CACHE_EXPIRY_TIME = 5 * 60 * 1000
+
+  // Search timeout for debouncing
+  let searchTimeout: NodeJS.Timeout | null = null
 
   // Helper function to check if cache is valid
   const isCacheValid = (timestamp: number) => {
@@ -345,7 +349,8 @@ export const useConversationStore = defineStore('conversation', () => {
   const fetchConversations = async (isLoadMore = false, chatId?: string) => {
     if (isLoadMore) {
       isLoadingMore.value = true
-    } else {
+    } else if (!isSearching.value) {
+      // Only set loading for initial loads, not for search/filter operations
       loading.value = true
       limitReached.value = false
     }
@@ -418,7 +423,8 @@ export const useConversationStore = defineStore('conversation', () => {
     } finally {
       if (isLoadMore) {
         isLoadingMore.value = false
-      } else {
+      } else if (!isSearching.value) {
+        // Only reset loading for initial loads, not for search/filter operations
         loading.value = false
       }
     }
@@ -497,36 +503,55 @@ export const useConversationStore = defineStore('conversation', () => {
 
   const setSearchQuery = async (query: string) => {
     searchQuery.value = query
+    
+    // Clear existing timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout)
+    }
+    
+    // Set isSearching to true immediately
+    isSearching.value = true
+    
     // Debounce search to avoid too many API calls
-    clearTimeout((window as any).searchTimeout)
-    ;(window as any).searchTimeout = setTimeout(() => {
-      fetchConversations()
-    }, 300)
+    searchTimeout = setTimeout(async () => {
+      await fetchConversations()
+      isSearching.value = false
+    }, 1000)
   }
 
   const setActiveFilter = async (filter: string) => {
     activeFilter.value = filter
+    isSearching.value = true
     await fetchConversations()
+    isSearching.value = false
   }
 
   const setActiveTab = async (tab: string) => {
     activeTab.value = tab
+    isSearching.value = true
     await fetchConversations()
+    isSearching.value = false
   }
 
   const setReadFilter = async (filter: 'all' | 'read' | 'unread') => {
     readFilter.value = filter
+    isSearching.value = true
     await fetchConversations()
+    isSearching.value = false
   }
 
   const setChatTypeFilter = async (filter: 'all' | 'my' | 'other') => {
     chatTypeFilter.value = filter
+    isSearching.value = true
     await fetchConversations()
+    isSearching.value = false
   }
 
   const setSortOrder = async (order: 'asc' | 'desc') => {
     sortOrder.value = order
+    isSearching.value = true
     await fetchConversations()
+    isSearching.value = false
   }
 
   const selectConversation = async (conversation: ExtendedChat) => {
@@ -791,6 +816,14 @@ export const useConversationStore = defineStore('conversation', () => {
     }
   }
 
+  // Cleanup method for search timeout
+  const clearSearchTimeout = () => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout)
+      searchTimeout = null
+    }
+  }
+
   return {
     // State
     conversations,
@@ -803,6 +836,7 @@ export const useConversationStore = defineStore('conversation', () => {
     chatTypeFilter,
     sortOrder,
     loading,
+    isSearching,
     error,
     limitReached,
     isLoadingMore,
@@ -847,12 +881,15 @@ export const useConversationStore = defineStore('conversation', () => {
     // Delete method
     deleteConversation,
     
-      // Bot activation method
-  changeBotActivation,
-  
-  // Notification methods
-  enableNotifications,
-  disableNotifications,
-  checkNotificationStatus
+    // Bot activation method
+    changeBotActivation,
+    
+    // Notification methods
+    enableNotifications,
+    disableNotifications,
+    checkNotificationStatus,
+    
+    // Utility methods
+    clearSearchTimeout
   }
 }) 
