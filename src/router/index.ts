@@ -2,6 +2,10 @@ import {RouteRecordRaw, createRouter, createWebHistory} from 'vue-router'
 import {useAuthStore} from "@/stores/authStore.ts";
 import { getBotData } from "@/utils/getBotData";
 import { getCurrentApiKey } from '@/utils/apiKeyUtils';
+import { useChatStore } from '@/stores/chatStore';
+import { useBotStore } from '@/stores/botStore';
+import { useRoleStore } from '@/stores/roleStore';
+import { useWhitelabelStore } from '@/stores/whitelabelStore';
 const routes: RouteRecordRaw[] = [
   // Auth Routes (with AuthLayout)
   {
@@ -232,7 +236,10 @@ router.beforeEach(async (to, from, next) => {
 
       // Load bot data only once for agent routes, not on every navigation
       if (to.name === 'agent') {
-        getBotData();
+        // Let the agent selection flow handle store initialization
+        // The stores will be properly initialized when the user selects an agent
+        console.log('🔧 Agent route detected, allowing navigation...');
+        return next();
       }
      
       // Allow navigation to proceed

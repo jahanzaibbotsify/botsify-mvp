@@ -1058,6 +1058,14 @@ Use the above connected services information to understand what tools and data s
      }
   }
 
+  function clearAllData() {
+    chats.value = [];
+    activeChat.value = '';
+    activeAiPromptVersion.value = null;
+    globalPromptTemplates.value = [];
+    createNewChat(); // Create a fresh default chat
+  }
+
   function systemPrompt(){
     return `You are an AI prompt designer and chatbot configuration assistant. 
 
@@ -1258,6 +1266,7 @@ Keep flows organized, clear, and user-friendly.`,
     clearVersionHistory,
     clearChatMessages,
     removeLastMessage,
-    getConnectedServicesJson
+    getConnectedServicesJson,
+    clearAllData
   };
 });

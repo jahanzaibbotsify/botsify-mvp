@@ -52,9 +52,24 @@ export function useChatManagement(chatId: string) {
 
   const showCenteredInput = computed(() => {
     try {
+      // Don't show centered input until we have proper chat data
       if (!chat.value?.messages) return true;
+      
       const msgs = chat.value.messages;
-      return msgs.length === 0 || (msgs.length === 1 && !msgs[0].content);
+      
+      // Only show centered input if there are no messages or only one empty message
+      // and ensure the message array is properly initialized
+      if (!Array.isArray(msgs)) return true;
+      
+      // Check if messages are still loading (empty array might mean loading)
+      if (msgs.length === 0) return true;
+      
+      // Check if first message is empty or undefined
+      if (msgs.length === 1 && (!msgs[0]?.content || msgs[0].content.trim() === '')) {
+        return true;
+      }
+      
+      return false;
     } catch (error) {
       console.error('Error checking centered input:', error);
       return true;

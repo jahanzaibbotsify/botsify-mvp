@@ -58,6 +58,8 @@ export const useRoleStore = defineStore('role', () => {
 
   // Convert bot_role number to UserRole
   const getRoleFromBotRole = (botRole: number): UserRole => {
+    console.log('🔧 Converting bot_role:', botRole, 'to UserRole');
+    
     switch (botRole) {
       case 0:
         return 'editor'
@@ -70,20 +72,37 @@ export const useRoleStore = defineStore('role', () => {
 
   // Get permissions for a specific role
   const getPermissionsForRole = (role: UserRole): Permission[] => {
+    console.log('🔧 Getting permissions for role:', role);
+    
     const roleDef = roleDefinitions.find(r => r.role === role)
-    return roleDef ? roleDef.permissions : []
+    const permissions = roleDef ? roleDef.permissions : []
+    
+    console.log('🔧 Found permissions:', permissions);
+    return permissions
   }
 
   // Set current user and role
   const setCurrentUser = (user: BotUser) => {
+    if (!user) {
+      console.warn('❌ setCurrentUser called with null/undefined user');
+      return;
+    }
+    
+    console.log('🔧 Setting current user:', user);
     currentUser.value = user
     currentRole.value = getRoleFromBotRole(user.bot_role)
     userPermissions.value = getPermissionsForRole(currentRole.value)
-
+    
+    console.log('🔧 User role set to:', currentRole.value);
+    console.log('🔧 User permissions:', userPermissions.value);
   }
 
   // Check if user has a specific permission
   const hasPermission = (permission: Permission): boolean => {
+    // Ensure we have user data and permissions before checking
+    if (!currentUser.value || !userPermissions.value.length) {
+      return false;
+    }
     return userPermissions.value.includes(permission)
   }
 
@@ -110,6 +129,11 @@ export const useRoleStore = defineStore('role', () => {
 
   // Subscription-related computed properties
   const hasSubscription = computed(() => {
+    // Ensure we have user data before checking subscription
+    if (!currentUser.value) {
+      return false;
+    }
+    
     // Check if user has regular subscription
     const hasRegularSubs = !!currentUser.value?.subs;
     
@@ -143,7 +167,13 @@ export const useRoleStore = defineStore('role', () => {
   // Subscription-based permission computed properties
   const canViewUsers = computed(() => hasPermission('view_user_attributes') && hasSubscription.value)
   const canViewConversation = computed(() => hasPermission('view_chats_page') && hasSubscription.value)
-  const canManageBillingWithSubscription = computed(() => hasPermission('manage_billing') && hasSubscription.value)
+  const canManageBillingWithSubscription = computed(() => {
+    // Ensure we have user data before checking permissions
+    if (!currentUser.value) {
+      return false;
+    }
+    return hasPermission('manage_billing') && hasSubscription.value
+  })
 
   // Clear user data
   const clearUser = () => {

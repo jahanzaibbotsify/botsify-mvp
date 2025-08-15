@@ -36,5 +36,13 @@ export const useBotStore = defineStore('bot', {
       this.apiKey = '';
       clearApiKeyUtil();
     },
+    clearAllData() {
+      this.apiKey = '';
+      this.apiKeyConfirmed = false;
+      this.user = null;
+      this.botId = '';
+      this.botName = '';
+      clearApiKeyUtil();
+    },
   }
 })

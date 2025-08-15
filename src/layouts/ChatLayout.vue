@@ -1,13 +1,24 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import {useRoute} from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
+import { useBotStore } from '@/stores/botStore';
+import { useRoleStore } from '@/stores/roleStore';
+import { useWhitelabelStore } from '@/stores/whitelabelStore';
 import LeftSidebar from '@/components/sidebar/LeftSidebar.vue';
 import { useSidebarToggle } from '@/composables/useSidebarToggle';
+import { initializeStores } from '@/utils/getBotData';
 
 const chatStore = useChatStore();
+const botStore = useBotStore();
+const roleStore = useRoleStore();
+const whitelabelStore = useWhitelabelStore();
 const route = useRoute();
 const selectedNavigationButton = ref('Agent');
+
+// Loading state
+const isStoresLoading = ref(true);
+const isAgentLoading = ref(false);
 
 // Use the sidebar toggle composable
 const {
@@ -19,9 +30,16 @@ const {
   sidebarStore
 } = useSidebarToggle();
 
+// Computed property to check if all stores are ready
+const isStoresReady = computed(() => {
+  return botStore.apiKeyConfirmed && 
+         roleStore.currentUser && 
+         !isStoresLoading.value;
+});
+
 // Watch for route changes to set the active chat
 watch(() => route.params.id, (newId) => {
-  if (newId) {
+  if (newId && isStoresReady.value) {
     chatStore.setActiveChat(newId as string);
   }
 }, { immediate: true });
@@ -35,12 +53,39 @@ watch(() => route.path, () => {
 
 // Initialize sidebar state based on screen size
 onMounted(async () => {
-  initializeSidebar()
+  console.log('🔧 ChatLayout mounted');
+  
+  try {
+    // Initialize stores to ensure they are properly loaded
+    await initializeStores();
+    
+    // Mark stores as ready
+    isStoresLoading.value = false;
+    
+    // Initialize sidebar
+    initializeSidebar();
+    
+    console.log('🔧 ChatLayout initialization complete');
+  } catch (error) {
+    console.error('❌ ChatLayout initialization failed:', error);
+    isStoresLoading.value = false;
+  }
 });
 </script>
 
 <template>
   <div class="chat-layout">
+    <!-- Loading overlay for stores initialization -->
+    <div v-if="!isStoresReady" class="stores-loading-overlay">
+      <div class="stores-loading-content">
+        <div class="stores-loading-spinner">
+          <i class="pi pi-spin pi-spinner"></i>
+        </div>
+        <h2>Initializing...</h2>
+        <p>Setting up your workspace</p>
+      </div>
+    </div>
+    
     <!-- Overlay for mobile sidebar -->
     <div 
       v-if="shouldShowOverlay" 
@@ -99,6 +144,44 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+/* Stores Loading Overlay */
+.stores-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--color-bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+}
+
+.stores-loading-content {
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.stores-loading-spinner {
+  font-size: 3rem;
+  margin-bottom: var(--space-4);
+  color: var(--color-primary);
+}
+
+.stores-loading-content h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.stores-loading-content p {
+  font-size: 1rem;
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
 .chat-layout {
   display: flex;
   height: 100vh;

@@ -23,11 +23,15 @@ const whitelabelStore = useWhitelabelStore();
 const emit = defineEmits(['select-button']);
 const selectedNavigationButton = computed(() => {
   const currentPath = route.path.toLowerCase();
+  
+  console.log('🔧 selectedNavigationButton computed - currentPath:', currentPath);
+  console.log('🔧 navigationButtons:', navigationButtons.value);
 
   const match = navigationButtons.value.find((btn) =>
     currentPath.includes(btn.id.toLowerCase())
   );
 
+  console.log('🔧 Found match:', match);
   return match?.name || null;
 });
 // const isMobile = computed(() => width.value < 768);
@@ -42,6 +46,9 @@ const dropdownRef = ref<HTMLElement | null>(null);
 
 
 const navigationButtons = computed(() => {
+  console.log('🔧 navigationButtons computed - roleStore.currentUser:', !!roleStore.currentUser);
+  console.log('🔧 roleStore.userPermissions:', roleStore.userPermissions);
+  
   const buttons = [
     {
       id: `agent/${chatStore.activeChat}`,
@@ -67,26 +74,28 @@ const navigationButtons = computed(() => {
   ];
 
   // Filter buttons based on user permissions and subscription status
-  return buttons.filter(button => {
+  const filteredButtons = buttons.filter(button => {
     // Check if user has permission
     const hasPermission = roleStore.hasPermission(button.permission);
-    
-    // If button requires subscription, check if user has subscription
-    // if (button.requiresSubscription) {
-    //   return hasPermission && roleStore.hasSubscription;
-    // }
+    console.log(`🔧 Button ${button.name} (${button.permission}): hasPermission = ${hasPermission}`);
     
     // If button doesn't require subscription, only check permission
     return hasPermission;
   });
+  
+  console.log('🔧 Filtered buttons:', filteredButtons.map(b => b.name));
+  return filteredButtons;
 });
 
 // Help links for the help dropdown
 const navLinks = computed(() => {
+  console.log('🔧 navLinks computed - whitelabelStore.isWhitelabelClient:', whitelabelStore.isWhitelabelClient);
+  
   // @ts-ignore
   const baseUrl = getWebUrl();
   if (whitelabelStore.isWhitelabelClient) {
     // For whitelabel clients, show only Legacy Platform and Support
+    console.log('🔧 Using whitelabel nav links');
     return [
       // {
       //   name: 'Legacy Platform',
@@ -102,6 +111,7 @@ const navLinks = computed(() => {
   }
 
   // For regular Botsify clients, show all links
+  console.log('🔧 Using regular Botsify nav links');
   return [
     // {
     //   name: 'Legacy Platform',
@@ -297,6 +307,11 @@ const handleClickOutside = (event: MouseEvent) => {
 };
 
 onMounted(() => {
+  console.log('🔧 LeftSidebar mounted');
+  console.log('🔧 roleStore.currentUser:', !!roleStore.currentUser);
+  console.log('🔧 roleStore.userPermissions:', roleStore.userPermissions);
+  console.log('🔧 whitelabelStore.isWhitelabelClient:', whitelabelStore.isWhitelabelClient);
+  
   document.addEventListener('click', handleClickOutside);
 });
 
@@ -314,6 +329,16 @@ const openPartnerPortal = () => {
 
 <template>
   <aside class="left-sidebar scrollbar" :class="{ 'open': sidebarStore.isOpen }">
+    <!-- Loading overlay when stores are not initialized -->
+    <div v-if="!roleStore.currentUser" class="sidebar-loading-overlay">
+      <div class="loading-content">
+        <div class="loading-spinner">
+          <i class="pi pi-spin pi-spinner"></i>
+        </div>
+        <p>Loading...</p>
+      </div>
+    </div>
+    
     <div class="sidebar-header">
       <div class="header-content">
         <div class="app-title-container">
@@ -413,6 +438,14 @@ const openPartnerPortal = () => {
           </div>
         </button>
     </div>
+    <div v-else-if="!roleStore.currentUser" class="sidebar-pricing">
+        <!-- Loading state while stores are being initialized -->
+        <button class="pricing-button" disabled>
+          <div class="button-content">
+            <span class="pricing-text">Loading...</span>
+          </div>
+        </button>
+    </div>
     <div v-else class="sidebar-pricing">
         <button class="pricing-button" @click="handleCalendly">
           <div class="button-content">
@@ -434,6 +467,38 @@ const openPartnerPortal = () => {
 
 
 <style scoped>
+/* Sidebar Loading Overlay */
+.sidebar-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--color-bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.loading-content {
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.loading-spinner {
+  font-size: 2rem;
+  margin-bottom: var(--space-2);
+  color: var(--color-primary);
+}
+
+.loading-content p {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Sidebar Pricing */
 .sidebar-pricing {
   padding: var(--space-4);
   border-top: 1px solid var(--color-border);

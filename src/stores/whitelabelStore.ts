@@ -48,6 +48,19 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
     }
   }
 
+  // Clear whitelabel data
+  function clearWhitelabelData() {
+    isWhitelabelClient.value = false
+    whitelabelData.value = null
+    
+    // Reset CSS custom properties to defaults
+    const root = document.documentElement
+    root.style.setProperty('--color-primary', '#00A3FF')
+    root.style.setProperty('--color-primary-hover', '#33B5FF')
+    root.style.setProperty('--color-primary-active', '#0082CC')
+    root.style.setProperty('--color-secondary', '#10B981')
+  }
+
   // Helper function to adjust color brightness
   function adjustColor(color: string, amount: number): string {
     const hex = color.replace('#', '')
@@ -74,6 +87,7 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
     setWhitelabelData,
     applyWhitelabelColors,
     applyWhitelabelFavicon,
+    clearWhitelabelData,
     companyName,
     primaryColor,
     secondaryColor,

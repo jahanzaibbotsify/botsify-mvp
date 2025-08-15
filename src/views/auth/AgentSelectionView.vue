@@ -3,6 +3,9 @@ import {ref, computed, onMounted, onUnmounted, nextTick, watch} from 'vue'
 import {useRouter} from 'vue-router'
 import {axiosInstance} from "@/utils/axiosInstance.ts"
 import {useBotStore} from "@/stores/botStore.ts";
+import {useChatStore} from "@/stores/chatStore.ts";
+import {useRoleStore} from "@/stores/roleStore.ts";
+import {useWhitelabelStore} from "@/stores/whitelabelStore.ts";
 import UserMenu from "@/components/auth/UserMenu.vue";
 
 const router = useRouter()
@@ -490,8 +493,23 @@ const selectBot = async (agent: any) => {
   try {
     const response = await axiosInstance.get(`v1/bot/select/${agent.token}`)
     if (response.data && response.data.bot) {
-      useBotStore().setApiKey(agent.apikey)
-      router.push(`/agent/${agent.apikey}`)
+      // Clear old data first
+      const chatStore = useChatStore();
+      const botStore = useBotStore();
+      const roleStore = useRoleStore();
+      const whitelabelStore = useWhitelabelStore();
+      
+      // Clear all stores before setting new data
+      chatStore.clearAllData();
+      botStore.clearAllData();
+      roleStore.clearUser();
+      whitelabelStore.clearWhitelabelData();
+      
+      // Set the API key in the store
+      botStore.setApiKey(agent.apikey);
+      
+      // Now navigate to the agent route
+      router.push(`/agent/${agent.apikey}`);
     } else {
       window.$toast?.error(response.data?.message || 'Failed to select agent. Please try again.')
     }

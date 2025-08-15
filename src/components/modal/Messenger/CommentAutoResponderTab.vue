@@ -68,7 +68,7 @@ const postOptions = computed(() => {
 
 const loadPluginData = async () => {
   try {
-    if(isPluginLoading.value || posts.value.length > 0) return;
+    if(isPluginLoading.value) return;
     isPluginLoading.value = true;
     const result = await publishStore.loadDataForPlugins("posts");
     if (result.success && result.data) {
@@ -92,8 +92,7 @@ const setPluginData = (data: any) => {
   posts.value = data.facebook_posts.data || [];
 };
 
-const startAddingNew = async () => {
-  await loadPluginData();
+const startAddingNew = () => {
   isAddingNew.value = true;
   isEditing.value = false; // Hide edit form when opening create form
   newResponder.value = {
@@ -103,8 +102,7 @@ const startAddingNew = async () => {
   };
 };
 
-const startEditing = async (responder: AutoResponder) => {
-  await loadPluginData();
+const startEditing = (responder: AutoResponder) => {
   isEditing.value = true;
   isAddingNew.value = false; // Hide create form when opening edit form
   editResponder.value = {
@@ -307,6 +305,9 @@ onMounted(() => {
   } else if (storeCommentResponders.value) {
     transformAndSetData();
   }
+  
+  // Load plugin data
+  loadPluginData();
 });
 
 // Expose methods for parent component

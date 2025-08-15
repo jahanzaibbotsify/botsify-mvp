@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useConversationStore } from '@/stores/conversationStore'
 import { useRoleStore } from '@/stores/roleStore'
+import { initializeStores } from '@/utils/getBotData'
 import {
   ConversationSidebar,
   ChatHeader,
@@ -34,6 +35,9 @@ const handleTranslateLanguage = (lang: string) => {
 
 // Lifecycle
 onMounted(async () => {
+  // Initialize stores to ensure they are properly loaded
+  await initializeStores();
+  
   // Set API key from route
   const chatId = route.params.id as string
   // Fetch conversations from API

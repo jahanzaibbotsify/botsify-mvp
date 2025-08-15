@@ -7,6 +7,7 @@ import ImportPanel from '@/components/user/ImportPanel.vue'
 import { ActionType, User } from '@/types/user'
 import { useUserStore } from '@/stores/userStore'
 import { useRoleStore } from '@/stores/roleStore'
+import { initializeStores } from '@/utils/getBotData'
 
 // Use the router
 const router = useRouter()
@@ -105,12 +106,15 @@ const getActionText = (action: ActionType): string => {
 }
 
 // Load data when component mounts
-onMounted(() => {
+onMounted(async () => {
   // Prevent live chat agents from accessing this page
   if (roleStore.isLiveChatAgent) {
     router.push('/conversation');
     return;
   }
+  
+  // Initialize stores to ensure they are properly loaded
+  await initializeStores();
   
   userStore.fetchUsers()
   
