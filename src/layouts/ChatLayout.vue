@@ -40,6 +40,13 @@ onMounted(async () => {
 </script>
 
 <template>
+  <div v-if="chatStore.isLoading" class="loading-overlay">
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <!-- <span>Loading...</span> -->
+    </div>
+  </div>
+  <div v-else>
   <div class="chat-layout">
     <!-- Overlay for mobile sidebar -->
     <div 
@@ -95,6 +102,7 @@ onMounted(async () => {
     >
       <i class="pi pi-angle-right" style="font-size: 16px;"></i>
     </button>
+  </div>
   </div>
 </template>
 

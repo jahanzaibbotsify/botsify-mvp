@@ -27,6 +27,7 @@ export const useChatStore = defineStore('chat', () => {
   const mcpStore = useMCPStore();
   
   // State
+  const isLoading = ref<Boolean>(false);
   const chats = ref<Chat[]>([]);
   const activeChat = ref<string>('');
   const isTyping = ref(false);
@@ -1229,6 +1230,7 @@ Keep flows organized, clear, and user-friendly.`,
 
   return {
     chats,
+    isLoading,
     activeChat,
     currentChat,
     isTyping,

@@ -35,7 +35,7 @@ export async function getBotData() {
   // Clean up chat store state before loading new agent data
   const chatStore = useChatStore();
   chatStore.cleanupForAgentSwitch();
-
+  chatStore.isLoading = true;
   // Reset publish store state for new agent
   const publishStore = usePublishStore();
   publishStore.resetStore();
@@ -110,6 +110,8 @@ export async function getBotData() {
   } catch (error) {
     console.error('❌ Failed to get bot details:', error);
     return router.replace({ name: 'Unauthenticated' });
+  } finally {
+    chatStore.isLoading = false;
   }
 }
 
