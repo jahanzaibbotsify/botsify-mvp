@@ -294,7 +294,7 @@ const exportData = (agent: any) => {
   activeMenuId.value = null
 
   window.$confirm({
-    text: 'Please Confirm\nYour Bot Data will be exported and then will be sent you via email.',
+    text: 'Please Confirm\nYour Agent Data will be exported and then will be sent you via email.',
     cancelButtonText: 'No',
     confirmButtonText: 'Yes'
   }, async () => {
