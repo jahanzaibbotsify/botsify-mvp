@@ -265,16 +265,16 @@ onUnmounted(() => {
 
 .user-name {
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.85rem;
   color: var(--color-text-primary);
-  margin-bottom: var(--space-1);
+  /* margin-bottom: var(--space-1); */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .user-email {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;

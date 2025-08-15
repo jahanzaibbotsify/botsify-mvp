@@ -156,19 +156,19 @@ onUnmounted(() => {
 
 .page-header {
   background-color: var(--color-bg-secondary);
-  padding: var(--space-6) var(--space-6) var(--space-4);
+  padding: var(--space-4) var(--space-6) var(--space-4);
   border-bottom: 1px solid var(--color-border);
 }
 
 .page-header h1 {
-  font-size: 1.875rem;
+  font-size: 1.2rem;
   font-weight: 600;
   color: var(--color-text-primary);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-1);
 }
 
 .page-header p {
-  font-size: 1rem;
+  font-size: 0.85rem;
   color: var(--color-text-secondary);
   margin: 0;
 }

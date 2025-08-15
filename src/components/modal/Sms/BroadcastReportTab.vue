@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 import { Table, TableHead, TableBody, TableHeader, TableCell, Badge,  Input, Button, DateRange } from "@/components/ui";
-import { formatTime } from "@/utils";
+import { formatDate } from "@/utils";
 
 defineEmits<{
   'page-change': [page: number];
@@ -152,6 +152,7 @@ defineExpose({
         <DateRange
           v-model="dateRange"
           label="Date Range"
+          placeholder="Select date range"
         />
       </div>
       
@@ -227,7 +228,7 @@ defineExpose({
             <TableCell>{{ message.number }}</TableCell>
             <TableCell>{{ truncateMessage(message.message) }}</TableCell>
             <TableCell>{{ message.failure_reason || '-' }}</TableCell>
-            <TableCell>{{ formatTime(message.sent_time) }}</TableCell>
+            <TableCell>{{ formatDate(message.sent_time) }}</TableCell>
           </tr>
         </TableBody>
       </Table>

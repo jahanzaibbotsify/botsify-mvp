@@ -2,10 +2,12 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router';
 import UserAttributes from './Attributes.vue'
-import { UserAttribute, SortBy, PerPage } from '@/types/user'
+import { UserAttribute, SortBy, PerPage, SortOrder } from '@/types/user'
 import { useUserStore, type ExtendedUser } from '@/stores/userStore'
 import { useRoleStore } from '@/stores/roleStore'
 import { userApi } from '@/services/userApi';
+import {Table, TableHead, TableHeader, TableBody, TableCell, TableRow, Badge, Button} from '@/components/ui';
+import { formatDate } from '@/utils';
 
 const userStore = useUserStore()
 const roleStore = useRoleStore()
@@ -96,8 +98,8 @@ const handlePerPageChange = (event: Event): void => {
   userStore.handlePerPageChange(perPage)
 }
 
-const getSortIcon = (column: SortBy): string => {
-  if (userStore.sorting.sortBy !== column) return ''
+const getSortIcon = (column: SortBy): SortOrder => {
+  if (userStore.sorting.sortBy !== column) return 'desc'
   return userStore.sorting.sortOrder === 'asc' ? 'asc' : 'desc'
 }
 
@@ -155,128 +157,133 @@ const getPageNumbers = computed(() => {
         of {{ userStore.pagination.totalItems }} entries
       </div>
     </div>
-    <div class="table-scroll-container">
-      <table class="users-table">
-        <thead>
-          <tr>
-            <th>
-              <input 
-                type="checkbox" 
-                :checked="userStore.selectAll" 
-                @change="toggleSelectAll"
-              >
-            </th>
-            <th class="sortable" :class="getSortIcon('name')" @click="handleSort('name')">
-              NAME
-            </th>
-            <th :class="getSortIcon('created_at')" @click="handleSort('created_at')">CREATED AT</th>
-            <th :class="getSortIcon('country')" @click="handleSort('country')">COUNTRY</th>
-            <th>PHONE</th>
-            <th>STATUS</th>
-            <th>ACTIONS</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="userStore.loading" v-for="i in userStore.pagination.perPage" :key="`skeleton-${i}`" class="skeleton-row">
-            <td>
-              <div class="skeleton-checkbox"></div>
-            </td>
-            <td>
-              <div class="skeleton-user-info">
-                <div class="skeleton-avatar"></div>
-                <div class="skeleton-user-details">
-                  <div class="skeleton-name"></div>
-                  <div class="skeleton-email"></div>
-                </div>
-              </div>
-            </td>
-            <td><div class="skeleton-text"></div></td>
-            <td><div class="skeleton-text"></div></td>
-            <td><div class="skeleton-badge"></div></td>
-            <td>
-              <div class="skeleton-actions">
-                <div class="skeleton-action-btn"></div>
-                <div class="skeleton-action-btn"></div>
-                <div class="skeleton-action-btn"></div>
-              </div>
-            </td>
-          </tr>
-          <tr v-else-if="userStore.users.length === 0" class="no-data-row">
-            <td colspan="10" class="no-data-cell">
-              <div class="no-data-content">
-                <div class="no-data-icon">📄</div>
-                <div class="no-data-text">No data found</div>
-                <div class="no-data-subtext">Try adjusting your search or filter criteria</div>
-              </div>
-            </td>
-          </tr>
-          <tr 
-            v-else 
-            v-for="user in userStore.users" 
-            :key="user.id"
-            class="clickable-row"
-            @click="handleRowClick(user)"
+    
+    <!-- Users Table -->
+    <Table>
+      <TableHead>
+          <TableHeader>
+            <input 
+              type="checkbox" 
+              :checked="userStore.selectAll" 
+              @change="toggleSelectAll"
+            >
+          </TableHeader>
+          <TableHeader 
+            sortable 
+            :sort="getSortIcon('name')" 
+            @click="handleSort('name')"
+            width="250px"
           >
-            <td>
-              <input
-                @click.stop
-                type="checkbox" 
-                :checked="user.selected"
-                @change="handleUserSelect(user.id)"
-              >
-            </td>
-            <td>
-              <div class="user-info">
-                <div class="user-avatar">{{ getUserInitials(user.name) }}</div>
-                <div class="user-details">
-                  <div class="user-name">{{ user.name }}</div>
-                  <div class="user-email">{{ user.email }}</div>
-                </div>
+            NAME
+          </TableHeader>
+          <TableHeader 
+            sortable 
+            :sort="getSortIcon('created_at')" 
+            @click="handleSort('created_at')"
+            width="180px"
+          >
+            CREATED AT
+          </TableHeader>
+          <TableHeader 
+            sortable 
+            :sort="getSortIcon('country')" 
+            @click="handleSort('country')"
+            width="150px"
+          >
+            COUNTRY
+          </TableHeader>
+          <TableHeader width="160px">PHONE</TableHeader>
+          <TableHeader width="120px">STATUS</TableHeader>
+          <TableHeader width="150px">ACTIONS</TableHeader>
+      </TableHead>
+      
+      <TableBody>
+        <!-- Skeleton Loading Rows -->
+        <TableRow v-if="userStore.loading" v-for="i in 5" :key="`skeleton-${i}`" skeleton>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="badge"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="actions"></TableCell>
+          </TableRow>
+
+        <!-- Empty state -->
+        <TableRow v-else-if="userStore.users.length === 0" noData>
+            <TableCell noData colspan="6">
+              <div class="empty-state">
+                <i class="pi pi-file-o"></i>
+                <p>No user found</p>
               </div>
-            </td>
-            <td>{{ user.created_at }}</td>
-            <td>{{ user.country }}</td>
-            <td>{{ user.phone_number || 'N/A' }}</td>
-            <td>
-              <span class="ustatus-badge" :class="user.status.toLowerCase()">
-                {{ user.status }}
-              </span>
-            </td>
-            <td>
-              <div class="action-buttons">
-                <button 
-                  v-if="user.hasConversation" 
-                  class="action-btn conversation-btn"
-                  @click.stop
-                  @click="goToConversation(user.fbId)"
-                  title="Go to Conversation"
-                >
-                  <i class="pi pi-comments"></i>
-                </button>
-                <button 
-                  v-if="roleStore.canViewUserAttributes"
-                  class="action-btn attributes-btn"
-                  @click.stop
-                  @click="handleShowAttributes(user)"
-                  title="Show Attributes"
-                >
-                  <i class="pi pi-database"></i>
-                </button>
-                <button 
-                  v-if="roleStore.canDeleteUsers"
-                  class="action-btn delete-btn"
-                  @click.stop
-                  @click="handleDeleteUser(user.id)"
-                  title="Delete User"
-                >
-                  <i class="pi pi-trash"></i>
-                </button>
+            </TableCell>
+          </TableRow>
+
+        <!-- User Data Rows -->
+        <TableRow 
+          v-else 
+          v-for="user in userStore.users" 
+          :key="user.id"
+          clickable
+          @click="handleRowClick(user)"
+        >
+          <TableCell>
+            <input
+              @click.stop
+              type="checkbox" 
+              :checked="user.selected"
+              @change="handleUserSelect(user.id)"
+            >
+          </TableCell>
+          <TableCell>
+            <div class="user-info">
+              <div class="user-avatar">{{ getUserInitials(user.name) }}</div>
+              <div class="user-details">
+                <div class="user-name">{{ user.name }}</div>
+                <div class="user-email">{{ user.email }}</div>
               </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+            </div>
+          </TableCell>
+          <TableCell>{{ formatDate(user.created_at) }}</TableCell>
+          <TableCell>{{ user.country }}</TableCell>
+          <TableCell>{{ user.phone_number || 'N/A' }}</TableCell>
+          <TableCell>
+            <Badge size="small" :variant="user.status === 'Active' ? 'success' : 'error'">
+              {{ user.status }}
+            </Badge>
+          </TableCell>
+          <TableCell>
+            <div class="action-buttons">
+              <Button 
+                v-if="user.hasConversation" 
+                variant="primary-outline"
+                size="small"
+                icon="pi pi-comments"
+                :icon-only="true"
+                @click.stop="goToConversation(user.fbId)"
+                title="Go to Conversation"
+              />
+              <Button 
+                v-if="roleStore.canViewUserAttributes"
+                variant="secondary"
+                size="small"
+                icon="pi pi-database"
+                :icon-only="true"
+                @click.stop="handleShowAttributes(user)"
+                title="Show Attributes"
+              />
+              <Button 
+                v-if="roleStore.canDeleteUsers"
+                variant="error-outline"
+                size="small"
+                icon="pi pi-trash"
+                :icon-only="true"
+                @click.stop="handleDeleteUser(user.id)"
+                title="Delete User"
+              />
+            </div>
+          </TableCell>
+        </TableRow>
+      </TableBody>
+    </Table>
 
      <!-- Pagination -->
      <div class="pagination-container">
@@ -362,172 +369,6 @@ const getPageNumbers = computed(() => {
   font-size: 14px;
 }
 
-.table-scroll-container {
-  overflow-x: auto;
-  max-height: 50vh;
-  overflow-y: auto;
-  background-color: white;
-  scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 #f1f5f9;
-}
-
-.table-scroll-container::-webkit-scrollbar {
-  height: 8px;
-  width: 8px;
-}
-
-.table-scroll-container::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 4px;
-}
-
-.table-scroll-container::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-
-.table-scroll-container::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-.users-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 1200px;
-  transition: filter 0.3s ease;
-}
-
-.users-table th {
-  background-color: #f8fafc;
-  color: #374151;
-  padding: 16px 12px;
-  text-align: left;
-  font-weight: 600;
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  position: sticky;
-  top: 0;
-  white-space: nowrap;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-.users-table th {
-  cursor: pointer;
-  user-select: none;
-  transition: background-color 0.2s;
-  position: relative;
-}
-
-.users-table th.sortable:hover {
-  background-color: #f1f5f9;
-}
-
-.users-table th.sortable::after {
-  content: '↕';
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 14px;
-  opacity: 0.7;
-}
-
-.users-table th.sortable.asc::after {
-  content: '↑';
-  opacity: 1;
-}
-
-.users-table th.sortable.desc::after {
-  content: '↓';
-  opacity: 1;
-}
-
-/* Column width constraints */
-.users-table th:nth-child(1) { width: 50px; } /* Checkbox */
-.users-table th:nth-child(2) { width: 250px; } /* Name */
-.users-table th:nth-child(3) { width: 100px; } /* Type */
-.users-table th:nth-child(4) { width: 180px; } /* Created At */
-.users-table th:nth-child(5) { width: 150px; } /* Country */
-.users-table th:nth-child(6) { width: 160px; } /* Phone */
-.users-table th:nth-child(7) { width: 120px; } /* Status */
-.users-table th:nth-child(8) { width: 150px; } /* Actions */
-
-.users-table td {
-  padding: 16px 12px;
-  border-bottom: 1px solid #f3f4f6;
-  font-size: 13px;
-  background-color: white;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Column width constraints for cells */
-.users-table td:nth-child(1) { width: 50px; } /* Checkbox */
-.users-table td:nth-child(2) { width: 250px; } /* Name */
-.users-table td:nth-child(3) { width: 100px; } /* Type */
-.users-table td:nth-child(4) { width: 180px; } /* Created At */
-.users-table td:nth-child(5) { width: 150px; } /* Country */
-.users-table td:nth-child(6) { width: 160px; } /* Phone */
-.users-table td:nth-child(7) { width: 120px; } /* Status */
-.users-table td:nth-child(8) { width: 150px; } /* Actions */
-
-.users-table tr:hover td {
-  background-color: #f9fafb;
-}
-
-.clickable-row {
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.clickable-row:hover {
-  background-color: #f9fafb !important;
-}
-
-.no-data-row {
-  height: 100px;
-}
-
-.no-data-row:hover td {
-  background-color: white !important;
-}
-
-.no-data-cell {
-  text-align: center;
-  vertical-align: middle;
-  border-bottom: none !important;
-  height: 150px;
-}
-
-.no-data-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 40px 20px;
-}
-
-.no-data-icon {
-  font-size: 48px;
-  opacity: 0.3;
-  margin-bottom: 8px;
-}
-
-.no-data-text {
-  font-size: 18px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  margin-bottom: 4px;
-}
-
-.no-data-subtext {
-  font-size: 14px;
-  color: var(--color-text-primary);
-}
-
 .user-info {
   display: flex;
   align-items: center;
@@ -562,86 +403,6 @@ const getPageNumbers = computed(() => {
 .user-email {
   font-size: 13px;
   color: var(--color-text-secondary);
-}
-
-.active-badge {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.active-badge.active {
-  background-color: var(--color-success);
-  color: white;
-}
-
-.active-badge.inactive {
-  background-color: var(--color-error);
-  color: white;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  align-items: center;
-}
-
-.action-btn {
-  background: none;
-  border: none;
-  padding: 6px;
-  font-size: 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.action-btn:hover {
-  background-color: var(--color-bg-secondary);
-  /* transform: scale(1.1); */
-}
-
-.action-btn svg {
-  width: 20px;
-  height: 20px;
-}
-
-.conversation-btn {
-  color: var(--color-primary);
-}
-
-.attributes-btn {
-  color: var(--color-accent);
-}
-
-.delete-btn {
-  color: var(--color-error);
-}
-
-.ustatus-badge {
-  padding: 6px 12px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 500;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.ustatus-badge.active {
-  background-color: #dcfce7;
-  color: #166534;
-}
-
-.ustatus-badge.inactive {
-  background-color: #fef2f2;
-  color: #dc2626;
 }
 
 .pagination-container {
@@ -691,100 +452,6 @@ const getPageNumbers = computed(() => {
   font-size: 14px;
 }
 
-  
-
-
-
-/* Skeleton Loading Styles */
-.skeleton-row {
-  animation: skeleton-pulse 1.5s ease-in-out infinite;
-}
-
-.skeleton-row:hover td {
-  background-color: white !important;
-}
-
-.skeleton-checkbox {
-  width: 16px;
-  height: 16px;
-  background-color: #e5e7eb;
-  border-radius: 3px;
-  margin: 0 auto;
-}
-
-.skeleton-user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.skeleton-avatar {
-  width: 35px;
-  height: 35px;
-  background-color: #e5e7eb;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.skeleton-user-details {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
-}
-
-.skeleton-name {
-  height: 16px;
-  background-color: #e5e7eb;
-  border-radius: 4px;
-  width: 80%;
-}
-
-.skeleton-email {
-  height: 12px;
-  background-color: #e5e7eb;
-  border-radius: 4px;
-  width: 60%;
-}
-
-.skeleton-text {
-  height: 14px;
-  background-color: #e5e7eb;
-  border-radius: 4px;
-  width: 70%;
-}
-
-.skeleton-badge {
-  height: 24px;
-  background-color: #e5e7eb;
-  border-radius: 12px;
-  width: 60px;
-  margin: 0 auto;
-}
-
-.skeleton-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  align-items: center;
-}
-
-.skeleton-action-btn {
-  width: 32px;
-  height: 32px;
-  background-color: #e5e7eb;
-  border-radius: 6px;
-}
-
-@keyframes skeleton-pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
 @media (max-width: 768px) {
   .table-controls {
     flex-direction: column;
@@ -797,34 +464,12 @@ const getPageNumbers = computed(() => {
     justify-content: center;
   }
   
-  .users-table {
-    font-size: 14px;
-  }
-  
-  .users-table th,
-  .users-table td {
-    padding: 12px 8px;
-  }
-  
-  .users-table th {
-    font-size: 12px;
-  }
-  
-  .users-table td {
-    font-size: 14px;
-  }
-  
   .user-name {
     font-size: 14px;
   }
   
   .user-email {
     font-size: 12px;
-  }
-  
-  .action-btn svg {
-    width: 16px;
-    height: 16px;
   }
   
   .pagination {

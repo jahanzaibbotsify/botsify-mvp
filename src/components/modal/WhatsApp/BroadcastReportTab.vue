@@ -2,7 +2,7 @@
 import { ref, computed } from "vue";
 import { Input, Badge, DateRange, Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Button, Pagination } from "@/components/ui";
 import { usePublishStore } from "@/stores/publishStore";
-import { formatTime } from "@/utils";
+import { formatDate } from "@/utils";
 import { onMounted } from "vue";
 
 // Store
@@ -170,6 +170,7 @@ defineExpose({
         <DateRange
           v-model="dateRange"
           label="Date Range"
+          placeholder="Select date range"
         />
       </div>
       
@@ -266,7 +267,7 @@ defineExpose({
            <TableRow v-else v-for="report in paginatedReports" :key="report.id">
              <TableCell>{{ report.template_name || 'N/A' }}</TableCell>
              <TableCell>{{ report.number || 'N/A' }}</TableCell>
-             <TableCell>{{ report.sent_time ? formatTime(report.sent_time) : 'N/A' }}</TableCell>
+             <TableCell>{{ report.sent_time ? formatDate(report.sent_time) : 'N/A' }}</TableCell>
              <TableCell><Badge :variant="report.sent ? 'success' : 'error'">{{ report.sent ? 'Sent' : 'Failed' }}</Badge></TableCell>
              <TableCell>{{ report.failure_reason || 'N/A' }}</TableCell>
            </TableRow>

@@ -116,7 +116,7 @@ onMounted(async () => {
   height: 100vh;
   width: 100%;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .content-wrapper {
@@ -130,7 +130,6 @@ onMounted(async () => {
   flex: 1;
   height: 100%;
   position: relative;
-  overflow-x: hidden;
   background-color: var(--color-bg-primary);
 }
 

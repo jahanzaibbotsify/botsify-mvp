@@ -1,28 +1,18 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { ActionType, FilterType, SegmentType } from '@/types/user'
-import VueSelect from "vue3-select-component"
-import DateRange from '@/components/ui/DateRange.vue'
+import { ActionType, SegmentType } from '@/types/user'
 import { useUserStore } from '@/stores/userStore'
-import { useSidebarStore } from '@/stores/sidebarStore'
+import { Input, VueSelect, DateRange, Button } from '@/components/ui'
+import { ref } from 'vue'
 
 const userStore = useUserStore()
-const sidebarStore = useSidebarStore()
-
 // Computed to determine if we should show mobile layout
-const shouldShowMobileLayout = computed(() => {
-  return window.innerWidth <= 768 || sidebarStore.isOpen
-})
+const dateRangeValue = ref({
+  start: new Date().toISOString().split('T')[0],
+  end: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0]
+});
 
-// Filter options configuration
-const filterOptions = [
-  { label: 'All Statuses', value: 'all' as FilterType },
-  { label: 'Active Users', value: 'active' as FilterType },
-  { label: 'Inactive Users', value: 'inactive' as FilterType },
-]
-
+// Filter options configuration - removed status filter since it's not needed
 const segmentOptions = [
-  { label: 'All Platforms', value: 'all' as SegmentType },
   { label: 'SMS Users', value: 'sms' as SegmentType },
   { label: 'WhatsApp Users', value: 'whatsapp' as SegmentType },
   { label: 'Facebook Users', value: 'facebook' as SegmentType },
@@ -46,7 +36,7 @@ const updateFilter = (key: keyof typeof userStore.filterState, value: any): void
 }
 
 // Handle VueSelect values (can be single value or array)
-const handleSelectChange = (key: keyof typeof userStore.filterState, value: string | string[]): void => {
+const handleSelectChange = (key: keyof typeof userStore.filterState, value: string | number | string[] | number[]): void => {
   const singleValue = Array.isArray(value) ? value[0] : value
   updateFilter(key, singleValue)
 }
@@ -61,22 +51,20 @@ const handleSearchChange = (event: Event): void => {
 }
 
 // Handle action selection
-const handleActionChange = (value: ActionType | ActionType[]): void => {
+const handleActionChange = (value: string | number | string[] | number[]): void => {
   const actionValue = Array.isArray(value) ? value[0] : value
-  userStore.selectedAction = actionValue
+  userStore.selectedAction = actionValue as ActionType
 }
 
 // Handle date range updates
-const handleDateRangeChange = (dateRange: { startDate: Date, endDate: Date } | null): void => {
-  if (dateRange) {
-    userStore.updateFilter({
-      dateRange: {
-        startDate: dateRange.startDate,
-        endDate: dateRange.endDate
-      }
-    })
-  }
-}
+const handleDateRangeChange = ({ start, end }: { start: string; end: string }) => {
+  userStore.updateFilter({
+    dateRange: {
+      startDate: new Date(start),
+      endDate: new Date(end)
+    }
+  });
+};
 
 // Handle import button click
 const handleImport = () => {
@@ -90,66 +78,38 @@ const handleImport = () => {
   <div class="controls-section">
     <!-- Desktop Layout -->
     <div class="desktop-controls">
-      <div class="search-controls">
-        <div class="search-box">
-          <input 
-            type="text" 
-            placeholder="Search users..." 
-            :value="userStore.filterState.search"
+        <Input 
+            v-model="userStore.filterState.search" 
+            placeholder="Search user..."
             @input="handleSearchChange"
-          >
-          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"></circle>
-            <path d="m21 21-4.35-4.35"></path>
-          </svg>
-        </div>
-        
-        <div class="filter-dropdown" v-show="!shouldShowMobileLayout">
-          <VueSelect
-            :model-value="userStore.filterState.filter"
-            @update:model-value="(value: string | string[]) => handleSelectChange('filter', value)"
-            :options="filterOptions"
-            placeholder="Filter by status"
-            :multiple="false"
+            searchable
           />
-        </div>
         
-        <div class="segment-dropdown">
           <VueSelect
             :model-value="userStore.filterState.segment"
-            @update:model-value="(value: string | string[]) => handleSelectChange('segment', value)"
+            @update:model-value="(value: string | number | string[] | number[]) => handleSelectChange('segment', value)"
             :options="segmentOptions"
             placeholder="Filter by platform"
             :multiple="false"
           />
-        </div>
 
-        <div class="date-range">
           <DateRange 
-            :fromDate="new Date()"
-            :toDate="new Date()"
-            :get-from-date="handleDateRangeChange"
-            autoPlay
-            opens="left"
-            @update="handleDateRangeChange"
+            v-model="dateRangeValue"
+            @change="handleDateRangeChange"
           />
-        </div>
-      </div>
       
       <div class="action-controls">
-        <div class="action-dropdown">
-          <VueSelect
-            :model-value="userStore.selectedAction"
-            @update:model-value="handleActionChange"
-            :options="actionOptions"
-            placeholder="Select action"
-            :disabled="userStore.selectedUsersCount === 0"
-            :multiple="false"
-          />
-        </div>
-        <button class="import-btn" @click="handleImport">
+        <VueSelect
+          :model-value="userStore.selectedAction"
+          @update:model-value="handleActionChange"
+          :options="actionOptions"
+          placeholder="Select action"
+          :disabled="userStore.selectedUsersCount === 0"
+          :multiple="false"
+        />
+        <Button variant="primary" @click="handleImport">
           Import Users
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -217,13 +177,6 @@ const handleImport = () => {
   pointer-events: none;
 }
 
-.filter-dropdown,
-.segment-dropdown,
-.action-dropdown {
-  min-width: 130px;
-  flex-shrink: 0;
-}
-
 .action-dropdown{
   min-width: 180px;
   flex-shrink: 0;
@@ -251,26 +204,6 @@ const handleImport = () => {
   flex-shrink: 0;
 }
 
-.import-btn {
-  background-color: var(--color-primary);
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.import-btn:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
-}
-
 /* Responsive Design */
 @media (max-width: 1024px) {
   .desktop-controls {
@@ -282,7 +215,6 @@ const handleImport = () => {
     gap: 8px;
   }
   
-  .filter-dropdown,
   .segment-dropdown {
     min-width: 120px;
   }

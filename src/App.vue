@@ -113,7 +113,7 @@ onMounted(() => {
 <style>
 .app-container {
   position: relative;
-  overflow: scroll !important;
+  overflow-y: auto !important;
   height: 100%;
 }
 

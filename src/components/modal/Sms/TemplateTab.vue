@@ -329,32 +329,5 @@ defineExpose({
   flex: 1;
 }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-8);
-  color: var(--color-text-tertiary);
-  text-align: center;
-}
-
-.empty-state i {
-  font-size: 48px;
-  margin-bottom: var(--space-3);
-  opacity: 0.5;
-}
-
-.empty-state p {
-  margin: 0;
-  font-size: 14px;
-}
-
-.action-buttons {
-  display: flex;
-  gap: var(--space-2);
-  align-items: center;
-}
-
 
 </style> 

@@ -54,7 +54,7 @@ export const useUserStore = defineStore('user', () => {
   const filterState = ref<UserFilterState>({
     search: '',
     filter: 'all',
-    segment: 'all',
+    segment: '',
     dateRange: {
       startDate: null,
       endDate: null
@@ -177,7 +177,7 @@ export const useUserStore = defineStore('user', () => {
     }
 
     // Add segment filter
-    if (filterState.value.segment !== 'all') {
+    if (filterState.value.segment !== '') {
       const segmentMap: Record<string, number> = {
         sms: -2,
         whatsapp: -3,
