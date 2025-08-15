@@ -294,7 +294,10 @@ defineExpose({ openModal, closeModal });
     <!-- Confirmation Message -->
     <div class="confirmation-message">
       <div class="confirmation-content">
-        <p>Are you sure you want to deploy changes it?</p>
+        <div>
+          <p>Are you sure you want to deploy changes?</p>
+          <small>This will deploy your AI Agent to connected platforms</small>
+        </div>
         <Button 
           variant="success" 
           @click="handleDeploy" 
@@ -433,28 +436,37 @@ defineExpose({ openModal, closeModal });
 
 /* Single Screen Layout Styles */
 .confirmation-message {
-  text-align: center;
-  margin-bottom: var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+  margin-left: -16px;
+  margin-right: -16px;
+  padding-bottom: var(--space-4);
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
 }
+
 
 .confirmation-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: var(--space-4);
+  
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
 }
 
 .confirmation-message p {
   margin: 0;
   color: var(--color-text-primary, #111827);
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 500;
-  line-height: 1.6;
+  line-height: 1.4;
 }
 
 .agents-section {
-  border-top: 1px solid var(--color-border-secondary);
-  padding-top: var(--space-6);
+  padding-top: var(--space-3);
 }
 
 .agents-section h4 {

@@ -201,7 +201,7 @@ export const useConversationStore = defineStore('conversation', () => {
   const handleFirebaseMessage = (fbId: string, data: FirebaseMessage) => {
     // Find existing conversation or create new one
     let conversation = conversations.value.find(conv => conv.fbid === fbId)
-    
+    console.log(data, "data........")
     if (!conversation) {
       // Create new conversation from Firebase data
       if (data.user) {
@@ -480,6 +480,7 @@ export const useConversationStore = defineStore('conversation', () => {
       const response = await conversationApi.sendMessage(to, content, type)
       if (response.success) {
         if (selectedConversation.value) {
+          selectedConversation.value.active_for_bot = 0;
           selectedConversation.value.lastMessage = content
           selectedConversation.value.timestamp = currentTime()
         }

@@ -181,7 +181,7 @@ const connectionPage = async (type: string, page: any) => {
       publishStore.clearFbPagesCache();
       await loadFbPages();
       if (window.$toast) {
-        window.$toast.success('Page connected successfully!');
+        window.$toast.success(`Page ${type}ed successfully!`);
       }
     } else {
       console.error('Failed to connect page:', result.error);
@@ -387,7 +387,6 @@ defineExpose({
         </Button>
         <Button 
           variant="secondary"
-          :loading="isConnectLoading"
           icon="pi pi-plus"
           @click="createNewPage"
         >

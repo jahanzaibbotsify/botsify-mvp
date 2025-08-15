@@ -100,7 +100,7 @@ const connectionPage = async (type: string, page: any) => {
       publishStore.clearInstaPagesCache();
       await loadInstaPages();
       if (window.$toast) {
-        window.$toast.success('Page connected successfully!');
+        window.$toast.success(`Page ${type}ed successfully!`);
       }
     } else {
       console.error('Failed to connect page:', result.error);

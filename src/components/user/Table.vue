@@ -192,8 +192,6 @@ const getPageNumbers = computed(() => {
             </td>
             <td><div class="skeleton-text"></div></td>
             <td><div class="skeleton-text"></div></td>
-            <td><div class="skeleton-text"></div></td>
-            <td><div class="skeleton-text"></div></td>
             <td><div class="skeleton-badge"></div></td>
             <td>
               <div class="skeleton-actions">
