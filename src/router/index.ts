@@ -1,6 +1,5 @@
 import {RouteRecordRaw, createRouter, createWebHistory} from 'vue-router'
 import {useAuthStore} from "@/stores/authStore.ts";
-import { getBotData } from "@/utils/getBotData";
 import { getCurrentApiKey } from '@/utils/apiKeyUtils';
 const routes: RouteRecordRaw[] = [
   // Auth Routes (with AuthLayout)
