@@ -152,7 +152,7 @@ defineExpose({
       <div class="modal-body">
         <div class="bot-modal-content">
           <!-- Header with Tabs -->
-          <div class="tabs-header">
+          <div class="tabs-header" v-if="tabs.length > 1">
             <button
               v-for="tab in tabs"
               :key="tab.id"

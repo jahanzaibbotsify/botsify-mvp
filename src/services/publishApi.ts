@@ -742,12 +742,13 @@ export class PublishApiService {
   /**
    * Fetch Facebook comment auto responders
    */
-  async fetchFbCommentResponder(): Promise<PublishResponse> {
+  async fetchFbCommentResponder(page = 1): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.get('/v1/bot/growth-tools/aquire-users-from-comments', {
         params: {
-          apikey: apiKey
+          apikey: apiKey,
+          page: page
         },
         timeout: 30000 // 30 seconds timeout
       });

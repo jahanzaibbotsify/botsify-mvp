@@ -32,6 +32,12 @@ const isLoading = ref(false);
 const isPluginLoading = ref(false);
 const deleteResponderId = ref<string | null>(null);
 
+// Pagination data
+const currentPage = ref(1);
+const totalPages = ref(1);
+const totalItems = ref(0);
+const itemsPerPage = ref(20);
+
 // New responder form
 const newResponder = ref({
   keywords: '',
@@ -132,8 +138,8 @@ const saveEditAutoResponder = async () => {
     });
 
     if (result.success) {
-      // Refresh the list
-      await loadCommentResponders();
+      // Refresh the list on current page
+      await loadCommentResponders(currentPage.value);
       cancelEditing();
       window.$toast.success('Auto responder updated successfully!');
     } else {
@@ -163,8 +169,8 @@ const saveNewAutoResponder = async () => {
     });
 
     if (result.success) {
-      // Refresh the list
-      await loadCommentResponders();
+      // Refresh the list on current page
+      await loadCommentResponders(currentPage.value);
       cancelAddingNew();
       window.$toast.success('Auto responder created successfully!');
     } else {
@@ -204,8 +210,8 @@ const performDelete = async (id: string) => {
     const result = await publishStore.deleteCommentResponder(id);
 
     if (result.success) {
-      // Refresh the list
-      await loadCommentResponders();
+      // Refresh the list on current page
+      await loadCommentResponders(currentPage.value);
       window.$toast.success('Auto responder deleted successfully!');
     } else {
       console.error('Failed to delete auto responder:', result.error);
@@ -220,13 +226,14 @@ const performDelete = async (id: string) => {
   }
 };
 
-const loadCommentResponders = async () => {
+const loadCommentResponders = async (page = 1) => {
   if (storeIsLoadingCommentResponders.value) {
     return;
   }
   
   try {
-    const result = await publishStore.getFbCommentResponder();
+    currentPage.value = page;
+    const result = await publishStore.getFbCommentResponder(page);
     if (result.success && result.data) {
       transformAndSetData();
     }
@@ -240,9 +247,18 @@ const transformAndSetData = () => {
     return;
   }
   
-  const optins = storeCommentResponders.value.data.optins || [];
+  const optins = storeCommentResponders.value.data.optins || {};
   
-  autoResponders.value = optins.map((item: any) => {
+  // Set pagination data
+  currentPage.value = optins.current_page || 1;
+  totalPages.value = optins.last_page || 1;
+  totalItems.value = optins.total || 0;
+  itemsPerPage.value = optins.per_page || 20;
+  
+  // Transform the data array
+  const optinsData = optins.data || [];
+  
+  autoResponders.value = optinsData.map((item: any) => {
     // Parse the optin_json if it exists
     let parsedData = {
       keywords: item.keyword || '',
@@ -274,6 +290,11 @@ const transformAndSetData = () => {
       isActive: parsedData.is_active || true
     };
   });
+};
+
+// Handle page change
+const handlePageChange = (page: number) => {
+  loadCommentResponders(page);
 };
 
 // Load data on mount
@@ -516,11 +537,12 @@ defineExpose({
 
       <div class="agent-pagination-section">
         <Pagination
-          :current-page="1"
-          :total-pages="1"
-          :total-items="autoResponders.length || 0"
-          :items-per-page="20"
-          :disabled="false"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :total-items="totalItems"
+          :items-per-page="itemsPerPage"
+          :disabled="storeIsLoadingCommentResponders"
+          @page-change="handlePageChange"
         />
       </div>
     </div>

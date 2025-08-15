@@ -157,19 +157,25 @@ const deleteTemplate = async (id: number) => {
 };
 
 const cloneTemplate = async (template: any) => {
-  try {
-    // Process the template data for cloning
-    const processedTemplate = processTemplateForClone(template);
-    
-    // Emit to close WhatsApp modal and open create modal with cloned data
-    emit('close-whatsapp-modal');
-    emit('open-create-modal', processedTemplate);
-    
-    window.$toast?.success('Template cloned successfully!');
-  } catch (error) {
-    console.error('Failed to clone template:', error);
-    window.$toast?.error('Failed to clone template');
-  }
+  window.$confirm({
+    text: "Are you sure you want to clone this template?",
+    confirmButtonText: "Clone",
+    cancelButtonText: "Cancel",
+  }, async () => {
+    try {
+      // Process the template data for cloning
+      const processedTemplate = processTemplateForClone(template);
+      
+      // Emit to close WhatsApp modal and open create modal with cloned data
+      emit('close-whatsapp-modal');
+      emit('open-create-modal', processedTemplate);
+      
+      window.$toast?.success('Template cloned successfully!');
+    } catch (error) {
+      console.error('Failed to clone template:', error);
+      window.$toast?.error('Failed to clone template');
+    }
+  });
 };
 
 const processTemplateForClone = (template: any) => {

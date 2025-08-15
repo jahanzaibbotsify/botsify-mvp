@@ -11,7 +11,7 @@ import { useTabManagement } from "@/composables/useTabManagement";
 // Define tabs
 const tabs = [
   { id: 'publish-bot', label: 'Publish agent' },
-  { id: 'comment-auto-responder', label: 'Comment Auto Responder' },
+  { id: 'comment-auto-responder', label: 'Comment auto responder' },
   { id: 'broadcast', label: 'Broadcast' },
 ];
 

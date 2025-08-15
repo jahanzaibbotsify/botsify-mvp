@@ -7,9 +7,9 @@ import { getWebUrl } from "@/utils";
 
 // Define tabs first
 const tabs = [
-  { id: 'install-code', label: 'Install Code Yourself' },
-  { id: 'inline-widget', label: 'Inline Widget' },
-  { id: 'landing-bot', label: 'Landing Agent' }
+  { id: 'install-code', label: 'Install code yourself' },
+  { id: 'inline-widget', label: 'Inline widget' },
+  { id: 'landing-bot', label: 'Landing agent' }
 ];
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);

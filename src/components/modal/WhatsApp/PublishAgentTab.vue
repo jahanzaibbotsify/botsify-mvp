@@ -262,6 +262,7 @@ defineExpose({
           :class="{ active: selectedProvider === 'meta' }"
           @click="selectProvider('meta')"
         >
+        <img src="/images/whatsapp-icon.png" alt="Meta Cloud" class="provider-icon" />
           Official Meta cloud
         </button>
         <button 
@@ -269,6 +270,7 @@ defineExpose({
           :class="{ active: selectedProvider === 'dialog360' }"
           @click="selectProvider('dialog360')"
         >
+        <img src="/images/360dialog-logo.png" alt="Dialog360" class="provider-icon" />
           Dialog360
         </button>
       </div>
@@ -410,11 +412,6 @@ defineExpose({
           </Button>
         </div>
       </div>
-
-      <!-- No Provider Selected Message -->
-      <div v-if="!isLoadingBotDetails && !selectedProvider && showProviderSelection" class="no-provider-message">
-        <p>Please select a WhatsApp provider to continue</p>
-      </div>
     </div>
 
   </div>
@@ -464,6 +461,9 @@ defineExpose({
   cursor: pointer;
   transition: all var(--transition-normal, 0.2s ease);
   font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .provider-button:hover {
@@ -475,6 +475,12 @@ defineExpose({
   border-color: var(--color-primary, #3b82f6);
   background: var(--color-primary, #3b82f6);
   color: white;
+}
+
+.provider-icon {
+  /* width: 30px; */
+  height: 20px;
+  margin-right: 8px;
 }
 
 .provider-form {

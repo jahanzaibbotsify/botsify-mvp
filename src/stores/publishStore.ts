@@ -840,9 +840,9 @@ export const usePublishStore = defineStore('publish', () => {
     }
   };
 
-  const getFbCommentResponder = async () => {
-    // Return cached comment responder if already loaded
-    if (cacheValid.value.commentResponder && cache.value.commentResponder) {
+  const getFbCommentResponder = async (page = 1) => {
+    // Return cached comment responder if already loaded (only for first page)
+    if (page === 1 && cacheValid.value.commentResponder && cache.value.commentResponder) {
       return { success: true, data: cache.value.commentResponder.data };
     }
     
@@ -855,14 +855,16 @@ export const usePublishStore = defineStore('publish', () => {
     error.value = null;
     
     try {
-      const result = await publishApi.fetchFbCommentResponder();
+      const result = await publishApi.fetchFbCommentResponder(page);
       
       if (result.success) {
-        // Cache the comment responder
-        cache.value.commentResponder = {
-          data: result.data
-        };
-        cacheValid.value.commentResponder = true;
+        // Cache the comment responder only for first page
+        if (page === 1) {
+          cache.value.commentResponder = {
+            data: result.data
+          };
+          cacheValid.value.commentResponder = true;
+        }
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to get Facebook comment responder';

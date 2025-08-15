@@ -274,7 +274,7 @@ defineExpose({
       </Table>
       
       <!-- Pagination -->
-      <div v-if="!publishStore.loadingStates.broadcastReport && paginatedReports.length > 0 && paginationData?.total && paginationData.total > 0" class="agent-pagination-section">
+      <div v-if="!publishStore.loadingStates.broadcastReport && paginatedReports.length > 0" class="agent-pagination-section">
         <Pagination
           :current-page="currentPage || 1"
           :total-pages="paginationData ? Math.ceil(paginationData.total / paginationData.perPage) : 1"
