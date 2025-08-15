@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {Button, PublishModalLayout} from "@/components/ui";
+import {PublishModalLayout} from "@/components/ui";
 import { ref, computed } from "vue";
 import { useBotStore } from "@/stores/botStore";
 

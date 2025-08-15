@@ -870,7 +870,7 @@ const handleSearch = () => {
       publishStore.cacheValid.whatsappTemplates = false;
     }
     fetchTemplates(1, itemsPerPage);
-  }, 1000);
+  }, 1500);
 };
 
 // Initialize templates when component is mounted
