@@ -118,46 +118,46 @@ const editButton = (index: number) => {
   form.value.buttons[index].isEditing = true;
 };
 
-const saveButtonEdit = (index: number) => {
-  const button = form.value.buttons[index];
-  if (!button.title?.trim()) {
-    errors.value.buttons[index] = 'Button title is required';
-    return;
-  }
+// const saveButtonEdit = (index: number) => {
+//   const button = form.value.buttons[index];
+//   if (!button.title?.trim()) {
+//     errors.value.buttons[index] = 'Button title is required';
+//     return;
+//   }
 
-  if (button.type === 'url' && !button.url?.trim()) {
-    errors.value.buttons[index] = 'URL is required for URL buttons';
-    return;
-  }
+//   if (button.type === 'url' && !button.url?.trim()) {
+//     errors.value.buttons[index] = 'URL is required for URL buttons';
+//     return;
+//   }
 
-  // Validate URL format for URL buttons
-  if (button.type === 'url' && button.url?.trim()) {
-    try {
-      new URL(button.url.trim());
-    } catch {
-      errors.value.buttons[index] = 'Please enter a valid URL (e.g., https://example.com)';
-      return;
-    }
-  }
+//   // Validate URL format for URL buttons
+//   if (button.type === 'url' && button.url?.trim()) {
+//     try {
+//       new URL(button.url.trim());
+//     } catch {
+//       errors.value.buttons[index] = 'Please enter a valid URL (e.g., https://example.com)';
+//       return;
+//     }
+//   }
 
-  if (button.type === 'phone_number' && !button.payload?.trim()) {
-    errors.value.buttons[index] = 'Phone number is required for Phone Number buttons';
-    return;
-  }
+//   if (button.type === 'phone_number' && !button.payload?.trim()) {
+//     errors.value.buttons[index] = 'Phone number is required for Phone Number buttons';
+//     return;
+//   }
 
-  if (button.type === 'postback' && !button.response?.trim()) {
-    errors.value.buttons[index] = 'Response text is required for Postback buttons';
-    return;
-  }
+//   if (button.type === 'postback' && !button.response?.trim()) {
+//     errors.value.buttons[index] = 'Response text is required for Postback buttons';
+//     return;
+//   }
 
-  // Clear any previous errors
-  if (errors.value.buttons[index]) {
-    delete errors.value.buttons[index];
-  }
+//   // Clear any previous errors
+//   if (errors.value.buttons[index]) {
+//     delete errors.value.buttons[index];
+//   }
 
-  // Save the button edit
-  button.isEditing = false;
-};
+//   // Save the button edit
+//   button.isEditing = false;
+// };
 
 const cancelButtonEdit = (index: number) => {
   form.value.buttons[index].isEditing = false;
