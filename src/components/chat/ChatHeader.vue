@@ -3,9 +3,17 @@
     <div class="chat-header-left">
       <!-- <h2>{{ title }}</h2> -->
       <!-- Dropdown Menu Trigger -->
-      <div class="action-buttons">
-        <span class="bot-name">{{botStore.botName}}</span>
-        <Button variant="primary-outline" size="small" icon="pi pi-plus" @click="navigateToManageAgents" iconOnly />
+      <div class="bot-name-dropdown dropdown dropdown-container" id="botNameDropdown" ref="dropdownRef">
+        <div class="" title="More actions" @click.stop="toggleBotNameDropdown">
+          {{botStore.botName}} 
+          <i class="pi pi-plus" style="font-size: 14px; font-weight: 500; margin-left: 3px;"></i>
+        </div>
+        <div v-if="showBotNameDropdown" class="dropdown-content">
+          <button class="dropdown-item" @click="navigateToManageAgents">
+            <i class="pi pi-cog" style="font-size: 18px;"></i>
+            <span>Manage Agents</span>
+          </button>
+        </div>
       </div>
       <!-- <div @click="handleReset('new')">
          <button class="btn icon-button" :disabled="chatStore.chats[0].messages.length < 2" title="New Chat">
@@ -179,13 +187,11 @@ function closeAllDropdowns() {
 }
 
 function navigateToManageAgents() {
-  window.$confirm({
-    text: "Are you sure you want to go to the manage agents page?",
-    confirmButtonText: "Yes",
-    cancelButtonText: "No"
-  }, () => {
-    router.push({ path: '/select-agent' });
-  });
+  router.push({ path: '/select-agent' });
+}
+
+function toggleBotNameDropdown() {
+  showBotNameDropdown.value = !showBotNameDropdown.value;
 }
 
 onMounted(() => {
@@ -249,9 +255,30 @@ onBeforeUnmount(() => {
   color: var(--color-text-primary);
 }
 
-.bot-name{
-  font-size: 16px;
-  font-weight: 500;
+.bot-name-dropdown .icon-button {
+  width: max-content;
+}
+
+.bot-name-dropdown {
+  cursor: pointer;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.bot-name-dropdown:hover {
+  background-color: var(--color-bg-tertiary);
+}
+
+.bot-name-dropdown .pi-angle-down {
+  transition: transform var(--transition-fast);
+}
+
+.bot-name-dropdown:hover .pi-angle-down {
+  transform: rotate(180deg);
 }
 
 .dropdown {
