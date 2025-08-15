@@ -111,6 +111,13 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.loading-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
 .chat-layout {
   display: flex;
   height: 100vh;

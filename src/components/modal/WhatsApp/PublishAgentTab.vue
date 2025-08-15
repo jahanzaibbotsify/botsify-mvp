@@ -279,8 +279,8 @@ defineExpose({
       <div v-if="selectedProvider === 'meta' && isMetaConnected" class="provider-form">
         <h4>Meta cloud configuration</h4>
         <div class="form-group">
-          <label for="meta-token">Temporary access token</label>
           <Input 
+            label="Temporary access token"
             id="meta-token"
             v-model="metaFields.temporaryToken"
             type="text"
@@ -289,8 +289,8 @@ defineExpose({
           />
         </div>
         <div class="form-group">
-          <label for="meta-client-id">Client ID</label>
           <Input 
+            label="Client ID"
             id="meta-client-id"
             v-model="metaFields.clientId"
             type="text"
@@ -299,8 +299,8 @@ defineExpose({
           />
         </div>
         <div class="form-group">
-          <label for="meta-client-secret">Client secret</label>
           <Input 
+            label="Client secret"
             id="meta-client-secret"
             v-model="metaFields.clientSecret"
             type="password"
@@ -309,8 +309,8 @@ defineExpose({
           />
         </div>
         <div class="form-group">
-          <label for="meta-phone">Phone number</label>
           <Input 
+            label="Phone number"
             id="meta-phone"
             v-model="metaFields.phoneNumber"
             type="tel"
@@ -319,8 +319,8 @@ defineExpose({
           />
         </div>
         <div class="form-group">
-          <label for="meta-phone-id">Phone number ID</label>
           <Input 
+            label="Phone number ID"
             id="meta-phone-id"
             v-model="metaFields.phoneNumberId"
             type="text"
@@ -329,8 +329,8 @@ defineExpose({
           />
         </div>
         <div class="form-group">
-          <label for="meta-business-id">WhatsApp business account ID</label>
           <Input 
+            label="WhatsApp business account ID"
             id="meta-business-id"
             v-model="metaFields.whatsappBusinessAccountId"
             type="text"
@@ -369,8 +369,8 @@ defineExpose({
       <div v-if="selectedProvider === 'dialog360' && isDialog360Connected" class="provider-form">
         <h4>Dialog360 configuration</h4>
         <div class="form-group">
-          <label for="dialog-whatsapp">WhatsApp number</label>
           <Input 
+            label="WhatsApp number"
             id="dialog-whatsapp"
             v-model="dialog360Fields.whatsapp"
             type="tel"
@@ -379,8 +379,8 @@ defineExpose({
           />
         </div>
         <div class="form-group">
-          <label for="dialog-api-key">API Key</label>
           <Input 
+            label="API Key"
             id="dialog-api-key"
             v-model="dialog360Fields.apiKey"
             type="password"
@@ -408,7 +408,7 @@ defineExpose({
             :disabled="saving"
             @click="handleSaveSettings"
           >
-            {{ saving ? 'Saving...' : 'Save Settings' }}
+            Save Settings
           </Button>
         </div>
       </div>

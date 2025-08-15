@@ -177,8 +177,8 @@ defineExpose({
     <!-- Form Content -->
     <div v-else class="form-section">
       <div class="form-group">
-        <label for="twilio-account-sid">Twilio account SID</label>
         <Input 
+          label="Twilio account SID"
           id="twilio-account-sid"
           v-model="smsFields.twilioAccountSid"
           type="text"
@@ -192,8 +192,8 @@ defineExpose({
       </div>
       
       <div class="form-group">
-        <label for="twilio-auth-token">Twilio auth token</label>
         <Input 
+          label="Twilio auth token"
           id="twilio-auth-token"
           v-model="smsFields.twilioAuthToken"
           type="password"
@@ -207,8 +207,8 @@ defineExpose({
       </div>
       
       <div class="form-group">
-        <label for="twilio-sms-number">Twilio SMS number</label>
         <Input 
+          label="Twilio SMS number"
           id="twilio-sms-number"
           v-model="smsFields.twilioSmsNumber"
           type="tel"
@@ -223,8 +223,8 @@ defineExpose({
 
       
       <div class="form-group">
-        <label for="twilio-sender-id">Twilio Sender ID</label>
         <Input 
+          label="Twilio Sender ID"
           id="twilio-sender-id"
           v-model="smsFields.twilioSenderId"
           type="tel"

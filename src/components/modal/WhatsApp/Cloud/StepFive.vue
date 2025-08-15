@@ -35,8 +35,8 @@
                 <p class="card-text">Copy your app ID and app secret from the Facebook app settings and paste them below.</p>
                 <div class="form-fields">
                   <div class="form-field">
-                    <label class="field-label">App ID</label>
                     <Input 
+                      label="App ID"
                       type="text"
                       placeholder="App ID"
                       v-model="formData.clientId"
@@ -44,8 +44,8 @@
                     />
                   </div>
                   <div class="form-field">
-                    <label class="field-label">App Secret</label>
                     <Input 
+                      label="App Secret"
                       type="password"
                       placeholder="App Secret"
                       v-model="formData.clientSecret"
@@ -217,18 +217,6 @@ const prevStep = () => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.field-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-primary, #111827);
 }
 
 .content-image {

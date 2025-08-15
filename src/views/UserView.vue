@@ -128,7 +128,7 @@ onUnmounted(() => {
   <div class="user-view">
     <div class="page-header">
       <h1>User Management</h1>
-      <p>Manage your bot users, view attributes, and perform bulk actions.</p>
+      <p>Manage users, view attributes, and perform bulk actions.</p>
     </div>
 
     <!-- Main User Management View --> 

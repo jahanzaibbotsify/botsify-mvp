@@ -296,8 +296,10 @@ defineExpose({
 
     <!-- Loading State -->
     <div v-if="storeIsLoadingCommentResponders" class="loading-state">
-        <div class="loader-spinner"></div>
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
         <span>Loading autoresponder...</span>
+      </div>
     </div>
 
     <!-- Empty State -->
@@ -326,8 +328,8 @@ defineExpose({
       </div>
 
       <div class="form-group">
-        <label>Keywords (comma separated)</label>
-        <Input 
+        <Input
+          label="Keywords (comma separated)"
           v-model="newResponder.keywords"
           type="text"
           placeholder="help, support, pricing"
@@ -336,8 +338,8 @@ defineExpose({
       </div>
 
       <div class="form-group">
-        <label>Select post</label>
         <VueSelect
+          label="Select post"
           v-model="newResponder.selectedPost"
           :options="postOptions"
           :reduce="(option: any) => option.value"
@@ -347,8 +349,8 @@ defineExpose({
       </div>
 
       <div class="form-group">
-        <label>Message</label>
         <Textarea 
+          label="Message"
           v-model="newResponder.message"
           placeholder="Enter your auto-response message"
           size="medium"
@@ -356,7 +358,7 @@ defineExpose({
         />
       </div>
 
-      <div class="form-actions">
+      <div class="agent-action-buttons">
         <Button 
           variant="secondary"
           @click="cancelAddingNew"
@@ -413,7 +415,7 @@ defineExpose({
         />
       </div>
 
-      <div class="form-actions">
+      <div class="agent-action-buttons">
         <Button 
           variant="secondary"
           @click="cancelEditing"
@@ -580,13 +582,6 @@ defineExpose({
 }
 
 
-.form-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 20px;
-}
-
 /* Section Header */
 .section-header {
   display: flex;
@@ -650,10 +645,6 @@ defineExpose({
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
-  }
-  
-  .form-actions {
-    flex-direction: column;
   }
   
   .keywords-cell {

@@ -51,12 +51,22 @@
                 <p class="card-text">Fill in your app name and contact email address</p>
                 <div class="form-preview">
                   <div class="form-field">
-                    <label class="field-label">App Name</label>
-                    <Input type="text" placeholder="Your App Name" disabled size="medium" />
+                    <Input 
+                      label="App Name"
+                      type="text" 
+                      placeholder="Your App Name" 
+                      disabled 
+                      size="medium" 
+                    />
                   </div>
                   <div class="form-field">
-                    <label class="field-label">Contact Email</label>
-                    <Input type="email" placeholder="your@email.com" disabled size="medium" />
+                    <Input 
+                      label="Contact Email"
+                      type="email" 
+                      placeholder="your@email.com" 
+                      disabled 
+                      size="medium" 
+                    />
                   </div>
                 </div>
               </div>
@@ -230,18 +240,6 @@ const prevStep = () => {
   padding: 16px;
   border-radius: 8px;
   border: 1px solid var(--color-border, #e5e7eb);
-}
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.field-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-primary, #111827);
 }
 
 .step-navigation {

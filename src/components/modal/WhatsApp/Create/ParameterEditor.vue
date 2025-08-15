@@ -224,10 +224,8 @@ defineExpose({
       >
         <h3>Header {{ store.template.header.charAt(0).toUpperCase() + store.template.header.slice(1) }}</h3>
         <div class="form-group">
-          <label class="required-label">
-            {{ store.template.header.charAt(0).toUpperCase() + store.template.header.slice(1) }} Link
-          </label>
           <Input
+            :label="store.template.header.charAt(0).toUpperCase() + store.template.header.slice(1) + 'Link'"
             type="url"
             v-model="store.block.attachment_link"
             :placeholder="`Enter URL for the ${store.template.header}`"
@@ -242,10 +240,10 @@ defineExpose({
         class="parameter-section"
         v-if="store.template.type == 'media' && store.template.bodyIncludes.includes('header') && store.template.header == 'text' && store.template.variables.header"
       >
-        <h3>Header variable</h3>
+        <!-- <h3>Header variable</h3> -->
         <div class="form-group">
-          <label>Header variable - {{ store.template.variables.header.key }}</label>
           <Input
+            :label="`Header variable - ${store.template.variables.header.key}`"
             v-model="store.template.variables.header.value"
             placeholder="Enter header variable value"
             :error="shouldShowError('headerVariable') ? 'This is required field' : ''"
@@ -256,20 +254,15 @@ defineExpose({
 
       <!-- BODY VARIABLES -->
       <div v-if="store.template.variables.body.length > 0" class="parameter-section">
-        <h3>Body variables</h3>
+        <!-- <h3>Body variables</h3> -->
         <div class="variables-grid">
           <div 
             class="form-group"
             v-for="(variable, varIndex) in store.template.variables.body"
             :key="varIndex"
           >
-            <label v-if="store.template.category == 'AUTHENTICATION'">
-              Authentication code - {{ variable.key }}
-            </label>
-            <label v-else>
-              Body variable - {{ variable.key }}
-            </label>
             <Input
+              :label="store.template.category == 'AUTHENTICATION' ? 'Authentication code - ' + variable.key : 'Body variable - ' + variable.key"
               v-model="variable.value"
               :placeholder="`Enter value for ${variable.key}`"
               :error="shouldShowError('bodyVariable', varIndex) ? 'This is required field' : ''"
@@ -284,7 +277,7 @@ defineExpose({
         v-if="store.template.type === 'generic' && store.template.slides.length > 0"
         class="parameter-section"
       >
-        <h3>Carousel Slides</h3>
+        <!-- <h3>Carousel Slides</h3> -->
         <div class="carousel-slides-container">
           <div 
             v-for="(slide, slideIndex) in store.template.slides"
@@ -317,10 +310,8 @@ defineExpose({
                 
                 <!-- Dialog360 - URL Input -->
                 <div class="form-group" v-else-if="props.botService === 'dialog360'">
-                  <label class="required-label">
-                    {{ slide.header.charAt(0).toUpperCase() + slide.header.slice(1) }} Link
-                  </label>
                   <Input
+                    :label=" slide.header.charAt(0).toUpperCase() + slide.header.slice(1) + 'Link'"
                     type="url"
                     v-model="store.block.slides[slideIndex].attachment_link"
                     :placeholder="slide.header === 'video' ? 'https://example.com/video.mp4' : 'https://example.com/image.jpg'"
@@ -339,8 +330,8 @@ defineExpose({
                     :key="varIndex"
                     class="form-group"
                   >
-                    <label>Body variable - {{ variable.key }}</label>
                     <Input
+                      :label="'Body variable - ' + variable.key"
                       v-model="variable.value"
                       :placeholder="`Enter value for ${variable.key}`"
                       :error="shouldShowError('carouselSlide', slideIndex, `body_${varIndex}`) ? 'This is required field' : ''"
@@ -355,8 +346,8 @@ defineExpose({
                 <h5>Button Variables</h5>
                 <div class="variables-grid">
                   <div>
-                    <label>Button Variable - {{ slide.variables.button.key }}</label>
                     <Input
+                      :label="'Button Variable - ' + slide.variables.button.key"
                       v-model="slide.variables.button.value"
                       :placeholder="`Enter value for ${slide.variables.button.key}`"
                       :error="shouldShowError('carouselSlide', slideIndex, 'button') ? 'This is required field' : ''"
@@ -372,11 +363,11 @@ defineExpose({
 
       <!-- BUTTON VARIABLES - Only show if button actually has variables -->
       <div v-if="store.template.variables.button" class="parameter-section">
-          <h3>Button variables</h3>
+          <!-- <h3>Button variables</h3> -->
           <div class="variables-grid">
           <div class="form-group">
-            <label>Button Variable - {{ store.template.variables.button.key }}</label>
             <Input
+              :label="'Button Variable - ' + store.template.variables.button.key"
               v-model="store.template.variables.button.value"
               :placeholder="`Enter value for ${store.template.variables.button.key}`"
               :error="shouldShowError('buttonVariable') ? 'This is required field' : ''"
@@ -429,30 +420,6 @@ defineExpose({
   color: var(--color-text-primary);
   border-bottom: 1px solid var(--color-border);
   padding-bottom: var(--space-2);
-}
-
-
-
-.form-group {
-  margin-bottom: var(--space-3);
-  margin-top: var(--space-3);
-}
-
-.form-group label {
-  font-weight: 500;
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-}
-
-.required-label {
-  font-weight: 500;
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-}
-
-.required-label::after {
-  content: " *";
-  color: var(--color-error);
 }
 
 

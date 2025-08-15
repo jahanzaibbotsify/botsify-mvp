@@ -13,7 +13,7 @@ const userStore = useUserStore()
 const roleStore = useRoleStore()
 const router = useRouter()
 
-const showAttributes = ref<boolean>(false)
+const attributesModalRef = ref<InstanceType<typeof UserAttributes> | null>(null)
 const selectedUserAttributes = ref<UserAttribute[]>([])
 const selectedUser = ref<ExtendedUser>()
 
@@ -37,11 +37,10 @@ const handleUserSelect = (userId: number): void => {
 const handleShowAttributes = (user: ExtendedUser): void => {
   selectedUserAttributes.value = user.attributes
   selectedUser.value = user
-  showAttributes.value = true
+  attributesModalRef.value?.openModal()
 }
 
 const handleCloseAttributes = (): void => {
-  showAttributes.value = false
   selectedUser.value = undefined
   selectedUserAttributes.value = []
 }
@@ -320,7 +319,7 @@ const getPageNumbers = computed(() => {
 
     <!-- User Attributes Modal -->
     <UserAttributes
-      v-if="showAttributes"
+      ref="attributesModalRef"
       :attributes="selectedUserAttributes"
       :user="selectedUser"
       @close="handleCloseAttributes"
@@ -403,6 +402,29 @@ const getPageNumbers = computed(() => {
 .user-email {
   font-size: 13px;
   color: var(--color-text-secondary);
+}
+
+
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+  color: var(--color-text-tertiary);
+  text-align: center;
+}
+
+.empty-state i {
+  font-size: 48px;
+  margin-bottom: var(--space-3);
+  opacity: 0.5;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
 }
 
 .pagination-container {

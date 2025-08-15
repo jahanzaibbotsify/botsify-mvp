@@ -4,6 +4,8 @@ import {useRouter} from 'vue-router'
 import {axiosInstance} from "@/utils/axiosInstance.ts"
 import {useBotStore} from "@/stores/botStore.ts";
 import UserMenu from "@/components/auth/UserMenu.vue";
+import Button from '@/components/ui/Button.vue';
+import Input from '@/components/ui/Input.vue';
 
 const router = useRouter()
 
@@ -633,15 +635,14 @@ onUnmounted(() => {
                 class="create-agent-tooltip"
                 :class="{ 'disabled-tooltip': listAgentsResponse?.limit_reached }"
               >
-                <button 
+                <Button 
                   @click="createAgent" 
-                  class="create-agent-btn"
-                  :class="{ 'disabled': listAgentsResponse?.limit_reached }"
                   :disabled="listAgentsResponse?.limit_reached"
+                  icon="pi pi-plus"
+                  variant="primary"
                 >
-                  <i class="pi pi-plus"></i>
-                  <span>Create Agent</span>
-                </button>
+                  Create Agent
+                </Button>
                 <div v-if="listAgentsResponse?.limit_reached" class="tooltip">
                   Agent Limit Reached — Upgrade your plan to create more agents
                 </div>
@@ -652,8 +653,10 @@ onUnmounted(() => {
 
         <!-- Loading State -->
         <div v-if="isLoadingAgents" class="loading-state">
-          <div class="loading-spinner-large"></div>
-          <p>Loading agents...</p>
+          <div class="loading-content">
+            <div class="loading-spinner-large"></div>
+            <p>Loading agents...</p>
+          </div>
         </div>
 
         <!-- No Results State -->
@@ -820,12 +823,11 @@ onUnmounted(() => {
 
       <div class="modal-body">
         <div class="form-group">
-          <label for="agentName" class="form-label">Agent Name</label>
-          <input
+          <Input
+              label="Agent Name"
               id="agentName"
               v-model="agentNameValue"
               type="text"
-              class="form-input"
               :placeholder="modalMode === 'create' ? 'Enter a name for your new agent' : 'Enter a descriptive name for your agent'"
               @keyup.enter="saveAgent"
               @keyup.escape="closeAgentModal"
@@ -841,19 +843,18 @@ onUnmounted(() => {
       </div>
 
       <div class="modal-footer">
-        <button @click="closeAgentModal" class="btn cancel-btn" type="button">
+        <Button @click="closeAgentModal" variant="secondary" class="w-full">
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
             @click="saveAgent"
-            class="btn save-btn"
-            type="button"
+            class="w-full"
             :disabled="!agentNameValue.trim() || agentNameValue.trim().length < 2 || isSavingAgent"
+            variant="primary"
+            :loading="isSavingAgent"
         >
-          <span v-if="isSavingAgent" class="loading-spinner"></span>
-          <i v-else class="pi pi-check"></i>
-          <span>{{ isSavingAgent ? 'Saving...' : (modalMode === 'create' ? 'Create Agent' : 'Save Changes') }}</span>
-        </button>
+          {{ isSavingAgent ? 'Saving...' : (modalMode === 'create' ? 'Create Agent' : 'Save Changes') }}
+        </Button>
       </div>
     </div>
   </div>
@@ -1014,39 +1015,6 @@ onUnmounted(() => {
   flex-direction: column;
   gap: var(--space-2);
   align-items: flex-end;
-}
-
-.create-agent-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  box-shadow: 0 2px 4px rgba(0, 163, 255, 0.2);
-}
-
-.create-agent-btn:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 163, 255, 0.3);
-}
-
-.create-agent-btn:disabled,
-.create-agent-btn.disabled {
-  background: var(--color-bg-hover);
-  color: var(--color-text-tertiary);
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-  border: 1px solid var(--color-border);
-  pointer-events: none; /* allow tooltip wrapper to receive hover */
 }
 
 /* Limit Status Badge */
@@ -1233,30 +1201,6 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-/* Loading State */
-.loading-state {
-  text-align: center;
-  padding: var(--space-8);
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-}
-
-.loading-spinner-large {
-  width: 48px;
-  height: 48px;
-  border: 3px solid var(--color-border);
-  border-radius: 50%;
-  border-top-color: var(--color-primary);
-  animation: spin 0.6s linear infinite;
-  margin: 0 auto var(--space-4);
-}
-
-.loading-state p {
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-  margin: 0;
-}
 
 /* Load More Section */
 .load-more-section {
@@ -1849,22 +1793,6 @@ onUnmounted(() => {
   cursor: not-allowed;
   transform: none;
 }
-
-.loading-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* Bottom CTA */
 .bottom-cta {
   background: white;
@@ -2326,11 +2254,6 @@ onUnmounted(() => {
 
   .create-agent-wrapper {
     width: 100%;
-  }
-
-  .create-agent-btn {
-    width: 100%;
-    justify-content: center;
   }
 
   .search-input {

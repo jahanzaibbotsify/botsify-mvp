@@ -1502,10 +1502,8 @@ const handleSendBroadcast = async () => {
           <h5>Body Variables</h5>
           <div class="variable-fields">
             <div v-for="(variable, varIndex) in templateData.variables.body" :key="varIndex" class="form-group">
-              <label class="required-label">
-                {{ templateData.category === 'AUTHENTICATION' ? 'Authentication Code' : 'Body Variable' }} - {{ variable.key }}
-              </label>
               <Input
+                :label="templateData.category === 'AUTHENTICATION' ? 'Authentication Code' : 'Body Variable' + ' - ' + variable.key"
                 v-model="variable.value"
                 :placeholder="`Enter value for ${variable.key}`"
                 @input="updateStoreFromTemplateData"
@@ -1520,8 +1518,8 @@ const handleSendBroadcast = async () => {
           <h5>Header Variable</h5>
           <div class="variable-fields">
             <div class="form-group">
-              <label class="required-label">Header Variable - {{ templateData.variables.header.key }}</label>
               <Input
+                :label="`Header Variable - ${templateData.variables.header.key}`"
                 v-model="templateData.variables.header.value"
                 placeholder="Enter header variable value"
                 @input="updateStoreFromTemplateData"
@@ -1567,8 +1565,8 @@ const handleSendBroadcast = async () => {
             
             <!-- Document filename field -->
             <div v-if="templateData.type === 'document'" class="form-group">
-              <label>File Name <small>(optional)</small></label>
               <Input
+                label="File Name (optional)"
                 v-model="templateData.filename"
                 placeholder="Enter file name"
                 @input="updateStoreFromTemplateData"
@@ -1586,8 +1584,8 @@ const handleSendBroadcast = async () => {
           <h5>Button Variable</h5>
           <div class="variable-fields">
             <div class="form-group">
-              <label class="required-label">Button Variable - {{ templateData.variables.button.key }}</label>
-                             <Input
+              <Input
+                :label="`Button Variable - ${templateData.variables.button.key}`"
                  v-model="templateData.variables.button.value"
                  placeholder="Enter button variable value"
                  @input="updateStoreFromTemplateData"
@@ -1619,8 +1617,8 @@ const handleSendBroadcast = async () => {
               <div v-if="slide.variables.body.length > 0" class="slide-variables">
                 <label class="variable-group-label">Body Variables</label>
                 <div v-for="(variable, varIndex) in slide.variables.body" :key="varIndex" class="form-group">
-                  <label>Body Variable - {{ variable.key }}</label>
-                                     <Input
+                  <Input
+                    :label="`Body Variable - ${variable.key}`"
                      v-model="variable.value"
                      placeholder="Enter variable value"
                      @input="updateStoreFromTemplateData"
@@ -1633,8 +1631,8 @@ const handleSendBroadcast = async () => {
               <div v-if="slide.variables.button" class="slide-variables">
                 <label class="variable-group-label">Button Variable</label>
                 <div class="form-group">
-                  <label class="required-label">Button Variable - {{ slide.variables.button.key }}</label>
-                                     <Input
+                  <Input
+                    :label="`Button Variable - ${slide.variables.button.key}`"
                      v-model="slide.variables.button.value"
                      placeholder="Enter button variable value"
                      @input="updateStoreFromTemplateData"
@@ -1732,33 +1730,8 @@ const handleSendBroadcast = async () => {
   color: var(--color-text-primary, #111827);
 }
 
-.subtitle {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-secondary, #6b7280);
-}
-
 .broadcast-form {
   margin-top: 20px;
-}
-
-.form-group {
-  margin-bottom: var(--space-4);
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: var(--space-2);
-  font-weight: 500;
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-}
-
-.help-text {
-  font-size: 12px;
-  color: var(--color-text-secondary, #6b7280);
-  margin-top: 4px;
 }
 
 .message-editor {
@@ -1772,61 +1745,10 @@ const handleSendBroadcast = async () => {
   color: var(--color-text-primary, #111827);
 }
 
-.message-textarea {
-  width: 100%;
-  padding: var(--space-3);
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  font-family: inherit;
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--color-text-primary, #111827);
-  background-color: var(--color-bg-tertiary, #f3f4f6);
-  resize: vertical;
-  min-height: 120px;
-}
 
-.message-textarea:focus {
-  outline: none;
-  border-color: var(--color-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.message-textarea::placeholder {
-  color: var(--color-text-tertiary, #9ca3af);
-}
 
 .variable-fields {
   margin-top: var(--space-6);
-}
-
-.variable-fields h4 {
-  margin: 0 0 var(--space-3) 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-}
-
-.required-label {
-  font-weight: 500;
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-}
-
-.required-label::after {
-  content: " *";
-  color: var(--color-error);
-}
-
-.slides-section {
-  margin-top: var(--space-4);
-}
-
-.slides-section h5 {
-  margin: 0 0 var(--space-3) 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
 }
 
 .slides-container {
@@ -1910,20 +1832,6 @@ const handleSendBroadcast = async () => {
   flex-shrink: 0;
   font-size: 0.75rem;
   padding: var(--space-1) var(--space-2);
-}
-
-.loader-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--color-border);
-  border-top: 2px solid var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 
 .variable-section {
@@ -2053,58 +1961,9 @@ const handleSendBroadcast = async () => {
 
 
 
-.upload-status {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-}
 
-.file-upload-section {
-  margin-top: var(--space-2);
-}
 
-.csv-preview {
-  margin-top: var(--space-3);
-  padding: var(--space-3);
-  background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
 
-.csv-preview h6 {
-  margin: 0 0 var(--space-2) 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.csv-headers {
-  margin-bottom: var(--space-2);
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-}
-
-.csv-sample {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-}
-
-.csv-row {
-  margin-top: var(--space-1);
-  padding: var(--space-1);
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-sm);
-  font-family: monospace;
-}
-
-.csv-more {
-  margin-top: var(--space-1);
-  font-style: italic;
-  color: var(--color-text-tertiary);
-}
 
 
 /* Responsive Design */
@@ -2130,14 +1989,7 @@ const handleSendBroadcast = async () => {
   }
 }
 
-.action-buttons {
-  display: flex;
-  gap: var(--space-3);
-  margin-top: var(--space-6);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border);
-  justify-content: flex-start;
-}
+
 
 /* Subscribed Users Info Styles */
 .subscribed-users-info {
@@ -2184,9 +2036,5 @@ const handleSendBroadcast = async () => {
   color: var(--color-warning);
 }
 
-@media (max-width: 640px) {
-  .action-buttons {
-    flex-direction: column;
-  }
-}
+
 </style> 

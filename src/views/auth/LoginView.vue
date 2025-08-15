@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import type { LoginCredentials, FormValidation } from '@/types/auth'
 import {handlePostAuthRedirect} from "@/utils/authFlow.ts";
+import Button from '@/components/ui/Button.vue';
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -198,14 +199,15 @@ const handlePasswordInput = () => {
       </div>
 
       <!-- Submit Button -->
-      <button
+      <Button
         type="submit"
-        class="submit-button primary"
         :disabled="!isFormValid || authStore.isLoading"
+        variant="primary"
+        :loading="authStore.isLoading"
+        class="w-full"
       >
-        <span v-if="authStore.isLoading" class="loading-spinner"></span>
-        <span>{{ authStore.isLoading ? 'Signing in...' : 'Sign In' }}</span>
-      </button>
+        Sign In
+      </Button>
     </form>
 
 
@@ -415,51 +417,6 @@ const handlePasswordInput = () => {
 .forgot-password-link:hover {
   color: var(--color-primary-hover);
   text-decoration: underline;
-}
-
-.submit-button {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  background-color: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  min-height: 44px;
-}
-
-.submit-button:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(68, 115, 246, 0.3);
-}
-
-.submit-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.loading-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .auth-divider {

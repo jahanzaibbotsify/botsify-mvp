@@ -216,7 +216,7 @@ defineExpose({ openModal, closeModal });
       <!-- Publish Tab -->
       <div v-if="activeTab === 'publish'" class="tab-panel">
         <h3>Telegram agent configuration</h3>
-        <p class="subtitle">Configure your Telegram bot settings</p>
+        <p class="subtitle">Configure your Telegram settings</p>
         
         <!-- Loading State -->
         <div v-if="publishStore.loadingStates.thirdPartyConfig" class="loading-state">
@@ -227,8 +227,8 @@ defineExpose({ openModal, closeModal });
         <!-- Form Content -->
         <div v-else class="form-section">
           <div class="form-group">
-            <label for="access-token">Access token</label>
             <Input 
+              label="Access token"
               id="access-token"
               v-model="telegramForm.accessToken"
               type="text"
@@ -242,8 +242,8 @@ defineExpose({ openModal, closeModal });
           </div>
           
           <div class="form-group">
-            <label for="bot-name">Agent name</label>
             <Input 
+              label="Agent name"
               id="bot-name"
               v-model="telegramForm.botName"
               type="text"
@@ -254,8 +254,8 @@ defineExpose({ openModal, closeModal });
           </div>
           
           <div class="form-group">
-            <label for="telegram-number">Telegram number</label>
-            <Input 
+            <Input
+              label="Telegram number" 
               id="telegram-number"
               v-model="telegramForm.telegramNumber"
               type="tel"
@@ -269,8 +269,8 @@ defineExpose({ openModal, closeModal });
           </div>
           
           <div class="form-group">
-            <label for="chatbot-url">Telegram agent URL</label>
             <Input 
+              label="Telegram agent URL"
               id="chatbot-url"
               v-model="telegramForm.telegramChatbotUrl"
               type="url"

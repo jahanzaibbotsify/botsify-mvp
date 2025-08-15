@@ -484,46 +484,6 @@ defineExpose({
 
 <style scoped>
 /* Component-specific styles only - common styles moved to PublishAgentModal.vue */
-
-.subtitle {
-  margin: 0 0 20px 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-secondary, #6b7280);
-}
-
-/* Loading State */
-.loading-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--color-text-secondary, #6b7280);
-}
-
-.loading-content {
-  max-width: 400px;
-  margin: 0 auto;
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--color-bg-tertiary, #f3f4f6);
-  border-top: 3px solid var(--color-primary, #3b82f6);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 16px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.loading-state p {
-  margin: 0;
-  font-size: 14px;
-}
-
 /* Empty State */
 .empty-state {
   text-align: center;

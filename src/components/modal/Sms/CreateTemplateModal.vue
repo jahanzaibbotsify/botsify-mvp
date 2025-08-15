@@ -319,8 +319,8 @@ defineExpose({ openModal, closeModal, openModalWithData });
             <div class="form-section">
               <!-- Template Name -->
               <div class="form-group">
-                <label for="template-name">Template name</label>
                 <Input
+                  label="Template name"
                   id="template-name"
                   v-model="form.name"
                   placeholder="Enter template name"
@@ -330,8 +330,8 @@ defineExpose({ openModal, closeModal, openModalWithData });
 
               <!-- Template Text -->
               <div class="form-group">
-                <label for="template-text">Message text</label>
                 <Textarea
+                  label="Message text"
                   id="template-text"
                   v-model="form.text"
                   placeholder="Enter your message content here..."
@@ -347,7 +347,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
             <div class="form-section">
               <div class="buttons-header">
                 <label>Buttons (max 3)</label>
-                <div class="button-actions">
+                <div class="action-buttons">
                   <Button
                     v-for="type in buttonTypes"
                     :key="type.value"
@@ -374,7 +374,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
                       <span class="button-type-badge">{{ button.type.replace('_', ' ').toUpperCase() }}</span>
                       <span class="button-title">{{ button.title || 'Untitled Button' }}</span>
                     </div>
-                    <div class="button-controls">
+                    <div class="action-buttons">
                       <Button
                         variant="secondary"
                         size="small"
@@ -408,8 +408,8 @@ defineExpose({ openModal, closeModal, openModalWithData });
 
                     <!-- Button Type Specific Fields -->
                     <div v-if="button.type === 'url'" class="form-group">
-                      <label>URL</label>
                       <Input
+                        label="URL"
                         v-model="button.url"
                         type="url"
                         placeholder="https://example.com"
@@ -418,8 +418,8 @@ defineExpose({ openModal, closeModal, openModalWithData });
                     </div>
 
                     <div v-if="button.type === 'phone_number'" class="field-group">
-                      <label>Phone number</label>
                       <Input
+                        label="Phone number"
                         v-model="button.payload"
                         type="tel"
                         placeholder="+1234567890"
@@ -428,8 +428,8 @@ defineExpose({ openModal, closeModal, openModalWithData });
                     </div>
 
                     <div v-if="button.type === 'postback' && !isEditMode" class="field-group">
-                      <label>Response text</label>
                       <Textarea
+                        label="Response text"
                         v-model="button.response"
                         placeholder="Enter response text"
                         :rows="2"
@@ -437,7 +437,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
                       />
                     </div>
 
-                    <div class="button-actions-footer">
+                    <div class="action-buttons">
                       <!-- <Button
                         variant="primary"
                         size="small"
@@ -518,11 +518,6 @@ defineExpose({ openModal, closeModal, openModalWithData });
   margin-bottom: var(--space-3);
 }
 
-.button-actions {
-  display: flex;
-  gap: var(--space-2);
-}
-
 .buttons-list {
   display: flex;
   flex-direction: column;
@@ -570,10 +565,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
   max-width: 150px; /* Adjust as needed */
 }
 
-.button-controls {
-  display: flex;
-  gap: var(--space-1);
-}
+
 
 .button-fields {
   display: flex;
@@ -581,12 +573,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
   gap: var(--space-3);
 }
 
-.button-actions-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-}
+
 
 .no-buttons {
   text-align: center;
@@ -635,8 +622,6 @@ defineExpose({ openModal, closeModal, openModalWithData });
     gap: var(--space-2);
   }
   
-  .button-actions {
-    flex-wrap: wrap;
-  }
+
 }
 </style> 

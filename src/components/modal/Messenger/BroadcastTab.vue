@@ -126,10 +126,10 @@ defineExpose({
     <h3>Broadcast</h3>
     <p class="subtitle">Send broadcast messages to your Messenger audience</p>
 
-    <div class="form-section" :class="{ loading: isLoading }">
+    <div class="form-section">
       <div class="form-group">
-        <label for="message-tag">Select Message Tag</label>
         <VueSelect
+          label="Select Message Tag"
           :model-value="formData.messageTag"
           @update:model-value="(value: string | number | string[] | number[]) => handleSelectChange('messageTag', value)"
           :options="messageTags"
@@ -140,8 +140,8 @@ defineExpose({
       </div>
 
       <div class="form-group">
-        <label for="message">Message</label>
         <Textarea 
+          label="Message"
           v-model="formData.message"
           placeholder="Enter your message"
           size="medium"
@@ -171,56 +171,3 @@ defineExpose({
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Component-specific styles only - common styles moved to PublishAgentModal.vue */
-
-/* VueSelect Styling */
-.form-group :deep(.vue3-select-component) {
-  font-size: 14px;
-  height: 44px;
-}
-
-.form-group :deep(.vue3-select-component input) {
-  height: 44px;
-  padding: 12px 16px;
-  font-size: 14px;
-}
-
-/* Disabled state styling */
-.form-group :deep(.vue3-select-component.disabled),
-.form-group :deep(.vue3-select-component[disabled]) {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.form-input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background-color: var(--color-bg-hover, #f3f4f6);
-}
-
-/* Loading overlay */
-.form-section {
-  position: relative;
-}
-
-.form-section.loading::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.7);
-  z-index: 10;
-  pointer-events: none;
-}
-
-
-@media (max-width: 640px) {
-  .form-group {
-    margin-bottom: 16px;
-  }
-}
-</style>

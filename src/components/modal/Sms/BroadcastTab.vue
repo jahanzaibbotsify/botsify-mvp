@@ -335,8 +335,8 @@ defineExpose({
      <div class="broadcast-form">
                          <!-- Message Template -->
                 <div class="form-group">
-                  <label for="broadcast-template" class="required-label">Message template</label>
                   <VueSelect
+                    label="Message template"
                     v-model="broadcastForm.template"
                     @change="handleTemplateChange"
                     :options="messageTemplates"
@@ -347,8 +347,8 @@ defineExpose({
          
                          <!-- User Segment -->
                 <div class="form-group">
-                  <label for="broadcast-segment" class="required-label">User segment</label>
                   <VueSelect
+                    label="User segment"
                     v-model="broadcastForm.userSegment"
                     :options="userSegments"
                     placeholder="Select a user segment"
@@ -375,8 +375,8 @@ defineExpose({
        
        <!-- File Upload (Upload user only) -->
        <div v-if="showFileUpload" class="form-group">
-         <label>Upload File (CSV)</label>
          <FileUpload
+           label="Upload File (CSV)"
            v-model="broadcastForm.uploadedFile"
            accept=".csv"
            :emit-raw-file="true"
@@ -545,29 +545,6 @@ defineExpose({
   color: var(--color-error);
 }
 
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  gap: var(--space-3);
-  color: var(--color-text-secondary);
-}
-
-.loader-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--color-border);
-  border-top: 3px solid var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
 
 .limits-section {
   margin-top: 24px;
