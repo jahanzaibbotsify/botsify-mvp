@@ -237,7 +237,7 @@ defineExpose({ openModal, closeModal });
               :error="errors.accessToken"
             />
             <small class="help-text">
-              Get this from @BotFather on <a href="https://bot-file-upload-eu-1.s3.eu-west-1.amazonaws.com/templates/images/Telegram-Chatbot-Botsify_120323_1709726199.pdf" target="_blank">Telegram</a>
+              Get this from @BotFather on Telegram. <a href="https://bot-file-upload-eu-1.s3.eu-west-1.amazonaws.com/templates/images/Telegram-Chatbot-Botsify_120323_1709726199.pdf" target="_blank">Here is how to get it.</a>
             </small>
           </div>
           
