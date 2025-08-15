@@ -92,10 +92,6 @@ const fetchTemplates = async (page: number = 1, perPage: number = 20) => {
     };
     currentPage.value = publishStore.cache.whatsappTemplates.page || page;
     
-    console.log('Using cached templates data:', {
-      currentPage: currentPage.value,
-      paginationData: paginationData.value
-    });
     return;
   }
   
@@ -103,11 +99,6 @@ const fetchTemplates = async (page: number = 1, perPage: number = 20) => {
     const result = await publishStore.fetchWhatsAppTemplates(page, perPage, searchQuery.value);
     if (result.success && result.data && result.data.templates && result.data.templates.data && Array.isArray(result.data.templates.data)) {
       templates.value = result.data.templates.data;
-      
-      console.log('Template API response:', result.data.templates);
-      console.log('Current page requested:', page);
-      console.log('API returned page:', result.data.templates.page);
-      
       // Update local pagination data
       paginationData.value = {
         page: result.data.templates.page || page,
@@ -119,11 +110,6 @@ const fetchTemplates = async (page: number = 1, perPage: number = 20) => {
       
       // Sync currentPage with the actual page from API response
       currentPage.value = result.data.templates.page || page;
-      
-      console.log('Updated local state:', {
-        currentPage: currentPage.value,
-        paginationData: paginationData.value
-      });
     } else {
       console.warn('No templates data or invalid format:', result);
       templates.value = [];
@@ -172,13 +158,8 @@ const deleteTemplate = async (id: number) => {
 
 const cloneTemplate = async (template: any) => {
   try {
-    console.log('Cloning template:', template);
-    
     // Process the template data for cloning
     const processedTemplate = processTemplateForClone(template);
-    
-    console.log('Processed template for cloning:', processedTemplate);
-    console.log('Carousel slides in clone:', processedTemplate.template?.slides);
     
     // Emit to close WhatsApp modal and open create modal with cloned data
     emit('close-whatsapp-modal');
@@ -311,10 +292,9 @@ const processTemplateForClone = (template: any) => {
 
       if (component.type === 'BUTTONS') {
         clonedTemplate.bodyIncludes.push('buttons');
-        
         // Extract buttons from the component
         if (component.buttons && Array.isArray(component.buttons)) {
-                     clonedBlock.buttons = component.buttons.map((btn: any) => ({
+          clonedBlock.buttons = component.buttons.map((btn: any) => ({
              api: 1,
              error: false,
              type: btn.type === 'QUICK_REPLY' ? 'postback' : 
@@ -323,15 +303,13 @@ const processTemplateForClone = (template: any) => {
              title: btn.text || btn.title || '',
              text: btn.text || btn.title || '',
              url: btn.url || '',
-             payload: btn.payload || '',
-             response: '',
-             value: btn.text || btn.title || '',
-             phone_number: btn.phone_number || '' // Preserve phone number for phone_number buttons
+             payload: btn.payload || btn.phone_number || '',
+             response: btn.response,
            }));
         }
       }
 
-             if (component.type === 'CAROUSEL' && component.cards?.length) {
+      if (component.type === 'CAROUSEL' && component.cards?.length) {
          clonedTemplate.type = 'generic';
          clonedTemplate.bodyIncludes = ['body'];
          clonedTemplate.body_text = clonedBlock.text; // Preserve the main body text
@@ -362,23 +340,18 @@ const processTemplateForClone = (template: any) => {
             }
                          if (cardComponent.type === 'BUTTONS') {
                slide.buttons = cardComponent.buttons.map((btn: any) => {
-                 console.log('Processing carousel button:', btn);
-                 
                  const convertedButton = {
                    api: 1,
                    error: false,
-                   payload: btn.payload || '',
-                   response: '',
+                   payload: btn.payload || btn.phone_number || '',
+                   response: btn.response || '',
                    signature_hash: '',
                    title: btn.text || btn.title || '',
                    text: btn.text || btn.title || '', // Add text property for consistency
                    type: btn.type === 'url' ? 'web_url' : 
                          btn.type === 'phone_number' ? 'phone_number' : 'postback',
                    url: btn.url || '',
-                   phone_number: btn.phone_number || '' // Preserve phone number for phone_number buttons
                  };
-                 
-                 console.log('Converted button:', convertedButton);
                  return convertedButton;
                });
              }
@@ -853,18 +826,12 @@ const processTemplateForPreview = (template: any) => {
     });
   }
 
-  console.log('Final processed template:', processedTemplate);
   return processedTemplate;
 };
 
 const previewTemplate = (template: any) => {
-  console.log('Previewing template:', template);
-  
   // Process the template data for preview
   const processedTemplate = processTemplateForPreview(template);
-  
-  console.log('Processed template for preview:', processedTemplate);
-  console.log('Carousel slides:', processedTemplate.slides);
   
   // Set the preview data
   selectedPreviewTemplate.value = template;

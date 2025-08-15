@@ -92,10 +92,6 @@ const fetchReportData = async (forceRefresh = false) => {
         allReportData.value = result.data.messages.data || [];
         calculateStats();
         
-        console.log('Broadcast report API response:', result.data.messages);
-        console.log('Current page requested:', currentPage.value);
-        console.log('API returned page:', result.data.messages.pagination?.page);
-        
         // Update local pagination state with API response
         if (result.data.messages.pagination) {
           paginationData.value = {
@@ -107,11 +103,6 @@ const fetchReportData = async (forceRefresh = false) => {
           };
           // Sync currentPage with the actual page from API response
           currentPage.value = result.data.messages.pagination.page || currentPage.value;
-          
-          console.log('Updated local state:', {
-            currentPage: currentPage.value,
-            paginationData: paginationData.value
-          });
         }
       }
     }
@@ -121,7 +112,6 @@ const fetchReportData = async (forceRefresh = false) => {
 };
 
 const refreshData = async () => {
-  console.log('Refreshing broadcast report data...');
   await fetchReportData(true);
 };
 

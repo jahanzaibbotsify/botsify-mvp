@@ -70,7 +70,6 @@ const updateLocalState = (details: any) => {
   }
   // Check if WhatsApp Cloud is configured
   else if (details.whatsapp_cloud) {
-    console.log(details.whatsapp_cloud, "asd")
     selectedProvider.value = 'meta';
     showProviderSelection.value = false;
     isDialog360Connected.value = false;
@@ -104,6 +103,10 @@ watch(() => publishStore.cache.botDetails, (newBotDetails) => {
 
 // Load bot details only if not already cached
 const loadBotDetails = async () => {
+  
+  try {
+    showProviderSelection.value = false;
+    isLoadingBotDetails.value = true;
   // If we already have valid cached data, use it
   if (publishStore.cacheValid.botDetails && publishStore.cache.botDetails) {
     updateLocalState(publishStore.cache.botDetails);
@@ -114,9 +117,6 @@ const loadBotDetails = async () => {
   if (publishStore.loadingStates.botDetails) {
     return;
   }
-  
-  isLoadingBotDetails.value = true;
-  try {
     const result = await publishStore.getBotDetails();
     if (result.success && result.data) {
       updateLocalState(result.data);
@@ -397,23 +397,23 @@ defineExpose({
             <span>Interactive Button</span>
           </label>
         </div>
+        <!-- Action Buttons -->
+        <div class="agent-action-buttons">        
+          <Button
+            variant="primary"
+            size="medium"
+            :loading="saving"
+            :disabled="saving"
+            @click="handleSaveSettings"
+          >
+            {{ saving ? 'Saving...' : 'Save Settings' }}
+          </Button>
+        </div>
       </div>
 
       <!-- No Provider Selected Message -->
       <div v-if="!isLoadingBotDetails && !selectedProvider && showProviderSelection" class="no-provider-message">
         <p>Please select a WhatsApp provider to continue</p>
-      </div>
-      <!-- Action Buttons -->
-      <div class="agent-action-buttons" v-if="!showProviderSelection">        
-        <Button
-          variant="primary"
-          size="medium"
-          :loading="saving"
-          :disabled="saving"
-          @click="handleSaveSettings"
-        >
-          {{ saving ? 'Saving...' : 'Save Settings' }}
-        </Button>
       </div>
     </div>
 

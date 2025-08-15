@@ -116,13 +116,6 @@ const showMediaHeader = computed(() => {
          templateData.value.bodyIncludes.includes('header') && 
          templateData.value.type !== 'text';
   
-  console.log('BroadcastTab - showMediaHeader computed:', {
-    selectedTemplate: !!selectedTemplate.value,
-    bodyIncludesHeader: templateData.value.bodyIncludes.includes('header'),
-    templateType: templateData.value.type,
-    result: result
-  });
-  
   return result;
 });
 
@@ -141,7 +134,6 @@ const showTemplateMessage = computed(() => {
 //   (templateData.value.type === 'generic' && templateData.value.slides.length > 0)
 // ));
 const showMessageEditor = computed(() => {
-  console.log("templateData.value", templateData.value)
   return selectedTemplate.value && (
     templateData.value.variables.body.length > 0 ||
     templateData.value.variables.header ||
@@ -162,11 +154,9 @@ const isSendButtonDisabled = computed(() => {
 
 // Methods
 const fetchTemplates = async () => {
-  console.log('BroadcastTab - fetchTemplates called');
   
   // Check if templates are already loaded in the store
   if (publishStore.cacheValid.whatsappTemplates && publishStore.cache.whatsappTemplates && publishStore.cache.whatsappTemplates.data && publishStore.cache.whatsappTemplates.data.length > 0) {
-    console.log('BroadcastTab - Using cached templates from store');
     // Filter templates to only include those with status === 1 (approved)
     const approvedTemplates = publishStore.cache.whatsappTemplates.data.filter((template: any) => template.status === 1);
     templates.value = approvedTemplates.map((template: any) => ({
@@ -178,16 +168,13 @@ const fetchTemplates = async () => {
     return;
   }
   
-  console.log('BroadcastTab - Fetching templates from API...');
   isLoadingTemplates.value = true;
   try {
     const result = await publishStore.fetchWhatsAppTemplates();
-    console.log('BroadcastTab - API result:', result);
     
     if (result.success && result.data && result.data.templates && result.data.templates.data && Array.isArray(result.data.templates.data)) {
       // Filter templates to only include those with status === 1 (approved)
       const approvedTemplates = result.data.templates.data.filter((template: any) => template.status === 1);
-      console.log('BroadcastTab - Approved templates found:', approvedTemplates.length);
       
       templates.value = approvedTemplates.map((template: any) => ({
         ...template,
@@ -196,7 +183,6 @@ const fetchTemplates = async () => {
       }));
       isTemplatesLoaded.value = true;
       
-      console.log('BroadcastTab - Templates loaded successfully:', templates.value.length);
     } else {
       console.warn('BroadcastTab - No templates data or invalid format:', result);
       templates.value = [];
@@ -215,7 +201,6 @@ const fetchTemplates = async () => {
 };
 
 const handleTemplateChange = () => {
-  console.log(selectedTemplate.value, "selectedTemplate")
   // Add a small delay to ensure DOM is ready
   nextTick(() => {
     if (selectedTemplate.value) {
@@ -254,14 +239,12 @@ const setTemplateVariable = () => {
   };
 
   const currTemplate = selectedTemplate.value;
-  console.log('Current template:', currTemplate);
   
   // Parse params if they exist
   let params = [];
   if (currTemplate.params) {
     try {
       params = typeof currTemplate.params === 'string' ? JSON.parse(currTemplate.params) : currTemplate.params;
-      console.log('Parsed params:', params);
     } catch (e) {
       console.warn('Failed to parse template params:', e);
       params = [];
@@ -273,7 +256,6 @@ const setTemplateVariable = () => {
   if (currTemplate.data) {
     try {
       templateDataFromData = typeof currTemplate.data === 'string' ? JSON.parse(currTemplate.data) : currTemplate.data;
-      console.log('Parsed data:', templateDataFromData);
     } catch (e) {
       console.warn('Failed to parse template data:', e);
       templateDataFromData = null;
@@ -286,12 +268,6 @@ const setTemplateVariable = () => {
   if (currTemplate.category === 'AUTHENTICATION') {
     // Parse and assign params for AUTHENTICATION category
     templateData.value.category = 'AUTHENTICATION';
-    
-    console.log('BroadcastTab - Processing AUTHENTICATION template:', {
-      params: params,
-      components: currTemplate.components
-    });
-    
     // Find the body parameter and use its text
     const bodyParam = params.find((param: any) => param.type === 'body');
     if (bodyParam && bodyParam.parameters && bodyParam.parameters.length > 0) {
@@ -321,10 +297,6 @@ const setTemplateVariable = () => {
               key: variable.text || '{{1}}',
               value: ''
             });
-            console.log('BroadcastTab - Added body variable for AUTHENTICATION:', {
-              key: variable.text || '{{1}}',
-              type: variable.type
-            });
           } else {
             // For other parameter types, use default key
             newBodyVar.push({
@@ -339,7 +311,6 @@ const setTemplateVariable = () => {
       // Just add buttons to bodyIncludes for display purposes
       if (param.type === 'button') {
         templateData.value.bodyIncludes.push('buttons');
-        console.log('BroadcastTab - Added buttons to bodyIncludes for AUTHENTICATION (no variables needed)');
         // Don't create button variables for authentication templates
         // OTP buttons are handled automatically by WhatsApp
       }
@@ -349,21 +320,10 @@ const setTemplateVariable = () => {
     // Get buttons from components if available
     if (currTemplate.components && currTemplate.components[1] && currTemplate.components[1].buttons) {
       templateData.value.buttons = currTemplate.components[1].buttons;
-      console.log('BroadcastTab - Set buttons for AUTHENTICATION template:', templateData.value.buttons);
     }
-    
-    console.log('BroadcastTab - Final AUTHENTICATION template data:', {
-      bodyText: templateData.value.body_text,
-      bodyVariables: templateData.value.variables.body,
-      buttonVariables: templateData.value.variables.button,
-      bodyIncludes: templateData.value.bodyIncludes,
-      buttons: templateData.value.buttons
-    });
   } else {
     // Handle other template types - First check if we have params
     if (params && params.length > 0) {
-      console.log('Processing template with params:', params);
-      
       params.forEach((param: any) => {
         if (param.type === 'body') {
           templateData.value.bodyIncludes.push('body');
@@ -472,10 +432,6 @@ const setTemplateVariable = () => {
                 key: result[0],
                 value: ''
               };
-              console.log('Extracted header variable:', {
-                text: component.text,
-                variable: result[0]
-              });
             } else {
               templateData.value.variables.header = null;
             }
@@ -507,10 +463,6 @@ const setTemplateVariable = () => {
             });
 
             templateData.value.variables.body = newBodyVar;
-            console.log('Extracted body variables:', {
-              text: component.text,
-              variables: newBodyVar
-            });
           } else {
             templateData.value.variables.body = [];
           }
@@ -536,10 +488,6 @@ const setTemplateVariable = () => {
                   key: urlVariables[0],
                   value: ''
                 };
-                console.log('Found button URL variable:', {
-                  url: btn.url,
-                  variable: urlVariables[0]
-                });
               }
             }
             
@@ -553,17 +501,12 @@ const setTemplateVariable = () => {
                   key: textVariables[0],
                   value: ''
                 };
-                console.log('Found button text variable:', {
-                  text: buttonText,
-                  variable: textVariables[0]
-                });
               }
             }
           });
         }
 
         if (component.type === 'CAROUSEL') {
-          console.log("carousel component", component)
           templateData.value.type = 'generic';
           
           component.cards.forEach((card: any, index: number) => {
@@ -610,11 +553,6 @@ const setTemplateVariable = () => {
                   });
 
                   templateData.value.slides[index].variables.body = newBodyVar;
-                  console.log('Extracted slide body variables:', {
-                    slideIndex: index,
-                    text: comp.text,
-                    variables: newBodyVar
-                  });
                 } else {
                   templateData.value.slides[index].variables.body = [];
                 }
@@ -632,11 +570,6 @@ const setTemplateVariable = () => {
                         key: urlVariables[0],
                         value: ''
                       };
-                      console.log('Found slide button URL variable:', {
-                        slideIndex: index,
-                        url: btn.url,
-                        variable: urlVariables[0]
-                      });
                     }
                   }
                   
@@ -650,11 +583,6 @@ const setTemplateVariable = () => {
                         key: textVariables[0],
                         value: ''
                       };
-                      console.log('Found slide button text variable:', {
-                        slideIndex: index,
-                        buttonText: buttonText,
-                        variable: textVariables[0]
-                      });
                     }
                   }
                 });
@@ -666,7 +594,6 @@ const setTemplateVariable = () => {
     } else if (currTemplate.components) {
       // Fallback to components parsing if no params
       currTemplate.components.forEach((component: any) => {
-        console.log("component", component)
         if (component.type === 'HEADER') {
           templateData.value.bodyIncludes.push('header');
           const componentType = component.format ? component.format.toLowerCase() : 'text';
@@ -732,10 +659,6 @@ const setTemplateVariable = () => {
                   key: urlVariables[0],
                   value: ''
                 };
-                console.log('Found button URL variable:', {
-                  url: btn.url,
-                  variable: urlVariables[0]
-                });
               }
             }
           });
@@ -788,11 +711,6 @@ const setTemplateVariable = () => {
                   });
 
                   templateData.value.slides[index].variables.body = newBodyVar;
-                  console.log('Extracted slide body variables:', {
-                    slideIndex: index,
-                    text: comp.text,
-                    variables: newBodyVar
-                  });
                 } else {
                   templateData.value.slides[index].variables.body = [];
                 }
@@ -810,11 +728,6 @@ const setTemplateVariable = () => {
                         key: urlVariables[0],
                         value: ''
                       };
-                      console.log('Found slide button URL variable:', {
-                        slideIndex: index,
-                        url: btn.url,
-                        variable: urlVariables[0]
-                      });
                     }
                   }
                   
@@ -828,11 +741,6 @@ const setTemplateVariable = () => {
                         key: textVariables[0],
                         value: ''
                       };
-                      console.log('Found slide button text variable:', {
-                        slideIndex: index,
-                        buttonText: buttonText,
-                        variable: textVariables[0]
-                      });
                     }
                   }
                 });
@@ -843,8 +751,6 @@ const setTemplateVariable = () => {
       });
     }
   }
-  
-  console.log('Template data after parsing:', templateData.value);
   
   // Update store with template data immediately using the proper method
   updateStoreFromTemplateData();
@@ -877,10 +783,6 @@ const onUpdateAttachmentLink = () => {
   if (typeof templateData.value.attachment_link === 'string') {
     templateData.value.attachment_link = templateData.value.attachment_link.trim().replace(/ /g, '%20');
   }
-  console.log('BroadcastTab - onUpdateAttachmentLink:', {
-    attachmentLink: templateData.value.attachment_link,
-    templateType: templateData.value.type
-  });
   updateStoreFromTemplateData();
 };
 
@@ -917,8 +819,6 @@ const uploadMedia = async (event: Event, slideIndex?: number) => {
 };
 
 const parseCSVFile = (file: File) => {
-  console.log('Parsing CSV file:', file.name, 'Type:', file.type, 'Size:', file.size);
-  
   if (!file || !(file instanceof File)) {
     console.error('Invalid file object passed to parseCSVFile:', file);
     csvError.value = 'Invalid file object';
@@ -945,7 +845,6 @@ const parseCSVFile = (file: File) => {
           return { phone_number: phoneValue || '' };
         });
         csvError.value = null;
-        console.log('Parsed users:', result);
       }
     } catch (error) {
       console.error('Error parsing CSV:', error);
@@ -1241,8 +1140,6 @@ const resetBroadcastForm = () => {
   store.template = { ...templateData.value };
   store.block.text = '';
   store.block.attachment_link = '';
-  
-  console.log('Broadcast form reset successfully');
 };
 
 const validateBroadcast = (): boolean => {
@@ -1262,11 +1159,9 @@ const validateBroadcast = (): boolean => {
 // Initialize templates when component is mounted
 // This will be called when the broadcast tab becomes active
 const initializeTemplates = () => {
-  console.log('BroadcastTab - Initializing templates...');
   
   // Check if templates are already loaded in the store
   if (publishStore.cacheValid.whatsappTemplates && publishStore.cache.whatsappTemplates && publishStore.cache.whatsappTemplates.data && publishStore.cache.whatsappTemplates.data.length > 0) {
-    console.log('BroadcastTab - Templates already loaded in store, using cached data');
     const approvedTemplates = publishStore.cache.whatsappTemplates.data.filter((template: any) => template.status === 1);
     templates.value = approvedTemplates.map((template: any) => ({
       ...template,
@@ -1278,7 +1173,7 @@ const initializeTemplates = () => {
   }
   
   // If not loaded in store, fetch templates immediately
-  console.log('BroadcastTab - No cached templates, fetching from API...');
+  
   fetchTemplates();
 };
 
@@ -1293,7 +1188,7 @@ onMounted(() => {
 // Watch for store template cache changes to auto-update local templates
 watch(() => publishStore.cache.whatsappTemplates, (newCache) => {
   if (newCache && newCache.data && newCache.data.length > 0 && !isTemplatesLoaded.value) {
-    console.log('BroadcastTab - Store template cache updated, updating local templates');
+    
     const approvedTemplates = newCache.data.filter((template: any) => template.status === 1);
     templates.value = approvedTemplates.map((template: any) => ({
       ...template,
@@ -1306,9 +1201,9 @@ watch(() => publishStore.cache.whatsappTemplates, (newCache) => {
 
 // Watch for store loading state changes
 watch(() => publishStore.loadingStates.whatsappTemplates, (isLoading) => {
-  console.log('BroadcastTab - Store loading state changed:', isLoading);
+  
   if (!isLoading && !isTemplatesLoaded.value && publishStore.cache.whatsappTemplates?.data) {
-    console.log('BroadcastTab - Store finished loading, initializing templates');
+    
     initializeTemplates();
   }
 });
@@ -1349,17 +1244,6 @@ const updateStoreFromTemplateData = () => {
   store.template = completeTemplate;
   store.block.text = templateData.value.body_text || '';
   store.block.attachment_link = templateData.value.attachment_link || '';
-  
-  console.log('BroadcastTab - updateStoreFromTemplateData:', {
-    templateData: templateData.value,
-    completeTemplate: completeTemplate,
-    storeTemplate: store.template,
-    storeBlock: store.block,
-    attachmentLink: templateData.value.attachment_link,
-    variables: templateData.value.variables,
-    buttons: templateData.value.buttons,
-    slides: templateData.value.slides
-  });
 };
 
 // Add API method for getting subscribed users
@@ -1384,7 +1268,6 @@ const fetchSubscribedUsers = async () => {
 
 // Force refresh templates (useful for debugging or manual refresh)
 const forceRefreshTemplates = async () => {
-  console.log('BroadcastTab - Force refreshing templates...');
   isTemplatesLoaded.value = false;
   templates.value = [];
   await fetchTemplates();
@@ -1454,8 +1337,6 @@ const handleSendBroadcast = async () => {
       try {
         // Build and send payload
         const payload = buildBroadcastPayload();
-        console.log('Broadcast payload:', payload);
-        
         // Call the API to create broadcast task
         const result = await publishStore.createWhatsappBroadcastTask({
           title: payload.title,

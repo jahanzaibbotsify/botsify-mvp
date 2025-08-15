@@ -95,7 +95,6 @@ const connectionPage = async (type: string, page: any) => {
   }
   try {
     const result = await publishStore.connectionInstaPage(type, page.id, page.name, page.accessToken);
-    console.log('Connection result:', result);
     if (result.success) {
       // Clear cache and reload pages to update the status
       publishStore.clearInstaPagesCache();

@@ -48,7 +48,10 @@ export const useChatStore = defineStore('chat', () => {
     let versionId = '';
     let activeVersionId = '';
     let activeVersionContent = '';
-    console.log(aiPromptVersions, "aiPromptVersions..")
+    
+    // Reset activeAiPromptVersion before processing new data
+    activeAiPromptVersion.value = null;
+    
     const StoredVersions = aiPromptVersions.map((ver: any) => {
       let prompt;
       if (typeof ver.ai_prompt === 'string') {
@@ -62,20 +65,25 @@ export const useChatStore = defineStore('chat', () => {
       }
 
       versionId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+      
+      // Create the properly typed PromptVersion object
+      const promptVersion: PromptVersion = {
+        id: versionId,
+        version_id: ver.id ? parseInt(ver.id) : 0, // Convert to number, default to 0 if undefined
+        name: ver.name || 'version-1',
+        content: prompt,
+        updatedAt: new Date(ver.updated_at || Date.now()),
+        version: Date.now(),
+        isActive: ver.is_active || false
+      };
+      
       if (ver.is_active) {
         activeVersionContent = prompt;
-        activeVersionId = versionId
-        activeAiPromptVersion.value = ver;
+        activeVersionId = versionId;
+        // Set the properly typed object instead of the raw ver
+        activeAiPromptVersion.value = promptVersion;
       }
-      return {
-        id: versionId,
-        version_id: ver.id,
-        name: ver.name,
-        content: prompt,
-        updatedAt: new Date(ver.updated_at),
-        version: Date.now(),
-        isActive: ver.is_active
-      };
+      return promptVersion;
     });
     return {
       'content': activeVersionContent,
@@ -88,10 +96,12 @@ export const useChatStore = defineStore('chat', () => {
   // Load data from localStorage on initialization
   function loadFromStorage(userChats: string, aiPromptVersions: object[]) {
     try {
+      // Reset activeAiPromptVersion when loading new agent data
+      activeAiPromptVersion.value = null;
+      
       const storedChats = userChats;
       const storedTemplates = convertStoredVersionsToStoryStructure(aiPromptVersions);
       const storedActiveChat = localStorage.getItem('botsify_active_chat');    
-      console.log(storedChats, "storedChats");
       if (storedChats && storedChats.length > 4 && storedChats !== 'null' && storedChats !== 'undefined') {
       try {
           const parsedChats = JSON.parse(storedChats);
@@ -119,7 +129,6 @@ export const useChatStore = defineStore('chat', () => {
                 })) || []
               } : undefined
             }));
-            // console.log('✅ Loaded chats from storage:', chats.value.length);
           } else {
             console.warn('⚠️ Stored chats is not an array, clearing storage');
             localStorage.removeItem('botsify_chats');
@@ -139,7 +148,6 @@ export const useChatStore = defineStore('chat', () => {
 
       if (storedActiveChat && chats.value.some(c => c.id === storedActiveChat)) {
         activeChat.value = storedActiveChat;
-        // console.log('✅ Restored active chat:', storedActiveChat);
       } else if (storedActiveChat) {
         console.warn('⚠️ Stored active chat ID not found in loaded chats:', storedActiveChat);
       }
@@ -148,28 +156,12 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  // Performance monitoring utility
-  function logPerformance(operation: string, startTime: number, additionalInfo?: string) {
-    const duration = Date.now() - startTime;
-    const info = additionalInfo ? ` - ${additionalInfo}` : '';
-    console.log(`⏱️ ${operation} completed in ${duration}ms${info}`);
-    
-    // Log warning for slow operations
-    if (duration > 1000) {
-      console.warn(`⚠️ Slow operation detected: ${operation} took ${duration}ms`);
-    }
-  }
-
   // Save data to localStorage
   async function saveToTemplate() {
     // Skip if auto-save is disabled
     if (!ENABLE_AUTO_SAVE) {
-      console.log('⏭️ Auto-save disabled, skipping template saving');
       return true;
     }
-
-    const startTime = Date.now();
-    console.log('🔄 Starting saveToTemplate function...');
 
     try {
       // Performance optimization: Only copy essential data instead of full deep copy
@@ -192,8 +184,6 @@ export const useChatStore = defineStore('chat', () => {
       const aiPrompt = chat.story?.content ?? '';
       const chatsJson = JSON.stringify([optimizedChatData]);
 
-      console.log(`📊 Payload size: ${chatsJson.length} characters, Messages: ${limitedMessages.length}`);
-      
       const payload = {
           bot_id: getCurrentBotId(),
           ai_prompt: aiPrompt,
@@ -206,32 +196,20 @@ export const useChatStore = defineStore('chat', () => {
         payload.version_id = `${activeAiPromptVersion.value?.version_id}`;
       }
 
-      const apiStartTime = Date.now();
       const response = await botsifyApi.saveBotTemplates(payload);
-      logPerformance('API call to saveBotTemplates', apiStartTime);
       
-      if (!response.success) {
-         console.error('❌ Error saving bot templates:', response.message);
-         // Error message will be shown in red text in the chats
-         // Toast notifications disabled as requested
-         return false;
+      if (response.success && activeAiPromptVersion.value) {
+        activeAiPromptVersion.value.version_id = response.data.version_id;
+        // Error message will be shown in red text in the chats
        }
 
-      if (activeAiPromptVersion.value && 
-        (!activeAiPromptVersion.value?.version_id || activeAiPromptVersion.value?.version_id === 0)
-      ) {
-        console.log(activeAiPromptVersion.value, "activeAiPromptVersion.value")
-          activeAiPromptVersion.value.version_id = response.data.version_id;
-      }
+    
        
-      logPerformance('saveToTemplate', startTime, 'total operation');
       return true;
          } catch (error) {
        console.error('❌ Error saving to storage:', error);
        // Error message will be shown in red text in the chats
        // Toast notifications disabled as requested
-       const endTime = Date.now();
-       console.log(`❌ saveToTemplate failed after ${endTime - startTime}ms`);
        return false;
      }
 
@@ -247,9 +225,7 @@ export const useChatStore = defineStore('chat', () => {
   const defaultPromptTemplate = computed(() => {
     return globalPromptTemplates.value.find(t => t.isDefault) || null;
   });
-// // console.log(defaultPromptTemplate, "defaultPromptTemplate");
   function setActiveChat(chatId: string) {
-    // console.log('Setting active chat:', chatId);
     activeChat.value = chatId;
     const chat = chats.value.find(c => c.id === chatId);
     if (chat) {
@@ -260,7 +236,6 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   async function addMessage(chatId: string, content: string, sender: 'user' | 'assistant', attachments?: Attachment[]) {
-    // console.log(`Adding ${sender} message to chat ${chatId}:`, content);
     const chat = chats.value.find(c => c.id === chatId);
     if (!chat) {
       console.error('Chat not found with ID:', chatId);
@@ -354,8 +329,6 @@ export const useChatStore = defineStore('chat', () => {
 
   function updateStory(chatId: string, content: string, createNewVersion: boolean = true, edit: boolean = false) {
     const startTime = Date.now();
-    console.log(`🔄 Starting updateStory for chat ${chatId}, createNewVersion: ${createNewVersion}, edit: ${edit}`);
-    
     const chat = chats.value.find(c => c.id === chatId);
     if (!chat) {
       console.error('Chat not found with ID:', chatId);
@@ -371,6 +344,8 @@ export const useChatStore = defineStore('chat', () => {
         versions: [newVersion],
         activeVersionId: newVersion.id
       };
+      // Set the activeAiPromptVersion reference for new stories
+      activeAiPromptVersion.value = newVersion;
     } else {
       if (createNewVersion) {
         // Mark current version as inactive
@@ -380,6 +355,8 @@ export const useChatStore = defineStore('chat', () => {
         const newVersion = createPromptVersion(content);
         chat.story.versions.push(newVersion);
         chat.story.activeVersionId = newVersion.id;
+        // Set the activeAiPromptVersion reference for new versions
+        activeAiPromptVersion.value = newVersion;
       }else if (activeAiPromptVersion.value){
         activeAiPromptVersion.value.content = content;
         activeAiPromptVersion.value.updatedAt = new Date();
@@ -393,7 +370,6 @@ export const useChatStore = defineStore('chat', () => {
       }
     }
 
-    logPerformance('updateStory', startTime, `chat ${chatId}`);
     return chat.story;
   }
 
@@ -403,8 +379,36 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  function resetActivePromptVersion() {
+    activeAiPromptVersion.value = null;
+  }
+
+  function cleanupForAgentSwitch() {
+    // Reset all agent-specific state when switching agents
+    activeAiPromptVersion.value = null;
+    isAIPromptGenerating.value = false;
+    isTyping.value = false;
+    doInputDisable.value = false;
+    
+    // Clear any existing chats to prevent data contamination
+    if (chats.value.length > 0) {
+      chats.value = [];
+    }
+  }
+
+  function syncActiveVersionWithData(versions: any[]) {
+    // Find the active version from the loaded data
+    const activeVersion = versions.find((v: any) => v.is_active);
+    if (activeVersion && activeAiPromptVersion.value) {
+      // Update the activeAiPromptVersion with the loaded data
+      activeAiPromptVersion.value.version_id = activeVersion.id;
+      activeAiPromptVersion.value.content = activeVersion.ai_prompt;
+      activeAiPromptVersion.value.name = activeVersion.name || 'version-1';
+      activeAiPromptVersion.value.updatedAt = new Date(activeVersion.updated_at || Date.now());
+    }
+  }
+
   function revertToPromptVersion(chatId: string, versionId: string) {
-    // console.log(`Reverting to prompt version ${versionId} for chat ${chatId}`);
     const chat = chats.value.find(c => c.id === chatId);
     if (!chat?.story) {
       console.error('Chat or story not found');
@@ -431,7 +435,6 @@ export const useChatStore = defineStore('chat', () => {
 
   async function deletePromptVersion(chatId: string, versionId: string) {
     try{
-      // console.log(`Deleting prompt version ${versionId} for chat ${chatId}`);
       const chat = chats.value.find(c => c.id === chatId);
       if (!chat?.story) {
         console.error('Chat or story not found');
@@ -523,7 +526,6 @@ export const useChatStore = defineStore('chat', () => {
 
   async function handleAIResponse(chat: Chat) {
     const functionStartTime = Date.now();
-    console.log('🚀 Starting handleAIResponse...');
     
     // Add timeout protection for the entire function
     const timeoutPromise = new Promise((_, reject) => {
@@ -538,19 +540,14 @@ export const useChatStore = defineStore('chat', () => {
         timeoutPromise
       ]);
       
-      const functionEndTime = Date.now();
-      console.log(`✅ handleAIResponse completed successfully in ${functionEndTime - functionStartTime}ms`);
       return result;
     } catch (error: any) {
-      const functionEndTime = Date.now();
-      console.error(`❌ handleAIResponse failed after ${functionEndTime - functionStartTime}ms:`, error);
       throw error;
     }
   }
 
   async function executeAIResponse(chat: Chat) {
     const functionStartTime = Date.now();
-    console.log('🔄 Starting executeAIResponse...');
     
     doInputDisable.value = true;
     isTyping.value = true;
@@ -617,7 +614,6 @@ Use the above connected services information to understand what tools and data s
       };
       chat.messages.push(aiMessage);
       
-      console.log('🔄 Starting stream processing...');
       
       // Use efficient buffering instead of string concatenation
       const chunks: string[] = [];
@@ -626,7 +622,6 @@ Use the above connected services information to understand what tools and data s
       while (true) {
           const { done, value } = await reader.read();
           if (done) {
-            console.log('✅ Stream completed, processing final content...');
             break;
           }
           
@@ -646,14 +641,11 @@ Use the above connected services information to understand what tools and data s
       
       // Process all content at once instead of during streaming
       const streamedContent = chunks.join('');
-      const streamEndTime = Date.now();
-      console.log(`⏱️ Stream processing completed in ${streamEndTime - streamStartTime}ms, content length: ${totalLength}`);
       
       // Ensure stream reader is properly closed
       try {
         if (reader) {
           await reader.cancel();
-          console.log('✅ Stream reader cancelled');
         }
       } catch (cancelError) {
         console.warn('⚠️ Error cancelling stream reader:', cancelError);
@@ -672,17 +664,12 @@ Use the above connected services information to understand what tools and data s
       
       // Handle AI prompt if present
       if (parsedResponse.aiPrompt) {
-        console.log('parsedResponse.aiPrompt', parsedResponse.aiPrompt);
-        console.log('🔄 Updating story and resetting isAIPromptGenerating...');
         updateStory(chat.id, parsedResponse.aiPrompt, !activeAiPromptVersion.value ? true : false);
         // Reset AI prompt generating flag after story is updated
         isAIPromptGenerating.value = false;
-        console.log('✅ isAIPromptGenerating reset to false after story update');
       } else {
         // If no AI prompt was generated, also reset the flag
-        console.log('⚠️ No AI prompt found, resetting isAIPromptGenerating...');
         isAIPromptGenerating.value = false;
-        console.log('✅ isAIPromptGenerating reset to false (no prompt)');
       }
 
       await nextTick();
@@ -692,17 +679,14 @@ Use the above connected services information to understand what tools and data s
         for (const toolCall of toolCalls) {
           if (toolCall.function.name === 'configure_chatbot') {
             try {
-              console.log('Processing configure_chatbot tool call:', toolCall);
 
               // Parse the arguments
               const args = JSON.parse(toolCall.function.arguments);
-              console.log('Parsed tool arguments:', args);
 
               if (args.tasks && Array.isArray(args.tasks)) {
                 try {
                   // Process configuration tasks
                   const configResult = await openAIStore.processConfigurationTool(args.tasks);
-                  console.log('Configuration result:', configResult);
 
                   // Check if any tasks failed
                   if (configResult.includes('❌ Failed to complete')) {
@@ -807,10 +791,7 @@ Use the above connected services information to understand what tools and data s
 
       // Save templates only on successful completion
       try {
-        console.log('🔄 Starting saveToTemplate after successful AI response...');
-        const saveStartTime = Date.now();
         await debouncedSaveToTemplate();
-        logPerformance('saveToTemplate', saveStartTime, 'after AI response');
       } catch (saveError) {
         console.error('Error saving templates after successful AI response:', saveError);
       }
@@ -842,13 +823,11 @@ Use the above connected services information to understand what tools and data s
       return;
     } finally {
       const finallyTime = Date.now();
-      console.log(`🔄 Finally block reached after ${finallyTime - functionStartTime}ms`);
       
       // Always set typing to false when done
       isTyping.value = false;
       isAIPromptGenerating.value = false;
       doInputDisable.value = false;
-      console.log('🔄 Finally block: Reset all flags - isTyping: false, isAIPromptGenerating: false');
       
       // Note: saveToTemplate() is not called here to prevent additional API calls on error
       // The flow stops completely when an error occurs
@@ -868,14 +847,6 @@ Use the above connected services information to understand what tools and data s
     if (chatResponse && aiPrompt) {
       return { chatResponse, aiPrompt };
     }
-
-    console.log('Initial parsing results:', {
-      foundChatMarker: !!chatResponseMatch,
-      foundAIMarker: !!aiPromptMatch,
-      chatResponseLength: chatResponse?.length || 0,
-      aiPromptLength: aiPrompt?.length || 0
-    });
-
     // Additional validation - if we found markers but content is empty, set to null
     if (chatResponse && chatResponse.length === 0) {
       chatResponse = null;
@@ -974,17 +945,9 @@ Use the above connected services information to understand what tools and data s
       // Return JSON only if we have connected services
       if (hasServices) {
         const jsonString = JSON.stringify(connectedServices, null, 2);
-        console.log('Connected services JSON generated:', {
-          chatId: chatId,
-          mcpServers: connectedServices.services.mcp_servers?.length || 0,
-          hasFileSearch: !!connectedServices.services.file_search,
-          hasWebSearch: !!connectedServices.services.web_search,
-          totalServices: Object.keys(connectedServices.services).length
-        });
         return jsonString;
       }
 
-      // console.log('No connected services found for chat:', chatId);
       return null;
     } catch (error) {
       console.error('Error generating connected services JSON:', error);
@@ -1025,7 +988,6 @@ Use the above connected services information to understand what tools and data s
 
     chats.value.unshift(newChat);
     setActiveChat(newChat.id);
-    // console.log('New chat created with ID:', newChat.id);
     return newChat;
   }
 
@@ -1037,7 +999,6 @@ Use the above connected services information to understand what tools and data s
     const currentActiveChat = chats.value.find(c => c.id === activeChat.value);
     if (currentActiveChat) {
       chats.value = [currentActiveChat];
-      // console.log('Cleared all chats except active one');
       debouncedSaveToTemplate();
       return true;
     }
@@ -1067,7 +1028,6 @@ Use the above connected services information to understand what tools and data s
       const activeVersion = chat.story.versions.find(v => v.isActive);
       if (activeVersion) {
         chat.story.versions = [activeVersion];
-        // console.log(`Cleared version history for chat ${chatId}`);
         return true;
       }
       return false;
@@ -1248,13 +1208,11 @@ Use the above connected services information to understand what tools and data s
 
   // Initialize with a default chat if none exists
   if (chats.value.length === 0) {
-    // console.log('No chats found, creating default chat');
     createNewChat();
   }
 
   // Initialize default template if none exists
   if (globalPromptTemplates.value.length === 0) {
-    // console.log('Creating default prompt template');
     createGlobalPromptTemplate(
       'Default Bot Prompt',
       `You are an AI prompt designer. I will describe how the chatbot should behave, and you will build a structured chatbot flow step-by-step.
@@ -1291,6 +1249,9 @@ Keep flows organized, clear, and user-friendly.`,
     createNewChat,
     updateStory,
     updateActivePromptVersionId,
+    resetActivePromptVersion,
+    cleanupForAgentSwitch,
+    syncActiveVersionWithData,
     revertToPromptVersion,
     deletePromptVersion,
     createGlobalPromptTemplate,

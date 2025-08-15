@@ -1052,6 +1052,51 @@ export const usePublishStore = defineStore('publish', () => {
     cacheValid.value.publishStatus = false;
   };
 
+  const resetStore = () => {
+    // Reset all cache
+    cache.value = {
+      whatsappTemplates: null,
+      smsTemplates: null,
+      botDetails: null,
+      broadcastReport: null,
+      smsReport: null,
+      thirdPartyConfig: null,
+      facebookPages: null,
+      instagramPages: null,
+      publishStatus: null,
+      commentResponder: null
+    };
+
+    // Reset all loading states
+    loadingStates.value = {
+      whatsappTemplates: false,
+      smsTemplates: false,
+      botDetails: false,
+      broadcastReport: false,
+      smsReport: false,
+      thirdPartyConfig: false,
+      facebookPages: false,
+      instagramPages: false,
+      publishStatus: false,
+      commentResponder: false,
+      pluginData: false
+    };
+
+    // Reset all cache validity flags
+    cacheValid.value = {
+      whatsappTemplates: false,
+      smsTemplates: false,
+      botDetails: false,
+      broadcastReport: false,
+      smsReport: false,
+      thirdPartyConfig: false,
+      facebookPages: false,
+      instagramPages: false,
+      publishStatus: false,
+      commentResponder: false
+    };
+  };
+
   const createTemplate = async (templateData: any, type?: string) => {
     isLoading.value = true;
     error.value = null;
@@ -1201,6 +1246,7 @@ export const usePublishStore = defineStore('publish', () => {
     connectCatalog,
     getCatalog,
     cloneSmsTemplate,
-    sendSmsBroadcast
+    sendSmsBroadcast,
+    resetStore
   };
 }); 

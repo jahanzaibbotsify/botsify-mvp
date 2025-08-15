@@ -126,7 +126,6 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
 
   // Watch for attachment link validation
   watch(() => block.value.attachment_link, (newValue: string) => {
-    console.log("newValue", newValue)
     if (template.value.header === 'video') {
       block.value.video_url = newValue;
     } else {
@@ -258,11 +257,8 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
   // Watch for button changes to automatically check for variables
   watch(() => block.value.buttons, (buttons: any[]) => {
     if (buttons && buttons.length > 0) {
-      // Check each button for variables
-      buttons.forEach((button, index) => {
-        console.log(button);
-        checkForVariables(`button_${index}`);
-      });
+      // Check all buttons for variables at once (not individually)
+      checkForVariables('button_0');
     } else {
       // Clear button variables if no buttons
       template.value.variables.button = null;
@@ -274,10 +270,8 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     if (slides && slides.length > 0) {
       slides.forEach((slide, slideIndex) => {
         if (slide.buttons && slide.buttons.length > 0) {
-          slide.buttons.forEach((button: any, buttonIndex: number) => {
-            console.log(button);
-            checkForVariables(`button_${buttonIndex}`, slideIndex);
-          });
+          // Check all buttons in this slide for variables at once (not individually)
+          checkForVariables('button_0', slideIndex);
         } else {
           // Clear slide button variables if no buttons
           if (template.value.slides[slideIndex]?.variables) {
@@ -324,6 +318,31 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
   const isAuthenticationCategory = computed(() => template.value.category === 'AUTHENTICATION');
   const isMediaType = computed(() => template.value.type === 'media');
   const isGenericType = computed(() => template.value.type === 'generic');
+  
+  // Check if add slide button should be disabled
+  const canAddSlide = computed(() => {
+    if (template.value.type !== 'generic') return false;
+    if (template.value.slides.length >= 10) return false;
+    
+    const firstSlide = template.value.slides[0];
+    const firstBlockSlide = block.value.slides[0];
+    
+    if (!firstSlide || !firstBlockSlide) return false;
+    
+    // Check if first slide title is filled
+    if (!firstBlockSlide.title || firstBlockSlide.title.trim() === '') return false;
+    
+    // Check if ALL buttons are filled in the first slide (not just one)
+    const allButtonsFilled = firstBlockSlide.buttons.every((button: any) => {
+      const hasTitle = button.title && button.title.trim() !== '';
+      const hasUrl = button.url && button.url.trim() !== '';
+      const hasPayload = button.payload && button.payload.trim() !== '';
+      
+      return hasTitle || hasUrl || hasPayload;
+    });
+    
+    return allButtonsFilled;
+  });
 
   // Variable counting functions
   const countVariables = (text: string): number => {
@@ -402,12 +421,15 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         url: '',
         response: ''
       }];
-    } else if(template.value.category === 'MARKETING'){
-      template.value.bodyIncludes = ['body'];
-    } else if(template.value.category === 'UTILITY'){
-      template.value.bodyIncludes = ['body'];
-    }
-  };
+          } else if(template.value.category === 'MARKETING'){
+        template.value.bodyIncludes = ['body'];
+      } else if(template.value.category === 'UTILITY'){
+        template.value.bodyIncludes = ['body'];
+      }
+      
+      // Force re-check of all variables after category change
+      forceRecheckAllVariables();
+    };
 
   const onChangeTemplateType = () => {
     // Handle template type change
@@ -438,17 +460,29 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         type: 'button',
         image_url: '',
         attachment_link: '',
-        buttons: [{
-          api: 1,
-          error: false,
-          type: 'web_url',
-          title: '',
-          response: '',
-          payload: '',
-          url: '',
-          signature_hash: ''
-        }]
+        buttons: [
+          {
+            api: 1,
+            error: false,
+            type: 'web_url',
+            title: '',
+            response: '',
+            payload: '',
+            url: '',
+            signature_hash: ''
+          }
+        ]
       }];
+      
+      // Initialize errors for the first slide
+      errors.value.slides = [{
+        title: '',
+        buttons: null as any,
+        file: ''
+      }];
+      
+      // Force re-check of all variables after template type change
+      forceRecheckAllVariables();
     }
   };
 
@@ -468,6 +502,9 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     } else if (template.value.header === 'text' && !template.value.header_text) {
       errors.value.header = 'The template header field is required';
     }
+    
+    // Force re-check of all variables after header type change
+    forceRecheckAllVariables();
   };
   
 
@@ -493,6 +530,9 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
       if (button && !button.type) {
         button.type = 'web_url';
       }
+      
+      // Force re-check of all variables after button type change
+      forceRecheckAllVariables();
     }
   };
 
@@ -501,19 +541,28 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     if (section === 'header') {
       const variables = extractVariables(template.value.header_text || '');
       if (variables.length > 0) {
+        const variableKey = `{{${variables[0]}}}`;
+        // Check if we already have this variable with a value
+        const existingVar = template.value.variables.header;
+        
         template.value.variables.header = {
-          key: `{{${variables[0]}}}`,
-          value: ''
+          key: variableKey,
+          value: existingVar && existingVar.key === variableKey ? existingVar.value : ''
         };
       } else {
         template.value.variables.header = null;
       }
     } else if (section === 'body') {
       const variables = extractVariables(block.value.text || '');
-      template.value.variables.body = variables.map(num => ({
-        key: `{{${num}}}`,
-        value: ''
-      }));
+      template.value.variables.body = variables.map(num => {
+        const variableKey = `{{${num}}}`;
+        // Check if we already have this variable with a value
+        const existingVar = template.value.variables.body.find((v: any) => v.key === variableKey);
+        return {
+          key: variableKey,
+          value: existingVar ? existingVar.value : ''
+        };
+      });
     } else if (section === 'slider') {
       // Handle carousel slide title variables
       const slide = template.value.slides[slideIndex];
@@ -529,12 +578,17 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
       }
       
       const variables = extractVariables(blockSlide.title || '');
-      slide.variables.body = variables.map(num => ({
-        key: `{{${num}}}`,
-        value: ''
-      }));
+      slide.variables.body = variables.map(num => {
+        const variableKey = `{{${num}}}`;
+        // Check if we already have this variable with a value
+        const existingVar = slide.variables.body.find((v: any) => v.key === variableKey);
+        return {
+          key: variableKey,
+          value: existingVar ? existingVar.value : ''
+        };
+      });
     } else if (section?.startsWith('button_')) {
-      const buttonIndex = parseInt(section.split('_')[1]);
+      // const buttonIndex = parseInt(section.split('_')[1]);
       const isGeneric = template.value.type === 'generic';
       
       if (isGeneric && slideIndex !== undefined && slideIndex >= 0) {
@@ -547,24 +601,31 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         if (!slide.variables) {
           slide.variables = { button: null };
         }
-        if (!slide.variables.button) {
-          slide.variables.button = null;
+        
+        // Check ALL buttons in the slide for variables, not just one specific button
+        let allButtonVariables: number[] = [];
+        
+        if (blockSlide.buttons && blockSlide.buttons.length > 0) {
+          blockSlide.buttons.forEach((button: any) => {
+            // Check for variables in title, text, and URL fields
+            const titleVariables = extractVariables(button.title || '');
+            const textVariables = extractVariables(button.text || '');
+            const urlVariables = extractVariables(button.url || '');
+            allButtonVariables = [...allButtonVariables, ...titleVariables, ...textVariables, ...urlVariables];
+          });
         }
         
-        const button = blockSlide.buttons?.[buttonIndex];
-        if (!button) return;
+        // Remove duplicates and sort
+        allButtonVariables = [...new Set(allButtonVariables)].sort((a, b) => a - b);
         
-        // Check for variables in title, text, and URL fields
-        const titleVariables = extractVariables(button.title || '');
-        const textVariables = extractVariables(button.text || '');
-        const urlVariables = extractVariables(button.url || '');
-        const allVariables = [...titleVariables, ...textVariables, ...urlVariables];
-        
-        if (allVariables.length > 0) {
-          // Update or add button variable
+        if (allButtonVariables.length > 0) {
+          // Update or add button variable - use the first variable found
+          const variableKey = `{{${allButtonVariables[0]}}}`;
+          const existingButtonVar = slide.variables?.button;
+          
           slide.variables.button = {
-            key: `{{${allVariables[0]}}}`,
-            value: ''
+            key: variableKey,
+            value: existingButtonVar && existingButtonVar.key === variableKey ? existingButtonVar.value : ''
           };
         } else {
           // Remove button variable if no variables found
@@ -572,20 +633,30 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         }
       } else {
         // Handle regular template button variables
-        const button = block.value.buttons[buttonIndex];
-        if (!button) return;
+        // Check ALL buttons in the template for variables, not just one specific button
+        let allButtonVariables: number[] = [];
         
-        // Check for variables in title, text, and URL fields
-        const titleVariables = extractVariables(button.title || '');
-        const textVariables = extractVariables(button.text || '');
-        const urlVariables = extractVariables(button.url || '');
-        const allVariables = [...titleVariables, ...textVariables, ...urlVariables];
+        if (block.value.buttons && block.value.buttons.length > 0) {
+          block.value.buttons.forEach((button: any) => {
+            // Check for variables in title, text, and URL fields
+            const titleVariables = extractVariables(button.title || '');
+            const textVariables = extractVariables(button.text || '');
+            const urlVariables = extractVariables(button.url || '');
+            allButtonVariables = [...allButtonVariables, ...titleVariables, ...textVariables, ...urlVariables];
+          });
+        }
         
-        if (allVariables.length > 0) {
-          // Update or add button variable
+        // Remove duplicates and sort
+        allButtonVariables = [...new Set(allButtonVariables)].sort((a, b) => a - b);
+        
+        if (allButtonVariables.length > 0) {
+          // Update or add button variable - use the first variable found
+          const variableKey = `{{${allButtonVariables[0]}}}`;
+          const existingButtonVar = template.value.variables?.button;
+          
           template.value.variables.button = {
-            key: `{{${allVariables[0]}}}`,
-            value: ''
+            key: variableKey,
+            value: existingButtonVar && existingButtonVar.key === variableKey ? existingButtonVar.value : ''
           };
         } else {
           // Remove button variable if no variables found
@@ -771,7 +842,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
     return {
       header: 'image',
       button_type: currentButtonType,
-      total_buttons: currentButtonType === 'cta' ? 2 : 1,
+      total_buttons: currentButtonType === 'cta' ? 1 : 1, // Start with 1 button by default
       variables: {
         body: [],
         button: null
@@ -781,8 +852,9 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
 
   const createBlockSlide = () => {
     // Get the current button type from the first slide if it exists
-    const currentButtonType = block.value.slides[0].buttons[0].type;
-    console.log(currentButtonType, "currentButtonType")
+    const firstSlide = block.value.slides[0];
+    const currentButtonType = firstSlide?.buttons?.[0]?.type || 'web_url';
+    
     // Get the next slide ID
     const nextId = block.value.slides.length + 1;
     
@@ -805,7 +877,7 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
       type: 'button',
       image_url: '',
       attachment_link: '',
-      buttons: [defaultButton]
+      buttons: [defaultButton] // Start with 1 button by default
     }
   };
 
@@ -825,7 +897,6 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
 
   const isNextDisabled = () => {
     const { type, category, bodyIncludes } = template.value;
-    
     // Authentication template validation
     if(category === 'AUTHENTICATION'){
       if(errors.value.title_btn_var !== '') return true;
@@ -852,21 +923,35 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
       }
     }
 
-    // Generic validation
+    // Generic validation - Check all slides have required content
     if (type === 'generic') {
       const slides = block.value.slides;
       if (!slides.length) return true;
-      const expectedButtonCount = slides[0].buttons.length;
-      if (expectedButtonCount === 0) return true;
+      
+      // Check each slide for required content
       for (const slide of slides) {
-        if (!slide.title || slide.title.trim() === '') return true;
-        if (slide.buttons.length !== expectedButtonCount) return true;
-        return slide.buttons.some((button: any) => {
-          if (!button.title || button.title.trim() === '') return true;
-          if (button.type === 'postback' && (!button.response || button.response.trim() === '')) return true;
-          if (button.type === 'web_url' && (!button.url || button.url.trim() === '')) return true;
-          if (button.type === 'phone_number' && (!button.payload || button.payload.trim() === '')) return true;
+        // Check if slide title is filled
+        if (!slide.title || slide.title.trim() === '') {
+          return true;
+        }
+        
+        // Check if slide has buttons
+        if (!slide.buttons || slide.buttons.length === 0) {
+          return true;
+        }
+        
+        // Check if ALL buttons are properly filled (not just the first one)
+        const allButtonsFilled = slide.buttons.every((button: any) => {
+          if (!button.title || button.title.trim() === '') return false;
+          if (button.type === 'postback' && (!button.response || button.response.trim() === '')) return false;
+          if (button.type === 'web_url' && (!button.url || button.url.trim() === '')) return false;
+          if (button.type === 'phone_number' && (!button.payload || button.payload.trim() === '')) return false;
+          return true;
         });
+        
+        if (!allButtonsFilled) {
+          return true;
+        }
       }
     }
     
@@ -1020,8 +1105,27 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
         dataBlock.buttons = [];
         cTemp.variables.button = null;
       } else {
-        // Set button variable to the first button if buttons exist
-        cTemp.variables.button = dataBlock.buttons[0] || null;
+        // Check if any button has variables and set the variable info (not the entire button)
+        let buttonVariable = null;
+        for (const button of dataBlock.buttons) {
+          const titleVariables = extractVariables(button.title || '');
+          const textVariables = extractVariables(button.text || '');
+          const urlVariables = extractVariables(button.url || '');
+          const allVariables = [...titleVariables, ...textVariables, ...urlVariables];
+          
+          if (allVariables.length > 0) {
+            // Check if we already have a button variable with a value in the template
+            const existingButtonVar = template.value.variables.button;
+            const variableKey = `{{${allVariables[0]}}}`;
+            
+            buttonVariable = {
+              key: variableKey,
+              value: existingButtonVar && existingButtonVar.key === variableKey ? existingButtonVar.value : ''
+            };
+            break;
+          }
+        }
+        cTemp.variables.button = buttonVariable;
       }
 
       // if template does not include footer, remove footer text
@@ -1083,6 +1187,44 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
             signature_hash: button.signature_hash
           }))
         }));
+        
+        // Also format the template slides to ensure proper variable structure
+        cTemp.slides = cTemp.slides.map((slide: any, index: number) => {
+          const formattedSlide = { ...slide };
+          
+          // Ensure button variables are properly formatted (not the entire button object)
+          if (slide.variables?.button) {
+            // Check if the button variable is actually a button object instead of variable info
+            if (slide.variables.button.type || slide.variables.button.title || slide.variables.button.url) {
+              // This is a button object, we need to extract the variable info
+              const blockSlide = dataBlock.slides[index];
+                              if (blockSlide?.buttons) {
+                  let buttonVariable = null;
+                  for (const button of blockSlide.buttons) {
+                    const titleVariables = extractVariables(button.title || '');
+                    const textVariables = extractVariables(button.text || '');
+                    const urlVariables = extractVariables(button.url || '');
+                    const allVariables = [...titleVariables, ...textVariables, ...urlVariables];
+                    
+                    if (allVariables.length > 0) {
+                      // Check if we already have a button variable with a value in the slide
+                      const existingButtonVar = slide.variables?.button;
+                      const variableKey = `{{${allVariables[0]}}}`;
+                      
+                      buttonVariable = {
+                        key: variableKey,
+                        value: existingButtonVar && existingButtonVar.key === variableKey ? existingButtonVar.value : ''
+                      };
+                      break;
+                    }
+                  }
+                  formattedSlide.variables.button = buttonVariable;
+                }
+            }
+          }
+          
+          return formattedSlide;
+        });
       }
 
       const templateData = {
@@ -1111,7 +1253,6 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
 
       const result = await publishApi.createTemplate(templateData);
       if (result.success) {
-        console.log(result.data, "result data")
         if(result.data.status === "error"){
           window.$toast?.error(result.data.message);
           return { success: false, error: result.data.message };
@@ -1180,9 +1321,12 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
           buttons: null,
           file: ''
         }
-      ]
-    };
-  };
+             ]
+     };
+     
+     // Force re-check of all variables after form reset
+     forceRecheckAllVariables();
+   };
 
   
 const addSlide = () => {
@@ -1200,8 +1344,14 @@ const addSlide = () => {
     return;
   }
 
-  // Check if at least one button is filled in the block slide
-  let hasFilledButton = firstBlockSlide.buttons.some((button: any) => {
+  // Check if first slide title is filled
+  if (!firstBlockSlide.title || firstBlockSlide.title.trim() === '') {
+    window.$toast?.error('Please fill the title for the first slide before adding more');
+    return;
+  }
+
+  // Check if at least one button is filled in the first slide
+  let hasFilledButton = firstBlockSlide.buttons.every((button: any) => {
     const hasTitle = button.title && button.title.trim() !== '';
     const hasUrl = button.url && button.url.trim() !== '';
     const hasPayload = button.payload && button.payload.trim() !== '';
@@ -1210,31 +1360,25 @@ const addSlide = () => {
   });
 
   if (!hasFilledButton) {
-    window.$toast?.error('Please fill at least one button before adding more slides');
+    window.$toast?.error('Please fill ALL buttons in the first slide before adding more slides');
     return;
   }
 
-  // const slideIndex = template.value.slides.length;
-  
-  // Create new template slide
-  const templateSlide = createSlide();
+  // Create new template slide by cloning the first slide
+  const templateSlide = { ...firstSlide };
   template.value.slides.push(templateSlide);
 
-  // Create new block slide
-  const blockSlide = createBlockSlide();
+  // Create new block slide by cloning the first slide completely
+  const blockSlide = {
+    ...firstBlockSlide,
+    id: block.value.slides.length + 1,
+    title: '', // Reset title for new slide
+    subtitle: '', // Reset subtitle
+    image_url: '', // Reset image
+    attachment_link: '', // Reset attachment
+    buttons: firstBlockSlide.buttons.map((button: any) => ({ ...button, title: '', url: '', payload: '', response: '' })) // Clone buttons but reset content
+  };
   block.value.slides.push(blockSlide);
-  
-  // Ensure all slides have consistent button types
-  const firstSlideButtonType = template.value.slides[0]?.button_type;
-  console.log(firstSlideButtonType, "firstSlideButtonType")
-  if (firstSlideButtonType) {
-    template.value.slides.forEach((slide: any, index: number) => {
-      if (index > 0) { // Skip first slide as it's the reference
-        slide.button_type = firstSlideButtonType;
-        slide.total_buttons = firstSlideButtonType === 'cta' ? 2 : 1;
-      }
-    });
-  }
   
   // Push default error object for new slide
   errors.value.slides.push({
@@ -1242,6 +1386,10 @@ const addSlide = () => {
     buttons: null as any,
     file: ''
   });
+
+  
+  // Force re-check of all variables after adding new slide
+  forceRecheckAllVariables();
 };
 
 const removeSlide = (index: number) => {
@@ -1249,6 +1397,9 @@ const removeSlide = (index: number) => {
     template.value.slides.splice(index, 1);
     // Also remove from block.slides
     block.value.slides.splice(index, 1);
+    
+    // Force re-check of all variables after removing slide
+    forceRecheckAllVariables();
   }
 };
   const onButtonTypeChange = (slideIndex = 0) => {
@@ -1309,6 +1460,9 @@ const removeSlide = (index: number) => {
       }
     } else {
       template.value.total_buttons = template.value.button_type == 'cta' ? 2 : 3;
+      
+      // Force re-check of all variables after button type change for regular templates
+      forceRecheckAllVariables();
     }
   };
 
@@ -1434,6 +1588,9 @@ const removeSlide = (index: number) => {
       }
 
       block.value.buttons.push(newButton);
+      
+      // Force re-check of all variables after adding new button
+      forceRecheckAllVariables();
     }
   };
 
@@ -1462,6 +1619,69 @@ const removeSlide = (index: number) => {
       }
     } else {
       block.value.buttons.splice(index, 1);
+      
+      // Force re-check of all variables after removing button
+      forceRecheckAllVariables();
+    }
+  };
+
+  // Function to re-check all button variables when button structure changes
+  const recheckAllButtonVariables = () => {
+    if (template.value.type === 'generic') {
+      // Re-check variables for all carousel slides
+      for (let i = 0; i < template.value.slides.length; i++) {
+        checkForVariables('slider', i);
+      }
+    } else {
+      // Re-check variables for regular template buttons
+      checkForVariables('button_0');
+    }
+  };
+
+  // Function to force re-check of all variables when button structure changes significantly
+  const forceRecheckAllVariables = () => {
+    // Re-check header variables
+    if (template.value.header_text) {
+      checkForVariables('header');
+    }
+    
+    // Re-check body variables
+    if (block.value.text) {
+      checkForVariables('body');
+    }
+    
+    // Re-check button variables - but be more careful to preserve existing values
+    if (template.value.type === 'generic') {
+      // For carousel, check each slide
+      for (let i = 0; i < template.value.slides.length; i++) {
+        checkForVariables('slider', i);
+        // Only re-check button variables if the slide structure actually changed
+        // This prevents overriding user-entered values unnecessarily
+        const slide = template.value.slides[i];
+        if (slide && slide.variables?.button) {
+          // Preserve the existing button variable value
+          const existingValue = slide.variables.button.value;
+          checkForVariables('button_0', i);
+          // Restore the value if it was reset
+          if (slide.variables?.button && existingValue && !slide.variables.button.value) {
+            slide.variables.button.value = existingValue;
+          }
+        } else {
+          checkForVariables('button_0', i);
+        }
+      }
+    } else {
+      // For regular templates, check buttons but preserve existing values
+      if (template.value.variables?.button) {
+        const existingValue = template.value.variables.button.value;
+        checkForVariables('button_0');
+        // Restore the value if it was reset
+        if (template.value.variables?.button && existingValue && !template.value.variables.button.value) {
+          template.value.variables.button.value = existingValue;
+        }
+      } else {
+        checkForVariables('button_0');
+      }
     }
   };
 
@@ -1582,6 +1802,9 @@ const removeSlide = (index: number) => {
     isMediaType,
     isGenericType,
     
+    // Check if add slide button should be disabled
+    canAddSlide,
+    
     // Variable functions
     countVariables,
     canAddVariable,
@@ -1613,7 +1836,9 @@ const removeSlide = (index: number) => {
     onUploadCarouselFile,
     canAddButton,
     getAcceptedFileTypes,
-    addSlide,
-removeSlide
+         addSlide,
+removeSlide,
+recheckAllButtonVariables,
+forceRecheckAllVariables
   };
 }); 

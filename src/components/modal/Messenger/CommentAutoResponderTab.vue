@@ -63,7 +63,6 @@ const postOptions = computed(() => {
 const loadPluginData = async () => {
   try {
     if(isPluginLoading.value) return;
-    console.log("loadPluginData");
     isPluginLoading.value = true;
     const result = await publishStore.loadDataForPlugins("posts");
     if (result.success && result.data) {

@@ -94,13 +94,10 @@ const performSendMessage = async () => {
       user_segment: "-1"
     };
 
-    console.log('Sending payload:', payload);
-
     // Use the publishApi method directly since it's available
     const result = await publishApi.createBroadcastTask(payload);
     
     if (result.success) {
-      console.log('Broadcast message sent successfully!');
       // Reset form
       formData.value = {
         messageTag: '',

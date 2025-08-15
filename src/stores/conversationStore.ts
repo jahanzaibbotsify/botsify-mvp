@@ -106,13 +106,13 @@ export const useConversationStore = defineStore('conversation', () => {
     
     // If message is an object, extract the text and check for attachments
     if (typeof msg.message === 'object') {
-      console.log('Converting object message:', msg.message);
+
       const messageObj = msg.message as any;
       
       // Check for attachment
       if (messageObj.attachment) {
         const attachment = messageObj.attachment;
-        console.log('📎 Processing API attachment:', attachment);
+  
         
         // Create JSON string for attachment data
         const attachmentData = {
@@ -193,21 +193,12 @@ export const useConversationStore = defineStore('conversation', () => {
         isFirebaseConnected.value = false
       }
     } catch (error) {
-      console.error('❌ Error initializing Firebase:', error)
       firebaseError.value = error instanceof Error ? error.message : 'Failed to initialize Firebase'
       isFirebaseConnected.value = false
     }
   }
 
   const handleFirebaseMessage = (fbId: string, data: FirebaseMessage) => {
-    console.log('📨 Processing Firebase message for:', fbId, data)
-    
-    // Check if this is a human help request or bot stop
-    if (data.message?.human_help !== undefined && data.message?.stop_bot) {
-      console.log('🤖 Bot deactivated for conversation:', fbId)
-      // Handle bot deactivation if needed
-    }
-
     // Find existing conversation or create new one
     let conversation = conversations.value.find(conv => conv.fbid === fbId)
     
@@ -230,7 +221,6 @@ export const useConversationStore = defineStore('conversation', () => {
         
         conversations.value.unshift(newConversation)
         conversation = newConversation
-        console.log('🆕 New conversation created from Firebase:', newConversation)
       }
     } else {
       // Update existing conversation
@@ -249,8 +239,6 @@ export const useConversationStore = defineStore('conversation', () => {
         conversations.value.splice(index, 1)
         conversations.value.unshift(conversation)
       }
-      
-      console.log('📝 Updated existing conversation from Firebase:', conversation.title)
     }
 
     // If this conversation is currently selected, add message to chat
@@ -261,7 +249,6 @@ export const useConversationStore = defineStore('conversation', () => {
       // Check if message has attachment
       if (data.message?.attachment) {
         const attachment = data.message.attachment;
-        console.log('📎 Processing attachment:', attachment);
         
         // Create JSON string for attachment data
         const attachmentData = {
@@ -291,7 +278,6 @@ export const useConversationStore = defineStore('conversation', () => {
       
       // Duplicate check: Only add if not already present (by content and timestamp)
       const isDuplicate = messages.value.some(m => {
-        console.log('💬 Checking for duplicate message:', m.content, content)
         // Check if content matches
         const contentMatches = m.content === content;
       
@@ -315,9 +301,6 @@ export const useConversationStore = defineStore('conversation', () => {
           status: 'sent',
         }
         messages.value.push(newMessage)
-        // console.log('💬 Added message to current conversation:', newMessage)
-      } else {
-        console.log('⚠️ Duplicate message ignored:', { content, sender, timestamp: new Date() })
       }
     }
   }
@@ -334,7 +317,6 @@ export const useConversationStore = defineStore('conversation', () => {
         // Add message to current conversation if it matches
         if (selectedConversation.value?.fbid === fbId) {
           messages.value.push(message)
-          console.log('💬 Real-time message added:', message)
         }
       },
       (error: Error) => {
@@ -352,22 +334,11 @@ export const useConversationStore = defineStore('conversation', () => {
     firebaseService.disconnect()
     isFirebaseConnected.value = false
     firebaseError.value = null
-    console.log('🔌 Firebase disconnected')
   }
 
   const checkFirebaseStatus = () => {
-    console.log('📊 Firebase Status Check:')
-    console.log('- Firebase Connected:', isFirebaseConnected.value)
-    console.log('- Firebase Error:', firebaseError.value)
-    console.log('- Environment Config:', {
-      apiKey: !!import.meta.env.VITE_FIREBASE_API_KEY,
-      databaseURL: !!import.meta.env.VITE_FIREBASE_DATABASE_URL,
-      projectId: !!import.meta.env.VITE_FIREBASE_PROJECT_ID
-    })
-    
     // Get Firebase service status
-    const firebaseStatus = firebaseService.getConnectionStatus()
-    console.log('- Firebase Service Status:', firebaseStatus)
+    firebaseService.getConnectionStatus()
   }
 
   // Actions
@@ -465,7 +436,6 @@ export const useConversationStore = defineStore('conversation', () => {
       const cached = getCachedMessages(messengerUserId)
       if (cached) {
         messages.value = cached.messages
-        console.log('Using cached messages for conversation:', messengerUserId)
         return
       }
     }
@@ -514,7 +484,7 @@ export const useConversationStore = defineStore('conversation', () => {
           selectedConversation.value.timestamp = currentTime()
         }
         
-        console.log('✅ Message sent successfully')
+  
       } else {
         error.value = response.message || 'Failed to send message'
       }
@@ -646,7 +616,7 @@ export const useConversationStore = defineStore('conversation', () => {
     try {
       const response = await conversationApi.exportChat(selectedConversation.value.fbid, extension)
       if (response.success) {
-        console.log('✅ Chat exported successfully:', extension)
+  
       } else {
         error.value = response.message || 'Failed to export chat'
       }
@@ -746,7 +716,6 @@ export const useConversationStore = defineStore('conversation', () => {
       // Save subscription to backend
       const response = await conversationApi.saveSubscription(subscription, userId)
       if (response.success) {
-        console.log('✅ Notifications enabled successfully')
         return { success: true, message: 'Notifications enabled successfully' }
       } else {
         return { success: false, message: response.message || 'Failed to save subscription' }
@@ -782,7 +751,6 @@ export const useConversationStore = defineStore('conversation', () => {
         // Delete subscription from backend
         const response = await conversationApi.deleteSubscription(subscription, userId)
         if (response.success) {
-          console.log('✅ Notifications disabled successfully')
           return { success: true, message: 'Notifications disabled successfully' }
         } else {
           return { success: false, message: response.message || 'Failed to delete subscription' }

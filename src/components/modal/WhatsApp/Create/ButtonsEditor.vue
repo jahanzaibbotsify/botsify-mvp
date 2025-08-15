@@ -74,6 +74,7 @@
                size="small"
                icon="pi pi-trash"
                iconOnly
+               :disabled="props.disableControls"
              >
              </Button>
           </template>
@@ -260,7 +261,6 @@ const getAvailableCtaOptions = (currentButtonIndex: number) => {
 };
 
 const addVariable = (btnIndex: number) => {
-  console.log(btnIndex, "btnIndex")
   store.addVariable(`button_${btnIndex}`, true, null, props.slideIndex || 0);
 };
 

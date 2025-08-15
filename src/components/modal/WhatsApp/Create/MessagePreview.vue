@@ -271,20 +271,9 @@ const buttons = computed(() => {
     if (button.text || button.title) {
       let text = button.text || button.title || '';
       const buttonTextVar = props.template.variables?.buttonText;
-      
-      console.log('MessagePreview - processing button text:', {
-        originalText: text,
-        buttonTextVar: buttonTextVar
-      });
-      
+
       if (buttonTextVar && buttonTextVar.value !== '') {
         text = text.replace(buttonTextVar.key, buttonTextVar.value);
-        console.log('MessagePreview - replaced text:', {
-          originalText: button.text || button.title,
-          newText: text,
-          key: buttonTextVar.key,
-          value: buttonTextVar.value
-        });
       }
       updatedButton.text = text;
       updatedButton.title = text;
@@ -371,14 +360,6 @@ const slideButtonText = (slideIndex: number, buttonIndex: number) => {
   const buttonTextVar = templateSlide?.variables?.buttonText;
   if (buttonTextVar && buttonTextVar.value !== '') {
     result = result.replace(buttonTextVar.key, buttonTextVar.value);
-    console.log('MessagePreview - replaced slide button text:', {
-      slideIndex,
-      buttonIndex,
-      originalText: button.title || button.text,
-      newText: result,
-      key: buttonTextVar.key,
-      value: buttonTextVar.value
-    });
   }
   
   return result;
@@ -398,14 +379,6 @@ const slideButtonUrl = (slideIndex: number, buttonIndex: number) => {
   const buttonUrlVar = templateSlide?.variables?.button;
   if (buttonUrlVar && buttonUrlVar.value !== '') {
     url = url.replace(buttonUrlVar.key, buttonUrlVar.value);
-    console.log('MessagePreview - replaced slide button URL:', {
-      slideIndex,
-      buttonIndex,
-      originalUrl: button.url,
-      newUrl: url,
-      key: buttonUrlVar.key,
-      value: buttonUrlVar.value
-    });
   }
   
   return url;
@@ -426,20 +399,20 @@ const getSlideImage = (index: number) => {
   return isValidUrl ? attachmentLink : '/theme/images/file-cover.png';
 };
 
-  const getSlideVideo = (index: number) => {
-    const slide = slides.value[index];
+const getSlideVideo = (index: number) => {
+  const slide = slides.value[index];
     if (!slide) return '/theme/images/file-cover.png';
     
-    const attachmentLink = slide?.attachment_link || props.block?.slides?.[index]?.attachment_link;
-    
-    const cacheKey = `${index}_${attachmentLink}`;
-    if (slidesMediaCache.value[cacheKey]) {
-      return slidesMediaCache.value[cacheKey];
-    }
+  const attachmentLink = slide?.attachment_link || props.block?.slides?.[index]?.attachment_link;
+  
+  const cacheKey = `${index}_${attachmentLink}`;
+  if (slidesMediaCache.value[cacheKey]) {
+    return slidesMediaCache.value[cacheKey];
+  }
 
-    const isValidUrl = typeof attachmentLink === 'string' && /^https?:\/\/.+/.test(attachmentLink);
-    return isValidUrl ? attachmentLink : '/theme/images/file-cover.png';
-  };
+  const isValidUrl = typeof attachmentLink === 'string' && /^https?:\/\/.+/.test(attachmentLink);
+  return isValidUrl ? attachmentLink : '/theme/images/file-cover.png';
+};
 
 const getSlideDocument = (index: number) => {
   const slide = slides.value[index];

@@ -1,18 +1,12 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
-import {useRoute, useRouter} from 'vue-router';
+import {useRoute} from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 import LeftSidebar from '@/components/sidebar/LeftSidebar.vue';
-import { useBotStore } from '@/stores/botStore';
-import { getBotData } from '@/utils/getBotData';
 import { useSidebarToggle } from '@/composables/useSidebarToggle';
 
 const chatStore = useChatStore();
 const route = useRoute();
-const router = useRouter();
-const botStore = useBotStore();
-
-const apiKey = route.params.id as string;
 const selectedNavigationButton = ref('Agent');
 
 // Use the sidebar toggle composable
@@ -41,17 +35,7 @@ watch(() => route.path, () => {
 
 // Initialize sidebar state based on screen size
 onMounted(async () => {
-  if (apiKey) {
-    botStore.setApiKey(apiKey);
-  }
   initializeSidebar()
-  // Await the bot data loading
-  try {
-    await getBotData();
-  } catch (error) {
-    router.push('/select-agent')
-    console.error('Failed to load bot data:', error);
-  }
 });
 </script>
 

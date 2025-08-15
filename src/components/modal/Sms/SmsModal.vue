@@ -75,8 +75,6 @@ const openModal = () => {
   
   // Default to 'publish-agent' tab
   const tabToOpen = 'publish-agent';
-  console.log('Opening SMS modal with tab:', tabToOpen);
-  
   // Change tab directly
   handleTabChange(tabToOpen);
 };
@@ -90,8 +88,6 @@ const handleBack = () => {
 };
 
 const onTabChange = (tabId: string) => {
-  console.log('SmsModal - Tab changed to:', tabId);
-  
   // Only allow tab change if SMS is configured or if it's the publish agent tab
   if (tabId === 'publish-agent' || isSmsConfigured.value) {
     handleTabChange(tabId);
@@ -104,20 +100,17 @@ const handleCreateTemplate = () => {
 };
 
 const handleEditTemplate = (template: any) => {
-  console.log('Opening edit modal for template:', template);
   createTemplateModalRef.value?.openModalWithData(template);
 };
 
-const handleTemplateCreated = (template: any) => {
-  console.log('Template created:', template);
+const handleTemplateCreated = () => {
   // Refresh templates in TemplateTab
   if (templateTabRef.value) {
     templateTabRef.value.fetchTemplates(1, 20);
   }
 };
 
-const handleTemplateUpdated = (template: any) => {
-  console.log('Template updated:', template);
+const handleTemplateUpdated = () => {
   // Refresh templates in TemplateTab
   if (templateTabRef.value) {
     templateTabRef.value.fetchTemplates(1, 20);

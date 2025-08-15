@@ -25,10 +25,6 @@ const emit = defineEmits<{
 
 const showModal = ref(false)
 
-watchEffect(() => {
-  console.log('🎯 Modal changed:', showModal.value)
-})
-
 const openModal = () => {
   showModal.value = true
   emit('open')

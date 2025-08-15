@@ -118,7 +118,6 @@ const clearErrors = () => {
 const testBot = () => {
   isLoading.value = true;
   try {
-    console.log('Testing bot...');
     // Add actual test bot logic here
     if (window.$toast) {
       window.$toast.info('Bot test functionality coming soon');
@@ -142,7 +141,6 @@ const saveSettings = async() => {
   try {
     const result = await publishStore.saveTwilioSettings(smsFields.value);
     if (result.success) {
-      console.log('Twilio settings saved successfully');
       // Recheck configuration after saving
     
       emit('check-configuration');

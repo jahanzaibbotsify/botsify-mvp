@@ -47,7 +47,6 @@ const openModal = () => {
 
 const openModalWithData = (templateData: any) => {
   modalRef.value?.openModal();
-  console.log('Opening modal with cloned data:', templateData);
   
   if (templateData && templateData.template && templateData.block) {
     // Store the original cloned data to restore after initialization
@@ -69,8 +68,6 @@ const openModalWithData = (templateData: any) => {
     // Restore the cloned data after initialization to prevent override
     store.template = { ...store.template, ...originalTemplate };
     store.block = { ...store.block, ...originalBlock };
-    console.log(store.template, "store.template");
-    console.log(store.block, "store.block");
     if(['button', 'image', 'video', 'document'].includes(store.template.type)){
       store.template.type = 'media';
       if (store.template.header !== 'text') {
@@ -98,36 +95,8 @@ const openModalWithData = (templateData: any) => {
       }];
     }
 
-    // Check for variables after populating data
-    if (templateData.template.header_text) {
-      store.checkForVariables('header');
-    }
-    if (templateData.block.text) {
-      store.checkForVariables('body');
-    }
-    
-    // Check for button variables
-    if (templateData.block.buttons && templateData.block.buttons.length > 0) {
-      templateData.block.buttons.forEach((button: any, index: number) => {
-        console.log(button)
-        store.checkForVariables(`button_${index}`);
-      });
-    }
-    
-    // Check for slide variables if it's a carousel
-    if (templateData.template.type === 'generic' && templateData.block.slides) {
-      templateData.block.slides.forEach((slide: any, slideIndex: number) => {
-        if (slide.title) {
-          store.checkForVariables('slider', slideIndex);
-        }
-        if (slide.buttons) {
-          slide.buttons.forEach((button: any, buttonIndex: number) => {
-            console.log(button)
-            store.checkForVariables(`button_${buttonIndex}`, slideIndex);
-          });
-        }
-      });
-    }
+    // Force re-check of all variables after populating data
+    store.forceRecheckAllVariables();
   }
 };
 

@@ -76,14 +76,11 @@ const handleDeleteTemplate = async (id: number) => {
       deleteTemplateId.value = id;
       isLoading.value = true;
       try {
-        console.log('Deleting template with ID:', id);
         const result = await publishStore.deleteSmsTemplate(id);
-        console.log('Delete result:', result);
         
         if (result.success) {
           emit('delete-template', id);
           // Refresh templates
-          console.log('Refreshing templates after delete...');
           await fetchTemplates(currentPage.value, itemsPerPage, searchQuery.value);
         } else {
           console.error('Delete failed:', result.error);
@@ -107,13 +104,9 @@ const handleCloneTemplate = async (id: number) => {
       isLoading.value = true;
       cloneTemplateId.value = id;
       try {
-        console.log('Cloning template with ID:', id);
         const result = await publishStore.cloneSmsTemplate(id);
-        console.log('Clone result:', result);
-        
         if (result.success) {
           // Refresh templates after cloning
-          console.log('Refreshing templates after clone...');
           await fetchTemplates(currentPage.value, itemsPerPage, searchQuery.value);
         } else {
           console.error('Clone failed:', result.error);
@@ -134,11 +127,7 @@ const fetchTemplates = async (page: number = 1, perPage: number = 20, query?: st
     const result = await publishStore.fetchSmsTemplates(page, perPage, query);
     if (result.success && result.data && result.data.templates && result.data.templates.data && Array.isArray(result.data.templates.data)) {
       templates.value = result.data.templates.data;
-      
-      console.log('Template API response:', result.data.templates);
-      console.log('Current page requested:', page);
-      console.log('API returned page:', result.data.templates.page);
-      
+
       // Update local pagination data
       paginationData.value = {
         page: result.data.templates.page || page,
@@ -150,11 +139,6 @@ const fetchTemplates = async (page: number = 1, perPage: number = 20, query?: st
       
       // Sync currentPage with the actual page from API response
       currentPage.value = result.data.templates.page || page;
-      
-      console.log('Updated local state:', {
-        currentPage: currentPage.value,
-        paginationData: paginationData.value
-      });
     } else {
       console.warn('No templates data or invalid format:', result);
       templates.value = [];

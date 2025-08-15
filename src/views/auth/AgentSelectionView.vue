@@ -554,10 +554,6 @@ onUnmounted(() => {
       </div>
       
       <div class="hero-content">
-        <div class="hero-badge">
-          <i class="pi pi-users"></i>
-          <span>AI Agent Selection</span>
-        </div>
         <h1 class="hero-title">Choose Your AI Agent</h1>
         <p class="hero-subtitle">
           Select from our curated collection of specialized AI agents, each designed for specific tasks and industries
@@ -963,21 +959,6 @@ onUnmounted(() => {
   z-index: 2;
   max-width: 700px;
   margin: 0 auto;
-}
-
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 8px 20px;
-  border-radius: 50px;
-  color: #fff;
-  font-weight: 500;
-  font-size: 0.9rem;
-  margin-bottom: 1.5rem;
-  background: linear-gradient(45deg, #feda75, #d21efa, #d62976, #962fbf, #4f5bd5);
-  background-size: 600% 600%;
-  animation: gradientShift 6s ease infinite;
 }
 
 .hero-title {

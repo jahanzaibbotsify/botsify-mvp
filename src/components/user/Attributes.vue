@@ -10,8 +10,6 @@ const props = defineProps<{
 }>()
 
 // Debug logging
-console.log('Attributes component props:', props)
-
 const emit = defineEmits<{
   close: []
   update: [attributes: UserAttribute[]]

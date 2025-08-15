@@ -37,8 +37,6 @@ const sendMessage = async () => {
   if (attachments.value.length > 0) {
     isUploading.value = true;
     try {
-      console.log('Uploading media files for conversation message...');
-      
       // Convert blob URLs to File objects for upload
       const filesToUpload: File[] = [];
       for (const attachment of attachments.value) {
@@ -63,8 +61,6 @@ const sendMessage = async () => {
           if(finalMessageText === ''){
             finalMessageText = 'Attachment';
           }
-          
-          console.log('Files uploaded successfully, URLs:', fileUrls);
         } else {
           console.error('File upload failed:', uploadResult.message);
           finalMessageText = finalMessageText + (finalMessageText ? '\n\n' : '') + 

@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import ModalLayout from "@/components/ui/ModalLayout.vue";
-import { ref, onMounted, defineAsyncComponent } from "vue";
+import Button from "@/components/ui/Button.vue";
+import Badge from "@/components/ui/Badge.vue";
+import { ref, onMounted, defineAsyncComponent, onUnmounted } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 import { eventBus } from "@/utils/eventBus";
+import { botsifyApi } from "@/services/botsifyApi";
+import { useChatStore } from "@/stores/chatStore";
 
 // Change from async to direct import for WhatsAppModal
 const WhatsAppModal = defineAsyncComponent({
@@ -93,7 +97,9 @@ const instagramModalRef = ref<InstanceType<typeof InstagramModal> | null>(null);
 const portableAgentModalRef = ref<InstanceType<typeof PortableAgentModal> | null>(null);
 
 const publishStore = usePublishStore();
+const chatStore = useChatStore();
 const isLoading = ref(false);
+const isDeploying = ref(false);
 
 const agents = ref([
   { icon: 'portable-agent-icon.svg', label: 'Portable agent', status: 'inactive' },
@@ -207,29 +213,74 @@ const handleBackToMain = () => {
 // Listen for deploy request from ChatHeader
 onMounted(() => {
   // Listen for status updates from child modals
-  eventBus.on('agent:status-updated', (data) => {
-    console.log('Agent status updated:', data);
+  const handleStatusUpdate = () => {
     // Refresh status if needed
     fetchPublishStatus();
-  });
+  };
   
   // Listen for deploy request
-  eventBus.on('deploy-agent:request', () => {
+  const handleDeployRequest = () => {
     openModal();
+  };
+  
+  eventBus.on('agent:status-updated', handleStatusUpdate);
+  eventBus.on('deploy-agent:request', handleDeployRequest);
+  
+  // Store handlers for cleanup
+  const handlers = {
+    'agent:status-updated': handleStatusUpdate,
+    'deploy-agent:request': handleDeployRequest
+  };
+  
+  // Cleanup event listeners
+  onUnmounted(() => {
+    Object.entries(handlers).forEach(([event, handler]) => {
+      eventBus.off(event, handler);
+    });
   });
 });
 
-const handleDeploy = () => {
-  // Emit event to ChatHeader to handle the deploy
-  eventBus.emit('deploy-agent:confirm');
-  closeModal();
+const handleDeploy = async () => {
+  // Prevent multiple clicks while deploying
+  if (isDeploying.value) {
+    return;
+  }
+  
+  // Set deploying state
+  isDeploying.value = true;
+  
+  try {
+    const result = await botsifyApi.deployAiAgent(
+      chatStore.activeAiPromptVersion?.version_id ?? parseInt(chatStore.activeAiPromptVersion?.id ?? '0'),
+      chatStore.createAiPromptVersionName()
+    );
+    
+    
+    if (result.success) {
+      // Update the story with the latest content
+      const currentChat = chatStore.chats[0];
+      if (currentChat) {
+        chatStore.updateStory(currentChat.id, currentChat.story?.content || '', true);
+        chatStore.updateActivePromptVersionId(result.data.version.id);
+      }
+      
+      // Show success message
+      window.$toast.success('Agent deployed successfully!');
+    } else {
+      window.$toast.error(`Deployment failed: ${result.message}`);
+    }
+  } catch (error) {
+    window.$toast.error('An unexpected error occurred during deployment.');
+  } finally {
+    isDeploying.value = false;
+  }
 };
 
 const closeModal = () => {
   modalRef.value?.closeModal();
 };
 
-defineExpose({ openModal });
+defineExpose({ openModal, closeModal });
 </script>
 
 <template>
@@ -239,26 +290,26 @@ defineExpose({ openModal });
     title=""
     max-width="650px"
     :showCloseButton="true"
-    :hideHeader="true"
   >
     <!-- Confirmation Message -->
     <div class="confirmation-message">
-      <i class="pi pi-question-circle"></i>
-      <h3>Are you sure you want to publish it?</h3>
-      <p>This will deploy your AI agent and make it available for use.</p>
-    </div>
-    
-    <!-- Deploy Button -->
-    <div class="deploy-section">
-      <button class="action-button primary" @click="handleDeploy">
-        <i class="pi pi-play"></i>
-        Deploy Agent
-      </button>
+      <div class="confirmation-content">
+        <p>Are you sure you want to deploy changes it?</p>
+        <Button 
+          variant="success" 
+          @click="handleDeploy" 
+          icon="pi pi-play"
+          :disabled="isDeploying"
+          :loading="isDeploying"
+        >
+          {{ isDeploying ? 'Deploying...' : 'Deploy agent' }}
+        </Button>
+      </div>
     </div>
     
     <!-- Agent Selection Grid -->
     <div class="agents-section">
-      <h4>Publish to platforms:</h4>
+      <h4>Publish agent</h4>
       <div class="server-grid">
         <div
           class="server-card"
@@ -273,11 +324,17 @@ defineExpose({ openModal });
           <div class="text-sm text-emphasis">
             <div>{{ agent.label }}</div>
           </div>
-          <!-- Only show badge for active status -->
-          <div v-if="agent.status === 'active'" class="status-badge active">
-            <i class="pi pi-check"></i>
+          <!-- Status badges -->
+          <Badge 
+            v-if="agent.status === 'active'" 
+            variant="success" 
+            size="xs" 
+            icon="pi pi-check"
+            iconPosition="left"
+            class="status-badge"
+          >
             Connected
-          </div>
+          </Badge>
         </div>
       </div>
     </div>
@@ -324,7 +381,7 @@ defineExpose({ openModal });
   />
 </template>
 
-<style>
+<style scoped>
 /* Common Modal Styles - Centralized for all modal components */
 .server-card {
   position: relative;
@@ -356,27 +413,16 @@ defineExpose({ openModal });
 /* Status Badge Styles */
 .status-badge {
   position: absolute;
-  top: 4px;
-  padding: 2px 4px;
-  border-radius: var(--radius-sm, 4px);
-  font-size: 9px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  background: var(--color-secondary, #10b981);
-  color: white;
+  top: 2px;
+  right: 4px;
   z-index: 1;
-  right: 6px;
+  font-size: 0.6rem;
+  font-weight: 500;
+  transition: transform var(--transition-fast);
 }
 
-.status-badge.active {
-  background: var(--color-secondary, #10b981);
-  color: white;
-}
-
-.status-badge i {
-  font-size: 8px;
+.status-badge:hover {
+  transform: scale(1.05);
 }
 
 /* Active card styling */
@@ -385,390 +431,29 @@ defineExpose({ openModal });
   background-color: rgba(16, 185, 129, 0.1);
 }
 
-/* Tab Panel Styles */
-.tab-panel {
-  padding: 0;
-}
-
-.tab-panel h3 {
-  margin: 0 0 8px 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-}
-
-.tab-panel h4 {
-  margin: 0 0 12px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-}
-
-.subtitle {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-secondary, #6b7280);
-}
-
-.description {
-  margin: 0 0 20px 0;
-  color: var(--color-text-secondary, #6b7280);
-  line-height: 1.6;
-  font-size: 14px;
-}
-
-/* Form Styles */
-.form-section {
-  margin: 24px 0;
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-}
-
-.form-input {
-  width: 100%;
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--color-border-secondary);
-  border-radius: var(--radius-md, 8px);
-  background: white;
-  color: var(--color-text-primary);
-  font-size: 14px;
-  font-family: inherit;
-  transition: border-color var(--transition-normal, 0.2s ease);
-  box-sizing: border-box;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--color-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.form-input::placeholder {
-  color: var(--color-text-tertiary, #9ca3af);
-}
-
-textarea.form-input {
-  resize: vertical;
-  min-height: 80px;
-}
-
-select.form-input {
-  cursor: pointer;
-}
-
-.help-text {
-  font-size: 12px;
-  color: var(--color-text-secondary, #6b7280);
-  margin-top: 4px;
-  display: block;
-}
-
-/* Action Button Styles */
-.action-buttons {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-start;
-}
-
-.action-button {
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  border: none;
-  font-family: inherit;
-}
-
-.action-button.primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.action-button.primary:hover:not(:disabled) {
-  background: var(--color-primary-hover, #2563eb);
-}
-
-.action-button.delete {
-  color: var(--color-error, #ef4444);
-}
-
-.action-button.clone {
-  color: var(--color-primary, #3b82f6);
-}
-
-.action-button.preview {
-  color: var(--color-info, #3b82f6);
-}
-
-.action-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Table Styles */
-.table-header {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
-  background: var(--color-bg-tertiary, #f3f4f6);
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
-}
-
-.header-cell {
-  padding: 12px 16px;
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--color-text-primary, #111827);
-}
-
-.table-row {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
-  transition: background var(--transition-normal, 0.2s ease);
-}
-
-.table-row:hover {
-  background: var(--color-bg-secondary, #f9fafb);
-}
-
-.table-row:last-child {
-  border-bottom: none;
-}
-
-.table-cell {
-  padding: 12px 16px;
-  font-size: 14px;
-  color: var(--color-text-primary, #111827);
-  display: flex;
-  align-items: center;
-}
-
-/* Code Block Styles */
-.code-block {
-  background: var(--color-bg-secondary, #f9fafb);
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  margin: 20px 0;
-  overflow: hidden;
-}
-
-.code-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: var(--color-bg-tertiary, #f3f4f6);
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
-}
-
-.code-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-secondary, #6b7280);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.copy-button {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.copy-button:hover {
-  background: var(--color-primary-hover, #2563eb);
-}
-
-.code-block pre {
-  margin: 0;
-  padding: 16px;
-  overflow-x: auto;
-}
-
-.code-block code {
-  color: var(--color-text-primary, #111827);
-  font-size: 13px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  line-height: 1.5;
-  white-space: pre;
-}
-
-/* Search and Create Button Styles */
-.search-create-section {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: end;
-}
-
-.create-button {
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md, 8px);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal, 0.2s ease);
-  border: none;
-  font-family: inherit;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.create-button.primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.create-button.primary:hover {
-  background: var(--color-primary-hover, #2563eb);
-}
-
-/* Media List Styles */
-.media-list {
-  margin-top: 16px;
-}
-
-.media-table {
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  overflow: hidden;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .search-create-section {
-    flex-direction: column;
-  }
-  
-  .media-table {
-    font-size: 12px;
-  }
-  
-  .table-header,
-  .table-row {
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
-  }
-  
-  .header-cell,
-  .table-cell {
-    padding: 8px 12px;
-  }
-  
-  .action-buttons {
-    gap: 4px;
-  }
-  
-  .action-button {
-    padding: 4px;
-  }
-  
-  .form-group {
-    margin-bottom: 16px;
-  }
-  
-  .form-input {
-    font-size: 16px; /* Prevent zoom on iOS */
-  }
-}
-
-@media (max-width: 640px) {
-  .color-picker-container {
-    flex-wrap: wrap;
-  }
-  
-  .url-display {
-    flex-direction: column;
-  }
-  
-  .copy-url-button {
-    align-self: flex-start;
-  }
-  
-  .radio-group {
-    gap: 16px;
-  }
-}
-
-/* Confirmation View Styles - REMOVED - Now using single screen layout */
-
 /* Single Screen Layout Styles */
 .confirmation-message {
   text-align: center;
   margin-bottom: var(--space-6);
 }
 
-.confirmation-message i {
-  font-size: 48px;
-  color: var(--color-primary, #3b82f6);
-  margin-bottom: var(--space-4);
-  display: block;
-}
-
-.confirmation-message h3 {
-  margin: 0 0 var(--space-3) 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
+.confirmation-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
 }
 
 .confirmation-message p {
   margin: 0;
-  color: var(--color-text-secondary, #6b7280);
-  font-size: 14px;
+  color: var(--color-text-primary, #111827);
+  font-size: 18px;
+  font-weight: 500;
   line-height: 1.6;
 }
 
-.deploy-section {
-  text-align: center;
-  margin-bottom: var(--space-6);
-}
-
-.deploy-section .action-button {
-  padding: var(--space-3) var(--space-6);
-  border-radius: var(--radius-md, 8px);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal, 0.2s ease);
-  border: none;
-  font-family: inherit;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 160px;
-  justify-content: center;
-  background: var(--color-success, #10b981);
-  color: white;
-}
-
-.deploy-section .action-button:hover {
-  background: var(--color-success-hover, #16a34a);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
 .agents-section {
-  border-top: 1px solid var(--color-border, #e5e7eb);
+  border-top: 1px solid var(--color-border-secondary);
   padding-top: var(--space-6);
 }
 
@@ -777,7 +462,7 @@ select.form-input {
   font-size: 16px;
   font-weight: 600;
   color: var(--color-text-primary, #111827);
-  text-align: center;
+  text-align: left;
 }
 
 .server-grid {

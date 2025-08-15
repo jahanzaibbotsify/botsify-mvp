@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {Button, Input, PublishModalLayout} from "@/components/ui";
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import { useBotStore } from "@/stores/botStore";
 import { usePublishStore } from "@/stores/publishStore";
 import { getWebUrl } from "@/utils";
@@ -51,7 +51,6 @@ const loadBotDetails = async () => {
         // Validate that the saved style is one of the allowed values
         if (['gradient', 'plain-primary', 'plain-secondary'].includes(savedStyle)) {
           backgroundStyle.value = savedStyle as 'gradient' | 'plain-primary' | 'plain-secondary';
-          console.log('Loaded background style from bot details:', backgroundStyle.value);
         }
       }
     }
@@ -75,7 +74,6 @@ const handleBack = () => {
 };
 
 const handleTabChange = (tabId: string) => {
-  console.log('Tab changed to:', tabId);
   currentActiveTab.value = tabId;
 };
 
@@ -109,13 +107,7 @@ o.src="${getWebUrl()}/web-bot/script/embed/"+e+"/"+s+"/"+bg+"/botsify.js"; n=doc
 const saveLandingSettings = async () => {
   isLoading.value = true;
   try {
-    const result = await publishStore.saveLandingSettings(backgroundStyle.value);
-    
-    if (result.success) {
-      console.log('Landing settings saved successfully');
-    } else {
-      console.error('Failed to save landing settings:', result.error);
-    }
+    await publishStore.saveLandingSettings(backgroundStyle.value);
   } catch (error) {
     console.error('Failed to save landing settings:', error);
   } finally {
@@ -126,11 +118,6 @@ const saveLandingSettings = async () => {
 const copyLandingUrl = () => {
   copyToClipboard(landingUrl);
 };
-
-// Load bot details on component mount
-onMounted(() => {
-  loadBotDetails();
-});
 
 defineExpose({ openModal, closeModal });
 </script>

@@ -170,7 +170,6 @@ const navigateToPage = (pageId: string) => {
   if (roleStore.isLiveChatAgent) {
     // Live chat agents can only access conversation page
     if (pageId.startsWith('agent/') || pageId === 'users' || pageId === 'agent') {
-      console.log('🔄 Live chat agent redirected to conversation page');
       router.push('/conversation');
       return;
     }
@@ -196,11 +195,6 @@ const showZen = () => {
 const openBookMeetingModal = () => {
   bookMeetingModalRef.value?.openModal()
   closeDropdown();
-  if (bookMeetingModalRef.value) {
-    console.log('📦 bookMeetingModalRef exists')
-  } else {
-    console.warn('❌ bookMeetingModalRef is null')
-  }
 };
 
 const handleCalendly = () => {
@@ -250,22 +244,15 @@ const billingData = ref<BillingData | null>(null)
 const handleManageBilling = async () => {
   billingLoading.value = true
   try {
-    console.log('Calling manageBilling API...')
     const res = await botsifyApi.manageBilling()
-    console.log('manageBilling API response:', res)
-    console.log('Response type:', typeof res)
-    console.log('Response keys:', res ? Object.keys(res) : 'null')
     
     if (res && res.charges && res.stripe_subscription) {
-      console.log('Found charges and subscription, opening modal with data')
       // Store the billing data and show modal
       billingData.value = res
       showBillingModal.value = true
     } else if(res && res.url) {
-      console.log('Found URL, opening external link:', res.url)
       window.open(res.url, '_blank')
     } else {
-      console.log('No billing data found, opening modal with empty data')
       // If no billing data, open the billing modal with empty data
       billingData.value = null
       showBillingModal.value = true

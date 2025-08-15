@@ -283,19 +283,19 @@ defineExpose({ openModal, closeModal });
             </small>
           </div>
         </div>
-      </div>
-      <div class="agent-action-buttons">
-        <!-- Save Button for Publish Tab -->
-        <Button 
-          v-if="currentActiveTab === 'publish'" 
-          variant="primary"
-          size="medium"
-          :loading="isLoading || publishStore.loadingStates.thirdPartyConfig"
-          :disabled="!isFormValid"
-          @click="handleSaveTelegramSettings"
-        >
-          {{ (isLoading || publishStore.loadingStates.thirdPartyConfig) ? 'Saving...' : 'Save' }}
-        </Button>
+        <div class="agent-action-buttons">
+          <!-- Save Button for Publish Tab -->
+          <Button 
+            v-if="currentActiveTab === 'publish'" 
+            variant="primary"
+            size="medium"
+            :loading="isLoading || publishStore.loadingStates.thirdPartyConfig"
+            :disabled="!isFormValid"
+            @click="handleSaveTelegramSettings"
+          >
+            {{ (isLoading || publishStore.loadingStates.thirdPartyConfig) ? 'Saving...' : 'Save' }}
+          </Button>
+        </div>
       </div>
     </template>
     

@@ -28,11 +28,9 @@ const store = useWhatsAppTemplateStore();
                 v-model="store.block.buttons[0].text"
                 placeholder="e.g., Copy code"
                 maxlength="20"
+                :error="store.errors.title_btn_var"
               />
               <p class="input-hint">Text that will appear on the copy code button</p>
-              <p v-if="store.errors.title_btn_var" class="text-danger">
-                <small>{{ store.errors.title_btn_var }}</small>
-              </p>
             </div>
           </div>
         </div>
@@ -130,11 +128,5 @@ const store = useWhatsAppTemplateStore();
   font-size: 0.75rem;
   color: var(--color-text-secondary);
   line-height: 1.4;
-}
-
-.text-danger {
-  color: var(--color-error);
-  margin-top: var(--space-2);
-  font-size: 0.75rem;
 }
 </style>

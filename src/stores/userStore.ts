@@ -222,7 +222,7 @@ export const useUserStore = defineStore('user', () => {
       if (!forceRefresh) {
         const cached = getCachedUsers(cacheKey)
         if (cached) {
-          console.log('Using cached users data')
+
           users.value = cached.users
           pagination.value = cached.pagination
           loading.value = false
@@ -230,7 +230,6 @@ export const useUserStore = defineStore('user', () => {
         }
       }
       
-      console.log('Fetching users with params:', params)
       const response = await userApi.getUsers(params)
       
       if (response.success) {
@@ -251,7 +250,7 @@ export const useUserStore = defineStore('user', () => {
         // Cache the results
         setCachedUsers(cacheKey, transformedUsers, pagination.value)
         
-        console.log('✅ Users fetched and cached successfully')
+
       } else {
         console.error('Failed to fetch users:', response.message)
         error.value = response.message || 'Failed to fetch users'
@@ -380,7 +379,7 @@ export const useUserStore = defineStore('user', () => {
           URL.revokeObjectURL(url);
         }
         
-        console.log(`Successfully executed ${action} on ${userIds.length} users`)
+
         
         // Clear cache and refresh the user list
         clearAllCache()
@@ -407,19 +406,19 @@ export const useUserStore = defineStore('user', () => {
     if (!forceRefresh) {
       const cached = getCachedAttributes(userId)
       if (cached) {
-        console.log('Using cached attributes for user:', userId)
+
         return { success: true, data: cached, fromCache: true }
       }
     }
 
     try {
-      console.log('Fetching user attributes for user ID:', userId)
+
       const response = await userApi.getUserAttributes(userId)
       
       if (response.success && response.data) {
         // Cache the attributes
         setCachedAttributes(userId, response.data)
-        console.log('✅ User attributes fetched and cached successfully:', response.data)
+
         return { ...response, fromCache: false }
       } else {
         console.error('❌ Failed to fetch user attributes:', response.message)

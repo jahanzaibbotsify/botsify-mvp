@@ -126,8 +126,6 @@ const handleTemplateChange = (selectedTemplate: any) => {
 };
 
 const parseCSVFile = (file: File) => {
-  console.log('Parsing CSV file:', file.name, 'Type:', file.type, 'Size:', file.size);
-  
   if (!file || !(file instanceof File)) {
     console.error('Invalid file object passed to parseCSVFile:', file);
     csvError.value = 'Invalid file object';
@@ -144,7 +142,6 @@ const parseCSVFile = (file: File) => {
       } else {
         uploadedUsers.value = users;
         csvError.value = null;
-        console.log('Parsed users:', users);
       }
     } catch (error) {
       console.error('Error parsing CSV:', error);
@@ -233,7 +230,6 @@ const executeBroadcast = async () => {
       users: broadcastForm.value.userSegment === 'file' ? uploadedUsers.value : broadcastForm.value.userSegment === '-1' ? subscribedUsers.value : []
     };
     
-    console.log('Sending broadcast with payload:', payload);
     const result = await publishStore.sendSmsBroadcast(payload);
     if (result.success) {
       window.$toast.success('Broadcast sent successfully');

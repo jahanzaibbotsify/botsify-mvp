@@ -108,7 +108,6 @@ const getActionText = (action: ActionType): string => {
 onMounted(() => {
   // Prevent live chat agents from accessing this page
   if (roleStore.isLiveChatAgent) {
-    console.log('🔄 Live chat agent redirected from UserView to conversation page');
     router.push('/conversation');
     return;
   }

@@ -21,31 +21,28 @@
         </button>
       </div> -->
     </div>
-    <div class="chat-actions" >  
+    <div class="action-buttons" >  
       <!-- Deploy/Test AI Buttons -->
-      <button 
-        class="action-button deploy-button"
-        @click="deployAI"
-        :disabled="isDeployingAI || !hasPromptContent || chatStore.isAIPromptGenerating"
-        :title="!hasPromptContent ? 'Generate prompt content first' : 'Deploy your AI agent'"
-      >
-        <div class="button-content">
-          <i v-if="!isDeployingAI"  class="pi pi-play"></i>
-          <div v-else class="loading-spinner"></div>
-          <span>{{ isDeployingAI ? 'Deploying...' : 'Deploy Agent' }}</span>
-        </div>
-      </button>
-      <button 
-        class="action-button test-button"
-        @click="testAI"
-        :disabled="isDeployingAI || !hasPromptContent || chatStore.isAIPromptGenerating"
-        :title="!hasPromptContent ? 'Generate prompt content first' : 'Test your AI agent'"
-      >
-        <div class="button-content">
-          <i class="pi pi-wrench"></i>
-          <span>Test Agent</span>
-        </div>
-      </button>
+      <div class="action-buttons">
+        <Button 
+          variant="success"
+          @click="deployAI"
+          :disabled="!hasPromptContent || chatStore.isAIPromptGenerating"
+          :title="!hasPromptContent ? 'Generate prompt content first' : 'Deploy your AI agent'"
+          icon="pi pi-play"
+        >
+          Deploy Agent
+        </Button>
+        <Button 
+          variant="warning"
+          @click="testAI"
+          :disabled="!hasPromptContent || chatStore.isAIPromptGenerating"
+          :title="!hasPromptContent ? 'Generate prompt content first' : 'Test your AI agent'"
+          icon="pi pi-wrench"
+        >
+          Test Agent
+        </Button>
+      </div>
 
       <!-- Dropdown Menu Trigger -->
       <div class="dropdown dropdown-container" id="moreActionsDropdown" ref="dropdownRef">
@@ -81,7 +78,6 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useThemeStore } from '@/stores/themeStore';
-import { botsifyApi } from '@/services/botsifyApi';
 import { useChatStore } from '@/stores/chatStore';
 import { useBotStore } from '@/stores/botStore';
 import { useRoleStore } from '@/stores/roleStore';
@@ -90,6 +86,7 @@ import CalendlyModal from '@/components/modal/CalendlyModal.vue';
 import UserMenu from "@/components/auth/UserMenu.vue";
 import PublishAgentModal from "@/components/modal/PublishAgentModal.vue";
 import { eventBus } from '@/utils/eventBus';
+import Button from "@/components/ui/Button.vue";
 
 interface Props {
   chatId: string,
@@ -114,7 +111,6 @@ const emit = defineEmits<{
   toggleStorySidebar: [];
 }>();
 
-const isDeployingAI = ref(false);
 const roleStore = useRoleStore();
 
 
@@ -149,33 +145,6 @@ function deployAI() {
   
   // Emit event to open publish agent modal with deploy confirmation
   eventBus.emit('deploy-agent:request');
-}
-
-// New function to handle deploy action from publish agent modal
-function handleDeployFromModal() {
-  // Deploy the AI
-  deploying(props.latestPromptContent);
-}
-
-async function deploying(content: string){
-  isDeployingAI.value = true;
-  try {
-    console.log(chatStore.activeAiPromptVersion, "activeAiPromptVersion..")
-    const result = await botsifyApi.deployAiAgent(
-      chatStore.activeAiPromptVersion?.version_id ?? parseInt(chatStore.activeAiPromptVersion?.id ?? '0'),
-      chatStore.createAiPromptVersionName()
-    );
-    if (result.success) {
-      chatStore.updateStory(props.chatId, content, true);
-      chatStore.updateActivePromptVersionId(result.data.version.id);
-    } else {
-      window.$toast.error(`Deployment failed: ${result.message}`);
-    }
-  } catch (error) {
-    window.$toast.error('An unexpected error occurred during deployment.');
-  } finally {
-    isDeployingAI.value = false;
-  }
 }
 
 function handleReset(type: string) {
@@ -227,15 +196,11 @@ function toggleBotNameDropdown() {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside);
-  eventBus.on('deploy-agent:confirm', () => {
-    handleDeployFromModal();
-  });
 });
 
 // Clean up on component unmount
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside);
-  eventBus.off('deploy-agent:confirm', handleDeployFromModal);
 });
 
 // function handleMouseLeave() {
@@ -265,12 +230,6 @@ onBeforeUnmount(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.chat-actions {
-  display: flex;
-  gap: var(--space-3);
-  align-items: center;
 }
 
 .chat-header-left {
@@ -320,70 +279,6 @@ onBeforeUnmount(() => {
 
 .bot-name-dropdown:hover .pi-angle-down {
   transform: rotate(180deg);
-}
-
-.action-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 var(--space-4);
-  border-radius: var(--radius-md);
-  font-weight: 500;
-  font-size: 0.875rem;
-  transition: all var(--transition-normal);
-  cursor: pointer;
-  border: none;
-  height: 50px;
-  min-height: 40px;
-  max-height: 40px;
-}
-
-.action-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.button-content {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.test-button {
-  background-color: var(--color-warning);
-  color: white;
-}
-
-.test-button:hover:not(:disabled) {
-  background-color: var(--color-warning-hover, #e6a700);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
-.deploy-button {
-  background-color: var(--color-success);
-  color: white;
-}
-
-.deploy-button:hover:not(:disabled) {
-  background-color: var(--color-success-hover, #16a34a);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
-.loading-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s ease-in-out infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .dropdown {

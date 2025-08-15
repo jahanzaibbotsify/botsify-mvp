@@ -88,18 +88,11 @@ const handleBack = () => {
 };
 
 const onTabChange = (tabId: string) => {
-  console.log('MessengerModal - Tab changed to:', tabId);
-  
   // Only allow tab change if Messenger is configured or if it's the publish agent tab
   if (tabId === 'publish-bot' || isConfigured.value) {
     currentActiveTab.value = tabId;
     handleTabChange(tabId);
   }
-};
-
-// Comment Auto Responder Tab Events
-const handleSaveAutoResponder = (settings: any) => {
-  console.log('Saving auto responder settings:', settings);
 };
 
 // Provide context for child components
@@ -137,12 +130,11 @@ defineExpose({ openModal, closeModal });
         v-if="activeTab === 'comment-auto-responder' && isConfigured"
         ref="commentAutoResponderTabRef"
         :is-loading="isLoading"
-        @save-settings="handleSaveAutoResponder"
       />
 
       <!-- Broadcast Tab -->
       <BroadcastTab 
-        v-show="activeTab === 'broadcast' && isConfigured"
+        v-if="activeTab === 'broadcast' && isConfigured"
         ref="broadcastTabRef"
       />
 

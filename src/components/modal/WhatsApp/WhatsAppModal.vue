@@ -20,7 +20,7 @@ const tabs = [
   { id: 'broadcast', label: 'Broadcast' },
   { id: 'broadcast-report', label: 'Broadcast report' },
   { id: 'catalog', label: 'Catalog' },
-  { id: 'test-bot', label: 'Test Bot' }
+  { id: 'test-bot', label: 'Test bot' }
 ];
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
@@ -159,8 +159,6 @@ const handleBack = () => {
 };
 
 const onTabChange = (tabId: string) => {
-  console.log('WhatsAppModal - Tab changed to:', tabId);
-  
   // Only allow tab change if WhatsApp is configured or if it's the publish agent tab
   if (tabId === 'publish-agent' || isWhatsAppConfigured.value) {
     handleTabChange(tabId);
@@ -206,10 +204,6 @@ const onTabChange = (tabId: string) => {
       });
     }
   }
-};
-
-const handleFilterReport = (filters: any) => {
-  console.log('Filtering report:', filters);
 };
 
 const handleUpdateProduct = (product: any) => {
@@ -270,7 +264,6 @@ defineExpose({ openModal, closeModal });
         v-if="activeTab === 'broadcast-report' && isWhatsAppConfigured"
         ref="broadcastReportTabRef"
         :is-loading="isLoading"
-        @filter-report="handleFilterReport"
       />
 
       <!-- Template Tab -->

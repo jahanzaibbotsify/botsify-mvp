@@ -34,7 +34,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Save landing settings response:', response.data);
 
       return {
         success: true,
@@ -73,7 +72,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Save Telegram settings response:', response.data);
 
       return {
         success: true,
@@ -110,7 +108,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Save Twilio settings response:', response.data);
 
       return {
         success: true,
@@ -146,7 +143,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Get SMS report response:', response.data);
 
       return {
         success: true,
@@ -177,7 +173,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Get Facebook pages response:', response.data);
 
       return {
         success: true,
@@ -237,8 +232,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Get bot details response:', response.data);
-
       return {
         success: true,
         message: 'Bot details retrieved successfully',
@@ -267,8 +260,6 @@ export class PublishApiService {
         },
         timeout: 30000 // 30 seconds timeout
       });
-
-      console.log('Get publish status response:', response.data);
 
       return {
         success: true,
@@ -299,7 +290,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Get third-party config response:', response.data);
 
       return {
         success: true,
@@ -390,7 +380,6 @@ export class PublishApiService {
         }
       });
 
-      console.log('Remove page permissions response:', response.data);
 
       return {
         success: true,
@@ -464,7 +453,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log(`Save ${settings.type} settings response:`, response.data);
 
       return {
         success: true,
@@ -504,7 +492,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Fetch WhatsApp templates response:', response.data);
 
       return {
         success: true,
@@ -545,7 +532,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Fetch SMS templates response:', response.data);
 
       return {
         success: true,
@@ -577,7 +563,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Delete WhatsApp template response:', response.data);
 
       return {
         success: true,
@@ -608,7 +593,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Delete SMS template response:', response.data);
 
       return {
         success: true,
@@ -636,7 +620,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Create template response:', response.data);
 
       return {
         success: true,
@@ -664,7 +647,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Clone template response:', response.data);
 
       return {
         success: true,
@@ -702,7 +684,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Send SMS broadcast response:', response.data);
 
       return {
         success: true,
@@ -741,7 +722,6 @@ export class PublishApiService {
           ...(params.end_date && { end_date: params.end_date })
         });
 
-      console.log('Get WhatsApp broadcast report response:', response.data);
 
       return {
         success: true,
@@ -772,7 +752,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Fetch Facebook comment responder response:', response.data);
 
       return {
         success: true,
@@ -803,7 +782,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Delete comment responder response:', response.data);
 
       return {
         success: true,
@@ -840,7 +818,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Create comment responder response:', response.data);
 
       return {
         success: true,
@@ -878,7 +855,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Update comment responder response:', response.data);
 
       return {
         success: true,
@@ -908,7 +884,6 @@ export class PublishApiService {
       }, {
         timeout: 30000 // 30 seconds timeout
       });
-      console.log('Load data for plugins response:', response.data);
       return { success: true, message: 'Data for plugins loaded successfully', data: response.data };
     } catch (error: any) {
       console.error('Error loading data for plugins:', error);
@@ -929,7 +904,6 @@ export class PublishApiService {
   }): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
-      console.log('Making API call to create broadcast task with payload:', payload);
       
       const response = await axiosInstance.post('/v1/schedule/task/broadcast/create', {
         apikey: apiKey,
@@ -938,8 +912,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Create broadcast task response:', response.data);
-      console.log('Response status:', response.status);
 
       return {
         success: true,
@@ -969,7 +941,6 @@ export class PublishApiService {
   }): Promise<PublishResponse> {
     try {
       const {apiKey} = useBotStore();
-      console.log('Making API call to create WhatsApp broadcast task with payload:', payload);
       
       // Transform the payload to match the expected API format
       const apiPayload = {
@@ -983,9 +954,6 @@ export class PublishApiService {
       const response = await axiosInstance.post('/v1/whatsapp/single-message-send', apiPayload, {
         timeout: 30000 // 30 seconds timeout
       });
-
-      console.log('Create WhatsApp broadcast task response:', response.data);
-      console.log('Response status:', response.status);
 
       return {
         success: true,
@@ -1023,8 +991,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Save webhook settings response:', response.data);
-
       return {
         success: true,
         message: 'Webhook settings saved successfully',
@@ -1052,8 +1018,6 @@ export class PublishApiService {
       }, {
         timeout: 30000 // 30 seconds timeout
       });
-
-      console.log('Connect catalog response:', response.data);
 
       return {
         success: true,
@@ -1083,8 +1047,6 @@ export class PublishApiService {
         },
         timeout: 30000 // 30 seconds timeout
       });
-
-      console.log('Get catalog response:', response.data);
 
       return {
         success: true,
@@ -1124,8 +1086,6 @@ export class PublishApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Update Dialog360 profile response:', response.data);
-
       return {
         success: true,
         message: 'WhatsApp profile updated successfully',
@@ -1153,8 +1113,6 @@ export class PublishApiService {
         params: { apikey: apiKey },
         timeout: 30000 // 30 seconds timeout
       });
-
-      console.log('Get segment users response:', response.data);
 
       return {
         success: true,

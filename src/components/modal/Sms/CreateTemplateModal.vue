@@ -229,9 +229,6 @@ const openModalWithData = (templateData: any) => {
   
   // Reset errors
   errors.value = { buttons: {} };
-  
-  console.log('Opening with data for edit:', templateData);
-  console.log('Form data after transformation:', form.value);
 };
 
 const closeModal = () => {
@@ -244,8 +241,6 @@ const handleModalClose = () => {
 };
 
 const handleSave = async () => {
-  console.log('SMS CreateTemplateModal - Form data before save:', form.value);
-  
   if (!validateForm()) {
     return;
   }
@@ -255,7 +250,6 @@ const handleSave = async () => {
   try {
     if (isEditMode.value && editingTemplateId.value) {
       // Update existing template
-      console.log('Updating template with ID:', editingTemplateId.value);
       const result = await updateTemplate(editingTemplateId.value, form.value);
       if (result?.success) {
         window.$toast?.success('Template updated successfully!');
@@ -266,7 +260,6 @@ const handleSave = async () => {
       }
     } else {
       // Create new template
-      console.log('Creating new template');
       const result = await createTemplate(form.value);
       if (result?.success && 'data' in result && result.data) {
         window.$toast?.success('Template created successfully!');
@@ -298,8 +291,7 @@ const buttonTypes = [
 // Event listeners
 onMounted(() => {
   // Listen for template creation events
-  eventBus.on('template:created', (data) => {
-    console.log('Template created:', data);
+  eventBus.on('template:created', () => {
     // Refresh templates in parent
     eventBus.emit('sms:template:refresh');
   });

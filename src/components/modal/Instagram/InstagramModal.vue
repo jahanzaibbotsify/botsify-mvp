@@ -67,8 +67,6 @@ const handleBack = () => {
 };
 
 const onTabChange = (tabId: string) => {
-  console.log('InstagramModal - Tab changed to:', tabId);
-  
   // Only allow tab change if Instagram is configured or if it's the publish agent tab
   if (tabId === 'publish-bot' || isConfigured.value) {
     currentActiveTab.value = tabId;
