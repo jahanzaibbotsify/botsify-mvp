@@ -15,6 +15,7 @@ import { extractApiKey } from './utils/apiKeyUtils';
 import VueTelInput from 'vue-tel-input';
 import 'vue-tel-input/vue-tel-input.css';
 import Swal from 'sweetalert2';
+import VueApexCharts from 'vue3-apexcharts';
 
 // Import router
 import router from '@/router'
@@ -94,6 +95,7 @@ app.use(router)
 app.use(pinia)
 app.use(ToastPlugin);
 app.use(VueTelInput);
+app.component('apexchart', VueApexCharts);
 installPermissions(app);
 
 window.$toast = useToast({position:'top-right'});
