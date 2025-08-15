@@ -487,7 +487,7 @@ const getPageNumbers = computed(() => {
 }
 
 .no-data-row {
-  height: 150px;
+  height: 100px;
 }
 
 .no-data-row:hover td {

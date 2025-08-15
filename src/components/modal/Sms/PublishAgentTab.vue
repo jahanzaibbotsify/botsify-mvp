@@ -164,7 +164,7 @@ defineExpose({
 <template>
   <div class="tab-panel">
     <h3>SMS agent configuration</h3>
-    <p class="subtitle">Choose your SMS provider and configure settings</p>
+    <p class="subtitle">SMS provider and configure settings</p>
 
     <!-- Loading State -->
     <div v-if="isCheckingConfiguration" class="loading-state">

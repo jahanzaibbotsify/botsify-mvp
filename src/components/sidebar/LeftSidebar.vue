@@ -318,7 +318,6 @@ const openPartnerPortal = () => {
       <div class="header-content">
         <div class="app-title-container">
           <!-- Whitelabel or Botsify Logo with link -->
-          <a :href="whitelabelStore.isWhitelabelClient && whitelabelStore.whitelabelData?.domain ? `https://${whitelabelStore.whitelabelData.domain}` : 'https://botsify.com'" target="_blank" class="logo-link">
             <img
               v-if="whitelabelStore.isWhitelabelClient && whitelabelStore.whitelabelData?.logo"
               :src="whitelabelStore.whitelabelData.logo"
@@ -331,7 +330,6 @@ const openPartnerPortal = () => {
               alt="Botsify"
               class="logo-icon"
             />
-          </a>
         </div>
 
         <div class="sidebar-actions">
@@ -559,17 +557,6 @@ const openPartnerPortal = () => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-}
-
-.logo-link {
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-  transition: all var(--transition-normal);
-}
-
-.logo-link:hover {
-  opacity: 0.9;
 }
 
 .logo-icon {

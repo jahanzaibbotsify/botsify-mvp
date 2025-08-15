@@ -229,11 +229,6 @@ router.beforeEach(async (to, from, next) => {
       if (from.path === to.path) {
         return next();
       }
-
-      // Load bot data only once for agent routes, not on every navigation
-      if (to.name === 'agent') {
-        getBotData();
-      }
      
       // Allow navigation to proceed
       return next();

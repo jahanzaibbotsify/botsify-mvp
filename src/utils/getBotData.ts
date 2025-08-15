@@ -15,11 +15,11 @@ export async function getBotData() {
   const route = useRoute();
   const botStore = useBotStore();
 
-  // Check if bot data is already loaded in the store
-  // if (isBotDataLoaded || botStore.apiKeyConfirmed) {
-  //   return;
-  // }
+  if(!botStore.isLoading){
+    return
+  }
 
+  // Check if bot data is already loaded in the store
   const paramKey = route.name === 'agent' ? route.params?.id as string : '';
   const apikey = paramKey || getCurrentApiKey() || '';
 
@@ -28,14 +28,12 @@ export async function getBotData() {
     router.push('/select-agent');
     return;
   }
-
+  
   // Set API key in store since this is called from router guard
   botStore.setApiKey(apikey);
-
   // Clean up chat store state before loading new agent data
   const chatStore = useChatStore();
   chatStore.cleanupForAgentSwitch();
-  chatStore.isLoading = true;
   // Reset publish store state for new agent
   const publishStore = usePublishStore();
   publishStore.resetStore();
@@ -69,7 +67,6 @@ export async function getBotData() {
     }
 
     // Bot
-    botStore.setApiKeyConfirmed(true);
     botStore.setBotId(data.bot.id);
     botStore.setUser(data.user);
     botStore.setBotName(data.bot.name);
@@ -111,7 +108,6 @@ export async function getBotData() {
     console.error('❌ Failed to get bot details:', error);
     return router.replace({ name: 'Unauthenticated' });
   } finally {
-    chatStore.isLoading = false;
+    botStore.setIsLoading(false);
   }
 }
-

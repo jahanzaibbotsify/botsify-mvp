@@ -4,7 +4,10 @@ import {useRoute} from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 import LeftSidebar from '@/components/sidebar/LeftSidebar.vue';
 import { useSidebarToggle } from '@/composables/useSidebarToggle';
+import { useBotStore } from '@/stores/botStore';
+import { getBotData } from '@/utils/getBotData';
 
+const botStore = useBotStore();
 const chatStore = useChatStore();
 const route = useRoute();
 const selectedNavigationButton = ref('Agent');
@@ -35,12 +38,13 @@ watch(() => route.path, () => {
 
 // Initialize sidebar state based on screen size
 onMounted(async () => {
+  await getBotData();
   initializeSidebar()
 });
 </script>
 
 <template>
-  <div v-if="chatStore.isLoading" class="loading-overlay">
+  <div v-if="botStore.isLoading" class="loading-overlay">
     <div class="loading-state">
       <div class="loading-spinner"></div>
       <!-- <span>Loading...</span> -->
