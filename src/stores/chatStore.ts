@@ -328,7 +328,6 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   function updateStory(chatId: string, content: string, createNewVersion: boolean = true, edit: boolean = false) {
-    const startTime = Date.now();
     const chat = chats.value.find(c => c.id === chatId);
     if (!chat) {
       console.error('Chat not found with ID:', chatId);
@@ -525,8 +524,6 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   async function handleAIResponse(chat: Chat) {
-    const functionStartTime = Date.now();
-    
     // Add timeout protection for the entire function
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => {
@@ -822,8 +819,6 @@ Use the above connected services information to understand what tools and data s
       // Stop the flow - don't continue with any other operations
       return;
     } finally {
-      const finallyTime = Date.now();
-      
       // Always set typing to false when done
       isTyping.value = false;
       isAIPromptGenerating.value = false;
