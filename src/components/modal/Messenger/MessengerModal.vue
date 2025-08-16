@@ -7,6 +7,7 @@ import BroadcastTab from "./BroadcastTab.vue";
 import { usePublishStore } from "@/stores/publishStore";
 import { useBotStore } from "@/stores/botStore";
 import { useTabManagement } from "@/composables/useTabManagement";
+import type { FacebookPage } from "@/types";
 
 // Define tabs
 const tabs = [
@@ -31,39 +32,8 @@ const emit = defineEmits<{
 const publishStore = usePublishStore();
 const botStore = useBotStore();
 
-// Computed configuration status
-const isConfigured = ref(false);
-
-// Loading state from store
-const isLoading = computed(() => publishStore.loadingStates.facebookPages);
-
-// Configuration check function
-const checkConfiguration = () => {
-  const pages = publishStore.cache.facebookPages;
-  if (pages && pages.pagesData && pages.pagesData.data) {
-    const pagesData = pages.pagesData.data;
-    // Check if any page is connected to the current bot
-    isConfigured.value = pagesData.some((page: any) => 
-      page.connected_page_bot === botStore.botName
-    );
-  } else {
-    isConfigured.value = false;
-  }
-};
-
-// Load Facebook pages function
-const loadFacebookPages = async () => {
-  try {
-    const result = await publishStore.getFbPages();
-    if (result.success) {
-      checkConfiguration();
-    }
-  } catch (error) {
-    console.error('Failed to load Facebook pages:', error);
-  }
-};
-
 const { currentTab, handleTabChange } = useTabManagement(tabs, 'publish-bot');
+
 
 // Override computedTabs to include disabled state based on configuration
 const messengerComputedTabs = computed(() => {
@@ -73,10 +43,32 @@ const messengerComputedTabs = computed(() => {
   }));
 });
 
+
+// Computed configuration status
+const isConfigured = ref(false);
+
+// Loading state from store
+const isLoading = computed(() => publishStore.facebookPages.loading);
+
+// Configuration check
+const checkConfiguration = () => {
+  const pages = publishStore.facebookPages.data;
+  if (pages && pages.data?.pagesData?.data) {
+    const pagesData = pages.data.pagesData.data;
+    isConfigured.value = pagesData.some(
+      (page: FacebookPage) => page.connected_page_bot === botStore.botName
+    );
+  } else {
+    isConfigured.value = false;
+  }
+};
+
+
 const openModal = async () => {
   modalRef.value?.openModal();
   // Load Facebook pages when modal opens
-  await loadFacebookPages();
+  await publishStore.facebookPages.load();
+  await checkConfiguration();
 };
 
 const closeModal = () => {
@@ -136,6 +128,7 @@ defineExpose({ openModal, closeModal });
       <BroadcastTab 
         v-if="activeTab === 'broadcast' && isConfigured"
         ref="broadcastTabRef"
+        :is-loading="isLoading"
       />
 
       <!-- Configuration Required Message -->

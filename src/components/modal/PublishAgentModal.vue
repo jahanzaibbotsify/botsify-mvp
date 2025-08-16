@@ -2,9 +2,8 @@
 import ModalLayout from "@/components/ui/ModalLayout.vue";
 import Button from "@/components/ui/Button.vue";
 import Badge from "@/components/ui/Badge.vue";
-import { ref, onMounted, defineAsyncComponent, onUnmounted } from "vue";
+import { ref, defineAsyncComponent, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
-import { eventBus } from "@/utils/eventBus";
 import { botsifyApi } from "@/services/botsifyApi";
 import { useChatStore } from "@/stores/chatStore";
 
@@ -98,92 +97,29 @@ const portableAgentModalRef = ref<InstanceType<typeof PortableAgentModal> | null
 
 const publishStore = usePublishStore();
 const chatStore = useChatStore();
-const isLoading = ref(false);
 const isDeploying = ref(false);
 
-const agents = ref([
-  { icon: 'portable-agent-icon.svg', label: 'Portable agent', status: 'inactive' },
-  { icon: 'website.png', label: 'Website', status: 'inactive' },
-  { icon: 'whatsapp.png', label: 'WhatsApp', status: 'inactive' },
-  { icon: 'messenger.png', label: 'Messenger', status: 'inactive' },
-  { icon: 'instagram.png', label: 'Instagram', status: 'inactive' },
-  { icon: 'telegram.png', label: 'Telegram', status: 'inactive' },
-  { icon: 'sms.png', label: 'SMS', status: 'inactive' },
-]);
-
-const fetchPublishStatus = async () => {
-  // Only fetch if not already loaded
-  if (publishStore.loadingStates.publishStatus && publishStore.cache.publishStatus) {
-    updateAgentStatus(publishStore.cache.publishStatus);
-    return;
-  }
-  
-  isLoading.value = true;
-  try {
-    const result = await publishStore.getPublishStatus();
-    
-    if (result.success && result.data) {
-      updateAgentStatus(result.data);
-    }
-  } catch (error) {
-    console.error('Failed to fetch publish status:', error);
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-const updateAgentStatus = (publishStatus: any) => {
-  if (!publishStatus || !publishStatus.data) return;
-
-  const statusData = publishStatus.data;
-
-  // Update status based on publish status API response
-  agents.value.forEach(agent => {
-    switch (agent.label) {
-      case 'Telegram':
-        agent.status = statusData.telegram ? 'active' : 'inactive';
-        break;
-      case 'SMS':
-        agent.status = statusData.twilio ? 'active' : 'inactive';
-        break;
-      case 'WhatsApp':
-        agent.status = statusData.whatsapp ? 'active' : 'inactive';
-        break;
-      case 'Messenger':
-        agent.status = statusData.facebook ? 'active' : 'inactive';
-        break;
-      case 'Instagram':
-        agent.status = statusData.instagram ? 'active' : 'inactive';
-        break;
-      case 'Website':
-        // Website status might be handled differently
-        agent.status = 'inactive';
-        break;
-      case 'Portable agent':
-        // Portable agent status might be handled differently
-        agent.status = 'inactive';
-        break;
-      default:
-        agent.status = 'inactive';
-    }
-  });
-};
+const publishStatus = computed(() => publishStore.publishStatus.data);
+const agents = computed(() => {
+  const statusData = publishStatus.value?.data?.data;
+  return [
+    { icon: 'portable-agent-icon.svg', label: 'Portable agent', status: 'inactive' },
+    { icon: 'website.png', label: 'Website', status: 'inactive' },
+    { icon: 'whatsapp.png', label: 'WhatsApp', status: statusData?.whatsapp ? 'active' : 'inactive' },
+    { icon: 'messenger.png', label: 'Messenger', status: statusData?.facebook ? 'active' : 'inactive' },
+    { icon: 'instagram.png', label: 'Instagram', status: statusData?.instagram ? 'active' : 'inactive' },
+    { icon: 'telegram.png', label: 'Telegram', status: statusData?.telegram ? 'active' : 'inactive' },
+    { icon: 'sms.png', label: 'SMS', status: statusData?.twilio ? 'active' : 'inactive' },
+  ];
+});
 
 const openModal = () => {
   modalRef.value?.openModal();
   // Only fetch if not already cached
-  if (!publishStore.loadingStates.publishStatus || !publishStore.cache.publishStatus) {
-    fetchPublishStatus();
-  } else {
-    // Use cached data
-    updateAgentStatus(publishStore.cache.publishStatus);
-  }
+  publishStore.publishStatus.load();
 };
 
 const handleAgentClick = (agentLabel: string) => {
-  // Emit event for agent selection
-  eventBus.emit('publish-agent:selected', { agent: agentLabel });
-  
   if (agentLabel === 'Website') {
     websiteModalRef.value?.openModal();
   } else if (agentLabel === 'WhatsApp') {
@@ -204,41 +140,7 @@ const handleAgentClick = (agentLabel: string) => {
 
 const handleBackToMain = () => {
   modalRef.value?.openModal();
-  // Only fetch if not already cached
-  if (!publishStore.loadingStates.publishStatus || !publishStore.cache.publishStatus) {
-    fetchPublishStatus();
-  }
 };
-
-// Listen for deploy request from ChatHeader
-onMounted(() => {
-  // Listen for status updates from child modals
-  const handleStatusUpdate = () => {
-    // Refresh status if needed
-    fetchPublishStatus();
-  };
-  
-  // Listen for deploy request
-  const handleDeployRequest = () => {
-    openModal();
-  };
-  
-  eventBus.on('agent:status-updated', handleStatusUpdate);
-  eventBus.on('deploy-agent:request', handleDeployRequest);
-  
-  // Store handlers for cleanup
-  const handlers = {
-    'agent:status-updated': handleStatusUpdate,
-    'deploy-agent:request': handleDeployRequest
-  };
-  
-  // Cleanup event listeners
-  onUnmounted(() => {
-    Object.entries(handlers).forEach(([event, handler]) => {
-      eventBus.off(event, handler);
-    });
-  });
-});
 
 const handleDeploy = async () => {
   // Prevent multiple clicks while deploying

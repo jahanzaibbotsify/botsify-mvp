@@ -205,7 +205,6 @@ export const useConversationStore = defineStore('conversation', () => {
   const handleFirebaseMessage = (fbId: string, data: FirebaseMessage) => {
     // Find existing conversation or create new one
     let conversation = conversations.value.find(conv => conv.fbid === fbId)
-    console.log(data, "data........")
     if (!conversation) {
       // Create new conversation from Firebase data
       if (data.user) {

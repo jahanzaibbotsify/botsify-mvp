@@ -85,7 +85,6 @@ import { getWebUrl } from '@/utils';
 import CalendlyModal from '@/components/modal/CalendlyModal.vue';
 import UserMenu from "@/components/auth/UserMenu.vue";
 import PublishAgentModal from "@/components/modal/PublishAgentModal.vue";
-import { eventBus } from '@/utils/eventBus';
 import Button from "@/components/ui/Button.vue";
 
 interface Props {
@@ -143,8 +142,8 @@ function deployAI() {
     return;
   }
   
-  // Emit event to open publish agent modal with deploy confirmation
-  eventBus.emit('deploy-agent:request');
+  // Direct call to open publish agent modal
+  publishAgentRef.value?.openModal();
 }
 
 function handleReset(type: string) {

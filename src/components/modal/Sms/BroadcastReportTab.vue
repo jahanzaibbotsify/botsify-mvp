@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
-import { Table, TableHead, TableBody, TableHeader, TableCell, Badge,  Input, Button, DateRange } from "@/components/ui";
+import { Table, TableHead, TableBody, TableHeader, TableCell, Badge,  Input, Button, DateRange, Pagination } from "@/components/ui";
 import { formatDate } from "@/utils";
+import { PaginationData, SmsReportData } from "@/types";
 
 defineEmits<{
   'page-change': [page: number];
@@ -27,13 +28,23 @@ const getDefaultDateRange = () => {
 
 const dateRange = ref(getDefaultDateRange());
 
-// Reactive data
-const reportData = ref<any>(null);
-const currentPage = ref(1);
-const totalPages = ref(1);
-const totalItems = ref(0);
-const isLoading = ref(false);
 
+// Computed properties for SMS templates resource
+const currentPage = ref(1);
+const itemsPerPage = 20; // Match the API per_page default
+
+// Add local pagination data
+const paginationData = ref<PaginationData | null>(null);
+
+// Computed properties for SMS templates resource
+const smsReportData = computed(() => publishStore.smsReport.data?.data?.messages?.data || []);
+
+const totalPages = computed(() => {
+  if (paginationData.value) {
+    return Math.ceil(paginationData.value.total / paginationData.value.perPage);
+  }
+  return 1;
+});
 
 // Stats cards data
 const statsCards = ref([
@@ -60,33 +71,34 @@ const statsCards = ref([
   }
 ]);
 
-// Fetch SMS report data
-const fetchSmsReport = async (page: number = 1) => {
-  isLoading.value = true;
+
+// Sync report when loaded
+const loadReport = async (page = 1) => {
   try {
-    const result = await publishStore.getSmsReport(page, 20, searchQuery.value, dateRange.value.start, dateRange.value.end);
-    if (result.success && result.data) {
-      reportData.value = result.data;
-      currentPage.value = result.data.messages?.current_page || 1;
-      totalPages.value = result.data.messages?.last_page || 1;
-      totalItems.value = result.data.messages?.total || 0;
-      
-      // Update stats cards
-      statsCards.value[0].value = result.data.sent_today || 0;
-      statsCards.value[1].value = result.data.delivered_today || 0;
-      statsCards.value[2].value = result.data.failed_today || 0;
-    } else {
-      window.$toast.error(result.error || 'Failed to fetch SMS report');
+    const result = await publishStore.smsReport.load(page, itemsPerPage, searchQuery.value, dateRange.value.start, dateRange.value.end);
+    if (result?.messages) {
+      paginationData.value = {
+        page: result.messages.page || page,
+        perPage: result.messages.per_page || itemsPerPage,
+        total: result.messages.total || 0,
+        to: result.messages.to || 0,
+        prev_page_url: result.messages.prev_page_url || null,
+      };
+
+      currentPage.value = result.messages.page || page;
+
+      // update stats
+      statsCards.value[0].value = result.sent_today || 0;
+      statsCards.value[1].value = result.delivered_today || 0;
+      statsCards.value[2].value = result.failed_today || 0;
     }
-  } catch (error) {
-    console.error('Failed to fetch SMS report:', error);
-  } finally {
-    isLoading.value = false;
+  } catch (err) {
+    console.error("Failed to load report:", err);
   }
 };
 
 const handlePageChange = (page: number) => {
-  fetchSmsReport(page);
+  loadReport(page);
 };
 
 // Helper functions
@@ -111,25 +123,16 @@ const truncateMessage = (message: string) => {
 };
 
 const applyFilter = () => {
-  publishStore.loadingStates.broadcastReport = true;
-  publishStore.cache.broadcastReport = null;
-  fetchSmsReport(1);
+  // Invalidate SMS broadcast report cache to force fresh data
+  publishStore.smsReport.invalidate();
+  loadReport(1);
 }
 
 
 // Load data on mount
 onMounted(() => {
-  fetchSmsReport();
+  loadReport(1)
 });
-
-// Expose methods for parent component
-defineExpose({
-  fetchSmsReport,
-  currentPage,
-  totalPages,
-  totalItems
-});
-
 </script>
 
 <template>
@@ -160,10 +163,10 @@ defineExpose({
         <Button
           variant="primary"
           size="medium"
-          :loading="publishStore.isLoading"
+          :loading="publishStore.smsTemplates.loading"
           @click="applyFilter"
         >
-          {{ publishStore.isLoading ? 'Filtering...' : 'Apply filters' }}
+          {{ publishStore.smsTemplates.loading ? 'Filtering...' : 'Apply filters' }}
         </Button>
       </div>
     </div>
@@ -184,7 +187,6 @@ defineExpose({
         </div>
       </div>
     </div>
-
     <!-- Messages Table -->
     <div class="table-section">
       <Table>
@@ -197,7 +199,7 @@ defineExpose({
         </TableHead>
         <TableBody>
           <!-- Loading State -->
-          <tr v-if="isLoading" v-for="i in 5" :key="`loading-${i}`">
+          <tr v-if="publishStore.smsTemplates.loading" v-for="i in 5" :key="`loading-${i}`">
             <TableCell :isLoading="true" skeletonType="badge"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
@@ -206,7 +208,7 @@ defineExpose({
           </tr>
 
           <!-- Empty State -->
-          <tr v-else-if="!reportData?.messages?.data?.length">
+          <tr v-else-if="!smsReportData.length">
             <TableCell :noData="true" colspan="5">
               <div class="empty-state">
                 <div class="empty-icon">
@@ -219,7 +221,7 @@ defineExpose({
           </tr>
 
           <!-- Data State -->
-          <tr v-else v-for="message in reportData?.messages?.data" :key="message.id">
+          <tr v-else v-for="message in smsReportData" :key="message.id">
             <TableCell>
               <Badge :variant="getStatusVariant(message)" size="small">
                 {{ getStatusText(message) }}
@@ -239,10 +241,10 @@ defineExpose({
       <Pagination
         :current-page="currentPage"
         :total-pages="totalPages"
-        :total-items="totalItems"
+        :total-items="paginationData?.total || 0"
         :items-per-page="20"
         :show-page-info="false"
-        :disabled="isLoading"
+        :disabled="publishStore.smsReport.loading"
         @page-change="handlePageChange"
       />
     </div>

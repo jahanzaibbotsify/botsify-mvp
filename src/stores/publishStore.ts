@@ -1,6 +1,12 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { publishApi } from '@/services/publishApi';
+import { createResource } from '@/utils/caching';
+import type { 
+  BotDetails, 
+  CachedTemplatesResponse,
+  BroadcastReportResponse,
+} from '@/types';
 
 export const usePublishStore = defineStore('publish', () => {
   // State
@@ -9,57 +15,66 @@ export const usePublishStore = defineStore('publish', () => {
   
   // Unified cache system
   const cache = ref<{
-    whatsappTemplates: { data: any[]; page: number; perPage: number; total: number; to: number; prev_page_url: string | null; query?: string } | null;
-    smsTemplates: { data: any[]; page: number; perPage: number; total: number; to: number; prev_page_url: string | null; query?: string } | null;
-    botDetails: any;
-    broadcastReport: { data: any; key: string } | null;
-    smsReport: { data: any; page: number } | null;
-    thirdPartyConfig: any;
-    facebookPages: any;
-    instagramPages: any;
-    publishStatus: any;
-    commentResponder: any;
+    whatsappTemplates: CachedTemplatesResponse | null;
+    botDetails: BotDetails | null;
+    broadcastReport: { data: BroadcastReportResponse; key: string } | null;
   }>({
     whatsappTemplates: null,
-    smsTemplates: null,
     botDetails: null,
     broadcastReport: null,
-    smsReport: null,
-    thirdPartyConfig: null,
-    facebookPages: null,
-    instagramPages: null,
-    publishStatus: null,
-    commentResponder: null
   });
 
   // Loading states
   const loadingStates = ref({
     whatsappTemplates: false,
-    smsTemplates: false,
     botDetails: false,
     broadcastReport: false,
-    smsReport: false,
-    thirdPartyConfig: false,
-    facebookPages: false,
-    instagramPages: false,
-    publishStatus: false,
-    commentResponder: false,
     pluginData: false
   });
 
   // Cache validity flags
   const cacheValid = ref({
     whatsappTemplates: false,
-    smsTemplates: false,
     botDetails: false,
     broadcastReport: false,
-    smsReport: false,
-    thirdPartyConfig: false,
-    facebookPages: false,
-    instagramPages: false,
-    publishStatus: false,
-    commentResponder: false
+    publishStatus: false
   });
+
+  const facebookPages = createResource(() => publishApi.getFacebookPages());
+  const publishStatus = createResource(() => publishApi.getPublishStatus());
+  const commentResponder = createResource(() => publishApi.fetchFbCommentResponder(1));
+  const thirdPartyConfig = createResource(() => publishApi.getThirdPartyConfig());
+  const instagramPages = createResource(() => publishApi.getInstagramPages());
+  const smsTemplates = createResource(
+    (page = 1, perPage = 20, query?: string) =>
+      publishApi.fetchSmsTemplates(page, perPage, query)
+  );
+  const smsReport = createResource(
+    (page = 1, perPage = 20, query?: string, startDate?: string, endDate?: string) =>
+      publishApi.fetchSmsReport(page, perPage, query, startDate, endDate)
+  );
+  const smsSegmentUsers = createResource(() => publishApi.getSegmentUsers('-1', 'sms'));
+
+  // Social
+  const getFbCommentResponder = async (page = 1) => {
+    // For first page, use the cached resource
+    if (page === 1) {
+      try {
+        const result = await commentResponder.load();
+        return { success: true, data: result };
+      } catch (error: any) {
+        return { success: false, error: error.message || 'Failed to get Facebook comment responder' };
+      }
+    }
+    
+    // For other pages, make a direct API call
+    try {
+      const result = await publishApi.fetchFbCommentResponder(page);
+      return { success: true, data: result.data };
+    } catch (error: any) {
+      return { success: false, error: error.message || 'Failed to get Facebook comment responder' };
+    }
+  };
 
   const saveLandingSettings = async (backgroundStyle: 'primary' | 'gradient' | 'secondary' | 'plain-primary' | 'plain-secondary') => {
     isLoading.value = true;
@@ -94,156 +109,7 @@ export const usePublishStore = defineStore('publish', () => {
     }
   };
 
-  const saveTelegramSettings = async (settings: {
-    accessToken: string;
-    botName: string;
-    telegramNumber: string;
-    telegramChatbotUrl: string;
-  }) => {
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const result = await publishApi.saveTelegramSettings(settings);
-      
-      if (result.success) {
-        loadingStates.value.publishStatus = false;
-        cache.value.publishStatus = null;
-        cacheValid.value.publishStatus = false;
-
-        loadingStates.value.thirdPartyConfig = false;
-        cache.value.thirdPartyConfig = null;
-        cacheValid.value.thirdPartyConfig = false;
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to save Telegram settings';
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to save Telegram settings';
-      return { success: false, error: error.value };
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
-  const saveTwilioSettings = async (settings: {
-    twilioAccountSid: string;
-    twilioAuthToken: string;
-    twilioSmsNumber: string;
-    twilioSenderId: string;
-  }) => {
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const result = await publishApi.saveTwilioSettings(settings);
-      
-      if (result.success) {
-        // Show success toast
-        window.$toast.success('Twilio settings saved successfully!');
-        loadingStates.value.publishStatus = false;
-        cache.value.publishStatus = null; 
-        cacheValid.value.publishStatus = false;
-
-        loadingStates.value.thirdPartyConfig = false;
-        cache.value.thirdPartyConfig = null;
-        cacheValid.value.thirdPartyConfig = false;
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to save Twilio settings';
-        // Show error toast
-        window.$toast.error(error.value);
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to save Twilio settings';
-      // Show error toast
-      if (window.$toast) {
-        window.$toast.error(error.value);
-      }
-      return { success: false, error: error.value };
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
-  const getInstagramPages = async () => {
-    // Return cached pages if already loaded
-    if (cacheValid.value.instagramPages && cache.value.instagramPages) {
-      return { success: true, data: cache.value.instagramPages };
-    }
-
-    // Prevent multiple simultaneous calls
-    if (loadingStates.value.instagramPages) {
-      return { success: false, error: 'Instagram pages are already being loaded' };
-    }
-    
-    loadingStates.value.instagramPages = true;
-    error.value = null;
-
-    try {
-      const result = await publishApi.getInstagramPages();
-      
-      if (result.success) {
-        // Cache the pages
-        cache.value.instagramPages = result.data;
-        cacheValid.value.instagramPages = true;
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to get Instagram pages';
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to get Instagram pages';
-      return { success: false, error: error.value };
-    } finally {
-      loadingStates.value.instagramPages = false;
-    }
-  };
-
-  const refreshFbPagePermission = async (instagram?: boolean) => {
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const result = await publishApi.refreshFbPagePermission(instagram);
-      
-      if (result.success) {
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to refresh Facebook page permissions';
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to refresh Facebook page permissions';
-      return { success: false, error: error.value };
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
-  const removeFbPagePermission = async (instagram?: boolean) => {
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const result = await publishApi.removeFbPagePermission(instagram);
-      
-      if (result.success) {
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to remove Facebook page permissions';
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to remove Facebook page permissions';
-      return { success: false, error: error.value };
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
+  
   const getBotDetails = async () => {
     // Return cached bot details if already loaded
     if (cacheValid.value.botDetails && cache.value.botDetails) {
@@ -278,110 +144,6 @@ export const usePublishStore = defineStore('publish', () => {
     }
   };
 
-  const getPublishStatus = async () => {
-    // Return cached status if already loaded
-    if (cacheValid.value.publishStatus && cache.value.publishStatus) {
-      return { success: true, data: cache.value.publishStatus };
-    }
-    
-    // Prevent multiple simultaneous calls
-    if (loadingStates.value.publishStatus) {
-      return { success: false, error: 'Publish status is already being loaded' };
-    }
-    
-    loadingStates.value.publishStatus = true;
-    error.value = null;
-    
-    try {
-      const result = await publishApi.getPublishStatus();
-      
-      if (result.success) {
-        // Cache the publish status
-        cache.value.publishStatus = result.data;
-        cacheValid.value.publishStatus = true;
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to get publish status';
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to get publish status';
-      return { success: false, error: error.value };
-    } finally {
-      loadingStates.value.publishStatus = false;
-    }
-  };
-
-  const getThirdPartyConfig = async () => {
-    // Return cached config if already loaded
-    if (cacheValid.value.thirdPartyConfig && cache.value.thirdPartyConfig) {
-      return { success: true, data: cache.value.thirdPartyConfig };
-    }
-    
-    // Prevent multiple simultaneous calls
-    if (loadingStates.value.thirdPartyConfig) {
-      return { success: false, error: 'Third-party config is already being loaded' };
-    }
-    
-    loadingStates.value.thirdPartyConfig = true;
-    error.value = null;
-    
-    try {
-      const result = await publishApi.getThirdPartyConfig();
-      
-      if (result.success) {
-        // Cache the config
-        cache.value.thirdPartyConfig = result.data;
-        cacheValid.value.thirdPartyConfig = true;
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to get third-party config';
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to get third-party config';
-      return { success: false, error: error.value };
-    } finally {
-      loadingStates.value.thirdPartyConfig = false;
-    }
-  };
-
-  const getSmsReport = async (page: number = 1, per_page: number = 20, query?: string, start_date?: string, end_date?: string) => {
-    // Return cached SMS report if already loaded for the same page
-    if (cacheValid.value.smsReport && cache.value.smsReport && cache.value.smsReport.page === page) {
-      return { success: true, data: cache.value.smsReport.data };
-    }
-    
-    // Prevent multiple simultaneous calls
-    if (loadingStates.value.smsReport) {
-      return { success: false, error: 'SMS report is already being loaded' };
-    }
-    
-    loadingStates.value.smsReport = true;
-    error.value = null;
-    
-    try {
-      const result = await publishApi.getSmsReport(page, per_page, query, start_date, end_date);
-      
-      if (result.success) {
-        // Cache the SMS report with page info
-        cache.value.smsReport = {
-          data: result.data,
-          page: page
-        };
-        cacheValid.value.smsReport = true;
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to get SMS report';
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to get SMS report';
-      return { success: false, error: error.value };
-    } finally {
-      loadingStates.value.smsReport = false;
-    }
-  };
 
   const saveWhatsAppSettings = async (settings: {
     api_key: string;
@@ -407,9 +169,7 @@ export const usePublishStore = defineStore('publish', () => {
         if(settings.type === '360_dialog' && result.data.status === 'error'){
           return { success: false, error: result.data.message };
         }
-        loadingStates.value.publishStatus = false;
-        cache.value.publishStatus = null;
-        cacheValid.value.publishStatus = false;
+        publishStatus.invalidate();
 
         loadingStates.value.botDetails = false;
         cache.value.botDetails = null;
@@ -527,7 +287,12 @@ export const usePublishStore = defineStore('publish', () => {
           total: result.data.templates?.total || 0,
           to: result.data.templates?.to || 0,
           prev_page_url: result.data.templates?.prev_page_url || null,
-          query: query
+          query: query,
+          per_page: perPage,
+          current_page: page,
+          last_page: result.data.templates?.last_page || 1,
+          from: result.data.templates?.from || 1,
+          next_page_url: result.data.templates?.next_page_url || null
         };
         cacheValid.value.whatsappTemplates = true;
         return { success: true, data: result.data };
@@ -551,59 +316,6 @@ export const usePublishStore = defineStore('publish', () => {
     }
   };
 
-  const fetchSmsTemplates = async (page: number = 1, perPage: number = 20, query?: string) => {
-    // Return cached templates if already loaded for the same page, per_page, and query
-    if (cacheValid.value.smsTemplates && cache.value.smsTemplates && 
-        cache.value.smsTemplates.page === page && 
-        cache.value.smsTemplates.perPage === perPage &&
-        cache.value.smsTemplates.query === query) {
-      return { success: true, data: { status: 'success', templates: cache.value.smsTemplates } };
-    }
-    
-    // Prevent multiple simultaneous calls
-    if (loadingStates.value.smsTemplates) {
-      return { success: false, error: 'SMS templates are already being loaded' };
-    }
-    
-    loadingStates.value.smsTemplates = true;
-    error.value = null;
-    
-    try {
-      const result = await publishApi.fetchSmsTemplates(page, perPage, query);
-      
-      if (result.success) {
-        // Cache the templates with pagination info and query
-        cache.value.smsTemplates = {
-          data: result.data.templates?.data || [],
-          page: page,
-          perPage: perPage,
-          total: result.data.templates?.total || 0,
-          to: result.data.templates?.to || 0,
-          prev_page_url: result.data.templates?.prev_page_url || null,
-          query: query
-        };
-        cacheValid.value.smsTemplates = true;
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to fetch SMS templates';
-        // Show error toast
-        if (window.$toast) {
-          window.$toast.error(error.value);
-        }
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to fetch SMS templates';
-      // Show error toast
-      if (window.$toast) {
-        window.$toast.error(error.value);
-      }
-      return { success: false, error: error.value };
-    } finally {
-      loadingStates.value.smsTemplates = false;
-    }
-  };
-
   const deleteWhatsAppTemplate = async (id: number) => {
     isLoading.value = true;
     error.value = null;
@@ -623,73 +335,6 @@ export const usePublishStore = defineStore('publish', () => {
       }
     } catch (err: any) {
       error.value = err.message || 'Failed to delete WhatsApp template';
-      return { success: false, error: error.value };
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
-  const deleteSmsTemplate = async (id: number) => {
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const result = await publishApi.deleteSmsTemplate(id);
-      
-      if (result.success) {
-        // Clear SMS templates cache
-        cache.value.smsTemplates = null;
-        cacheValid.value.smsTemplates = false;
-        loadingStates.value.smsTemplates = false;
-        
-        // Show success toast
-        if (window.$toast) {
-          window.$toast.success('SMS template deleted successfully!');
-        }
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to delete SMS template';
-        // Show error toast
-        if (window.$toast) {
-          window.$toast.error(error.value);
-        }
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to delete SMS template';
-      // Show error toast
-      if (window.$toast) {
-        window.$toast.error(error.value);
-      }
-      return { success: false, error: error.value };
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
-  const createSmsTemplate = async (templateData: any) => {
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const result = await publishApi.createTemplate(templateData, 'sms');
-      
-      if (result.success) {
-        if(result.data.status === 'error'){
-          return { success: false, error: result.data.message };
-        }
-        // Show success toast
-        // Clear cache to force refresh
-        cacheValid.value.smsTemplates = false;
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to create SMS template';
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to create SMS template';
-      // Show error toast
-      window.$toast.error(error.value);
       return { success: false, error: error.value };
     } finally {
       isLoading.value = false;
@@ -750,73 +395,6 @@ export const usePublishStore = defineStore('publish', () => {
     }
   };
 
-  const getFbPages = async () => {
-    // Return cached pages if already loaded
-    if (cacheValid.value.facebookPages && cache.value.facebookPages) {
-      return { success: true, data: cache.value.facebookPages };
-    }
-    
-    // Prevent multiple simultaneous calls
-    if (loadingStates.value.facebookPages) {
-      return { success: false, error: 'Facebook pages are already being loaded' };
-    }
-    
-    loadingStates.value.facebookPages = true;
-    error.value = null;
-    
-    try {
-      const result = await publishApi.getFacebookPages();
-      
-      if (result.success) {
-        // Cache the pages
-        cache.value.facebookPages = result.data;
-        cacheValid.value.facebookPages = true;
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to get Facebook pages';
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to get Facebook pages';
-      return { success: false, error: error.value };
-    } finally {
-      loadingStates.value.facebookPages = false;
-    }
-  };
-
-  const connectionFbPage = async (type: string, pageId: string, pageName: string, accessToken: string) => {
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const result = await publishApi.connectionFbPage(type, pageId, pageName, accessToken);
-      
-      if (result.success) {
-        loadingStates.value.publishStatus = false;
-        cache.value.publishStatus = null;
-        cacheValid.value.publishStatus = false;
-
-        loadingStates.value.facebookPages = false;
-        cache.value.facebookPages = null;
-        cacheValid.value.facebookPages = false;
-
-        loadingStates.value.instagramPages = false;
-        cache.value.instagramPages = null;
-        cacheValid.value.instagramPages = false;
-        
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to reconnect Facebook page';
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to reconnect Facebook page';
-      return { success: false, error: error.value };
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
   const connectionInstaPage = async (type: string, pageId: string, pageName: string, accessToken: string) => {
     isLoading.value = true;
     error.value = null;
@@ -825,9 +403,7 @@ export const usePublishStore = defineStore('publish', () => {
       const result = await publishApi.connectionInstaPage(type, pageId, pageName, accessToken);
       
       if (result.success) {
-        loadingStates.value.publishStatus = false;
-        cache.value.publishStatus = null;
-        cacheValid.value.publishStatus = false;
+        publishStatus.invalidate();
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to reconnect Facebook page';
@@ -841,123 +417,6 @@ export const usePublishStore = defineStore('publish', () => {
     }
   };
 
-  const getFbCommentResponder = async (page = 1) => {
-    // Return cached comment responder if already loaded (only for first page)
-    if (page === 1 && cacheValid.value.commentResponder && cache.value.commentResponder) {
-      return { success: true, data: cache.value.commentResponder.data };
-    }
-    
-    // Prevent multiple simultaneous calls
-    if (loadingStates.value.commentResponder) {
-      return { success: false, error: 'Comment responder is already being loaded' };
-    }
-    
-    loadingStates.value.commentResponder = true;
-    error.value = null;
-    
-    try {
-      const result = await publishApi.fetchFbCommentResponder(page);
-      
-      if (result.success) {
-        // Cache the comment responder only for first page
-        if (page === 1) {
-          cache.value.commentResponder = {
-            data: result.data
-          };
-          cacheValid.value.commentResponder = true;
-        }
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to get Facebook comment responder';
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to get Facebook comment responder';
-      return { success: false, error: error.value };
-    } finally {
-      loadingStates.value.commentResponder = false;
-    }
-  };
-
-  const deleteCommentResponder = async (id: string) => {
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const result = await publishApi.deleteCommentResponder(id);
-      
-      if (result.success) {
-        // Clear cache
-        cache.value.commentResponder = null;
-        cacheValid.value.commentResponder = false;
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to delete Facebook comment responder';
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to delete Facebook comment responder';
-      return { success: false, error: error.value };
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
-  const createCommentResponder = async (data: {
-    message: string;
-    post_id: string;
-    keywords: string;
-  }) => {
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const result = await publishApi.createCommentResponder(data);
-      
-      if (result.success) {
-        // Clear cache
-        cache.value.commentResponder = null;
-        cacheValid.value.commentResponder = false;
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to create Facebook comment responder';
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to create Facebook comment responder';
-      return { success: false, error: error.value };
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
-  const updateCommentResponder = async (id: string, data: {
-    message: string;
-    post_id: string;
-    keywords: string;
-  }) => {
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const result = await publishApi.updateCommentResponder(id, data);
-      
-      if (result.success) {
-        // Clear cache
-        cache.value.commentResponder = null;
-        cacheValid.value.commentResponder = false;
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to update Facebook comment responder';
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to update Facebook comment responder';
-      return { success: false, error: error.value };
-    } finally {
-      isLoading.value = false;
-    }
-  };
 
   const updateDialog360Profile = async (profile: string, image?: File) => {
     isLoading.value = true;
@@ -992,29 +451,6 @@ export const usePublishStore = defineStore('publish', () => {
     }
   };
 
-  const getSegmentUsers = async (segmentId: string, type: string) => {
-    isLoading.value = true;
-    error.value = null;
-
-    try {
-      const result = await publishApi.getSegmentUsers(segmentId, type);
-
-      if (result.success) {
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to fetch segment users';
-        window.$toast?.error(error.value);
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to fetch segment users';
-      window.$toast?.error(error.value);
-      return { success: false, error: error.value };
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
   const loadDataForPlugins = async (data: string) => {
     loadingStates.value.pluginData = true;
     error.value = null;
@@ -1039,74 +475,37 @@ export const usePublishStore = defineStore('publish', () => {
   // SMS Templates
   // Removed getSmsTemplates method - use loadDataForPlugins directly
 
-
-  const clearFbPagesCache = () => {
-    cache.value.facebookPages = null;
-    cacheValid.value.facebookPages = false;
-  };
-
-  const clearInstaPagesCache = () => {
-    cache.value.instagramPages = null;
-    cacheValid.value.instagramPages = false;
-  };
-
-  const clearPublishStatusCache = () => {
-    cache.value.publishStatus = null;
-    cacheValid.value.publishStatus = false;
-  };
-
   const resetStore = () => {
     // Reset all cache
     cache.value = {
       whatsappTemplates: null,
-      smsTemplates: null,
       botDetails: null,
       broadcastReport: null,
-      smsReport: null,
-      thirdPartyConfig: null,
-      facebookPages: null,
-      instagramPages: null,
-      publishStatus: null,
-      commentResponder: null
     };
 
     // Reset all loading states
     loadingStates.value = {
       whatsappTemplates: false,
-      smsTemplates: false,
       botDetails: false,
       broadcastReport: false,
-      smsReport: false,
-      thirdPartyConfig: false,
-      facebookPages: false,
-      instagramPages: false,
-      publishStatus: false,
-      commentResponder: false,
       pluginData: false
     };
 
     // Reset all cache validity flags
     cacheValid.value = {
       whatsappTemplates: false,
-      smsTemplates: false,
       botDetails: false,
       broadcastReport: false,
-      smsReport: false,
-      thirdPartyConfig: false,
-      facebookPages: false,
-      instagramPages: false,
-      publishStatus: false,
-      commentResponder: false
+      publishStatus: false
     };
+
+    // Invalidate all resources
+    smsTemplates.invalidate();
   };
 
   const createTemplate = async (templateData: any, type?: string) => {
-    isLoading.value = true;
-    error.value = null;
-
     try {
       const result = await publishApi.createTemplate(templateData, type);
-
       if (result.success) {
         return { success: true, data: result.data };
       } else {
@@ -1116,8 +515,6 @@ export const usePublishStore = defineStore('publish', () => {
     } catch (err: any) {
       error.value = err.message || 'Failed to create WhatsApp template';
       return { success: false, error: error.value };
-    } finally {
-      isLoading.value = false;
     }
   };
 
@@ -1153,29 +550,6 @@ export const usePublishStore = defineStore('publish', () => {
     }
   };
 
-  const cloneSmsTemplate = async (id: number) => {
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const result = await publishApi.cloneSmsTemplate(id);
-
-      if (result.success) {
-        cache.value.smsTemplates = null;
-        cacheValid.value.smsTemplates = false;
-        return { success: true, data: result.data };
-      } else {
-        error.value = result.message || 'Failed to clone SMS template';
-        return { success: false, error: error.value };
-      }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to clone SMS template';
-      return { success: false, error: error.value };
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
   const sendSmsBroadcast = async (payload: {
     template_id: number;
     user_segment: string;
@@ -1188,9 +562,7 @@ export const usePublishStore = defineStore('publish', () => {
     try {
       const result = await publishApi.sendSmsBroadcast(payload);
       if (result.success) {
-        loadingStates.value.smsReport = false;
-        cache.value.smsReport = null;
-        cacheValid.value.smsReport = false;
+        smsReport.invalidate();
         return { success: true, data: result.data };
       } else {
         error.value = result.message || 'Failed to send SMS broadcast';
@@ -1205,6 +577,24 @@ export const usePublishStore = defineStore('publish', () => {
   };
 
   return {
+    facebookPages,
+    publishStatus,
+    commentResponder,
+    getFbCommentResponder,
+
+    // Third Party Config
+    thirdPartyConfig,
+
+    // Instagram
+    instagramPages,
+
+    // SMS Templates
+    smsTemplates,
+    smsSegmentUsers,
+    smsReport,
+    sendSmsBroadcast,
+    createTemplate,
+
     // State
     isLoading,
     error,
@@ -1214,42 +604,18 @@ export const usePublishStore = defineStore('publish', () => {
     
     // Actions
     saveLandingSettings,
-    saveTelegramSettings,
-    saveTwilioSettings,
     saveWhatsAppSettings,
     saveWebhookSettings,
-    refreshFbPagePermission,
-    removeFbPagePermission,
     getBotDetails,
-    getPublishStatus,
-    getThirdPartyConfig,
-    getSmsReport,
     fetchWhatsAppTemplates,
-    fetchSmsTemplates,
     deleteWhatsAppTemplate,
-    deleteSmsTemplate,
-    createSmsTemplate,
     getWhatsAppBroadcastReport,
-    getFbPages,
-    connectionFbPage,
-    getFbCommentResponder,
-    deleteCommentResponder,
-    createCommentResponder,
-    updateCommentResponder,
     updateDialog360Profile,
-    getSegmentUsers,
     loadDataForPlugins,
-    clearFbPagesCache,
-    clearPublishStatusCache,
-    getInstagramPages,
-    createTemplate,
     createWhatsappBroadcastTask,
     connectionInstaPage,
-    clearInstaPagesCache,
     connectCatalog,
     getCatalog,
-    cloneSmsTemplate,
-    sendSmsBroadcast,
     resetStore
   };
 }); 

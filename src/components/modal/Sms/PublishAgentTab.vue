@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import {Input, Button} from "@/components/ui";
-import { ref, watch, computed } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
+import { publishApi } from "@/services/publishApi";
+import { ThirdPartyConfig } from "@/types";
 // Props
 interface Props {
   isCheckingConfiguration?: boolean;
 }
 
-withDefaults(defineProps<Props>(), {
+const props =withDefaults(defineProps<Props>(), {
   isCheckingConfiguration: false
 });
 
@@ -16,7 +18,9 @@ const emit = defineEmits<{
   'check-configuration': [];
 }>();
 
+const publishStore = usePublishStore();
 // Twilio fields
+const twilioConfig = computed(() => publishStore.thirdPartyConfig.data?.data);
 const smsFields = ref({
   twilioAccountSid: '',
   twilioAuthToken: '',
@@ -31,11 +35,9 @@ const errors = ref({
   twilioSmsNumber: '',
 });
 
-const publishStore = usePublishStore();
 
 // Loading state
 const isLoading = ref(false);
-
 // Computed property to check if all required fields are filled
 const isFormValid = computed(() => {
   return smsFields.value.twilioAccountSid.trim() !== '' &&
@@ -43,31 +45,14 @@ const isFormValid = computed(() => {
          smsFields.value.twilioSmsNumber.trim() !== '';
 });
 
-// Load existing Twilio settings from store cache
-const loadTwilioSettings = () => {
-  if (publishStore.cache.thirdPartyConfig?.twilioConf) {
-    const twilioConfig = publishStore.cache.thirdPartyConfig.twilioConf;
-    smsFields.value = {
-      twilioAccountSid: twilioConfig.sid || '',
-      twilioAuthToken: twilioConfig.auth_token || '',
-      twilioSmsNumber: twilioConfig.number || '',
-      twilioSenderId: twilioConfig.sender_id || '',
-    };
+watch(twilioConfig, (newVal: ThirdPartyConfig) => {
+  smsFields.value = {
+    twilioAccountSid: newVal?.twilioConf?.sid || '',
+    twilioAuthToken: newVal?.twilioConf?.auth_token || '',
+    twilioSmsNumber: newVal?.twilioConf?.number || '',
+    twilioSenderId: newVal?.twilioConf?.sender_id || '',
   }
-};
-
-// Watch for when configuration checking is complete and store is loaded
-watch(() => publishStore.loadingStates.thirdPartyConfig, (newValue, oldValue) => {
-  // When loading is complete (false), load the settings
-  if (oldValue === true && newValue === false) {
-    loadTwilioSettings();
-  }
-}, { immediate: true });
-
-// Also watch the store cache directly
-watch(() => publishStore.cache.thirdPartyConfig, () => {
-  loadTwilioSettings();
-}, { immediate: true });
+})
 
 // Validation methods
 const validateForm = () => {
@@ -96,12 +81,6 @@ const validateForm = () => {
   if (!smsFields.value.twilioSmsNumber.trim()) {
     errors.value.twilioSmsNumber = 'Twilio SMS number is required';
     isValid = false;
-  } else {
-    const phoneRegex = /^\+[1-9]\d{1,14}$/;
-    if (!phoneRegex.test(smsFields.value.twilioSmsNumber.trim())) {
-      errors.value.twilioSmsNumber = 'Please enter a valid phone number with country code (e.g., +1234567890)';
-      isValid = false;
-    }
   }
 
   return isValid;
@@ -115,22 +94,22 @@ const clearErrors = () => {
   };
 };
 
-const testBot = () => {
-  isLoading.value = true;
-  try {
-    // Add actual test bot logic here
-    if (window.$toast) {
-      window.$toast.info('Bot test functionality coming soon');
-    }
-  } catch (error) {
-    console.error('Failed to test bot:', error);
-    if (window.$toast) {
-      window.$toast.error('Failed to test bot');
-    }
-  } finally {
-    isLoading.value = false;
-  }
-};
+// const testBot = () => {
+//   isLoading.value = true;
+//   try {
+//     // Add actual test bot logic here
+//     if (window.$toast) {
+//       window.$toast.info('Bot test functionality coming soon');
+//     }
+//   } catch (error) {
+//     console.error('Failed to test bot:', error);
+//     if (window.$toast) {
+//       window.$toast.error('Failed to test bot');
+//     }
+//   } finally {
+//     isLoading.value = false;
+//   }
+// };
 
 const saveSettings = async() => {
   if (!validateForm()) {
@@ -139,13 +118,19 @@ const saveSettings = async() => {
 
   isLoading.value = true;
   try {
-    const result = await publishStore.saveTwilioSettings(smsFields.value);
+    const result = await publishApi.saveTwilioSettings(smsFields.value);
     if (result.success) {
+      window.$toast.success('Twilio settings saved successfully');
       // Recheck configuration after saving
-    
+      twilioConfig.value.twilioConf.sid = smsFields.value.twilioAccountSid
+      twilioConfig.value.twilioConf.auth_token = smsFields.value.twilioAuthToken
+      twilioConfig.value.twilioConf.number = smsFields.value.twilioSmsNumber
+      twilioConfig.value.twilioConf.sender_id = smsFields.value.twilioSenderId;
+
+      publishStore.publishStatus.invalidate();
       emit('check-configuration');
     } else {
-      console.error('Failed to save Twilio settings:', result.error);
+      window.$toast.error(result.message || 'Failed to save Twilio settings');
     }
   } catch (error) {
     console.error('Failed to save Twilio settings:', error);
@@ -154,11 +139,15 @@ const saveSettings = async() => {
   }
 };
 
-// Expose methods for parent component
-defineExpose({
-  saveSettings,
-  testBot,
-});
+onMounted(() => {
+  smsFields.value = {
+    twilioAccountSid: twilioConfig.value?.twilioConf?.sid || '',
+    twilioAuthToken: twilioConfig.value?.twilioConf?.auth_token || '',
+    twilioSmsNumber: twilioConfig.value?.twilioConf?.number || '',
+    twilioSenderId: twilioConfig.value?.twilioConf?.sender_id || '',
+  }
+})
+
 </script>
 
 <template>

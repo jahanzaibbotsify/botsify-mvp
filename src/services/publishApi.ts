@@ -1,12 +1,15 @@
 import { useBotStore } from '@/stores/botStore';
 import { axiosInstance } from '@/utils/axiosInstance';
 import { APP_URL } from '@/utils/config';
+import type { 
+  BackgroundStyle, 
+  TelegramSettings, 
+  TwilioSettings, 
+  WhatsAppSettings, 
+  ApiResponse
+} from '@/types';
 
-export interface PublishResponse {
-  success: boolean;
-  message: string;
-  data?: any;
-}
+// Remove the old ApiResponse interface since we're using ApiResponse from types
 
 export class PublishApiService {
   private static instance: PublishApiService;
@@ -23,7 +26,7 @@ export class PublishApiService {
   /**
    * Save landing settings
    */
-  async saveLandingSettings(backgroundStyle: 'primary' | 'gradient' | 'secondary' | 'plain-primary' | 'plain-secondary'): Promise<PublishResponse> {
+  async saveLandingSettings(backgroundStyle: BackgroundStyle): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post('/bot/settings', {
@@ -54,12 +57,7 @@ export class PublishApiService {
   /**
    * Save Telegram settings
    */
-  async saveTelegramSettings(settings: {
-    accessToken: string;
-    botName: string;
-    telegramNumber: string;
-    telegramChatbotUrl: string;
-  }): Promise<PublishResponse> {
+  async saveTelegramSettings(settings: TelegramSettings): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post('/v1/save-telegram-conf', {
@@ -92,12 +90,7 @@ export class PublishApiService {
   /**
    * Save Twilio settings
    */
-  async saveTwilioSettings(settings: {
-    twilioAccountSid: string;
-    twilioAuthToken: string;
-    twilioSmsNumber: string;
-    twilioSenderId: string;
-  }): Promise<PublishResponse> {
+  async saveTwilioSettings(settings: TwilioSettings): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post('/v1/twilio/save-configuration', {
@@ -130,7 +123,7 @@ export class PublishApiService {
   /**
    * Get SMS report
    */
-  async getSmsReport(page: number = 1, per_page: number = 20, query?: string, start_date?: string, end_date?: string): Promise<PublishResponse> {
+  async fetchSmsReport(page: number = 1, per_page: number = 20, query?: string, start_date?: string, end_date?: string): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.get('/v1/bot/sms/report', {
@@ -165,7 +158,7 @@ export class PublishApiService {
   /**
    * Get Facebook pages
    */
-  async getFacebookPages(): Promise<PublishResponse> {
+  async getFacebookPages(): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.get('/v1/get-facebook-page', {
@@ -195,7 +188,7 @@ export class PublishApiService {
   /**
    * Get Instagram pages
    */
-  async getInstagramPages(): Promise<PublishResponse> {
+  async getInstagramPages(): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.get('/v1/get-instagram-page', {
@@ -224,7 +217,7 @@ export class PublishApiService {
   /**
    * Get bot details
    */
-  async getBotDetails(): Promise<PublishResponse> {
+  async getBotDetails(): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.get('/v1/get-bot-details', {
@@ -253,7 +246,7 @@ export class PublishApiService {
   /**
    * Get publish status
    */
-  async getPublishStatus(): Promise<PublishResponse> {
+  async getPublishStatus(): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.get('/v1/get-publish-status', {
@@ -282,7 +275,7 @@ export class PublishApiService {
   /**
    * Get third-party configurations
    */
-  async getThirdPartyConfig(): Promise<PublishResponse> {
+  async getThirdPartyConfig(): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.get('/v1/bot/get-third-party-conf', {
@@ -312,7 +305,7 @@ export class PublishApiService {
   /**
    * Refresh page permissions
    */
-  async refreshFbPagePermission(instagram?: boolean): Promise<PublishResponse> {
+  async refreshFbPagePermission(instagram?: boolean): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.get('/v1/refresh-page-permissions', {
@@ -330,7 +323,7 @@ export class PublishApiService {
     }
   }
 
-  async connectionFbPage(type: string, pageId: string, pageName: string, accessToken: string): Promise<PublishResponse> {
+  async connectionFbPage(type: string, pageId: string, pageName: string, accessToken: string): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post(`/v1/facebook-connection`, {
@@ -349,7 +342,7 @@ export class PublishApiService {
   }
 
   
-  async connectionInstaPage(type: string, pageId: string, page_name: string, accessToken: string): Promise<PublishResponse> {
+  async connectionInstaPage(type: string, pageId: string, page_name: string, accessToken: string): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post(`/v1/instagram-connection`, {
@@ -372,7 +365,7 @@ export class PublishApiService {
   /**
    * Remove page permissions
    */
-  async removeFbPagePermission(instagram?: boolean): Promise<PublishResponse> {
+  async removeFbPagePermission(instagram?: boolean): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.get('/v1/remove-page-permissions', {
@@ -402,20 +395,7 @@ export class PublishApiService {
   /**
    * Save WhatsApp settings (unified for both Dialog360 and Meta)
    */
-  async saveWhatsAppSettings(settings: {
-    api_key: string;
-    bot_id: string;
-    client_id?: string | null;
-    client_secret?: string | null;
-    interactive_buttons?: boolean;
-    req_type?: string;
-    temporary_token?: string | null;
-    type: '360_dialog' | 'meta';
-    webhook?: string;
-    whatsapp: string;
-    whatsapp_account_id?: string | null;
-    whatsapp_phone_id?: string | null;
-  }): Promise<PublishResponse> {
+  async saveWhatsAppSettings(settings: WhatsAppSettings): Promise<ApiResponse> {
     try {      
       const {apiKey} = useBotStore();
       // Determine endpoint based on type
@@ -475,7 +455,7 @@ export class PublishApiService {
   /**
    * Fetch WhatsApp templates
    */
-  async fetchWhatsAppTemplates(page: number = 1, perPage: number = 20, query?: string): Promise<PublishResponse> {
+  async fetchWhatsAppTemplates(page: number = 1, perPage: number = 20, query?: string): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const params: any = {
@@ -514,7 +494,7 @@ export class PublishApiService {
   /**
    * Fetch SMS templates
    */
-  async fetchSmsTemplates(page: number = 1, perPage: number = 20, query?: string): Promise<PublishResponse> {
+  async fetchSmsTemplates(page: number = 1, perPage: number = 20, query?: string): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const params: any = {
@@ -555,7 +535,7 @@ export class PublishApiService {
   /**
    * Delete WhatsApp template
    */
-  async deleteWhatsAppTemplate(id: number): Promise<PublishResponse> {
+  async deleteWhatsAppTemplate(id: number): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post('/v1/media-block/delete', {
@@ -585,7 +565,7 @@ export class PublishApiService {
   /**
    * Delete SMS template
    */
-  async deleteSmsTemplate(id: number): Promise<PublishResponse> {
+  async deleteSmsTemplate(id: number): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.delete(`/v1/template/${id}`, {
@@ -612,7 +592,7 @@ export class PublishApiService {
     }
   }
 
-  async createTemplate(templateData: any, type: string = ""): Promise<PublishResponse> {
+  async createTemplate(templateData: any, type: string = ""): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post(`/v1/media-block/create/${type}`, {
@@ -640,7 +620,7 @@ export class PublishApiService {
   }
 
 
-  async cloneSmsTemplate(id: number): Promise<PublishResponse> {
+  async cloneSmsTemplate(id: number): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post(`/v1/template/clone/${id}`, {
@@ -671,7 +651,7 @@ export class PublishApiService {
     user_segment: string;
     users: Array<{ phone_number: string }>;
     send_at?: string | null;
-  }): Promise<PublishResponse> {
+  }): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.get('/v1/schedule/task/sms-broadcast/create', {
@@ -712,7 +692,7 @@ export class PublishApiService {
     query?: string;
     start_date?: string;
     end_date?: string;
-  }): Promise<PublishResponse> {
+  }): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post('/v1/whatsapp-broadcast-report', {
@@ -744,7 +724,7 @@ export class PublishApiService {
   /**
    * Fetch Facebook comment auto responders
    */
-  async fetchFbCommentResponder(page = 1): Promise<PublishResponse> {
+  async fetchFbCommentResponder(page = 1): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.get('/v1/bot/growth-tools/aquire-users-from-comments', {
@@ -775,7 +755,7 @@ export class PublishApiService {
   /**
    * Delete comment auto responder
    */
-  async deleteCommentResponder(id: string): Promise<PublishResponse> {
+  async deleteCommentResponder(id: string): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.delete(`/v1/bot/comment-optin/delete/${id}`, {
@@ -809,7 +789,7 @@ export class PublishApiService {
     message: string;
     post_id: string;
     keywords: string;
-  }): Promise<PublishResponse> {
+  }): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post('/v1/bot/comment-optin/store', {
@@ -845,7 +825,7 @@ export class PublishApiService {
     message: string;
     post_id: string;
     keywords: string;
-  }): Promise<PublishResponse> {
+  }): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post(`/v1/bot/comment-optin/update/${id}`, {
@@ -853,7 +833,6 @@ export class PublishApiService {
         message: data.message,
         post_id: data.post_id,
         keywords: data.keywords,
-        template_id: id
       }, {
         timeout: 30000 // 30 seconds timeout
       });
@@ -878,7 +857,7 @@ export class PublishApiService {
   /**
    * Load data for plugins (optin templates and posts)
    */
-  async loadDataForPlugins(data: string): Promise<PublishResponse> {
+  async loadDataForPlugins(data: string): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post('/v1/load-data-for-plugins', {
@@ -904,7 +883,7 @@ export class PublishApiService {
     tag: string;
     type: number;
     user_segment: string;
-  }): Promise<PublishResponse> {
+  }): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       
@@ -941,7 +920,7 @@ export class PublishApiService {
     user_segment: string;
     users: Array<{ phone_number: string }>;
     template_data?: string | null;
-  }): Promise<PublishResponse> {
+  }): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       
@@ -984,7 +963,7 @@ export class PublishApiService {
     catalog_access_token: string;
     order_webhook?: string;
     catalog_id?: string | null;
-  }): Promise<PublishResponse> {
+  }): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post('/v1/bot/whatsapp/webhook/update', {
@@ -1013,7 +992,7 @@ export class PublishApiService {
   /**
    * Connect/disconnect catalog
    */
-  async connectCatalog(url: string): Promise<PublishResponse> {
+  async connectCatalog(url: string): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.post(url, {
@@ -1041,7 +1020,7 @@ export class PublishApiService {
   /**
    * Get catalog data
    */
-  async getCatalog(): Promise<PublishResponse> {
+  async getCatalog(): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.get('/v1/bot/whatsapp/catalogs', {
@@ -1070,7 +1049,7 @@ export class PublishApiService {
   /**
    * Update WhatsApp Dialog360 profile
    */
-  async updateDialog360Profile(profile: string, image?: File): Promise<PublishResponse> {
+  async updateDialog360Profile(profile: string, image?: File): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       
@@ -1108,7 +1087,7 @@ export class PublishApiService {
   /**
    * Get segment users
    */
-  async getSegmentUsers(segmentId: string, type: string): Promise<PublishResponse> {
+  async getSegmentUsers(segmentId: string, type: string): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
       

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from "vue";
 import {FileUpload, Button, VueSelect} from "@/components/ui";
 import { usePublishStore } from "@/stores/publishStore";
+import { SmsTemplate } from "@/types";
 
 // Props
 interface Props {
@@ -23,19 +24,19 @@ const broadcastForm = ref({
 
 const publishStore = usePublishStore();
 
+const smsTemplates = computed(() => publishStore.smsTemplates.data);
+const smsTemplatesLoading = computed(() => publishStore.smsTemplates.loading);
+
+const subscribedUsers = computed(() => publishStore.smsSegmentUsers.data?.data);
+const subscribedUsersLoading = computed(() => publishStore.smsSegmentUsers.loading);
+
 // Loading states
 const isSendingBroadcast = ref(false);
-const isLoadingData = ref(false);
 const isDownloadingSample = ref(false);
-
-// Add subscribed users state
-const subscribedUsers = ref<Array<{phone_number: string}>>([]);
-const isLoadingSubscribedUsers = ref(false);
 
 
 // Message templates
 const messageTemplates = ref<Array<{value: string, label: string}>>([]);
-const fullTemplates = ref<Array<any>>([]);
 
 // User segments with proper structure
 const userSegments = ref([
@@ -68,39 +69,8 @@ const templateError = ref('');
 const userSegmentError = ref('');
 const fileUploadError = ref('');
 
-// Methods
-const loadData = async () => {
-  isLoadingData.value = true;
-  try {
-    const result = await publishStore.loadDataForPlugins("test_users,sms_templates,user_task");
-    if (result.success && result.data) {
-      // Update segments with additional data
-      if (result.data.segments) {
-        userSegments.value = userSegments.value.concat(result.data.segments);
-      }
-      
-      // Set broadcast limits
-      if (result.data.limits) {
-        setBroadcastRemainingLimits(result.data.limits);
-      }
-      
-      // Update message templates
-      if (result.data.sms_templates) {
-        fullTemplates.value = result.data.sms_templates;
-        messageTemplates.value = result.data.sms_templates.map((template: any) => ({
-          value: template.id,
-          label: template.name
-        }));
-      }
-    }
-  } catch (error) {
-    console.error('Failed to load broadcast data:', error);
-  } finally {
-    isLoadingData.value = false;
-  }
-};
 
-const setBroadcastRemainingLimits = (remLimit: any) => {
+const setBroadcastRemainingLimits = (remLimit: {daily: number, monthly: number}) => {
   const calculated = {
     daily: limits.value.daily - remLimit.daily,
     monthly: limits.value.monthly - remLimit.monthly
@@ -119,7 +89,7 @@ const setBroadcastRemainingLimits = (remLimit: any) => {
 
 const handleTemplateChange = (selectedTemplate: any) => {
   // Load template content based on selection
-  const selectedTemplateData = fullTemplates.value.find(t => t.id?.toString() === selectedTemplate);
+  const selectedTemplateData = smsTemplates.value?.data.templates.data.find((t: SmsTemplate) => t.id?.toString() === selectedTemplate);
   if (selectedTemplateData && selectedTemplateData.text) {
     broadcastForm.value.message = selectedTemplateData.text;
   }
@@ -221,7 +191,7 @@ const sendBroadcast = async () => {
 
 const executeBroadcast = async () => {
   isSendingBroadcast.value = true;
-  
+  console.log(subscribedUsers.value, "subscribedUsers")
   try {
     // Prepare payload according to the specified structure
     const payload = {
@@ -271,33 +241,22 @@ const downloadSampleFile = async () => {
   }
 };
 
-const fetchSubscribedUsers = async () => {
-  if (isLoadingSubscribedUsers.value) return;
-  
-  isLoadingSubscribedUsers.value = true;
-  try {
-    const result = await publishStore.getSegmentUsers('-1', 'sms');
-    if (result.success && result.data) {
-      subscribedUsers.value = result.data.map((user: any) => ({
-        phone_number: user.phone_number || user.phone || user.phoneNumber
-      }));
-    }
-  } catch (error) {
-    console.error('Error fetching subscribed users:', error);
-    window.$toast?.error('Failed to fetch subscribed users');
-  } finally {
-    isLoadingSubscribedUsers.value = false;
-  }
-};
-
 // Load data on mount
-onMounted(() => {
-  loadData();
+onMounted(async() => {
+  await publishStore.smsTemplates.load();
+  setBroadcastRemainingLimits({
+    daily: smsTemplates.value?.data.templates.total,
+    monthly: smsTemplates.value?.data.templates.total
+  });
+  messageTemplates.value = smsTemplates.value?.data.templates.data.map((template: SmsTemplate) => ({
+    value: template.id,
+    label: template.name
+  }));
 });
 
 watch(() => broadcastForm.value.userSegment, (newSegment) => {
   if (newSegment === '-1') {
-    fetchSubscribedUsers();
+    publishStore.smsSegmentUsers.load();
   }
 });
 
@@ -312,11 +271,6 @@ watch(() => broadcastForm.value.uploadedFile, (newFile) => {
   }
 });
 
-// Expose methods for parent component
-defineExpose({
-  sendBroadcast,
-  isSendingBroadcast
-});
 </script>
 
 <template>
@@ -325,7 +279,7 @@ defineExpose({
     <p class="subtitle">Send broadcast messages to your audience</p>
     
     <!-- Loading State -->
-    <div v-if="isLoadingData" class="loading-state">
+    <div v-if="smsTemplatesLoading" class="loading-state">
       <div class="loader-spinner"></div>
       <span>Loading broadcast data...</span>
     </div>
@@ -358,7 +312,7 @@ defineExpose({
                   
                 <!-- Show loading and user count for subscribed users -->
                 <div v-if="broadcastForm.userSegment === '-1'" class="subscribed-users-info">
-                  <div v-if="isLoadingSubscribedUsers" class="loading-indicator">
+                  <div v-if="subscribedUsersLoading" class="loading-indicator">
                     <i class="pi pi-spin pi-spinner"></i>
                     <span>Loading users...</span>
                   </div>
@@ -367,7 +321,7 @@ defineExpose({
                     <span>{{ subscribedUsers.length }} users</span>
                   </div>
                   <div v-else class="no-users">
-                    <i class="pi pi-exclamation-triangle"></i>
+                    <i class="pi pi-exclamation-triangle"></i>&nbsp;
                     <span>No users found</span>
                   </div>
                 </div>
@@ -448,8 +402,8 @@ defineExpose({
       <Button 
         variant="primary"
         size="medium"
-        :loading="isSendingBroadcast || isLoadingSubscribedUsers"
-        :disabled="isSendingBroadcast || isLoadingSubscribedUsers"
+        :loading="isSendingBroadcast"
+        :disabled="!broadcastForm.template || !broadcastForm.userSegment || (!broadcastForm.uploadedFile && broadcastForm.userSegment === '-1') || (!uploadedUsers.length && broadcastForm.userSegment === 'file') || isSendingBroadcast"
         @click="sendBroadcast"
       >
         {{ isSendingBroadcast ? 'Sending...' : 'Send message' }}

@@ -3,6 +3,8 @@ import { ref, onMounted, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 import { Button, VueSelect, Textarea, Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Pagination } from "@/components/ui"
 import Input from "@/components/ui/Input.vue";
+import { publishApi } from "@/services/publishApi";
+import { CommentResponder } from "@/types";
 
 // Store
 const publishStore = usePublishStore();
@@ -54,9 +56,9 @@ const editResponder = ref({
 });
 
 // Computed properties for store state
-const storeCommentResponders = computed(() => publishStore.cache.commentResponder);
-const storeCommentRespondersLoaded = computed(() => publishStore.cacheValid.commentResponder);
-const storeIsLoadingCommentResponders = computed(() => publishStore.loadingStates.commentResponder);
+const storeCommentResponders = computed(() => publishStore.commentResponder.data);
+const storeCommentRespondersLoaded = computed(() => publishStore.commentResponder.valid);
+const storeIsLoadingCommentResponders = computed(() => publishStore.commentResponder.loading);
 
 // Computed post options for VueSelect
 const postOptions = computed(() => {
@@ -105,20 +107,29 @@ const saveEditAutoResponder = async () => {
 
   isLoading.value = true;
   try {
-    const result = await publishStore.updateCommentResponder(editResponder.value.id, {
+    const result = await publishApi.updateCommentResponder(editResponder.value.id, {
       message: editResponder.value.message,
       post_id: editResponder.value.selectedPost,
       keywords: editResponder.value.keywords
     });
 
     if (result.success) {
-      // Refresh the list on current page
-      await loadCommentResponders(currentPage.value);
+      // Update local state instead of refreshing
+      const index = autoResponders.value.findIndex(r => r.id === editResponder.value.id);
+      if (index !== -1) {
+        autoResponders.value[index] = {
+          id: editResponder.value.id,
+          keywords: editResponder.value.keywords.split(',').map(k => k.trim()),
+          selectedPost: editResponder.value.selectedPost,
+          message: editResponder.value.message,
+          isActive: true
+        };
+      }
       cancelEditing();
       window.$toast.success('Auto responder updated successfully!');
     } else {
-      console.error('Failed to update auto responder:', result.error);
-      window.$toast.error(result.error || 'Failed to update auto responder');
+      console.error('Failed to update auto responder:', result.message);
+      window.$toast.error(result.message || 'Failed to update auto responder');
     }
   } catch (error) {
     console.error('Failed to update auto responder:', error);
@@ -136,20 +147,31 @@ const saveNewAutoResponder = async () => {
 
   isLoading.value = true;
   try {
-    const result = await publishStore.createCommentResponder({
+    const result = await publishApi.createCommentResponder({
       message: newResponder.value.message,
       post_id: newResponder.value.selectedPost,
       keywords: newResponder.value.keywords
     });
 
     if (result.success) {
-      // Refresh the list on current page
-      await loadCommentResponders(currentPage.value);
+      // Add to local state instead of refreshing
+      const newAutoResponder = {
+        id: result.data.id || Date.now().toString(), // Use API response ID or fallback
+        keywords: newResponder.value.keywords.split(',').map(k => k.trim()),
+        selectedPost: newResponder.value.selectedPost,
+        message: newResponder.value.message,
+        isActive: true
+      };
+      autoResponders.value.unshift(newAutoResponder);
+      
+      // Update total count
+      totalItems.value += 1;
+      
       cancelAddingNew();
       window.$toast.success('Auto responder created successfully!');
     } else {
-      console.error('Failed to create auto responder:', result.error);
-      window.$toast.error(result.error || 'Failed to create auto responder');
+      console.error('Failed to create auto responder:', result.message);
+      window.$toast.error(result.message || 'Failed to create auto responder');
     }
   } catch (error) {
     console.error('Failed to create auto responder:', error);
@@ -181,15 +203,20 @@ const performDelete = async (id: string) => {
   isLoading.value = true;
   deleteResponderId.value = id;
   try {
-    const result = await publishStore.deleteCommentResponder(id);
+    const result = await publishApi.deleteCommentResponder(id);
 
     if (result.success) {
-      // Refresh the list on current page
-      await loadCommentResponders(currentPage.value);
+      // Remove from local state instead of refreshing
+      const index = autoResponders.value.findIndex(r => r.id === id);
+      if (index !== -1) {
+        autoResponders.value.splice(index, 1);
+        // Update total count
+        totalItems.value = Math.max(0, totalItems.value - 1);
+      }
       window.$toast.success('Auto responder deleted successfully!');
     } else {
-      console.error('Failed to delete auto responder:', result.error);
-      window.$toast.error(result.error || 'Failed to delete auto responder');
+      console.error('Failed to delete auto responder:', result.message);
+      window.$toast.error(result.message || 'Failed to delete auto responder');
     }
   } catch (error) {
     console.error('Failed to delete auto responder:', error);
@@ -217,52 +244,37 @@ const loadCommentResponders = async (page = 1) => {
 };
 
 const transformAndSetData = () => {
-  if (!storeCommentResponders.value || !storeCommentResponders.value.data) {
+  if (!storeCommentResponders.value) {
     return;
-  }
-  
-  const optins = storeCommentResponders.value.data.optins || {};
-  posts.value = storeCommentResponders.value.data.facebook_posts.data || [];
-
+  };
+  // The data structure is now directly from the API response
+  const response = storeCommentResponders.value.data.optins;
+  posts.value = storeCommentResponders.value.data.facebook_posts?.data || [];
   // Set pagination data
-  currentPage.value = optins.current_page || 1;
-  totalPages.value = optins.last_page || 1;
-  totalItems.value = optins.total || 0;
-  itemsPerPage.value = optins.per_page || 20;
+  currentPage.value = response.current_page || 1;
+  totalPages.value = response.last_page || 1;
+  totalItems.value = response.total || 0;
+  itemsPerPage.value = response.per_page || 20;
   
-  // Transform the data array
-  const optinsData = optins.data || [];
+  // Transform the data array - the API returns CommentResponder[] directly
+  const respondersData = response.data || [];
   
-  autoResponders.value = optinsData.map((item: any) => {
-    // Parse the optin_json if it exists
-    let parsedData = {
-      keywords: item.keyword || '',
-      post_id: item.post_id || '',
-      message: '',
-      is_active: true
-    };
-    
-    // Try to parse optin_json if it exists
-    if (item.optin_json) {
-      try {
-        const jsonData = JSON.parse(item.optin_json);
-        parsedData = {
-          keywords: jsonData.keywords || item.keyword || '',
-          post_id: jsonData.post_id || item.post_id || '',
-          message: jsonData.message || '',
-          is_active: true
-        };
-      } catch (e) {
-        console.warn('Failed to parse optin_json:', e);
-      }
+  autoResponders.value = respondersData.map((item: CommentResponder) => {
+    // Parse the keywords if they're stored as a string
+    const optinJson = JSON.parse(item.optin_json);
+    let keywords: string[] = [];
+    if (typeof optinJson.keywords === 'string') {
+      keywords = optinJson.keywords.split(',').map((k: string) => k.trim());
+    } else if (Array.isArray(optinJson.keywords)) {
+      keywords = optinJson.keywords;
     }
     
     return {
       id: item.id.toString(),
-      keywords: parsedData.keywords ? parsedData.keywords.split(',').map((k: string) => k.trim()) : [],
-      selectedPost: parsedData.post_id || '',
-      message: parsedData.message || '',
-      isActive: parsedData.is_active || true
+      keywords: keywords,
+      selectedPost: item.post_id || '',
+      message: optinJson.message || '',
+      isActive: item.status === 'active' || true
     };
   });
 };
@@ -273,20 +285,15 @@ const handlePageChange = (page: number) => {
 };
 
 // Load data on mount
-onMounted(() => {
-  // Load comment responders
+onMounted(async () => {
+  // Load comment responders using the new caching system
   if (!storeCommentRespondersLoaded.value) {
-    loadCommentResponders();
+    await loadCommentResponders();
   } else if (storeCommentResponders.value) {
     transformAndSetData();
   }
 });
 
-// Expose methods for parent component
-defineExpose({
-  autoResponders,
-  loadCommentResponders
-});
 </script>
 
 <template>
@@ -437,15 +444,17 @@ defineExpose({
     <div v-if="autoResponders.length > 0" class="responders-section">
       <div class="section-header">
         <h4>Auto responders ({{ autoResponders.length }})</h4>
-        <Button 
-          v-if="!isAddingNew && !isEditing"
-          variant="primary"
-          :loading="isLoading"
-          icon="pi pi-plus"
-          @click="startAddingNew"
-        >
-          Add New
-        </Button>
+        <div class="header-actions">
+          <Button 
+            v-if="!isAddingNew && !isEditing"
+            variant="primary"
+            :loading="isLoading"
+            icon="pi pi-plus"
+            @click="startAddingNew"
+          >
+            Add New
+          </Button>
+        </div>
       </div>
       <Table>
         <TableHead>
@@ -597,6 +606,12 @@ defineExpose({
   color: var(--color-text-primary, #111827);
 }
 
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 /* Table Styles */
 .keywords-cell {
   display: flex;
@@ -645,6 +660,11 @@ defineExpose({
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
   }
   
   .keywords-cell {

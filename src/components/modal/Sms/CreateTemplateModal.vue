@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import { PublishModalLayout } from "@/components/ui";
 import { Button, Textarea, Input } from "@/components/ui";
 import { usePublishStore } from "@/stores/publishStore";
-import { eventBus } from "@/utils/eventBus";
+import type { SmsTemplate, SmsTemplateButton } from "@/types/publish";
+import { publishApi } from "@/services/publishApi";
 
 // Props
 interface Props {
@@ -16,8 +17,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Emits
 const emit = defineEmits<{
-  'create-template': [template: any];
-  'update-template': [template: any];
+  'create-template': [template: SmsTemplate];
+  'update-template': [template: SmsTemplate];
   'modal-closed': [];
 }>();
 
@@ -89,8 +90,8 @@ const resetForm = () => {
 };
 
 // Button management
-const addButton = (type: string) => {
-  const newButton = {
+const addButton = (type: SmsTemplateButton['type']) => {
+  const newButton: SmsTemplateButton = {
     api: 0,
     error: false,
     payload: '',
@@ -168,9 +169,9 @@ const cancelButtonEdit = (index: number) => {
 };
 
 // Template operations
-const createTemplate = async (templateData: any) => {
+const createTemplate = async (templateData: Partial<SmsTemplate>) => {
   try {
-    const result = await publishStore.createSmsTemplate(templateData);
+    const result = await publishApi.createTemplate(templateData, 'sms');
     return result;
   } catch (error) {
     console.error('Failed to create template:', error);
@@ -178,18 +179,16 @@ const createTemplate = async (templateData: any) => {
   }
 };
 
-const updateTemplate = async (id: number, templateData: any) => {
+const updateTemplate = async (id: number, templateData: Partial<SmsTemplate>) => {
   try {
-    const result = await publishStore.createSmsTemplate({
-      id,
-      ...templateData
-    });
+    const payload = {id, ...templateData}
+    const result = await publishApi.createTemplate(payload, 'sms');
     return result;
   } catch (error) {
     console.error('Failed to update template:', error);
     return { success: false, error };
   }
-};
+ };
 
 const openModal = () => {
   modalRef.value?.openModal();
@@ -250,23 +249,32 @@ const handleSave = async () => {
   try {
     if (isEditMode.value && editingTemplateId.value) {
       // Update existing template
-      const result = await updateTemplate(editingTemplateId.value, form.value);
+      const result = await updateTemplate(editingTemplateId.value, form.value as Partial<SmsTemplate>);
       if (result?.success) {
+        publishStore.smsTemplates.invalidate();
         window.$toast?.success('Template updated successfully!');
-        emit('update-template', { ...form.value, id: editingTemplateId.value });
+        emit('update-template', { 
+          ...form.value, 
+          id: editingTemplateId.value,
+          type: 'sms',
+          status: 'active',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        } as SmsTemplate);
         closeModal();
       } else {
-        window.$toast?.error(result?.error || 'Failed to update template');
+        window.$toast?.error('Failed to update template');
       }
     } else {
       // Create new template
-      const result = await createTemplate(form.value);
+      const result = await createTemplate(form.value as SmsTemplate);
       if (result?.success && 'data' in result && result.data) {
+        publishStore.smsTemplates.invalidate();
         window.$toast?.success('Template created successfully!');
-        emit('create-template', result.data);
+        emit('create-template', result.data as SmsTemplate);
         closeModal();
       } else {
-        window.$toast?.error(result?.error || 'Failed to create template');
+        window.$toast?.error('Failed to create template');
       }
     }
   } catch (error) {
@@ -288,14 +296,7 @@ const buttonTypes = [
   { label: 'Phone Number', value: 'phone_number' as const }
 ];
 
-// Event listeners
-onMounted(() => {
-  // Listen for template creation events
-  eventBus.on('template:created', ( ) => {
-    // Refresh templates in parent
-    eventBus.emit('sms:template:refresh');
-  });
-});
+
 
 defineExpose({ openModal, closeModal, openModalWithData });
 </script>

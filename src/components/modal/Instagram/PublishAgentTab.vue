@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 import Button from "@/components/ui/Button.vue";
 import { APP_URL } from "@/utils/config";
+import { InstagramPage } from "@/types";
+import { publishApi } from "@/services/publishApi";
 
 // Props - removed isLoading as it's not needed from parent
 
@@ -15,21 +17,23 @@ const isRefreshLoading = ref(false);
 const isRemoveLoading = ref(false);
 
 // Computed properties to sync with store state
-const storePages = computed(() => publishStore.cache.instagramPages);
-const storePagesLoaded = computed(() => publishStore.cacheValid.instagramPages);
-const storeIsLoadingPages = computed(() => publishStore.loadingStates.instagramPages);
+
+// Computed properties to sync with store state
+const storePages = computed(() => publishStore.facebookPages.data);
+const storePagesLoaded = computed(() => publishStore.facebookPages.valid);
+const storeIsLoadingPages = computed(() => publishStore.facebookPages.loading);
 
 // Computed pages data from store
 const pages = computed(() => {
-  const pagesData = storePages.value?.pagesData || [];
-  const currentPageId = storePages.value?.pageId;
+  const pagesData = storePages.value?.data?.pagesData?.data || [];
+  const currentPageId = storePages.value?.data.pageId;
 
   if (!Array.isArray(pagesData) || pagesData.length === 0) {
     return [];
   }
   return pagesData.map((page: any) => {
-    const ig = page.instagram_business_account || {};
-
+    const ig: InstagramPage = page.instagram_business_account || {};
+    console.log(ig, "ig")
     return {
       id: page.id,
       name: ig.name || page.name || 'Untitled',
@@ -50,38 +54,19 @@ const showConnectButton = computed(() => {
   return !storePagesLoaded.value || pages.value.length === 0;
 });
 
-// Load Instagram pages
-const loadInstaPages = async () => {
-  // Check if we're already loading
-  if (storeIsLoadingPages.value) {
-    return;
-  }
-  
-  try {
-    await publishStore.getInstagramPages();
-    // The computed pages will automatically update when store data changes
-  } catch (error) {
-    console.error('Failed to load Instagram pages:', error);
-  }
-};
-
 const connectAccount = async () => {
   isConnectLoading.value = true;
   try {
-    const result = await publishStore.refreshFbPagePermission(true);
+    const result = await publishApi.refreshFbPagePermission(true);
     if (result.success && result.data?.redirect) {
       openAuthPopup(result.data.redirect, 'connection');
     } else {
-      console.error('Failed to get redirect URL:', result.error);
-      if (window.$toast) {
-        window.$toast.error(result.error || 'Failed to get authentication URL');
-      }
+      console.error('Failed to get redirect URL:', result);
+      window.$toast.error(result?.message || 'Failed to get authentication URL');
     }
   } catch (error) {
     console.error('Failed to connect account:', error);
-    if (window.$toast) {
-      window.$toast.error('Failed to connect Instagram account');
-    }
+    window.$toast.error('Failed to connect Instagram account');
   } finally {
     isConnectLoading.value = false;
   }
@@ -94,25 +79,17 @@ const connectionPage = async (type: string, page: any) => {
     isDisconnectLoading.value = true;
   }
   try {
-    const result = await publishStore.connectionInstaPage(type, page.id, page.name, page.accessToken);
+    const result = await publishApi.connectionInstaPage(type, page.id, page.name, page.accessToken);
     if (result.success) {
       // Clear cache and reload pages to update the status
-      publishStore.clearInstaPagesCache();
-      await loadInstaPages();
-      if (window.$toast) {
-        window.$toast.success(`Page ${type}ed successfully!`);
-      }
+      window.$toast.success(`Page ${type}ed successfully!`);
+      publishStore.instagramPages.load(true);
     } else {
-      console.error('Failed to connect page:', result.error);
-      if (window.$toast) {
-        window.$toast.error(result.error || 'Failed to connect page');
-      }
+      window.$toast.error(result?.message || 'Failed to connect page');
     }
   } catch (error) {
     console.error('Failed to connect page:', error);
-    if (window.$toast) {
-      window.$toast.error('Failed to connect page');
-    }
+    window.$toast.error('Failed to connect page');
   } finally {
     isConnectLoading.value = false;
     isDisconnectLoading.value = false;
@@ -127,20 +104,15 @@ const openInstagramPage = (pageId: string) => {
 const refreshFbPagePermissions = async () => {
   isRefreshLoading.value = true;
   try {
-    const result = await publishStore.refreshFbPagePermission(true);
+    const result = await publishApi.refreshFbPagePermission(true);
     if (result.success && result.data?.redirect) {
       openAuthPopup(result.data.redirect, 'permission refresh');
     } else {
-      console.error('Failed to get redirect URL:', result.error);
-      if (window.$toast) {
-        window.$toast.error(result.error || 'Failed to get authentication URL');
-      }
+      window.$toast.error(result?.message || 'Failed to get authentication URL');
     }
   } catch (error) {
     console.error('Failed to refresh page permissions:', error);
-    if (window.$toast) {
-      window.$toast.error('Failed to refresh Instagram permissions');
-    }
+    window.$toast.error('Failed to refresh Instagram permissions');
   } finally {
     isRefreshLoading.value = false;
   }
@@ -149,20 +121,15 @@ const refreshFbPagePermissions = async () => {
 const removeFbPagePermissions = async () => {
   isRemoveLoading.value = true;
   try {
-    const result = await publishStore.removeFbPagePermission();
+    const result = await publishApi.removeFbPagePermission();
     if (result.success && result.data?.redirect) {
       openAuthPopup(result.data.redirect, 'permission removal');
     } else {
-      console.error('Failed to get redirect URL:', result.error);
-      if (window.$toast) {
-        window.$toast.error(result.error || 'Failed to get authentication URL');
-      }
+      window.$toast.error(result?.message || 'Failed to get authentication URL');
     }
   } catch (error) {
     console.error('Failed to remove page permissions:', error);
-    if (window.$toast) {
-      window.$toast.error('Failed to remove Instagram permissions');
-    }
+    window.$toast.error('Failed to remove Instagram permissions');
   } finally {
     isRemoveLoading.value = false;
   }
@@ -203,7 +170,7 @@ const openAuthPopup = (url: string, action: string) => {
     if (event.data.type === 'INSTAGRAM_AUTH_SUCCESS') {
       popup.close();
       window.removeEventListener('message', messageHandler);
-      loadInstaPages();
+      publishStore.instagramPages.load(true);
       window.$toast?.success(`Facebook ${action} completed successfully!`);
     } else if (event.data.type === 'INSTAGRAM_AUTH_ERROR') {
       popup.close();
@@ -221,7 +188,7 @@ const openAuthPopup = (url: string, action: string) => {
         popup.close();
         clearInterval(checkClosed);
         window.removeEventListener('message', messageHandler);
-        loadInstaPages();
+        publishStore.instagramPages.load(true);
         window.$toast?.success(`Instagram ${action} completed successfully!`);
       }
     } catch {
@@ -232,7 +199,7 @@ const openAuthPopup = (url: string, action: string) => {
     if (popup.closed) {
       clearInterval(checkClosed);
       window.removeEventListener('message', messageHandler);
-      loadInstaPages();
+      publishStore.instagramPages.load(true);
     }
   }, 1000);
   
@@ -248,19 +215,6 @@ const formatFollowerCount = (count: number) => {
   }
   return count.toString();
 };
-
-// Load data when component mounts
-onMounted(() => {
-  // Only load if not already loaded in store
-  if (!storePagesLoaded.value) {
-    loadInstaPages();
-  }
-});
-
-// Expose methods for parent component
-defineExpose({
-  loadInstaPages
-});
 </script>
 
 <template>

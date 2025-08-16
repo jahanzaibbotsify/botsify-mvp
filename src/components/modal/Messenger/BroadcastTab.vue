@@ -113,12 +113,6 @@ const performSendMessage = async () => {
   }
 };
 
-// Expose methods for parent component
-defineExpose({
-  isLoading,
-  noTestUser,
-  sendMessage
-});
 </script>
 
 <template>

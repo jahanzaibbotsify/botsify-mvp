@@ -36,47 +36,33 @@ const emit = defineEmits<{
   back: [];
 }>();
 
-// Reactive data
-const isLoading = ref(false);
-const isSmsConfigured = ref(false);
-const isCheckingConfiguration = ref(false);
-
-// Check if SMS is configured
-const checkSmsConfiguration = async () => {
-  isCheckingConfiguration.value = true;
-  try {
-    const result = await publishStore.getThirdPartyConfig();
-    if (result.success && result.data?.twilioConf) {
-      const twilioConfig = result.data.twilioConf;
-      // Check if all required Twilio fields are filled
-      isSmsConfigured.value = !!(twilioConfig.sid && twilioConfig.auth_token && twilioConfig.number);
-    } else {
-      isSmsConfigured.value = false;
-    }
-  } catch (error) {
-    console.error('Failed to check SMS configuration:', error);
-    isSmsConfigured.value = false;
-  } finally {
-    isCheckingConfiguration.value = false;
-  }
-};
+// Loading state from store
+const isLoading = computed(() => publishStore.thirdPartyConfig.loading);
+const isConfigured = ref(false);
 
 // Override computedTabs to include disabled state based on configuration
 const smsComputedTabs = computed(() => {
   return tabs.map(tab => ({
     ...tab,
-    disabled: tab.id !== 'publish-agent' && !isSmsConfigured.value
+    disabled: tab.id !== 'publish-agent' && !isConfigured.value
   }));
 });
+// Configuration check
+const checkConfiguration = () => {
+  const config = publishStore.thirdPartyConfig.data?.data;
+  if (config && config.twilioConf) {
+    const twilioConfig = config.twilioConf;
+    isConfigured.value = !!(twilioConfig.sid && twilioConfig.auth_token && twilioConfig.number);
+  } else {
+    isConfigured.value = false;
+  }
+};
 
-const openModal = () => {
+
+const openModal = async () => {
   modalRef.value?.openModal();
-  checkSmsConfiguration();
-  
-  // Default to 'publish-agent' tab
-  const tabToOpen = 'publish-agent';
-  // Change tab directly
-  handleTabChange(tabToOpen);
+  await publishStore.thirdPartyConfig.load();
+  await checkConfiguration();
 };
 
 const closeModal = () => {
@@ -89,7 +75,7 @@ const handleBack = () => {
 
 const onTabChange = (tabId: string) => {
   // Only allow tab change if SMS is configured or if it's the publish agent tab
-  if (tabId === 'publish-agent' || isSmsConfigured.value) {
+  if (tabId === 'publish-agent' || isConfigured.value) {
     handleTabChange(tabId);
   }
 };
@@ -104,16 +90,20 @@ const handleEditTemplate = (template: any) => {
 };
 
 const handleTemplateCreated = () => {
+  // Invalidate SMS templates resource to force refresh
+  publishStore.smsTemplates.invalidate();
   // Refresh templates in TemplateTab
   if (templateTabRef.value) {
-    templateTabRef.value.fetchTemplates(1, 20);
+    templateTabRef.value.loadTemplates(1);
   }
 };
 
 const handleTemplateUpdated = () => {
+  // Invalidate SMS templates resource to force refresh
+  publishStore.smsTemplates.invalidate();
   // Refresh templates in TemplateTab
   if (templateTabRef.value) {
-    templateTabRef.value.fetchTemplates(1, 20);
+    templateTabRef.value.loadTemplates(1);
   }
 };
 
@@ -138,13 +128,13 @@ defineExpose({ openModal, closeModal });
         v-if="activeTab === 'publish-agent'"
         ref="publishAgentTabRef"
         :is-loading="isLoading"
-        :is-checking-configuration="isCheckingConfiguration"
-        @check-configuration="checkSmsConfiguration"
+        :is-checking-configuration="isLoading"
+        @check-configuration="checkConfiguration"
       />
 
       <!-- Template Tab -->
       <TemplateTab
-        v-if="activeTab === 'template' && isSmsConfigured"
+        v-if="activeTab === 'template' && isConfigured"
         ref="templateTabRef"
         :is-loading="isLoading"
         @create-template="handleCreateTemplate"
@@ -153,18 +143,18 @@ defineExpose({ openModal, closeModal });
 
       <!-- Broadcast Tab -->
       <BroadcastTab 
-        v-if="activeTab === 'broadcast' && isSmsConfigured"
+        v-if="activeTab === 'broadcast' && isConfigured"
         ref="broadcastTabRef"
       />
 
       <!-- Broadcast Report Tab -->
       <BroadcastReportTab 
-        v-if="activeTab === 'broadcast-report' && isSmsConfigured"
+        v-if="activeTab === 'broadcast-report' && isConfigured"
         ref="broadcastReportTabRef"
       />
 
       <!-- Configuration Required Message -->
-      <div v-if="activeTab !== 'publish-agent' && !isSmsConfigured" class="configuration-required">
+      <div v-if="activeTab !== 'publish-agent' && !isConfigured" class="configuration-required">
         <div class="configuration-message">
           <i class="pi pi-exclamation-triangle"></i>
           <h3>Configuration Required</h3>
@@ -179,7 +169,6 @@ defineExpose({ openModal, closeModal });
     ref="createTemplateModalRef"
     @create-template="handleTemplateCreated"
     @update-template="handleTemplateUpdated"
-    @modal-closed="() => console.log('Template modal closed')"
   />
 
 </template>
