@@ -255,9 +255,7 @@ onMounted(async () => {
   }
 
   // Send verification email if user hasn't visited before
-  if (!hasVisitedBefore.value && email.value) {
-    await sendVerificationEmail()
-  }
+  await sendVerificationEmail()
 })
 </script>
 
