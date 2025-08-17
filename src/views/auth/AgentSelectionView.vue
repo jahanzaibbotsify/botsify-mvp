@@ -6,6 +6,7 @@ import {useBotStore} from "@/stores/botStore.ts";
 import UserMenu from "@/components/auth/UserMenu.vue";
 import Button from '@/components/ui/Button.vue';
 import Input from '@/components/ui/Input.vue';
+import { createResource } from "@/utils/caching.ts"
 
 const router = useRouter()
 
@@ -41,6 +42,17 @@ const listAgentsResponse = ref({
   limit_reached: true
 })
 
+// Create cached resource for agents
+const agentsResource = createResource(async (page: number = 1, query: string = '', tab: 'my' | 'shared') => {
+  const response = await axiosInstance.get('v1/list-agents', {
+    params: {
+      page: page,
+      query: query.trim() || undefined,
+      tab: tab
+    }
+  })
+  return response.data
+})
 
 /**
  * Fetch agents from API
@@ -57,17 +69,15 @@ const getAgents = async (page: number = 1, append: boolean = false): Promise<voi
   agentsError.value = null
 
   try {
-    const response = await axiosInstance.get('v1/list-agents', {
-      params: {
-        page: page,
-        query: searchQuery.value.trim() || undefined,
-        tab: activeTab.value === 'my-agents' ? 'my' : 'shared'
-      }
-    })
+    const responseData = await agentsResource.load(
+      page, 
+      searchQuery.value, 
+      activeTab.value === 'my-agents' ? 'my' : 'shared'
+    )
 
-    if (response.data && response.data.bots) {
-      const botsData = response.data.bots
-      listAgentsResponse.value = response.data;
+    if (responseData && responseData.bots) {
+      const botsData = responseData.bots
+      listAgentsResponse.value = responseData;
       // Update pagination info
       currentPage.value = botsData.current_page || page
       totalPages.value = botsData.last_page || 1
@@ -86,14 +96,14 @@ const getAgents = async (page: number = 1, append: boolean = false): Promise<voi
       }
     }
 
-    if (response.data && response.data.sharedBots) {
+    if (responseData && responseData.sharedBots) {
       // Add avatar to shared bots
-      sharedAgentsData.value = response.data.sharedBots
+      sharedAgentsData.value = responseData.sharedBots
     }
 
     // Store bot_users data
-    if (response.data && response.data.bot_users) {
-      botUsers.value = response.data.bot_users
+    if (responseData && responseData.bot_users) {
+      botUsers.value = responseData.bot_users
     }
 
   } catch (error: any) {
@@ -145,11 +155,11 @@ const performSearch = () => {
   }
 
   searchTimeout = setTimeout(() => {
-    if (activeTab.value === 'my-agents') {
+    // if (activeTab.value === 'my-agents') {
       currentPage.value = 1
       hasMoreAgents.value = false
       getAgents(1, false)
-    }
+    // }
   }, 500) // 500ms debounce
 }
 
@@ -188,14 +198,6 @@ const editAgentName = (agent: any) => {
 
   // Add keyboard event listener
   document.addEventListener('keydown', handleModalKeydown)
-
-  // Focus the input after modal opens
-  nextTick(() => {
-    if (agentNameInput.value) {
-      agentNameInput.value.focus()
-      agentNameInput.value.select()
-    }
-  })
 }
 
 /**
@@ -212,12 +214,8 @@ const cloneAgent = async (agent: any) => {
       // Show the message from API response
       const message = response.data.message || 'Agent cloned successfully!'
       window.$toast?.success(message)
-
-      // Log the cloned bot details
-      if (response.data.bot) {
-        console.log('Cloned bot details:', response.data.bot)
-      }
-
+      
+      agentsResource.invalidate();
       // Refresh the agents list to show the new cloned agent
       await getAgents(1, false)
     } else {
@@ -251,7 +249,10 @@ const deleteAgent = (agent: any) => {
         if (totalAgents.value > 0) {
           totalAgents.value--
         }
-        getAgents()
+        
+        // Invalidate cache after deletion
+        agentsResource.invalidate()
+        // No need to call getAgents() - we already updated local state
       } else {
         window.$toast?.error(response.data?.message || 'Failed to delete agent. Please try again.')
       }
@@ -296,7 +297,7 @@ const exportData = (agent: any) => {
   activeMenuId.value = null
 
   window.$confirm({
-    text: 'Please Confirm\nYour Bot Data will be exported and then will be sent you via email.',
+    text: 'Please confirm, your agent data will be exported and then will be sent you via email.',
     cancelButtonText: 'No',
     confirmButtonText: 'Yes'
   }, async () => {
@@ -392,6 +393,8 @@ const saveAgent = async () => {
         // Show success message
         window.$toast?.success('Agent name updated successfully!')
 
+        // Invalidate cache after update
+        agentsResource.invalidate()
         closeAgentModal()
       } else {
         window.$toast?.error(response.data?.message || 'Failed to update agent name. Please try again.')
@@ -408,6 +411,8 @@ const saveAgent = async () => {
           apikey: responseData.bot_api_key
         })
 
+        // Invalidate cache after creation
+        agentsResource.invalidate()
         // Refresh the agents list to show the new agent
         await getAgents(1, false)
 
@@ -437,17 +442,14 @@ const loadMoreAgents = async () => {
   isLoadingMore.value = true
 
   try {
-    const response = await axiosInstance.get('v1/list-agents', {
-      params: {
-        page: nextPage,
-        query: searchQuery.value.trim() || undefined,
-        client: true,
-        tab: activeTab.value === 'my-agents' ? 'my' : 'shared'
-      }
-    })
+    const responseData = await agentsResource.load(
+      nextPage, 
+      searchQuery.value, 
+      activeTab.value === 'my-agents' ? 'my' : 'shared'
+    )
 
-    if (response.data && response.data.bots && response.data.bots.data) {
-      const botsData = response.data.bots
+    if (responseData && responseData.bots && responseData.bots.data) {
+      const botsData = responseData.bots
 
       // Update pagination info
       currentPage.value = botsData.current_page || nextPage
@@ -461,8 +463,8 @@ const loadMoreAgents = async () => {
     }
 
     // Update bot_users if available
-    if (response.data && response.data.bot_users) {
-      botUsers.value = {...botUsers.value, ...response.data.bot_users}
+    if (responseData && responseData.bot_users) {
+      botUsers.value = {...botUsers.value, ...responseData.bot_users}
     }
 
   } catch (error: any) {
@@ -597,7 +599,7 @@ onUnmounted(() => {
                 v-model="searchQuery"
                 type="text"
                 class="search-input"
-                placeholder="Search agents by name, capability, or use case..."
+                placeholder="Search agents by name"
             />
             <button v-if="searchQuery" @click="searchQuery = ''" class="clear-search">
               <i class="pi pi-times"></i>
@@ -654,7 +656,7 @@ onUnmounted(() => {
         <!-- Loading State -->
         <div v-if="isLoadingAgents" class="loading-state">
           <div class="loading-content">
-            <div class="loading-spinner-large"></div>
+            <div class="loading-spinner"></div>
             <p>Loading agents...</p>
           </div>
         </div>

@@ -54,10 +54,10 @@ const handleSelectChange = (key: keyof typeof formData.value, value: string | nu
   formData.value[key] = String(singleValue)
 };
 
-const noTestUser = () => {
-  // Handle no test user action
-  console.log('No test user action');
-};
+// const noTestUser = () => {
+//   // Handle no test user action
+//   console.log('No test user action');
+// };
 
 const sendMessage = async () => {
   // Validate required fields

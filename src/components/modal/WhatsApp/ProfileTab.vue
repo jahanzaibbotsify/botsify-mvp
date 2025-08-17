@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed } from "vue";
 import { Input } from "@/components/ui";
 import { usePublishStore } from "@/stores/publishStore";
+import { publishApi } from "@/services/publishApi";
 
 // Props
 interface Props {
@@ -16,37 +17,13 @@ withDefaults(defineProps<Props>(), {
 const publishStore = usePublishStore();
 
 // Reactive data
-const profileText = ref('');
-const profileImage = ref<File | null>(null);
-const isUpdatingProfile = ref(false);
-
-// Load profile data on component mount
-onMounted(async () => {
-  await loadProfileData();
+const whatsappData = computed(() => {
+  return publishStore.whatsappConfig.data?.data?.whatsapp;
 });
 
-// Load profile data for Dialog360
-const loadProfileData = async () => {
-  // Use cached data if available
-  if (publishStore.cacheValid.botDetails && publishStore.cache.botDetails?.dialog360) {
-    profileText.value = publishStore.cache.botDetails.dialog360.profile || '';
-    profileImage.value = null; // Reset image selection
-    return;
-  }
-  
-  // Only fetch if not already cached
-  if (!publishStore.cacheValid.botDetails || !publishStore.cache.botDetails) {
-    try {
-      const result = await publishStore.getBotDetails();
-      if (result.success && result.data?.dialog360) {
-        profileText.value = result.data.dialog360.profile || '';
-        profileImage.value = null;
-      }
-    } catch (error) {
-      console.error('Failed to load profile data:', error);
-    }
-  }
-};
+const profileText = ref(whatsappData.value?.profile || '');
+const profileImage = ref<File | null>(whatsappData.value?.profile_image || null);
+const isUpdatingProfile = ref(false);
 
 // Methods
 const handleProfileImageChange = (event: Event) => {
@@ -56,18 +33,13 @@ const handleProfileImageChange = (event: Event) => {
   }
 };
 
-// Get current profile data for parent component
-const getProfileData = () => {
-  return {
-    profile: profileText.value.trim() || null,
-    image: profileImage.value
-  };
-};
-
 
 // Add this method to the script section
 const handleUpdateProfile = async () => {
-  const data = getProfileData();
+  const data = {
+    profile: profileText.value.trim() || null,
+    image: profileImage.value
+  };
   
   if (!data.profile && !data.image) {
     window.$toast?.error('Please provide either profile text or image');
@@ -76,7 +48,7 @@ const handleUpdateProfile = async () => {
   
   isUpdatingProfile.value = true;
   try {
-    const result = await publishStore.updateDialog360Profile(
+    const result = await publishApi.updateDialog360Profile(
       data.profile || '',
       data.image || undefined
     );
@@ -86,8 +58,8 @@ const handleUpdateProfile = async () => {
       profileImage.value = null; // Reset image after successful update
       return { success: true };
     } else {
-      window.$toast?.error(result.error || 'Failed to update profile');
-      return { success: false, error: result.error };
+      window.$toast?.error(result.message || 'Failed to update profile');
+      return { success: false, error: result.message };
     }
   } catch (error: any) {
     window.$toast?.error(error.message || 'Failed to update profile');
@@ -96,12 +68,6 @@ const handleUpdateProfile = async () => {
     isUpdatingProfile.value = false;
   }
 };
-
-// Expose only necessary methods for parent component
-defineExpose({
-  loadProfileData,
-  getProfileData
-});
 </script>
 
 <template>

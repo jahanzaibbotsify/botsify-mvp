@@ -136,16 +136,7 @@ export const useChatStore = defineStore('chat', () => {
         } catch (jsonError) {
           console.error('❌ Failed to parse stored chats JSON:', jsonError);
         }
-      } else {
-        chats.value[0].id = getCurrentApiKey();
-        chats.value.forEach(chat => {
-          if (chat) {
-            (chat as any).story = storedTemplates; 
-          }
-        });
-        console.warn('⚠️ No chats found in localStorage');
       }
-
       if (storedActiveChat && chats.value.some(c => c.id === storedActiveChat)) {
         activeChat.value = storedActiveChat;
       } else if (storedActiveChat) {

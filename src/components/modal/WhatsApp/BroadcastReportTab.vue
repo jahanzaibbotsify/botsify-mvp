@@ -4,6 +4,7 @@ import { Input, Badge, DateRange, Table, TableHead, TableBody, TableRow, TableCe
 import { usePublishStore } from "@/stores/publishStore";
 import { formatDate } from "@/utils";
 import { onMounted } from "vue";
+import { PaginationData } from "@/types";
 
 // Store
 const publishStore = usePublishStore();
@@ -27,10 +28,20 @@ const dateRange = ref(getDefaultDateRange());
 
 // Local pagination state since it's now managed internally
 const currentPage = ref(1);
-const itemsPerPage = ref(20);
+const itemsPerPage = 20;
+
+// Add local pagination data
+const paginationData = ref<PaginationData | null>(null);
 
 // API data
-const allReportData = ref<any[]>([]); // Store all data from API
+const whatsappReportData = computed(() => publishStore.whatsappReport.data?.data?.messages?.data || []);
+
+const totalPages = computed(() => {
+  if (paginationData.value) {
+    return Math.ceil(paginationData.value.total / paginationData.value.perPage);
+  }
+  return 1;
+});
 
 // Stats data
 const stats = ref({
@@ -40,113 +51,57 @@ const stats = ref({
   failed: 0
 });
 
-// Add local pagination data
-const paginationData = ref<{
-  page: number;
-  perPage: number;
-  total: number;
-  to: number;
-  prev_page_url: string | null;
-} | null>(null);
-
-// Computed properties
-const filteredReports = computed(() => {
-  let filtered = allReportData.value;
-  
-  if (searchQuery.value) {
-    filtered = filtered.filter(report => 
-      report.template_name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      report.number?.toLowerCase().includes(searchQuery.value.toLowerCase())
-    );
-  }
-  
-  // Apply date range filter
-  if (dateRange.value.start && dateRange.value.end) {
-    filtered = filtered.filter(report => {
-      const reportDate = report.sent_time?.split(' ')[0];
-      return reportDate >= dateRange.value.start && reportDate <= dateRange.value.end;
-    });
-  }
-  
-  return filtered;
-});
-
-// Computed pagination for filtered data
-const paginatedReports = computed(() => {
-  const startIndex = (currentPage.value - 1) * itemsPerPage.value;
-  const endIndex = startIndex + itemsPerPage.value;
-  return filteredReports.value.slice(startIndex, endIndex);
-});
-
-
 // Methods
-const fetchReportData = async (forceRefresh = false) => {
-  if (publishStore.isLoading) return;
-  
+const loadReport = async (page = 1) => {
   try {
-    // Only fetch if we don't have data yet or if force refresh is requested
-    if (allReportData.value.length === 0 || forceRefresh) {
-      const result = await publishStore.getWhatsAppBroadcastReport({ page: currentPage.value, per_page: itemsPerPage.value, query: searchQuery.value, start_date: dateRange.value.start, end_date: dateRange.value.end });
-      
-      if (result.success && result.data.messages) {
-        allReportData.value = result.data.messages.data || [];
-        calculateStats();
-        
-        // Update local pagination state with API response
-        if (result.data.messages.pagination) {
-          paginationData.value = {
-            page: result.data.messages.pagination.page || currentPage.value,
-            perPage: result.data.messages.pagination.per_page || itemsPerPage.value,
-            total: result.data.messages.pagination.total || 0,
-            to: result.data.messages.pagination.to || 0,
-            prev_page_url: result.data.messages.pagination.prev_page_url || null
-          };
-          // Sync currentPage with the actual page from API response
-          currentPage.value = result.data.messages.pagination.page || currentPage.value;
-        }
-      }
+    const result = await publishStore.whatsappReport.load(page, itemsPerPage, searchQuery.value, dateRange.value.start, dateRange.value.end);
+    if (result?.data?.messages) {
+      paginationData.value = {
+        page: result.data.messages.page || page,
+        perPage: result.data.messages.per_page || itemsPerPage,
+        total: result.data.messages.total || 0,
+        to: result.data.messages.to || 0,
+        prev_page_url: result.data.messages.prev_page_url || null,
+      };
+
+      currentPage.value = result.data.messages.page || page;
+
+      // update stats
+      stats.value = result.data.messages.data.reduce((acc: any, report: any) => {
+        // Only count today's stats
+        // const reportDate = report.sent_time?.split(' ')[0];
+        // if (reportDate === today) {
+          acc.sent += report.sent || 0;
+          acc.delivered += report.delivered || 0;
+          acc.read += report.read || 0;
+          acc.failed += report.failed || 0;
+        // }
+        return acc;
+      }, { sent: 0, delivered: 0, read: 0, failed: 0 });
+      console.log(stats.value, "..............")
     }
-  } catch (error) {
-    console.error('Failed to fetch report data:', error);
+  } catch (err) {
+    console.error("Failed to load report:", err);
   }
 };
 
-const refreshData = async () => {
-  await fetchReportData(true);
-};
-
-const calculateStats = () => {
-  
-  stats.value = allReportData.value.reduce((acc, report) => {
-    // Only count today's stats
-    // const reportDate = report.sent_time?.split(' ')[0];
-    // if (reportDate === today) {
-      acc.sent += report.sent || 0;
-      acc.delivered += report.delivered || 0;
-      acc.read += report.read || 0;
-      acc.failed += report.failed || 0;
-    // }
-    return acc;
-  }, { sent: 0, delivered: 0, read: 0, failed: 0 });
-};
 
 // Handle page change from pagination component
 const handlePageChange = (page: number) => {
-  currentPage.value = page;
-  fetchReportData();
+  loadReport(page);
 };
 
+
 const applyFilter = () => {
-  fetchReportData(true);
+  // Invalidate SMS broadcast report cache to force fresh data
+  publishStore.whatsappReport.invalidate();
+  loadReport(1);
 }
+
+
 // Load data on mount
 onMounted(() => {
-  refreshData();
-});
-
-// Expose only necessary methods for parent component
-defineExpose({
-  refreshData
+  loadReport(1)
 });
 </script>
 
@@ -178,10 +133,10 @@ defineExpose({
         <Button
           variant="primary"
           size="medium"
-          :loading="publishStore.isLoading"
+          :loading="publishStore.whatsappReport.loading"
           @click="applyFilter"
         >
-          {{ publishStore.isLoading ? 'Filtering...' : 'Apply filters' }}
+          {{ publishStore.whatsappReport.loading ? 'Filtering...' : 'Apply filters' }}
         </Button>
       </div>
     </div>
@@ -194,7 +149,7 @@ defineExpose({
          </div>
          <div class="stat-content">
            <div class="stat-value">{{ stats.sent }}</div>
-           <div class="stat-label">Sent (today)</div>
+           <div class="stat-label">Sent</div>
          </div>
        </div>
        
@@ -204,7 +159,7 @@ defineExpose({
          </div>
          <div class="stat-content">
            <div class="stat-value">{{ stats.delivered }}</div>
-           <div class="stat-label">Delivered (today)</div>
+           <div class="stat-label">Delivered</div>
          </div>
        </div>
        
@@ -214,7 +169,7 @@ defineExpose({
          </div>
          <div class="stat-content">
            <div class="stat-value">{{ stats.read }}</div>
-           <div class="stat-label">Read (today)</div>
+           <div class="stat-label">Read</div>
          </div>
        </div>
        
@@ -224,68 +179,69 @@ defineExpose({
          </div>
          <div class="stat-content">
            <div class="stat-value">{{ stats.failed }}</div>
-           <div class="stat-label">Failed (today)</div>
+           <div class="stat-label">Failed</div>
          </div>
        </div>
      </div>
 
-    <!-- Report Table -->
+      <!-- Messages Table -->
     <div class="table-section">
       <Table>
         <TableHead>
-          <TableHeader>Template name</TableHeader>
+          <TableHeader width="150px">Template name</TableHeader>
           <TableHeader>Phone number</TableHeader>
           <TableHeader>Sent time</TableHeader>
           <TableHeader>Status</TableHeader>
-          <TableHeader width="350px">Failure reason</TableHeader>
+          <TableHeader width="300px">Failure reason</TableHeader>
         </TableHead>
-        
         <TableBody>
-          <!-- Loading skeleton -->
-          <TableRow v-if="publishStore.loadingStates.broadcastReport" v-for="i in 5" :key="`skeleton-${i}`" skeleton>
-            <TableCell :isLoading="true" skeletonType="text"></TableCell>
-            <TableCell :isLoading="true" skeletonType="text"></TableCell>
-            <TableCell :isLoading="true" skeletonType="text"></TableCell>
-            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+          <!-- Loading State -->
+          <TableRow v-if="publishStore.whatsappReport.loading" v-for="i in 5" :key="`loading-${i}`">
+            <TableCell :isLoading="true" skeletonType="badge"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
           </TableRow>
-          
-                     <!-- Empty state -->
-           <TableRow v-else-if="paginatedReports.length === 0" noData>
-             <TableCell noData colspan="8">
-               <div class="empty-state">
-                 <i class="pi pi-inbox"></i>
-                 <p>No broadcast reports found</p>
-               </div>
-             </TableCell>
-           </TableRow>
-          
-                     <!-- Report rows -->
-           <TableRow v-else v-for="report in paginatedReports" :key="report.id">
-             <TableCell>{{ report.template_name || 'N/A' }}</TableCell>
+
+          <!-- Empty State -->
+          <TableRow v-else-if="!whatsappReportData.length">
+            <TableCell :noData="true" colspan="5">
+              <div class="empty-state">
+                <div class="empty-icon">
+                  <i class="pi pi-inbox"></i>
+                </div>
+                <h4>No Whatsapp broadcast found</h4>
+                <p>No Whatsapp broadcast have been sent yet. Start sending broadcast to see them here.</p>
+              </div>
+            </TableCell>
+          </TableRow>
+
+          <!-- Data State -->
+          <TableRow v-else v-for="report in whatsappReportData" :key="report.id">
+            <TableCell>{{ report.template_name || 'N/A' }}</TableCell>
              <TableCell>{{ report.number || 'N/A' }}</TableCell>
              <TableCell>{{ report.sent_time ? formatDate(report.sent_time) : 'N/A' }}</TableCell>
              <TableCell><Badge :variant="report.sent ? 'success' : 'error'">{{ report.sent ? 'Sent' : 'Failed' }}</Badge></TableCell>
              <TableCell>{{ report.failure_reason || 'N/A' }}</TableCell>
-           </TableRow>
+          </TableRow>
         </TableBody>
       </Table>
-      
-      <!-- Pagination -->
-      <div v-if="!publishStore.loadingStates.broadcastReport && paginatedReports.length > 0" class="agent-pagination-section">
-        <Pagination
-          :current-page="currentPage || 1"
-          :total-pages="paginationData ? Math.ceil(paginationData.total / paginationData.perPage) : 1"
-          :total-items="paginationData?.total || 0"
-          :items-per-page="itemsPerPage || 20"
-                      :disabled="publishStore.loadingStates.broadcastReport || false"
-          @page-change="handlePageChange"
-        />
-      </div>
     </div>
+
+    <!-- Pagination -->
+    <div class="agent-pagination-section">
+      <Pagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :total-items="paginationData?.total || 0"
+        :items-per-page="20"
+        :show-page-info="false"
+        :disabled="publishStore.smsReport.loading"
+        @page-change="handlePageChange"
+      />
+    </div>
+
   </div>
 </template>
 

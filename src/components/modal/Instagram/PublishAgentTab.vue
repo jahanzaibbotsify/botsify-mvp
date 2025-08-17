@@ -83,7 +83,8 @@ const connectionPage = async (type: string, page: any) => {
     if (result.success) {
       // Clear cache and reload pages to update the status
       window.$toast.success(`Page ${type}ed successfully!`);
-      publishStore.instagramPages.load(true);
+      publishStore.instagramPages.invalidate()
+      publishStore.instagramPages.load();
     } else {
       window.$toast.error(result?.message || 'Failed to connect page');
     }
@@ -170,7 +171,8 @@ const openAuthPopup = (url: string, action: string) => {
     if (event.data.type === 'INSTAGRAM_AUTH_SUCCESS') {
       popup.close();
       window.removeEventListener('message', messageHandler);
-      publishStore.instagramPages.load(true);
+      publishStore.instagramPages.invalidate()
+      publishStore.instagramPages.load();
       window.$toast?.success(`Facebook ${action} completed successfully!`);
     } else if (event.data.type === 'INSTAGRAM_AUTH_ERROR') {
       popup.close();
@@ -188,7 +190,8 @@ const openAuthPopup = (url: string, action: string) => {
         popup.close();
         clearInterval(checkClosed);
         window.removeEventListener('message', messageHandler);
-        publishStore.instagramPages.load(true);
+        publishStore.instagramPages.invalidate()
+      publishStore.instagramPages.load();
         window.$toast?.success(`Instagram ${action} completed successfully!`);
       }
     } catch {
@@ -199,7 +202,8 @@ const openAuthPopup = (url: string, action: string) => {
     if (popup.closed) {
       clearInterval(checkClosed);
       window.removeEventListener('message', messageHandler);
-      publishStore.instagramPages.load(true);
+      publishStore.instagramPages.invalidate()
+      publishStore.instagramPages.load();
     }
   }, 1000);
   

@@ -64,7 +64,8 @@ const showConnectButton = computed(() => {
 });
 
 const isConnectLoading = ref(false);
-const isDisconnectLoading = ref(false);
+const connectId = ref('');
+const disconnectId = ref('');
 const isRefreshLoading = ref(false);
 const isRemoveLoading = ref(false);
 
@@ -73,7 +74,8 @@ const refreshPermissions = async () => {
   try {
     const result = await publishApi.refreshFbPagePermission();
     if(result.success){
-      publishStore.facebookPages.load(true);
+      publishStore.facebookPages.invalidate();
+      publishStore.facebookPages.load();
     } else{
       window.$toast.error(result?.message || 'Failed to refresh Facebook page permissions');
     }
@@ -110,9 +112,9 @@ const connectAccount = async () => {
 
 const connectionPage = async (type: string, page: any) => {
   if (type === 'connect') {
-    isConnectLoading.value = true;
+    connectId.value = page.id;
   } else if (type === 'disconnect') {
-    isDisconnectLoading.value = true;
+    disconnectId.value = page.id;
   }
   try {
     const result = await publishApi.connectionFbPage(
@@ -123,15 +125,16 @@ const connectionPage = async (type: string, page: any) => {
     );
     if(result.success){
       window.$toast.success(`Page ${type}ed successfully!`);
-      publishStore.facebookPages.load(true);
+      publishStore.facebookPages.invalidate();
+      publishStore.facebookPages.load();
     } else{
       window.$toast.error(result?.message || 'Failed to connect page');
     }
   } catch (error) {
     window.$toast.error('Failed to connect page');
   } finally {
-    isConnectLoading.value = false;
-    isDisconnectLoading.value = false;
+    connectId.value = '';
+    disconnectId.value = '';
   }
 };
 
@@ -208,7 +211,9 @@ const openAuthPopup = (url: string, action: string) => {
     if (event.data.type === 'FB_CONNECT_SUCCESS') {
       popup.close();
       window.removeEventListener('message', messageHandler);
-      publishStore.facebookPages.load(true);
+      
+      publishStore.facebookPages.invalidate();
+      publishStore.facebookPages.load();
       window.$toast?.success(`Facebook ${action} completed successfully!`);
     } else if (event.data.type === 'FACEBOOK_AUTH_ERROR') {
       popup.close();
@@ -226,7 +231,9 @@ const openAuthPopup = (url: string, action: string) => {
         popup.close();
         clearInterval(checkClosed);
         window.removeEventListener('message', messageHandler);
-        publishStore.facebookPages.load(true);
+        
+        publishStore.facebookPages.invalidate();
+        publishStore.facebookPages.load();
         window.$toast?.success(`Facebook ${action} completed successfully!`);
       }
     } catch {
@@ -237,7 +244,8 @@ const openAuthPopup = (url: string, action: string) => {
     if (popup.closed) {
       clearInterval(checkClosed);
       window.removeEventListener('message', messageHandler);
-      publishStore.facebookPages.load(true);
+      publishStore.facebookPages.invalidate();
+      publishStore.facebookPages.load();
     }
   }, 1000);
   
@@ -344,7 +352,8 @@ const openAuthPopup = (url: string, action: string) => {
                 v-if="!page.is_bot_page"
                 variant="primary"
                 size="small"
-                :loading="isConnectLoading"
+                :loading="connectId == page.id"
+                :disabled="connectId == page.id"
                 icon="pi pi-link"
                 @click="connectionPage('connect', page)"
               >
@@ -355,7 +364,8 @@ const openAuthPopup = (url: string, action: string) => {
                 <Button 
                   variant="success"
                   size="small"
-                  :loading="isConnectLoading"
+                  :loading="connectId == page.id"
+                  :disabled="connectId == page.id"
                   icon="pi pi-refresh"
                   @click="connectionPage('connect', page)"
                 >
@@ -365,7 +375,8 @@ const openAuthPopup = (url: string, action: string) => {
                 <Button 
                   variant="error"
                   size="small"
-                  :loading="isDisconnectLoading"
+                  :loading="disconnectId == page.id"
+                  :disabled="disconnectId == page.id"
                   icon="pi pi-times"
                   @click="connectionPage('disconnect', page)"
                 >

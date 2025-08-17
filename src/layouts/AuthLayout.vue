@@ -14,28 +14,28 @@ const pageContent = computed(() => {
   switch (route.name) {
     case 'login':
       return {
-        title: 'Welcome Back!',
+        title: 'Welcome back!',
         subtitle: 'Continue your AI journey',
         description: 'Sign in to access your AI agents and manage your conversations.',
         icon: 'pi-sign-in'
       }
     case 'signup':
       return {
-        title: 'Start Your AI Journey',
+        title: 'Start your AI journey',
         subtitle: 'Create powerful AI agents',
         description: 'Join thousands of users building amazing AI-powered experiences.',
         icon: 'pi-user-plus'
       }
     case 'pricing':
       return {
-        title: 'Choose Your Plan',
+        title: 'Choose your plan',
         subtitle: 'Scale your AI capabilities',
         description: 'Select the perfect plan for your needs and unlock advanced features.',
         icon: 'pi-credit-card'
       }
     case 'agent-selection':
       return {
-        title: 'Pick Your Agent',
+        title: 'Pick your agent',
         subtitle: 'Start with the right assistant',
         description: 'Choose from our collection of specialized AI agents to get started.',
         icon: 'pi-users'

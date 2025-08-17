@@ -3,6 +3,7 @@ import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import type { SignupCredentials, FormValidation } from '@/types/auth'
+import Button from '@/components/ui/Button.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -180,7 +181,7 @@ const clearFieldError = (field: string) => {
 <template>
   <div class="signup-view">
     <div class="auth-header">
-      <h2 class="auth-title">Create Your Account</h2>
+      <h2 class="auth-title">Create your account</h2>
       <p class="auth-subtitle">Join thousands of users building amazing AI experiences</p>
     </div>
 
@@ -197,7 +198,7 @@ const clearFieldError = (field: string) => {
       <!-- Full Name Field -->
       <div class="form-group">
         <label for="name" class="form-label">
-          Full Name
+          Full name
           <span class="required">*</span>
         </label>
         <div class="input-wrapper" :class="{ error: hasFieldError('name') }">
@@ -223,7 +224,7 @@ const clearFieldError = (field: string) => {
       <!-- Email Field -->
       <div class="form-group">
         <label for="email" class="form-label">
-          Email Address
+          Email address
           <span class="required">*</span>
         </label>
         <div class="input-wrapper" :class="{ error: hasFieldError('email') }">
@@ -249,7 +250,7 @@ const clearFieldError = (field: string) => {
       <!-- Phone Field -->
       <div class="form-group">
         <label for="phone" class="form-label">
-          Phone No
+          Phone no
           <span class="required">*</span>
         </label>
         <div class="input-wrapper" :class="{ error: hasFieldError('phone_number') }">
@@ -270,7 +271,7 @@ const clearFieldError = (field: string) => {
               :disabled="authStore.isLoading"
               v-model="form.phone_number"
               mode="international"
-              class="form-input"
+              class="form-input form-input-tel"
               :dropdownOptions="{
                 showFlags: true,
                 showDialCodeInSelection: true,
@@ -340,7 +341,7 @@ const clearFieldError = (field: string) => {
       <!-- Confirm Password Field -->
       <div class="form-group">
         <label for="confirmPassword" class="form-label">
-          Confirm Password
+          Confirm password
           <span class="required">*</span>
         </label>
         <div class="input-wrapper" :class="{ error: hasFieldError('confirmPassword') }">
@@ -384,10 +385,9 @@ const clearFieldError = (field: string) => {
           <span class="checkbox-custom"></span>
           <span class="checkbox-label">
             I agree to the 
-            <a href="https://botsify.com/terms-and-conditions" target="_blank" class="terms-link">Terms & Conditions</a>
+            <a href="https://botsify.com/terms-and-conditions" target="_blank" class="terms-link">Terms & conditions</a>
             and 
-            <a href="https://botsify.com/privacy-policy" target="_blank" class="terms-link">Privacy Policy</a>
-            <span class="required">*</span>
+            <a href="https://botsify.com/privacy-policy" target="_blank" class="terms-link">Privacy policy</a>
           </span>
         </label>
         
@@ -399,15 +399,15 @@ const clearFieldError = (field: string) => {
       </div>
 
       <!-- Submit Button -->
-      <button
+      <Button
         type="submit"
-        class="submit-button primary"
+        variant="primary"
         :disabled="!isFormValid || authStore.isLoading"
+        :loading="authStore.isLoading"
+        class="w-full"
       >
-        <span v-if="authStore.isLoading" class="loading-spinner"></span>
-        <i v-else class="pi pi-user-plus"></i>
-        <span>{{ authStore.isLoading ? 'Creating account...' : 'Create Account' }}</span>
-      </button>
+        Create account
+      </Button>
     </form>
 
 
@@ -520,6 +520,11 @@ const clearFieldError = (field: string) => {
   color: var(--color-text-primary);
   font-size: 0.875rem;
   transition: all var(--transition-normal);
+}
+
+.form-input-tel{
+  max-height: 44px;
+  padding-left: calc(var(--space-5) + var(--space-1));
 }
 
 .form-input:focus {
@@ -652,51 +657,6 @@ const clearFieldError = (field: string) => {
 
 .terms-link:hover {
   text-decoration: underline;
-}
-
-.submit-button {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  background-color: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  min-height: 44px;
-}
-
-.submit-button:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(68, 115, 246, 0.3);
-}
-
-.submit-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.loading-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .auth-divider {

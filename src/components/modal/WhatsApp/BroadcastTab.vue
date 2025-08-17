@@ -6,6 +6,7 @@ import MessagePreview from "./Create/MessagePreview.vue";
 import { useWhatsAppTemplateStore } from "@/stores/whatsappTemplateStore";
 import { usePublishStore } from "@/stores/publishStore";
 import { botsifyApi } from "@/services/botsifyApi";
+import { useBroadcast } from "@/composables/useBroadcast";
 
 // Props
 interface Props {
@@ -19,9 +20,17 @@ withDefaults(defineProps<Props>(), {
 // Broadcast sending state
 const isBroadcastSending = ref(false);
 
+const { parseCSVFile, downloadSampleFile, csvError, uploadedUsers, isDownloadingSample } = useBroadcast();
+
 // Stores
 const store = useWhatsAppTemplateStore();
 const publishStore = usePublishStore();
+
+const whatsappTemplates = computed(() => publishStore.whatsappTemplates.data);
+const whatsappTemplatesLoading = computed(() => publishStore.whatsappTemplates.loading);
+
+const subscribedUsers = computed(() => publishStore.whatsappSegmentUsers.data?.data);
+const subscribedUsersLoading = computed(() => publishStore.whatsappSegmentUsers.loading);
 
 // Reactive data
 const broadcastForm = ref({
@@ -45,23 +54,11 @@ const validationErrors = ref({
 
 // Media handling
 const uploadingMedia = ref(false);
-const isDownloadingSample = ref(false);
-// const mediaFile = ref<File | null>(null);
-const uploadedUsers = ref<Array<{phone_number: string}>>([]);
-// Error state for CSV parsing
-const csvError = ref<string | null>(null);
 
 // CSV handling variables
 // const csvFile = ref<File | null>(null);
 const csvData = ref<{ headers: string[], data: any[] }>({ headers: [], data: [] });
 
-// Add missing variables
-const isTemplatesLoaded = ref(false);
-const isLoadingTemplates = ref(false);
-
-// Add subscribed users state
-const subscribedUsers = ref<Array<{phone_number: string}>>([]);
-const isLoadingSubscribedUsers = ref(false);
 
 const fileUploadError = computed(() => {
   if (broadcastForm.value.userSegment === 'file' && !broadcastForm.value.uploadedFile) {
@@ -73,7 +70,6 @@ const fileUploadError = computed(() => {
   return undefined;
 });
 // Template data
-const templates = ref<any[]>([]);
 const selectedTemplate = ref<any>(null);
   const templateData = ref({
     name: '',
@@ -100,10 +96,13 @@ const selectedTemplate = ref<any>(null);
     buttons: []
   });
 
+// Message templates
+const messageTemplates = ref<Array<{value: string, label: string}>>([]);
+
 // User segments
 const userSegments = [
   { value: '', label: 'Select user segment' },
-  { value: 'subscribed', label: 'All users' },
+  { value: '-1', label: 'All users' },
   { value: 'upload', label: 'Upload users' },
   { value: 'single', label: 'Single user' }
 ];
@@ -119,20 +118,6 @@ const showMediaHeader = computed(() => {
   return result;
 });
 
-// Check if templates are available
-const showTemplateMessage = computed(() => {
-  if (isLoadingTemplates.value) return 'Loading templates...';
-  if (!isTemplatesLoaded.value) return 'Initializing templates...';
-  if (templates.value.length === 0) return 'No approved templates found';
-  return '';
-});
-// const showCsvUpload = computed(() => broadcastForm.value.userSegment === 'upload');
-// const showVariableFields = computed(() => selectedTemplate.value && (
-//   templateData.value.variables.body.length > 0 ||
-//   templateData.value.variables.header ||
-//   templateData.value.variables.button ||
-//   (templateData.value.type === 'generic' && templateData.value.slides.length > 0)
-// ));
 const showMessageEditor = computed(() => {
   return selectedTemplate.value && (
     templateData.value.variables.body.length > 0 ||
@@ -145,60 +130,13 @@ const showMessageEditor = computed(() => {
 
 // Computed property to disable send button when there are validation errors
 const isSendButtonDisabled = computed(() => {
+  console.log(publishStore.whatsappSegmentUsers.data, "..............")
   return hasValidationErrors() || 
          !broadcastForm.value.userSegment ||
          (broadcastForm.value.userSegment === 'single' && !broadcastForm.value.phoneNumber) ||
          (broadcastForm.value.userSegment === 'upload' && uploadedUsers.value.length === 0) ||
-         (broadcastForm.value.userSegment === 'subscribed' && subscribedUsers.value.length === 0);
+         (broadcastForm.value.userSegment === '-1' && subscribedUsers.value?.length === 0);
 });
-
-// Methods
-const fetchTemplates = async () => {
-  
-  // Check if templates are already loaded in the store
-  if (publishStore.cacheValid.whatsappTemplates && publishStore.cache.whatsappTemplates && publishStore.cache.whatsappTemplates.data && publishStore.cache.whatsappTemplates.data.length > 0) {
-    // Filter templates to only include those with status === 1 (approved)
-    const approvedTemplates = publishStore.cache.whatsappTemplates.data.filter((template: any) => template.status === 1);
-    templates.value = approvedTemplates.map((template: any) => ({
-      ...template,
-      label: template.template_name || template.name || template.id || `Template ${template.id}`,
-      value: template
-    }));
-    isTemplatesLoaded.value = true;
-    return;
-  }
-  
-  isLoadingTemplates.value = true;
-  try {
-    const result = await publishStore.fetchWhatsAppTemplates();
-    
-    if (result.success && result.data && result.data.templates && result.data.templates.data && Array.isArray(result.data.templates.data)) {
-      // Filter templates to only include those with status === 1 (approved)
-      const approvedTemplates = result.data.templates.data.filter((template: any) => template.status === 1);
-      
-      templates.value = approvedTemplates.map((template: any) => ({
-        ...template,
-        label: template.template_name || template.name || template.id || `Template ${template.id}`,
-        value: template
-      }));
-      isTemplatesLoaded.value = true;
-      
-    } else {
-      console.warn('BroadcastTab - No templates data or invalid format:', result);
-      templates.value = [];
-      isTemplatesLoaded.value = false;
-    }
-  } catch (error) {
-    console.error('BroadcastTab - Error fetching templates:', error);
-    templates.value = [];
-    isTemplatesLoaded.value = false;
-    
-    // Show error message to user
-    window.$toast.error('Failed to load templates. Please try refreshing the page.');
-  } finally {
-    isLoadingTemplates.value = false;
-  }
-};
 
 const handleTemplateChange = () => {
   // Add a small delay to ensure DOM is ready
@@ -265,24 +203,21 @@ const setTemplateVariable = () => {
   // Set template name and category
   templateData.value.name = currTemplate.template_name || currTemplate.name || '';
   templateData.value.category = currTemplate.category || 'MARKETING';
-  if (currTemplate.category === 'AUTHENTICATION') {
+  if (templateDataFromData.category === 'AUTHENTICATION') {
     // Parse and assign params for AUTHENTICATION category
     templateData.value.category = 'AUTHENTICATION';
     // Find the body parameter and use its text
-    const bodyParam = params.find((param: any) => param.type === 'body');
-    if (bodyParam && bodyParam.parameters && bodyParam.parameters.length > 0) {
-      const bodyVariable = bodyParam.parameters[0];
-      if (bodyVariable.type === 'text') {
-        templateData.value.body_text = bodyVariable.text || "{{1}} is your verification code. For security do not share this code.";
-      } else {
-        templateData.value.body_text = "{{1}} is your verification code. For security do not share this code.";
-      }
-    } else {
-      templateData.value.body_text = "{{1}} is your verification code. For security do not share this code.";
-    }
-    
+    templateData.value.body_text = "{{1}} is your verification code. For security do not share this code.";
     templateData.value.footer_text = "This code will expire in 1 minutes.";
   
+    templateDataFromData.components.forEach((component: any) => {
+      if(component.type === 'BUTTONS'){
+        templateData.value.bodyIncludes.push('buttons');
+        component.buttons.forEach((button: any) => {
+          (templateData.value.buttons as any[]).push(button)
+        })
+      }
+    })
     templateData.value.variables.body = [];
     const newBodyVar: any[] = [];
     
@@ -294,8 +229,8 @@ const setTemplateVariable = () => {
           if (variable.type === 'text') {
             // For text parameters, use the text as the key
             newBodyVar.push({
-              key: variable.text || '{{1}}',
-              value: ''
+              key: '{{1}}',
+              value: variable.text
             });
           } else {
             // For other parameter types, use default key
@@ -305,14 +240,6 @@ const setTemplateVariable = () => {
             });
           }
         });
-      }
-
-      // For AUTHENTICATION templates, don't set button variables since OTP buttons don't need user input
-      // Just add buttons to bodyIncludes for display purposes
-      if (param.type === 'button') {
-        templateData.value.bodyIncludes.push('buttons');
-        // Don't create button variables for authentication templates
-        // OTP buttons are handled automatically by WhatsApp
       }
     });
   
@@ -818,117 +745,6 @@ const uploadMedia = async (event: Event, slideIndex?: number) => {
   }
 };
 
-const parseCSVFile = (file: File) => {
-  if (!file || !(file instanceof File)) {
-    console.error('Invalid file object passed to parseCSVFile:', file);
-    csvError.value = 'Invalid file object';
-    return;
-  }
-  
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const text = e.target?.result as string;
-      const result = csvToArray(text);
-      if (result.data.length === 0) {
-        csvError.value = 'No valid users found in CSV file';
-      } else {
-        csvData.value = result;
-        uploadedUsers.value = result.data.map((row: any) => {
-          // Look for phone number in common column names
-          const phoneKey = Object.keys(row).find(key => 
-            key.toLowerCase().includes('phone') || 
-            key.toLowerCase().includes('mobile') || 
-            key.toLowerCase().includes('number')
-          );
-          const phoneValue = phoneKey ? row[phoneKey] : Object.values(row)[0];
-          return { phone_number: phoneValue || '' };
-        });
-        csvError.value = null;
-      }
-    } catch (error) {
-      console.error('Error parsing CSV:', error);
-      csvError.value = 'Failed to parse CSV file';
-    }
-  };
-  
-  reader.onerror = (error) => {
-    console.error('Error reading file:', error);
-    csvError.value = 'Failed to read file';
-  };
-  
-  reader.readAsText(file);
-};
-
-const downloadSampleFile = async () => {
-  isDownloadingSample.value = true;
-  try {
-    const response = await fetch('https://bot-file-upload-eu-1.s3.eu-west-1.amazonaws.com/templates/images/users_120323_1709725833.csv');
-    if (!response.ok) {
-      throw new Error('Failed to fetch sample file');
-    }
-    
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'sms_users_sample.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error('Failed to download sample file:', error);
-    // Fallback: open in new tab
-    window.open('https://bot-file-upload-eu-1.s3.eu-west-1.amazonaws.com/templates/images/users_120323_1709725833.csv', '_blank');
-  } finally {
-    isDownloadingSample.value = false;
-  }
-};
-
-// CSV handling methods
-const csvToArray = (csv: string): { headers: string[], data: any[] } => {
-  const lines = csv.split('\n');
-  const headers = lines[0].split(',').map(header => header.trim());
-  const data = lines.slice(1).filter(line => line.trim()).map(line => {
-    const values = line.split(',').map(value => value.trim());
-    const row: any = {};
-    headers.forEach((header, index) => {
-      row[header] = values[index] || '';
-    });
-    return row;
-  });
-  return { headers, data };
-};
-
-const handleFileUpload = (attachments: any[]) => {
-  if (attachments && attachments.length > 0) {
-    const file = attachments[0];
-    broadcastForm.value.uploadedFile = file;
-    
-    // Parse CSV file
-    if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
-      parseCSVFile(file);
-    }
-  }
-};
-
-const getSegmentUsers = () => {
-  if (csvData.value.data.length > 0) {
-    return csvData.value.data.map((row: any) => {
-      // Look for phone number in common column names
-      const phoneKey = Object.keys(row).find(key => 
-        key.toLowerCase().includes('phone') || 
-        key.toLowerCase().includes('mobile') || 
-        key.toLowerCase().includes('number')
-      );
-      const phoneValue = phoneKey ? row[phoneKey] : Object.values(row)[0];
-      return { phone: phoneValue || '' };
-    });
-  }
-  return [];
-};
-
 // Validation functions
 const validateTemplateSelection = (): boolean => {
   if (!selectedTemplate.value) {
@@ -1044,8 +860,8 @@ const buildBroadcastPayload = () => {
     users: broadcastForm.value.userSegment === 'single' ? 
            [{ phone_number: broadcastForm.value.phoneNumber }] : 
            broadcastForm.value.userSegment === 'upload' ? 
-           getSegmentUsers().map(u => ({ phone_number: u.phone })) :
-           broadcastForm.value.userSegment === 'subscribed' ?
+           uploadedUsers.value :
+           broadcastForm.value.userSegment === '-1' ?
            subscribedUsers.value : [],
     template_data: JSON.stringify({
       category: templateData.value.category || 'MARKETING',
@@ -1132,9 +948,6 @@ const resetBroadcastForm = () => {
   uploadedUsers.value = [];
   csvError.value = null;
   
-  // Reset templates to show placeholder again
-  templates.value = [];
-  isTemplatesLoaded.value = false;
   
   // Reset store template and block
   store.template = { ...templateData.value };
@@ -1156,57 +969,6 @@ const validateBroadcast = (): boolean => {
   return validations.every(validation => validation);
 };
 
-// Initialize templates when component is mounted
-// This will be called when the broadcast tab becomes active
-const initializeTemplates = () => {
-  
-  // Check if templates are already loaded in the store
-  if (publishStore.cacheValid.whatsappTemplates && publishStore.cache.whatsappTemplates && publishStore.cache.whatsappTemplates.data && publishStore.cache.whatsappTemplates.data.length > 0) {
-    const approvedTemplates = publishStore.cache.whatsappTemplates.data.filter((template: any) => template.status === 1);
-    templates.value = approvedTemplates.map((template: any) => ({
-      ...template,
-      label: template.template_name || template.name || template.id || `Template ${template.id}`,
-      value: template
-    }));
-    isTemplatesLoaded.value = true;
-    return;
-  }
-  
-  // If not loaded in store, fetch templates immediately
-  
-  fetchTemplates();
-};
-
-// Auto-initialize templates on mount
-onMounted(() => {
-  // Add a small delay to ensure component is fully mounted and store is ready
-  setTimeout(() => {
-    initializeTemplates();
-  }, 100);
-});
-
-// Watch for store template cache changes to auto-update local templates
-watch(() => publishStore.cache.whatsappTemplates, (newCache) => {
-  if (newCache && newCache.data && newCache.data.length > 0 && !isTemplatesLoaded.value) {
-    
-    const approvedTemplates = newCache.data.filter((template: any) => template.status === 1);
-    templates.value = approvedTemplates.map((template: any) => ({
-      ...template,
-      label: template.template_name || template.name || template.id || `Template ${template.id}`,
-      value: template
-    }));
-    isTemplatesLoaded.value = true;
-  }
-}, { deep: true });
-
-// Watch for store loading state changes
-watch(() => publishStore.loadingStates.whatsappTemplates, (isLoading) => {
-  
-  if (!isLoading && !isTemplatesLoaded.value && publishStore.cache.whatsappTemplates?.data) {
-    
-    initializeTemplates();
-  }
-});
 
 // Method to update store when variables change
 const updateStoreFromTemplateData = () => {
@@ -1245,60 +1007,6 @@ const updateStoreFromTemplateData = () => {
   store.block.text = templateData.value.body_text || '';
   store.block.attachment_link = templateData.value.attachment_link || '';
 };
-
-// Add API method for getting subscribed users
-const fetchSubscribedUsers = async () => {
-  if (isLoadingSubscribedUsers.value) return;
-  
-  isLoadingSubscribedUsers.value = true;
-  try {
-    const result = await publishStore.getSegmentUsers('-1', 'wapp');
-    if (result.success && result.data) {
-      subscribedUsers.value = result.data.map((user: any) => ({
-        phone_number: user.phone_number || user.phone || user.phoneNumber
-      }));
-    }
-  } catch (error) {
-    console.error('Error fetching subscribed users:', error);
-    window.$toast?.error('Failed to fetch subscribed users');
-  } finally {
-    isLoadingSubscribedUsers.value = false;
-  }
-};
-
-// Force refresh templates (useful for debugging or manual refresh)
-const forceRefreshTemplates = async () => {
-  isTemplatesLoaded.value = false;
-  templates.value = [];
-  await fetchTemplates();
-};
-
-// Watch for user segment changes to fetch subscribed users when needed
-watch(() => broadcastForm.value.userSegment, (newSegment) => {
-  if (newSegment === 'subscribed') {
-    fetchSubscribedUsers();
-  }
-});
-
-// Watch for validation errors to show real-time feedback
-watch(validationErrors, (newErrors) => {
-  // Clear any existing error messages
-  Object.keys(newErrors).forEach(key => {
-    const errorValue = newErrors[key as keyof typeof newErrors];
-    if (typeof errorValue === 'string' && errorValue) {
-      // Show error toast for immediate feedback
-      window.$toast?.error(errorValue);
-    }
-  });
-}, { deep: true });
-
-// Expose only necessary methods for parent component
-defineExpose({
-  initializeTemplates,
-  resetBroadcastForm,
-  refreshTemplates: fetchTemplates,
-  forceRefreshTemplates
-});
 
 // Add this method to the script section
 const handleSendBroadcast = async () => {
@@ -1352,12 +1060,6 @@ const handleSendBroadcast = async () => {
           
           // Reset broadcast tab values after successful broadcast
           resetBroadcastForm();
-          
-          // Revalidate broadcast report cache after successful broadcast
-          if (publishStore.cache.broadcastReport) {
-            publishStore.cacheValid.broadcastReport = false;
-            publishStore.cache.broadcastReport = null;
-          }
         } else {
           window.$toast?.error(result.error || 'Failed to schedule broadcast');
         }
@@ -1374,57 +1076,85 @@ const handleSendBroadcast = async () => {
     console.log('Broadcast cancelled by user');
   }
 };
+
+watch(() => broadcastForm.value.uploadedFile, (newFile) => {
+  if (newFile && newFile instanceof File) {
+    csvError.value = null; // Clear any previous errors
+    parseCSVFile(newFile);
+  } else {
+    uploadedUsers.value = [];
+    csvError.value = null;
+  }
+});
+
+watch(() => broadcastForm.value.userSegment, (newSegment) => {
+  if (newSegment === '-1') {
+    publishStore.whatsappSegmentUsers.load();
+  }
+});
+
+
+// Watch for validation errors to show real-time feedback
+watch(validationErrors, (newErrors) => {
+  // Clear any existing error messages
+  Object.keys(newErrors).forEach(key => {
+    const errorValue = newErrors[key as keyof typeof newErrors];
+    if (typeof errorValue === 'string' && errorValue) {
+      // Show error toast for immediate feedback
+      window.$toast?.error(errorValue);
+    }
+  });
+}, { deep: true });
+
+
+
+// Auto-initialize templates on mount
+onMounted(async () => {
+  await publishStore.whatsappTemplates.load(1, 20, '');
+  
+  const approvedTemplates = whatsappTemplates.value?.data.templates.data.filter((template: any) => template.status == 1);
+  messageTemplates.value = approvedTemplates.map((template: any) => ({
+    value: template,
+    label: template.name
+  }));
+});
+
 </script>
 
 <template>
   <div>
-  <div class="broadcast-layout">
+    <div v-if="whatsappTemplatesLoading" class="loading-state">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <span>Loading broadcast data...</span>
+      </div>
+    </div>
+  <div  v-else  class="broadcast-layout">
     <!-- Main Content -->
+    <!-- Loading State -->
+
     <div class="main-content">
       <h3>Broadcast</h3>
       <p class="subtitle">Send broadcast messages to your audience</p>
+
       
       <div class="broadcast-form">
         <!-- Message Template -->
         <div class="form-group">
-          <label for="broadcast-template">Message template</label>
-          <div class="template-selector">
-            <VueSelect
-              id="broadcast-template"
+          <VueSelect
+              label="Message template"
               v-model="selectedTemplate"
-              :options="templates"
-              :reduce="(template: any) => template"
-              :placeholder="showTemplateMessage || 'Select a template'"
-              :loading="isLoadingTemplates"
-              :disabled="isLoadingTemplates"
               @change="handleTemplateChange"
+              :options="messageTemplates"
+              placeholder="Select a template"
               :error="validationErrors.template"
             />
-            <div v-if="isLoadingTemplates" class="template-loader">
-              <div class="loader-spinner"></div>
-              <span>Loading templates...</span>
-            </div>
-            
-            <!-- Template status message -->
-            <div v-if="showTemplateMessage && !isLoadingTemplates" class="template-status">
-              <small class="status-text">{{ showTemplateMessage }}</small>
-              <Button 
-                v-if="!isTemplatesLoaded && templates.length === 0" 
-                variant="primary-outline" 
-                size="small" 
-                @click="forceRefreshTemplates"
-                class="retry-button"
-              >
-                Retry
-              </Button>
-            </div>
-          </div>
         </div>
         
         <!-- User Segment -->
         <div class="form-group">
-          <label for="broadcast-segment">User segment</label>
           <VueSelect
+            label="User segment"
             id="broadcast-segment"
             v-model="broadcastForm.userSegment"
             :options="userSegments"
@@ -1434,8 +1164,8 @@ const handleSendBroadcast = async () => {
           />
           
           <!-- Show loading and user count for subscribed users -->
-          <div v-if="broadcastForm.userSegment === 'subscribed'" class="subscribed-users-info">
-            <div v-if="isLoadingSubscribedUsers" class="loading-indicator">
+          <div v-if="broadcastForm.userSegment === '-1'" class="subscribed-users-info">
+            <div v-if="subscribedUsersLoading" class="loading-indicator">
               <i class="pi pi-spin pi-spinner"></i>
               <span>Loading subscribed users...</span>
             </div>
@@ -1452,15 +1182,14 @@ const handleSendBroadcast = async () => {
         
         <!-- File Upload (Upload user only) -->
         <div v-if="showFileUpload" class="form-group">
-          <label>Upload File (CSV)</label>
          <FileUpload
+           label="Upload File (CSV)"
            v-model="broadcastForm.uploadedFile"
            accept=".csv"
            :emit-raw-file="true"
            :max-size-mb="10"
            text="CSV files only"
            :error="fileUploadError"
-           @upload="handleFileUpload"
          />
          
          <small class="help-text">
@@ -1478,7 +1207,7 @@ const handleSendBroadcast = async () => {
          </small>
          
 
-        </div>
+       </div>
         
         <!-- Phone Number (Single user only) -->
         <div v-if="showPhoneNumber" class="form-group">
@@ -1694,20 +1423,21 @@ const handleSendBroadcast = async () => {
            :slides="store.template.slides"
          />
        </div>
-   </div>
-   
-   <!-- Action Buttons -->
-   <div class="agent-action-buttons">
-     <Button
-       variant="primary"
-       size="medium"
-       :loading="isBroadcastSending || isLoadingSubscribedUsers"
-       :disabled="isSendButtonDisabled || isBroadcastSending || isLoadingSubscribedUsers"
-       @click="handleSendBroadcast"
-     >
-       {{ isBroadcastSending ? 'Sending...' : isLoadingSubscribedUsers ? 'Loading Users...' : 'Send Message' }}
-     </Button>
-   </div>
+
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="agent-action-buttons">
+      <Button
+        variant="primary"
+        size="medium"
+        :loading="isBroadcastSending"
+        :disabled="isSendButtonDisabled || isBroadcastSending"
+        @click="handleSendBroadcast"
+      >
+        Send Message
+      </Button>
+    </div>
   </div>
 </template>
 

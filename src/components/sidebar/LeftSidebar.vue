@@ -10,6 +10,8 @@ import CalendlyModal from '@/components/modal/CalendlyModal.vue';
 import { botsifyApi } from '@/services/botsifyApi'
 import BillingModal from '@/components/modal/BillingModal.vue';
 import { getWebUrl } from '@/utils';
+import { BillingData } from '@/types';
+import { showZen } from '@/utils/zendesk';
 
 
 const chatStore = useChatStore();
@@ -123,11 +125,13 @@ const navLinks = computed(() => {
       url: 'https://botsify.zendesk.com/hc/en-us',
       icon: 'pi pi-book'
     },
-    {
-      name: 'Book a Meeting',
-      action: 'bookMeeting',
-      icon: 'pi pi-calendar'
-    },
+  ...(!roleStore.isLiveChatAgent
+    ? [{
+        name: 'Book a Meeting',
+        action: 'bookMeeting',
+        icon: 'pi pi-calendar'
+      }]
+    : []),
     {
       name: 'Support',
       action: 'showZen',
@@ -186,11 +190,6 @@ const closeDropdown = () => {
   showDropdown.value = false;
 };
 
-const showZen = () => {
-  window.showZen()
-  closeDropdown();
-}
-
 // Function to open the BookMeeting modal
 const openBookMeetingModal = () => {
   bookMeetingModalRef.value?.openModal()
@@ -210,35 +209,6 @@ const closeBillingModal = () => {
 }
 
 const billingLoading = ref(false)
-
-interface BillingData {
-  charges: {
-    object: string
-    data: any[]
-    has_more: boolean
-    url: string
-  }
-  stripe_subscription: {
-    id: number
-    user_id: number
-    name: string
-    stripe_id: string
-    stripe_plan: string
-    quantity: number
-    status: string
-    trial_ends_at: string | null
-    ends_at: string | null
-    next_charge_date: string | null
-    created_at: string
-    updated_at: string
-    paddle_cancel_url: string | null
-    paddle_update_url: string | null
-    paddle_checkout_id: string | null
-    subscription_plan_id: string | null
-    whitelabel_client: number
-  }
-}
-
 const billingData = ref<BillingData | null>(null)
 
 const handleManageBilling = async () => {
@@ -277,6 +247,7 @@ const openExternalLink = (url: string) => {
 const handleItemClick = (item: any) => {
   if (item.action === 'showZen') {
     showZen();
+    closeDropdown();
   } else if (item.action === 'bookMeeting') {
     openBookMeetingModal();
   } else if (item.url) {
@@ -408,6 +379,13 @@ const openPartnerPortal = () => {
               <template v-else>Manage Billing</template>
             </span>
             <span class="pricing-star">★</span>
+          </div>
+        </button>
+    </div>
+    <div v-else-if="roleStore.isLiveChatAgent" class="sidebar-pricing">
+        <button class="pricing-button" @click="navigateToPage('select-agent')">
+          <div class="button-content">
+            <span class="pricing-text">Manage Agents</span>
           </div>
         </button>
     </div>

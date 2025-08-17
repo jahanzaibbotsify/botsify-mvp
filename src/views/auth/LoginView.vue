@@ -103,7 +103,7 @@ const handlePasswordInput = () => {
 <template>
   <div class="login-view">
     <div class="auth-header">
-      <h2 class="auth-title">Welcome Back</h2>
+      <h2 class="auth-title">Welcome back</h2>
       <p class="auth-subtitle">Sign in to your account to continue</p>
     </div>
 
@@ -120,7 +120,7 @@ const handlePasswordInput = () => {
       <!-- Email Field -->
       <div class="form-group">
         <label for="email" class="form-label">
-          Email Address
+          Email address
           <span class="required">*</span>
         </label>
         <div class="input-wrapper" :class="{ error: hasEmailError }">

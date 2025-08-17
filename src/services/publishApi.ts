@@ -217,10 +217,10 @@ export class PublishApiService {
   /**
    * Get bot details
    */
-  async getBotDetails(): Promise<ApiResponse> {
+  async getWhatsappConfig(): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
-      const response = await axiosInstance.get('/v1/get-bot-details', {
+      const response = await axiosInstance.get('/v1/get-whatsapp-config', {
         params: {
           apikey: apiKey
         },
@@ -333,7 +333,7 @@ export class PublishApiService {
         access_token: accessToken,
         apikey: apiKey
       }, {
-        timeout: 30000
+        timeout: 60000
       });
       return { success: true, message: 'Page reconnected successfully', data: response.data };
     } catch (error: any) {
@@ -851,25 +851,6 @@ export class PublishApiService {
         message: error.response?.data?.message || error.message || 'Failed to update comment responder',
         data: error.response?.data
       };
-    }
-  }
-
-  /**
-   * Load data for plugins (optin templates and posts)
-   */
-  async loadDataForPlugins(data: string): Promise<ApiResponse> {
-    try {
-      const {apiKey} = useBotStore();
-      const response = await axiosInstance.post('/v1/load-data-for-plugins', {
-        apikey: apiKey,
-        data
-      }, {
-        timeout: 30000 // 30 seconds timeout
-      });
-      return { success: true, message: 'Data for plugins loaded successfully', data: response.data };
-    } catch (error: any) {
-      console.error('Error loading data for plugins:', error);
-      return { success: false, message: error.response?.data?.message || error.message || 'Failed to load data for plugins', data: error.response?.data };
     }
   }
 

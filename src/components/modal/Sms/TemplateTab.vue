@@ -18,7 +18,6 @@ const emit = defineEmits<{
 const publishStore = usePublishStore();
 
 // Local state
-const isLoading = ref(false);
 const searchQuery = ref('');
 const deleteTemplateId = ref<number | null>(null);
 const cloneTemplateId = ref<number | null>(null);
@@ -64,7 +63,6 @@ const handleDeleteTemplate = async (id: number) => {
   },
     async () => {
       deleteTemplateId.value = id;
-      isLoading.value = true;
       try {
         const result = await publishApi.deleteSmsTemplate(id);
         
@@ -90,7 +88,6 @@ const handleDeleteTemplate = async (id: number) => {
         window.$toast.error('Failed to delete template');
       } finally {
         deleteTemplateId.value = null;
-        isLoading.value = false;
       }
     }
   );
@@ -102,7 +99,6 @@ const handleCloneTemplate = async (id: number) => {
     confirmButtonText: "Yes, Clone it!",
   },
     async () => {
-      isLoading.value = true;
       cloneTemplateId.value = id;
       try {
         const result = await publishApi.cloneSmsTemplate(id);
@@ -118,7 +114,6 @@ const handleCloneTemplate = async (id: number) => {
         window.$toast.error('Failed to clone template');
       } finally {
         cloneTemplateId.value = null;
-        isLoading.value = false;
       }
     }
   );

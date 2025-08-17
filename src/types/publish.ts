@@ -75,16 +75,6 @@ export interface ThirdPartyConfig {
   };
 }
 
-// Template Types
-export interface Template {
-  id: number;
-  name: string;
-  content: string;
-  type: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
 
 // SMS Template Types
 export interface SmsTemplate {
@@ -116,36 +106,8 @@ export interface SmsTemplateButton {
   isEditing?: boolean;
 }
 
-export interface SmsTemplateResponse {
-  data: SmsTemplate[];
-  total: number;
-  per_page: number;
-  current_page: number;
-  last_page: number;
-  from: number;
-  to: number;
-  prev_page_url: string | null;
-  next_page_url: string | null;
-}
 
-export interface TemplatesResponse {
-  data: Template[];
-  total: number;
-  per_page: number;
-  current_page: number;
-  last_page: number;
-  from: number;
-  to: number;
-  prev_page_url: string | null;
-  next_page_url: string | null;
-}
 
-// Cached Templates Response (with additional properties for caching)
-export interface CachedTemplatesResponse extends TemplatesResponse {
-  page: number;
-  perPage: number;
-  query?: string;
-}
 
 // Broadcast Report Types
 export interface BroadcastReport {
@@ -159,14 +121,6 @@ export interface BroadcastReport {
   sent_at?: string;
 }
 
-export interface BroadcastReportResponse {
-  data: BroadcastReport[];
-  total: number;
-  per_page: number;
-  current_page: number;
-  last_page: number;
-}
-
 // SMS Report Types
 export interface SmsReport {
   id: string;
@@ -175,14 +129,6 @@ export interface SmsReport {
   status: string;
   sent_at: string;
   delivered_at?: string;
-}
-
-export interface SmsReportResponse {
-  data: SmsReport[];
-  total: number;
-  per_page: number;
-  current_page: number;
-  last_page: number;
 }
 
 // Comment Responder Types
@@ -196,15 +142,6 @@ export interface CommentResponder {
   created_at: string;
   updated_at: string;
 }
-
-export interface CommentResponderResponse {
-  data: CommentResponder[];
-  total: number;
-  per_page: number;
-  current_page: number;
-  last_page: number;
-}
-
 // Landing Settings Types
 export type BackgroundStyle = 'primary' | 'gradient' | 'secondary' | 'plain-primary' | 'plain-secondary';
 
@@ -288,60 +225,6 @@ export interface SmsBroadcast {
   user_segment: string;
   users: Array<{ phone_number: string }>;
   send_at?: string | null;
-}
-
-// Plugin Data Types
-export interface PluginData {
-  templates?: Template[];
-  posts?: any[];
-  [key: string]: any;
-}
-
-// API Response Types
-export interface ApiResponse<T = any> {
-  success: boolean;
-  message: string;
-  data?: T;
-}
-
-// Store State Types
-export interface PublishStoreState {
-  isLoading: boolean;
-  error: string | null;
-  cache: {
-    whatsappTemplates: TemplatesResponse | null;
-    smsTemplates: TemplatesResponse | null;
-    botDetails: BotDetails | null;
-    broadcastReport: { data: BroadcastReportResponse; key: string } | null;
-    smsReport: { data: SmsReportResponse; page: number } | null;
-    thirdPartyConfig: ThirdPartyConfig | null;
-    instagramPages: InstagramPage[] | null;
-    publishStatus: PublishStatus | null;
-    commentResponder: CommentResponderResponse | null;
-  };
-  loadingStates: {
-    whatsappTemplates: boolean;
-    smsTemplates: boolean;
-    botDetails: boolean;
-    broadcastReport: boolean;
-    smsReport: boolean;
-    thirdPartyConfig: boolean;
-    instagramPages: boolean;
-    publishStatus: boolean;
-    commentResponder: boolean;
-    pluginData: boolean;
-  };
-  cacheValid: {
-    whatsappTemplates: boolean;
-    smsTemplates: boolean;
-    botDetails: boolean;
-    broadcastReport: boolean;
-    smsReport: boolean;
-    thirdPartyConfig: boolean;
-    instagramPages: boolean;
-    publishStatus: boolean;
-    commentResponder: boolean;
-  };
 }
 
 export interface SmsReportData  {

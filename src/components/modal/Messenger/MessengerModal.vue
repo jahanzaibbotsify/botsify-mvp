@@ -47,9 +47,6 @@ const messengerComputedTabs = computed(() => {
 // Computed configuration status
 const isConfigured = ref(false);
 
-// Loading state from store
-const isLoading = computed(() => publishStore.facebookPages.loading);
-
 // Configuration check
 const checkConfiguration = () => {
   const pages = publishStore.facebookPages.data;
@@ -113,7 +110,7 @@ defineExpose({ openModal, closeModal });
       <PublishAgentTab 
         v-show="activeTab === 'publish-bot'"
         ref="publishAgentTabRef"
-        :is-loading="isLoading"
+        :is-loading="publishStore.facebookPages.loading"
         @page-connection-change="checkConfiguration"
       />
 
@@ -121,14 +118,14 @@ defineExpose({ openModal, closeModal });
       <CommentAutoResponderTab 
         v-if="activeTab === 'comment-auto-responder' && isConfigured"
         ref="commentAutoResponderTabRef"
-        :is-loading="isLoading"
+        :is-loading="publishStore.facebookPages.loading"
       />
 
       <!-- Broadcast Tab -->
       <BroadcastTab 
         v-if="activeTab === 'broadcast' && isConfigured"
         ref="broadcastTabRef"
-        :is-loading="isLoading"
+        :is-loading="publishStore.facebookPages.loading"
       />
 
       <!-- Configuration Required Message -->

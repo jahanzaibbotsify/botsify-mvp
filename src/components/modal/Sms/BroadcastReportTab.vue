@@ -3,7 +3,8 @@ import { ref, onMounted, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 import { Table, TableHead, TableBody, TableHeader, TableCell, Badge,  Input, Button, DateRange, Pagination } from "@/components/ui";
 import { formatDate } from "@/utils";
-import { PaginationData, SmsReportData } from "@/types";
+import { PaginationData } from "@/types";
+import TableRow from "@/components/ui/TableRow.vue";
 
 defineEmits<{
   'page-change': [page: number];
@@ -49,21 +50,21 @@ const totalPages = computed(() => {
 // Stats cards data
 const statsCards = ref([
   { 
-    title: 'Sent Today', 
+    title: 'SENT', 
     value: 0, 
     icon: 'pi pi-send',
     color: 'var(--color-primary, #3b82f6)',
     bgColor: 'rgba(59, 130, 246, 0.1)'
   },
   { 
-    title: 'Delivered Today', 
+    title: 'DELIVERED', 
     value: 0, 
     icon: 'pi pi-check-circle',
     color: 'var(--color-secondary, #10b981)',
     bgColor: 'rgba(16, 185, 129, 0.1)'
   },
   { 
-    title: 'Failed Today', 
+    title: 'FAILED', 
     value: 0, 
     icon: 'pi pi-times-circle',
     color: 'var(--color-error, #ef4444)',
@@ -76,21 +77,21 @@ const statsCards = ref([
 const loadReport = async (page = 1) => {
   try {
     const result = await publishStore.smsReport.load(page, itemsPerPage, searchQuery.value, dateRange.value.start, dateRange.value.end);
-    if (result?.messages) {
+    if (result?.data?.messages) {
       paginationData.value = {
-        page: result.messages.page || page,
-        perPage: result.messages.per_page || itemsPerPage,
-        total: result.messages.total || 0,
-        to: result.messages.to || 0,
-        prev_page_url: result.messages.prev_page_url || null,
+        page: result.data.messages.page || page,
+        perPage: result.data.messages.per_page || itemsPerPage,
+        total: result.data.messages.total || 0,
+        to: result.data.messages.to || 0,
+        prev_page_url: result.data.messages.prev_page_url || null,
       };
 
-      currentPage.value = result.messages.page || page;
+      currentPage.value = result.data.messages.page || page;
 
       // update stats
-      statsCards.value[0].value = result.sent_today || 0;
-      statsCards.value[1].value = result.delivered_today || 0;
-      statsCards.value[2].value = result.failed_today || 0;
+      statsCards.value[0].value = result.data.sent || 0;
+      statsCards.value[1].value = result.data.delivered || 0;
+      statsCards.value[2].value = result.data.failed || 0;
     }
   } catch (err) {
     console.error("Failed to load report:", err);
@@ -163,10 +164,10 @@ onMounted(() => {
         <Button
           variant="primary"
           size="medium"
-          :loading="publishStore.smsTemplates.loading"
+          :loading="publishStore.smsReport.loading"
           @click="applyFilter"
         >
-          {{ publishStore.smsTemplates.loading ? 'Filtering...' : 'Apply filters' }}
+          {{ publishStore.smsReport.loading ? 'Filtering...' : 'Apply filters' }}
         </Button>
       </div>
     </div>
@@ -199,29 +200,29 @@ onMounted(() => {
         </TableHead>
         <TableBody>
           <!-- Loading State -->
-          <tr v-if="publishStore.smsTemplates.loading" v-for="i in 5" :key="`loading-${i}`">
+          <TableRow v-if="publishStore.smsReport.loading" v-for="i in 5" :key="`loading-${i}`">
             <TableCell :isLoading="true" skeletonType="badge"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
-          </tr>
+          </TableRow>
 
           <!-- Empty State -->
-          <tr v-else-if="!smsReportData.length">
+          <TableRow v-else-if="!smsReportData.length">
             <TableCell :noData="true" colspan="5">
               <div class="empty-state">
                 <div class="empty-icon">
                   <i class="pi pi-inbox"></i>
                 </div>
-                <h4>No SMS messages found</h4>
-                <p>No SMS messages have been sent yet. Start sending messages to see them here.</p>
+                <h4>No SMS broadcast found</h4>
+                <p>No SMS broadcast have been sent yet. Start sending broadcast to see them here.</p>
               </div>
             </TableCell>
-          </tr>
+          </TableRow>
 
           <!-- Data State -->
-          <tr v-else v-for="message in smsReportData" :key="message.id">
+          <TableRow v-else v-for="message in smsReportData" :key="message.id">
             <TableCell>
               <Badge :variant="getStatusVariant(message)" size="small">
                 {{ getStatusText(message) }}
@@ -231,7 +232,7 @@ onMounted(() => {
             <TableCell>{{ truncateMessage(message.message) }}</TableCell>
             <TableCell>{{ message.failure_reason || '-' }}</TableCell>
             <TableCell>{{ formatDate(message.sent_time) }}</TableCell>
-          </tr>
+          </TableRow>
         </TableBody>
       </Table>
     </div>

@@ -65,43 +65,6 @@
     }
   </script>
   <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-
-  
-  <!-- Zendesk Widget -->
-  <script type="text/javascript">
-    window.zESettings = {
-      webWidget: {
-        position: { horizontal: 'left' },
-        offset: { horizontal: '70px', vertical: '15px' }
-      }
-    };
-  </script>
-  
-  <script id="ze-snippet"
-      src="https://static.zdassets.com/ekr/snippet.js?key=91ab9e64-789b-4947-80f6-f2a9712a23b0"></script>
-  
-  <script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function () {
-      zE(function () {
-        zE.hide();
-      });
-    });
-  
-    window.showZen = function (userName = '', userEmail = '') {
-      zE.activate();
-      if (userName || userEmail) {
-        zE('webWidget', 'prefill', {
-          name: { value: userName, readOnly: !!userName },
-          email: { value: userEmail, readOnly: !!userEmail }
-        });
-      }
-    };
-  
-    window.hideZen = function () {
-      zE.hide();
-    };
-  </script>
-  
 </body>
 
 </html>

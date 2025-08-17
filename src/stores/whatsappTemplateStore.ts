@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue';
 import { publishApi } from '@/services/publishApi';
+import { usePublishStore } from './publishStore';
 
 export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
   // Views management
@@ -1258,10 +1259,8 @@ export const useWhatsAppTemplateStore = defineStore('whatsappTemplate', () => {
           return { success: false, error: result.data.message };
         }
         // Clear the templates cache in publishStore
-        const { usePublishStore } = await import('@/stores/publishStore');
         const publishStore = usePublishStore();
-        publishStore.cache.whatsappTemplates = null;
-        publishStore.cacheValid.whatsappTemplates = false;
+        publishStore.whatsappTemplates.invalidate();
         
         window.$toast?.success('Template created successfully!');
         return { success: true, data: templateData };
@@ -1839,6 +1838,6 @@ const removeSlide = (index: number) => {
          addSlide,
 removeSlide,
 recheckAllButtonVariables,
-forceRecheckAllVariables
+forceRecheckAllVariables,
   };
 }); 

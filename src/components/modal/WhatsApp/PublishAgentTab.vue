@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, computed } from "vue";
 import { Button, Input } from "@/components/ui";
 import { usePublishStore } from "@/stores/publishStore";
 import { useBotStore } from "@/stores/botStore";
@@ -20,129 +20,83 @@ const botStore = useBotStore();
 
 // Reactive data
 const selectedProvider = ref<'meta' | 'dialog360' | null>(null);
-const botDetails = ref<any>(null);
-const isLoadingBotDetails = ref(false);
 const showProviderSelection = ref(true);
-const isDialog360Connected = ref(false);
-const isMetaConnected = ref(false);
+const isConnected = ref(false);
 const saving = ref(false);
 
-// Meta Cloud integration state
-const showMetaIntegration = ref(false);
-
-// Meta Cloud fields (for when already connected)
-const metaFields = ref({
-  temporaryToken: '',
-  phoneNumber: '',
-  phoneNumberId: '',
-  whatsappBusinessAccountId: '',
-  clientId: '',
-  clientSecret: ''
-});
-
-// Dialog360 fields
-const dialog360Fields = ref({
+// Unified form fields for both providers
+const formFields = ref({
+  // Common fields
   whatsapp: '',
-  apiKey: '',
-  interactiveButton: false
+  api_key: '',
+  
+  // Meta Cloud specific fields
+  temporary_token: '',
+  whatsapp_phone_id: '',
+  whatsapp_account_id: '',
+  client_id: '',
+  client_secret: '',
+  
+  // Dialog360 specific fields
+  interactive_buttons: false,
+  webhook: ''
 });
 
 // Window features for Dialog360 modal
 const windowFeatures = ref('width=800,height=600,scrollbars=yes,resizable=yes');
 
-// Update local state based on bot details
-const updateLocalState = (details: any) => {
-  botDetails.value = details;
-  
-  // Check if Dialog360 is configured
-  if (details.dialog360) {
-    selectedProvider.value = 'dialog360';
+// Computed properties
+const whatsappData = computed(() => {
+  return publishStore.whatsappConfig.data?.data?.whatsapp;
+});
+
+// Removed unused computed property
+
+const providerType = computed(() => {
+  if (!whatsappData.value) return null;
+  return whatsappData.value.type === 'cloud_whatsapp' ? 'meta' : 'dialog360';
+});
+
+// Update local state based on whatsapp config
+const updateLocalState = () => {
+  const whatsapp = whatsappData.value;
+  if (whatsapp) {
+    selectedProvider.value = providerType.value;
     showProviderSelection.value = false;
-    isDialog360Connected.value = true;
-    isMetaConnected.value = false;
-    
+    isConnected.value = true;
+
     // Pre-fill Dialog360 fields
-    dialog360Fields.value = {
-      whatsapp: details.dialog360.whatsapp || '',
-      apiKey: details.dialog360.api_key || '',
-      interactiveButton: details.dialog360.interactive_button || false
+    formFields.value = {
+      whatsapp: whatsapp.whatsapp || '',
+      api_key: whatsapp.api_key || '',
+      
+      // Dialog360 fields remain default
+      interactive_buttons: whatsapp.interactive_activation,
+      webhook: whatsapp.webhook || '',
+
+      // Meta fields remain empty
+      temporary_token: whatsapp.temporary_token || '',
+      whatsapp_phone_id: whatsapp.whatsapp_phone_id || '',
+      whatsapp_account_id: whatsapp.whatsapp_account_id || '',
+      client_id: whatsapp.client_id || '',
+      client_secret: whatsapp.client_secret || '',
     };
-  }
-  // Check if WhatsApp Cloud is configured
-  else if (details.whatsapp_cloud) {
-    selectedProvider.value = 'meta';
-    showProviderSelection.value = false;
-    isDialog360Connected.value = false;
-    isMetaConnected.value = true;
-    
-    // Pre-fill Meta Cloud fields
-    metaFields.value = {
-      temporaryToken: details.whatsapp_cloud.temporary_token || '',
-      phoneNumber: details.whatsapp_cloud.whatsapp || '',
-      phoneNumberId: details.whatsapp_cloud.whatsapp_phone_id || '',
-      whatsappBusinessAccountId: details.whatsapp_cloud.whatsapp_account_id || '',
-      clientId: details.whatsapp_cloud.client_id || '',
-      clientSecret: details.whatsapp_cloud.client_secret || ''
-    };
-  }
-  // No provider configured, show selection
-  else {
-    showProviderSelection.value = true;
-    selectedProvider.value = null;
-    isDialog360Connected.value = false;
-    isMetaConnected.value = false;
   }
 };
 
-// Watch for changes in bot details cache to update local state
-watch(() => publishStore.cache.botDetails, (newBotDetails) => {
-  if (newBotDetails) {
-    updateLocalState(newBotDetails);
-  }
+// Watch for changes in whatsapp config to update local state
+watch(() => publishStore.whatsappConfig.data, () => {
+  updateLocalState();
 }, { immediate: true });
 
-// Load bot details only if not already cached
-const loadBotDetails = async () => {
-  
-  try {
-    showProviderSelection.value = false;
-    isLoadingBotDetails.value = true;
-  // If we already have valid cached data, use it
-  if (publishStore.cacheValid.botDetails && publishStore.cache.botDetails) {
-    updateLocalState(publishStore.cache.botDetails);
-    return;
-  }
-  
-  // Only fetch if not already loading
-  if (publishStore.loadingStates.botDetails) {
-    return;
-  }
-    const result = await publishStore.getBotDetails();
-    if (result.success && result.data) {
-      updateLocalState(result.data);
-    }
-  } catch (error) {
-    console.error('Failed to load bot details:', error);
-  } finally {
-    isLoadingBotDetails.value = false;
-  }
-};
-
-// Load bot details on component mount only if needed
+// Load whatsapp config on component mount
 onMounted(async () => {
-  // Only load if we don't have valid cached data
-  if (!publishStore.cacheValid.botDetails || !publishStore.cache.botDetails) {
-    await loadBotDetails();
-  }
+  await publishStore.whatsappConfig.load();
 });
 
 // Methods
 const selectProvider = (provider: 'meta' | 'dialog360') => {
   selectedProvider.value = provider;
-  if (provider === 'meta' && !isMetaConnected.value) {
-    // Show Meta Cloud integration steps
-    showMetaIntegration.value = true;
-  }
 };
 
 const openDialog360Modal = () => {
@@ -151,79 +105,62 @@ const openDialog360Modal = () => {
 };
 
 const handleMetaIntegrationComplete = async () => {
-  showMetaIntegration.value = false;
-  isMetaConnected.value = true;
-  // Reload bot details to update the UI
-  await loadBotDetails();
+  isConnected.value = true;
+  // Reload whatsapp config to update the UI
+  await publishStore.whatsappConfig.load();
 };
 
 const handleSaveSettings = async () => {
   // Validate fields based on selected provider
   if (selectedProvider.value === 'meta') {
-    if (!metaFields.value.temporaryToken || !metaFields.value.phoneNumber || 
-        !metaFields.value.phoneNumberId || !metaFields.value.whatsappBusinessAccountId ||
-        !metaFields.value.clientId || !metaFields.value.clientSecret) {
+    if (!formFields.value.temporary_token || !formFields.value.whatsapp || 
+        !formFields.value.whatsapp_phone_id || !formFields.value.whatsapp_account_id ||
+        !formFields.value.client_id || !formFields.value.client_secret) {
       window.$toast?.error('All Meta Cloud fields are required');
       return;
     }
   } else if (selectedProvider.value === 'dialog360') {
-    if (!dialog360Fields.value.whatsapp || !dialog360Fields.value.apiKey) {
+    if (!formFields.value.whatsapp || !formFields.value.api_key) {
       window.$toast?.error('WhatsApp number and API Key are required');
       return;
     }
   }
   
-  saving.value = true; // Set loading state
+  saving.value = true;
   
   try {
-    let payload: any;
+    const payload = {
+      api_key: selectedProvider.value === 'meta' ? botStore.apiKey : formFields.value.api_key,
+      bot_id: botStore.botId,
+      type: (selectedProvider.value === 'meta' ? 'meta' : '360_dialog') as 'meta' | '360_dialog',
+      whatsapp: formFields.value.whatsapp,
+      // Meta Cloud specific fields
+      client_id: formFields.value.client_id || null,
+      client_secret: formFields.value.client_secret || null,
+      temporary_token: formFields.value.temporary_token || null,
+      whatsapp_phone_id: formFields.value.whatsapp_phone_id || null,
+      whatsapp_account_id: formFields.value.whatsapp_account_id || null,
+      // Dialog360 specific fields
+      interactive_buttons: formFields.value.interactive_buttons || false,
+      webhook: formFields.value.webhook || ''
+    };
     
-    if (selectedProvider.value === 'meta') {
-      payload = {
-        api_key: botStore.apiKey,
-        bot_id: botStore.botId,
-        client_id: metaFields.value.clientId,
-        client_secret: metaFields.value.clientSecret,
-        temporary_token: metaFields.value.temporaryToken,
-        type: 'meta' as const,
-        whatsapp: metaFields.value.phoneNumber,
-        whatsapp_phone_id: metaFields.value.phoneNumberId,
-        whatsapp_account_id: metaFields.value.whatsappBusinessAccountId
-      };
-    } else if (selectedProvider.value === 'dialog360') {
-      payload = {
-        api_key: dialog360Fields.value.apiKey,
-        bot_id: botStore.botId,
-        interactive_buttons: dialog360Fields.value.interactiveButton,
-        type: '360_dialog' as const,
-        webhook: botDetails.value?.dialog360?.webhook || '',
-        whatsapp: dialog360Fields.value.whatsapp
-      };
-    }
-    
-    if (payload) {
-      // Use unified method
-      const result = await publishStore.saveWhatsAppSettings(payload);
-      if (result.success) {
-        const providerName = selectedProvider.value === 'meta' ? 'Meta Cloud' : 'Dialog360';
-        window.$toast?.success(`${providerName} settings saved successfully!`);
-        
-        // Clear bot details cache to force refresh
-        publishStore.cache.botDetails = null;
-        publishStore.cacheValid.botDetails = false;
-        
-        // Reload bot details to update the UI
-        await loadBotDetails();
-      } else {
-        window.$toast?.error(result.error || `Failed to save ${selectedProvider.value === 'meta' ? 'Meta Cloud' : 'Dialog360'} settings`);
-      }
+    const result = await publishStore.saveWhatsAppSettings(payload);
+    if (result.success) {
+      const providerName = selectedProvider.value === 'meta' ? 'Meta Cloud' : 'Dialog360';
+      window.$toast?.success(`${providerName} settings saved successfully!`);
+      
+      // Reload whatsapp config to update the UI
+      await publishStore.whatsappConfig.load();
+    } else {
+      window.$toast?.error(result.error || `Failed to save ${selectedProvider.value === 'meta' ? 'Meta Cloud' : 'Dialog360'} settings`);
     }
   } catch (error) {
     console.error('Error saving settings:', error);
     const providerName = selectedProvider.value === 'meta' ? 'Meta Cloud' : 'Dialog360';
     window.$toast?.error(`Failed to save ${providerName} settings`);
   } finally {
-    saving.value = false; // Reset loading state
+    saving.value = false;
   }
 };
 
@@ -236,7 +173,7 @@ defineExpose({
 <template>
   <div class="tab-panel">
     <!-- Meta Cloud Integration Steps (when not connected) -->
-    <div v-if="showMetaIntegration" class="meta-integration">
+    <div v-if="!isConnected && selectedProvider === 'meta'" class="meta-integration">
       <MetaCloudIntegration 
         :on-complete="handleMetaIntegrationComplete"
       />
@@ -244,14 +181,11 @@ defineExpose({
 
     <!-- Main Publish Agent Content (when not showing integration) -->
     <div v-else>
-      <!-- <h3>Publish your agent</h3>
-      <p class="subtitle">Choose your WhatsApp provider and configure settings</p> -->
-      
       <!-- Loading State -->
-      <div v-if="isLoadingBotDetails" class="loading-state">
+      <div v-if="isLoading" class="loading-state">
         <div class="loading-content">
           <div class="loading-spinner"></div>
-          <p>Loading bot configuration...</p>
+          <p>Loading WhatsApp configuration...</p>
         </div>
       </div>
       
@@ -262,7 +196,7 @@ defineExpose({
           :class="{ active: selectedProvider === 'meta' }"
           @click="selectProvider('meta')"
         >
-        <img src="/images/whatsapp-icon.png" alt="Meta Cloud" class="provider-icon" />
+          <img src="/images/whatsapp-icon.png" alt="Meta Cloud" class="provider-icon" />
           Official Meta cloud
         </button>
         <button 
@@ -270,78 +204,13 @@ defineExpose({
           :class="{ active: selectedProvider === 'dialog360' }"
           @click="selectProvider('dialog360')"
         >
-        <img src="/images/360dialog-logo.png" alt="Dialog360" class="provider-icon" />
+          <img src="/images/360dialog-logo.png" alt="Dialog360" class="provider-icon" />
           Dialog360
         </button>
       </div>
 
-      <!-- Meta Cloud Form (when already connected) -->
-      <div v-if="selectedProvider === 'meta' && isMetaConnected" class="provider-form">
-        <h4>Meta cloud configuration</h4>
-        <div class="form-group">
-          <Input 
-            label="Temporary access token"
-            id="meta-token"
-            v-model="metaFields.temporaryToken"
-            type="text"
-            placeholder="Enter your temporary access token"
-            size="medium"
-          />
-        </div>
-        <div class="form-group">
-          <Input 
-            label="Client ID"
-            id="meta-client-id"
-            v-model="metaFields.clientId"
-            type="text"
-            placeholder="Enter your client ID"
-            size="medium"
-          />
-        </div>
-        <div class="form-group">
-          <Input 
-            label="Client secret"
-            id="meta-client-secret"
-            v-model="metaFields.clientSecret"
-            type="password"
-            placeholder="Enter your client secret"
-            size="medium"
-          />
-        </div>
-        <div class="form-group">
-          <Input 
-            label="Phone number"
-            id="meta-phone"
-            v-model="metaFields.phoneNumber"
-            type="tel"
-            placeholder="Enter your phone number"
-            size="medium"
-          />
-        </div>
-        <div class="form-group">
-          <Input 
-            label="Phone number ID"
-            id="meta-phone-id"
-            v-model="metaFields.phoneNumberId"
-            type="text"
-            placeholder="Enter your phone number ID"
-            size="medium"
-          />
-        </div>
-        <div class="form-group">
-          <Input 
-            label="WhatsApp business account ID"
-            id="meta-business-id"
-            v-model="metaFields.whatsappBusinessAccountId"
-            type="text"
-            placeholder="Enter your WhatsApp business account ID"
-            size="medium"
-          />
-        </div>
-      </div>
-
       <!-- Dialog360 Registration Modal (when not connected) -->
-      <div v-if="selectedProvider === 'dialog360' && !isDialog360Connected" class="dialog360-registration">
+      <div v-if="selectedProvider === 'dialog360' && !isConnected" class="dialog360-registration">
         <h4>Request WhatsApp Business Account</h4>
         <div class="registration-content">
           <div class="registration-steps">
@@ -365,40 +234,102 @@ defineExpose({
         </div>
       </div>
 
-      <!-- Dialog360 Form (when already connected) -->
-      <div v-if="selectedProvider === 'dialog360' && isDialog360Connected" class="provider-form">
-        <h4>Dialog360 configuration</h4>
+      <!-- Unified Form (when provider is selected or connected) -->
+      <div v-if="selectedProvider && isConnected" class="provider-form">
+        <h4>{{ selectedProvider === 'meta' ? 'Meta Cloud' : 'Dialog360' }} configuration</h4>
+        
+        <!-- Common Fields -->
         <div class="form-group">
           <Input 
             label="WhatsApp number"
-            id="dialog-whatsapp"
-            v-model="dialog360Fields.whatsapp"
+            id="whatsapp-number"
+            v-model="formFields.whatsapp"
             type="tel"
             placeholder="Enter your WhatsApp number"
             size="medium"
           />
         </div>
-        <div class="form-group">
+
+        <!-- Dialog360 Specific Fields -->
+        <div v-if="selectedProvider === 'dialog360'" class="form-group">
           <Input 
             label="API Key"
             id="dialog-api-key"
-            v-model="dialog360Fields.apiKey"
+            v-model="formFields.api_key"
             type="password"
             placeholder="Enter your API key"
             size="medium"
           />
         </div>
-        <div class="form-group">
+
+        <div v-if="selectedProvider === 'dialog360'" class="form-group">
           <label for="dialog-interactive-button" class="checkbox-label">
             <input 
               id="dialog-interactive-button"
               type="checkbox"
-              v-model="dialog360Fields.interactiveButton"
+              v-model="formFields.interactive_buttons"
               class="form-checkbox"
             />
             <span>Interactive Button</span>
           </label>
         </div>
+
+        <!-- Meta Cloud Specific Fields -->
+        <div v-if="selectedProvider === 'meta'" class="form-group">
+          <Input 
+            label="Temporary access token"
+            id="meta-token"
+            v-model="formFields.temporary_token"
+            type="text"
+            placeholder="Enter your temporary access token"
+            size="medium"
+          />
+        </div>
+
+        <div v-if="selectedProvider === 'meta'" class="form-group">
+          <Input 
+            label="Client ID"
+            id="meta-client-id"
+            v-model="formFields.client_id"
+            type="text"
+            placeholder="Enter your client ID"
+            size="medium"
+          />
+        </div>
+
+        <div v-if="selectedProvider === 'meta'" class="form-group">
+          <Input 
+            label="Client secret"
+            id="meta-client-secret"
+            v-model="formFields.client_secret"
+            type="password"
+            placeholder="Enter your client secret"
+            size="medium"
+          />
+        </div>
+
+        <div v-if="selectedProvider === 'meta'" class="form-group">
+          <Input 
+            label="Phone number ID"
+            id="meta-phone-id"
+            v-model="formFields.whatsapp_phone_id"
+            type="text"
+            placeholder="Enter your phone number ID"
+            size="medium"
+          />
+        </div>
+
+        <div v-if="selectedProvider === 'meta'" class="form-group">
+          <Input 
+            label="WhatsApp business account ID"
+            id="meta-business-id"
+            v-model="formFields.whatsapp_account_id"
+            type="text"
+            placeholder="Enter your WhatsApp business account ID"
+            size="medium"
+          />
+        </div>
+
         <!-- Action Buttons -->
         <div class="agent-action-buttons">        
           <Button
@@ -413,7 +344,6 @@ defineExpose({
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -468,13 +398,13 @@ defineExpose({
 
 .provider-button:hover {
   border-color: var(--color-primary, #3b82f6);
-  background: var(--color-bg-tertiary, #f3f4f6);
+  background: var(--color-bg-secondary, #f3f4f6);
 }
 
 .provider-button.active {
   border-color: var(--color-primary, #3b82f6);
-  background: var(--color-primary, #3b82f6);
-  color: white;
+  background: var(--color-bg-tertiary);
+  /* color: white; */
 }
 
 .provider-icon {
@@ -585,6 +515,7 @@ defineExpose({
 .meta-integration {
   padding: 0;
 }
+
 
 @media (max-width: 640px) {
   .provider-selection {

@@ -86,7 +86,7 @@
           <div class="info-card">
             <div class="card-header">
               <div class="step-number">3</div>
-              <h3 class="card-title">Verify Your Phone Number</h3>
+              <h3 class="card-title">Verify your phone number</h3>
             </div>
             <div class="card-content">
               <div class="content-text">

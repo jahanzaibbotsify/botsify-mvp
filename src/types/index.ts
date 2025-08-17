@@ -94,6 +94,35 @@ export interface ExtendedChat extends Chat {
   profilePic?: string
 }
 
+
+export interface BillingData {
+  charges: {
+    object: string
+    data: any[]
+    has_more: boolean
+    url: string
+  }
+  stripe_subscription: {
+    id: number
+    user_id: number
+    name: string
+    stripe_id: string
+    stripe_plan: string
+    quantity: number
+    status: string
+    trial_ends_at: string | null
+    ends_at: string | null
+    next_charge_date: string | null
+    created_at: string
+    updated_at: string
+    paddle_cancel_url: string | null
+    paddle_update_url: string | null
+    paddle_checkout_id: string | null
+    subscription_plan_id: string | null
+    whitelabel_client: number
+  }
+}
+
 // Export conversation types
 export * from './conversation'
 

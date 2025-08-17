@@ -3,6 +3,9 @@ import { ref, reactive } from 'vue'
 import ModalLayout from '@/components/ui/ModalLayout.vue'
 import { botsifyApi } from '@/services/botsifyApi'
 import { useChatStore } from '@/stores/chatStore'
+import { createResource } from "@/utils/caching.ts"
+import Input from '../ui/Input.vue'
+import Button from '../ui/Button.vue'
 
 interface Props {
   chatId: string
@@ -21,7 +24,6 @@ const webSearchSelectedUrlId = ref('0')
 
 // Web search refs
 const webSearchUrl = ref('')
-const showWebSearchConfig = ref(false)
 const webSearchConfig = ref({
   location: {
     country: '',
@@ -30,6 +32,12 @@ const webSearchConfig = ref({
     timezone: ''
   },
   searchContextSize: 'medium'
+})
+
+// Create cached resource for web search data
+const webSearchResource = createResource(async () => {
+  const response = await botsifyApi.getWebSearch()
+  return response
 })
 
 const openModal = async () => {
@@ -45,13 +53,10 @@ const openModal = async () => {
 const loadWebSearchData = async () => {
   try {
     console.log('Loading existing Web Search data for bot assistant:', props.chatId)
-    const response = await botsifyApi.getWebSearch()
+    const response = await webSearchResource.load()
     
     if (response.success) {
-      console.log('web search result:', response.data)
       webSearchResults.push(...response.data)
-    } else {
-      console.log('No existing Web Search data found or failed to load:', response.message)
     }
   } catch (error: any) {
     console.error('Error loading Web Search data:', error)
@@ -66,10 +71,6 @@ const connectWebSearch = async () => {
 
   try {
     webSearchLoading.value = true
-    console.log('Creating Web Search for bot assistant:', props.chatId)
-    console.log('Web Search URL:', webSearchUrl.value)
-    console.log('Web Search configuration:', webSearchConfig.value)
-    
     const response = await botsifyApi.createWebSearch(webSearchUrl.value.trim(), JSON.stringify(webSearchConfig.value))
     
     if (response.success) {
@@ -80,13 +81,13 @@ const connectWebSearch = async () => {
         url: webSearchUrl.value
       })
 
+      // Invalidate cache after adding new web search
+      webSearchResource.invalidate()
+
       // Add success message to chat
       const successMessage = `✅ Web Search connected successfully for: ${webSearchUrl.value}`
       await chatStore.addMessage(props.chatId, successMessage, 'assistant')
-
-      closeModal()
     } else {
-      console.error('Failed to create Web Search:', response.message)
       window.$toast.error('Failed to create Web Search: ' + response.message)
     }
   } catch (error: any) {
@@ -105,20 +106,19 @@ const deleteWebSearchEntry = (webSearchId: string, webSearchUrl: string) => {
     try {
       webSearchDeleteLoading.value = true
       webSearchSelectedUrlId.value = webSearchId
-      console.log('Deleting Web Search entry:', webSearchId, '-', webSearchUrl)
-      
       const response = await botsifyApi.deleteAllWebSearch([webSearchId])
       if (response.success) {
-        console.log('Web Search entry deleted successfully')
         const index = webSearchResults.findIndex(item => item.id === webSearchId)
         if (index !== -1) {
           webSearchResults.splice(index, 1)
         }
+        
+        // Invalidate cache after deletion
+        webSearchResource.invalidate()
+        
         // Add success message to chat
         const successMessage = `✅ Web Search for ${webSearchUrl} removed successfully`
         await chatStore.addMessage(props.chatId, successMessage, 'assistant')
-
-        closeModal()
       } else {
         console.error('Failed to delete Web Search entry:', response.message)
         window.$toast.error('Failed to delete Web Search entry: ' + response.message)
@@ -143,30 +143,23 @@ const deleteWebSearchAllEntry = () => {
       const response = await botsifyApi.deleteAllWebSearch(ids)
       
       if (response.success) {
-        console.log('Web Search entry deleted successfully')
         webSearchResults.splice(0, webSearchResults.length)
+        
+        // Invalidate cache after deletion
+        webSearchResource.invalidate()
+        
         // Add success message to chat
         const successMessage = `✅ All Web Search removed successfully`
         await chatStore.addMessage(props.chatId, successMessage, 'assistant')
-
-        closeModal()
       } else {
-        console.error('Failed to delete Web Search entry:', response.message)
         window.$toast.error('Failed to delete Web Search entry: ' + response.message)
       }
     } catch (error: any) {
-      console.error('Error deleting Web Search entry:', error)
       window.$toast.error('Error deleting Web Search entry: ' + error.message)
     } finally {
       webSearchDeleteAllLoading.value = false
     }
   })
-}
-
-const closeModal = () => {
-  modalRef.value?.closeModal()
-  webSearchUrl.value = ''
-  showWebSearchConfig.value = false
 }
 
 // Expose the open method to parent
@@ -187,26 +180,22 @@ defineExpose({ openModal })
       <div class="url-input-section">
         <label for="website-url">Website URL</label>
         <div class="input-group">
-          <input 
+          <Input 
             id="website-url"
             v-model="webSearchUrl" 
             type="url" 
-            placeholder="https://example.com"
             class="url-input"
-            @keydown.enter="connectWebSearch"
+            placeholder="https://example.com"
           />
-          <button 
-            class="connect-button primary" 
+          <Button 
+            variant="primary"
+            icon="pi pi-paperclip"
             @click="connectWebSearch"
             :disabled="webSearchLoading || !webSearchUrl.trim()"
+            :loading="webSearchLoading"
           >
-            <span v-if="webSearchLoading" class="loading-spinner"></span>
-            <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-            </svg>
             {{ webSearchLoading ? 'Connecting...' : 'Connect' }}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -214,14 +203,16 @@ defineExpose({ openModal })
       <div v-if="webSearchResults.length" class="search-results">
         <div class="websites-connected-header">
           <h3>Websites Connected</h3>
-          <button 
-            class="delete-button" 
+          <Button 
+            variant="error-outline"
+            icon="pi pi-trash"
+            iconOnly
+            size="small"
             @click="deleteWebSearchAllEntry()"
             title="Delete all web search entries"
-          >
-            <span v-if="webSearchDeleteAllLoading" class="loading-spinner"></span>
-            <i class="pi pi-trash" v-else></i>
-          </button>
+            :loading="webSearchDeleteAllLoading"
+            :disabled="webSearchDeleteAllLoading"
+          />
         </div>
         <template v-for="webSearchResult of webSearchResults">
           <div class="website-info">
@@ -238,14 +229,16 @@ defineExpose({ openModal })
                 <div class="website-title">{{ 'Website' }}</div>
                 <div class="website-status">{{'Connected' }}</div>
               </div>
-              <button 
-                class="delete-button" 
+              <Button 
+                variant="error-outline"
+                icon="pi pi-trash"
+                iconOnly
+                size="small"
                 @click="deleteWebSearchEntry(webSearchResult.id, webSearchResult.url)"
                 title="Delete this web search entry"
-              >
-                <span v-if="webSearchDeleteLoading && webSearchSelectedUrlId == webSearchResult.id" class="loading-spinner"></span>
-                <i class="pi pi-trash" v-else></i>
-              </button>
+                :loading="webSearchDeleteLoading && webSearchSelectedUrlId == webSearchResult.id"
+                :disabled="webSearchDeleteLoading && webSearchSelectedUrlId == webSearchResult.id"
+              />
             </div>
           </div>
         </template>
@@ -288,69 +281,8 @@ defineExpose({ openModal })
   gap: var(--space-2);
 }
 
-.url-input {
+.input-group .url-input {
   flex: 1;
-  padding: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-secondary);
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-  transition: all var(--transition-normal);
-}
-
-.url-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.1);
-}
-
-.url-input::placeholder {
-  color: var(--color-text-tertiary);
-}
-
-.connect-button {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  min-width: 120px;
-  justify-content: center;
-}
-
-.connect-button:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 163, 255, 0.3);
-}
-
-.connect-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.loading-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid transparent;
-  border-top: 2px solid currentColor;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .search-results {
@@ -387,10 +319,6 @@ defineExpose({ openModal })
   background: rgba(0, 163, 255, 0.05);
 }
 
-.website-item:hover .delete-button {
-  opacity: 1;
-}
-
 .website-icon {
   color: var(--color-text-secondary);
 }
@@ -425,31 +353,6 @@ defineExpose({ openModal })
   align-items: baseline;
 }
 
-/* Delete button styles */
-.delete-button {
-  background: transparent;
-  border: none;
-  padding: var(--space-2);
-  color: var(--color-text-danger);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: all var(--transition-normal);
-  opacity: 0.7;
-}
-
-.delete-button:hover {
-  color: var(--color-error);
-  background: var(--color-bg-secondary);
-}
-
-.delete-button:active {
-  transform: scale(0.95);
-}
-
-.delete-button:focus {
-  outline: none;
-  box-shadow: none;
-}
 
 /* Mobile styles */
 @media (max-width: 767px) {

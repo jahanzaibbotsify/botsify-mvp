@@ -7,6 +7,7 @@ import { useConversationStore } from '@/stores/conversationStore';
 import { usePublishStore } from '@/stores/publishStore';
 import { useRoute, useRouter } from 'vue-router';
 import { getCurrentApiKey } from './apiKeyUtils';
+import { useMCPStore } from '@/stores/mcpStore';
 
 // let isBotDataLoaded = false;
 
@@ -71,6 +72,8 @@ export async function getBotData() {
     botStore.setUser(data.user);
     botStore.setBotName(data.bot.name);
     
+    useMCPStore().connectedMCPs = data.mcp_count;
+    
          // Set global flag to prevent duplicate calls
     //  isBotDataLoaded = true;
 
@@ -94,13 +97,14 @@ export async function getBotData() {
      }
 
      // Route restrictions
+     if (roleStore.isLiveChatAgent && route.name !== 'conversation') {
+        router.replace({ name: 'conversation' });
+      }
+      
      if (route.name === 'conversation' && !roleStore.hasSubscription) {
        router.replace({ name: 'agent', params: { id: apikey } });
      }
 
-     if (roleStore.isLiveChatAgent && route.name !== 'conversation') {
-       router.replace({ name: 'conversation' });
-     }
      
      return data;
 
