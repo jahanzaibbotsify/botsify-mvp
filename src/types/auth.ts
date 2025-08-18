@@ -21,6 +21,7 @@ export interface PricingPlan {
   currency: string;
   billing: 'monthly' | 'yearly' | 'custom';
   features: string[];
+  excludedFeatures?: string[];
   limits: {
     conversations: number | 'unlimited';
     agents: number | 'unlimited';

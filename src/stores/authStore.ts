@@ -34,7 +34,7 @@ export const useAuthStore = defineStore('auth', () => {
       billing: 'monthly',
       features: [
         '2 AI Agents',
-        '5,000 Users/Month',
+        '5,000 Users',
         '$10/1,000 additional users',
         'Integrate Documents & Web Search',
         'Messenger, SMS, Website, Instagram, Telegram',
@@ -42,6 +42,19 @@ export const useAuthStore = defineStore('auth', () => {
         'Basic Support',
         'All integrations',
         '1 Month Chat History'
+      ],
+      excludedFeatures: [
+        'Integrate MCP 🔥',
+        'Scheduled Agents 🔥',
+        'WhatsApp platform support',
+        '1-Agent development free worth $100/Month',
+        'Whitelabel Dashboard & Reselling Rights',
+        'Access to all Botsify Resources',
+        'Personal Onboarding Session',
+        'Bi-Weekly Training of 1 Agent Free for 12 Months',
+        'WhatsApp Agents (1,000 free conversations each month)',
+        'Priority Support',
+        '3 Months Chat History'
       ],
       limits: {
         conversations: 5000,
@@ -112,7 +125,7 @@ export const useAuthStore = defineStore('auth', () => {
       currency: 'USD',
       billing: 'custom',
       features: [
-        'Custom Agent development',
+        'Custom Agent development 🔥',
         'All Platforms',
         'On-Premises Solution / Cloud Dedicated Licence',
         '7-day training history',

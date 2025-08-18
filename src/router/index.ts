@@ -1,6 +1,7 @@
 import {RouteRecordRaw, createRouter, createWebHistory} from 'vue-router'
 import {useAuthStore} from "@/stores/authStore.ts";
 import { getCurrentApiKey } from '@/utils/apiKeyUtils';
+
 const routes: RouteRecordRaw[] = [
   // Auth Routes (with AuthLayout)
   {
@@ -106,8 +107,17 @@ const routes: RouteRecordRaw[] = [
       {
         path: '/users',
         name: 'users',
-        component: () => import('../views/UserView.vue'),
-        meta: { requiresAuth: true }
+        component: () => import('../views/UserView.vue')
+      },
+      // {
+      //   path: '/settings',
+      //   name: 'settings',
+      //   component: () => import('../views/SettingsView.vue')
+      // },
+      {
+        path: '/data-analysis',
+        name: 'data-analysis',
+        component: () => import('../views/DataAnalysisView.vue')
       }
     ]
   },

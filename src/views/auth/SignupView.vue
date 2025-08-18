@@ -257,21 +257,11 @@ const clearFieldError = (field: string) => {
           <div class="input-icon">
             <i class="pi pi-phone"></i>
           </div>
-<!--          <input-->
-<!--              id="phone"-->
-<!--              v-model="form.phone_number"-->
-<!--              @input="clearFieldError('phone_number')"-->
-<!--              type="text"-->
-<!--              class="form-input"-->
-<!--              placeholder="Enter your phone no"-->
-<!--              autocomplete="phone"-->
-<!--              :disabled="authStore.isLoading"-->
-<!--          />-->
           <vue-tel-input
               :disabled="authStore.isLoading"
               v-model="form.phone_number"
               mode="international"
-              class="form-input form-input-tel"
+              class="form-input-phone"
               :dropdownOptions="{
                 showFlags: true,
                 showDialCodeInSelection: true,
@@ -522,9 +512,15 @@ const clearFieldError = (field: string) => {
   transition: all var(--transition-normal);
 }
 
-.form-input-tel{
-  max-height: 44px;
-  padding-left: calc(var(--space-5) + var(--space-1));
+.form-input-phone {
+  width: 100%;
+  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-5) + var(--space-1));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  transition: all var(--transition-normal);
 }
 
 .form-input:focus {

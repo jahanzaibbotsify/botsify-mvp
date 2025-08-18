@@ -53,6 +53,13 @@ const navigationButtons = computed(() => {
       requiresSubscription: false // Agent is always available
     },
     {
+      id: 'data-analysis',
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h2v18H3V3Zm6 6h2v12H9V9Zm6-4h2v16h-2V5Zm6 8h-2v8h2v-8Z"/></svg>',
+      name: 'Analytics',
+      permission: 'view_analytics' as const,
+      requiresSubscription: true
+    },
+    {
       id: `conversation`,
       icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 4a8 8 0 0 0-5.687 13.627 1 1 0 0 1 .147 1.217L5.766 20H12a8 8 0 1 0 0-16ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10H4a1 1 0 0 1-.857-1.515l1.218-2.03A9.964 9.964 0 0 1 2 12Z" clip-rule="evenodd"></path><path d="M9.25 12a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Zm4 0a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Zm4 0a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Z"></path></svg>',
       name: 'Chat',
