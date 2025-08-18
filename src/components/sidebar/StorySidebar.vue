@@ -760,6 +760,7 @@ defineExpose({
   padding: var(--space-4);
   overflow-y: auto;
   background-color: var(--color-bg-primary);
+  word-wrap: break-word;
 }
 
 .story-content :deep(.empty-state) {
