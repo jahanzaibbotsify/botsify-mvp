@@ -315,6 +315,7 @@ const addServer = async (allowedTools: string[]) => {
           mcpStore.servers[serverIndex].connectionId = connectedServer.id;
         }
       }
+      mcpStore.connectedMCPs = mcpStore.connectedServers.length;
       emit('quit');
     }
   }
