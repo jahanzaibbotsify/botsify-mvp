@@ -198,10 +198,7 @@ const pageContent = computed(() => {
   align-items: center;
   justify-content: center;
   padding: var(--space-4);
-  /* background: rgba(255, 255, 255, 0.1); */
   border-radius: var(--radius-lg);
-  /* backdrop-filter: blur(10px); */
-  /* border: 1px solid rgba(255, 255, 255, 0.1); */
 }
 
 .logo-image {

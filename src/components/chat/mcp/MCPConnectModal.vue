@@ -400,7 +400,7 @@ onMounted(() => {
         <div class="pt-20">
           <input type="text" v-model="description" id="description" placeholder="Description (optional)">
         </div>
-        <div class="auth-select-group pt-20" v-if="isCustom || (server && server.name === 'Shopify')">
+        <!-- <div class="auth-select-group pt-20" v-if="isCustom || (server && server.name === 'Shopify')">
           <label class="auth-label" for="authType">
             Authentication
             <span class="info-icon">
@@ -421,7 +421,7 @@ onMounted(() => {
             </svg>
           </span>
           </div>
-        </div>
+        </div> -->
         <div class="pt-20" v-if="server && server.id === 'google-sheet'">
           <input type="file" v-on:change="handleFileChange">
           <div class="header-container pt-5" style="font-size: 11px; text-align: justify; margin: auto;">Hint: Upload Google Service Account Key. We’ll handle token generation.</div>
