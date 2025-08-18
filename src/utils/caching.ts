@@ -35,8 +35,16 @@ export function createResource<T, P extends any[]>(
     const invalidate = () => {
       valid.value = false;
     };
+
+    const clear = () => {
+      data.value = null;
+      loading.value = false;
+      error.value = null;
+      valid.value = false;
+      lastParams = null;
+    };
   
-    return { data, loading, error, valid, load, invalidate };
+    return { data, loading, error, valid, load, invalidate, clear };
   }
   
   
