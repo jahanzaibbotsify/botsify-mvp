@@ -21,7 +21,8 @@ const emit = defineEmits<{
   'refresh-page-permission': [];
   'remove-page-permission': [];
   'connect-account': [];
-  'page-connection-change': [];
+  'page-disconnect': [];
+  'page-connect': [];
 }>();
 
 const publishStore = usePublishStore();
@@ -126,6 +127,11 @@ const connectionPage = async (type: string, page: any) => {
       window.$toast.success(`Page ${type}ed successfully!`);
       publishStore.facebookPages.invalidate();
       publishStore.facebookPages.load();
+      if(type === 'connect'){
+        emit('page-connect');
+      } else{
+        emit('page-disconnect');
+      }
     } else{
       window.$toast.error(result?.message || 'Failed to connect page');
     }
