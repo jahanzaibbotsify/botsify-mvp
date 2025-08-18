@@ -39,7 +39,7 @@
                       label="App ID"
                       type="text"
                       placeholder="App ID"
-                      v-model="formData.clientId"
+                      v-model="formData.client_id"
                       size="medium"
                     />
                   </div>
@@ -48,7 +48,7 @@
                       label="App Secret"
                       type="password"
                       placeholder="App Secret"
-                      v-model="formData.clientSecret"
+                      v-model="formData.client_secret"
                       size="medium"
                     />
                   </div>
@@ -95,11 +95,11 @@ const props = defineProps<Props>();
 
 const nextStep = () => {
   // Validate required fields
-  if (!props.formData.clientId?.trim()) {
+  if (!props.formData.client_id?.trim()) {
     window.$toast?.error('App ID is required');
     return;
   }
-  if (!props.formData.clientSecret?.trim()) {
+  if (!props.formData.client_secret?.trim()) {
     window.$toast?.error('App Secret is required');
     return;
   }

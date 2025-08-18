@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
-import { useBotStore } from "@/stores/botStore";
 import Button from "@/components/ui/Button.vue";
 import { APP_URL } from "@/utils/config";
 import type { FacebookPage, FacebookPageForTemplate } from "@/types";
@@ -22,12 +21,11 @@ const emit = defineEmits<{
   'refresh-page-permission': [];
   'remove-page-permission': [];
   'connect-account': [];
-  'page-connection-change': [];
+  'page-disconnect': [];
+  'page-connect': [];
 }>();
 
 const publishStore = usePublishStore();
-const botStore = useBotStore();
-
 
 // Computed properties to sync with store state
 const storePages = computed(() => publishStore.facebookPages.data);
@@ -41,11 +39,13 @@ const pages = computed((): FacebookPageForTemplate[] => {
   // Check if we have pagesData structure (API response format)
   if (storePages.value.data && storePages.value.data?.pagesData?.data) {
     const pagesData = storePages.value.data.pagesData.data;
+    const currentPageId = storePages.value?.data.pageId;
+
     if (Array.isArray(pagesData) && pagesData.length > 0) {
       return pagesData.map((page: FacebookPage) => ({
         id: page.id,
         name: page.name,
-        is_bot_page: !!page.connected_page_bot,
+        is_bot_page: currentPageId === page.id,
         status: page.connected_page_bot ? 'connected' : 'disconnected',
         botName: page.connected_page_bot || null,
         accessToken: page.access_token || null,
@@ -127,6 +127,11 @@ const connectionPage = async (type: string, page: any) => {
       window.$toast.success(`Page ${type}ed successfully!`);
       publishStore.facebookPages.invalidate();
       publishStore.facebookPages.load();
+      if(type === 'connect'){
+        emit('page-connect');
+      } else{
+        emit('page-disconnect');
+      }
     } else{
       window.$toast.error(result?.message || 'Failed to connect page');
     }
@@ -348,8 +353,14 @@ const openAuthPopup = (url: string, action: string) => {
           
           <div class="page-actions">
             <div class="action-buttons">
+              <span 
+                v-if="!!page.botName && !page.is_bot_page"
+                class="connected-text"
+              >
+                Connected to {{ page.botName }}
+              </span>
               <Button 
-                v-if="!page.is_bot_page"
+                v-else-if="!page.is_bot_page"
                 variant="primary"
                 size="small"
                 :loading="connectId == page.id"
@@ -360,7 +371,7 @@ const openAuthPopup = (url: string, action: string) => {
                 Connect
               </Button>
               
-              <div v-else-if="page.botName === botStore.botName" class="connected-actions">
+              <div v-else-if="page.is_bot_page" class="connected-actions">
                 <Button 
                   variant="success"
                   size="small"
@@ -384,12 +395,6 @@ const openAuthPopup = (url: string, action: string) => {
                 </Button>
               </div>
               
-              <span 
-                v-else
-                class="connected-text"
-              >
-                Connected to {{ page.botName }}
-              </span>
             </div>
             
             <Button 

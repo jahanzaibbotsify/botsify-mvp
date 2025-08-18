@@ -22,7 +22,7 @@
                     label="Temporary Access Token"
                     type="text"
                     placeholder="Temporary Access Token"
-                    v-model="formData.temporaryToken"
+                    v-model="formData.temporary_token"
                     size="medium"
                   />
                 </div>
@@ -67,7 +67,7 @@
                       label="Phone Number"
                       type="tel"
                       placeholder="15550000000"
-                      v-model="formData.phoneNumber"
+                      v-model="formData.whatsapp"
                       size="medium"
                     />
                   </div>
@@ -76,7 +76,7 @@
                       label="Phone Number ID"
                       type="text"
                       placeholder="2381923498572"
-                      v-model="formData.phoneNumberId"
+                      v-model="formData.whatsapp_phone_id"
                       size="medium"
                     />
                   </div>
@@ -102,7 +102,7 @@
                   <Input 
                     type="text"
                     placeholder="1015550000000"
-                    v-model="formData.whatsappBusinessAccountId"
+                    v-model="formData.whatsapp_account_id"
                     size="medium"
                   />
                 </div>
@@ -148,19 +148,19 @@ const props = defineProps<Props>();
 
 const nextStep = () => {
   // Validate required fields
-  if (!props.formData.temporaryToken?.trim()) {
+  if (!props.formData.temporary_token?.trim()) {
     window.$toast?.error('Temporary Token is required');
     return;
   }
-  if (!props.formData.phoneNumber?.trim()) {
+  if (!props.formData.whatsapp?.trim()) {
     window.$toast?.error('Phone number is required');
     return;
   }
-  if (!props.formData.phoneNumberId?.trim()) {
+  if (!props.formData.whatsapp_phone_id?.trim()) {
     window.$toast?.error('Phone number ID is required');
     return;
   }
-  if (!props.formData.whatsappBusinessAccountId?.trim()) {
+  if (!props.formData.whatsapp_account_id?.trim()) {
     window.$toast?.error('WhatsApp business account ID is required');
     return;
   }

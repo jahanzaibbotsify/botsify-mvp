@@ -84,6 +84,14 @@ const onTabChange = (tabId: string) => {
   }
 };
 
+const pageDisconnect = () => {
+  isConfigured.value = false;
+}
+
+const pageConnect = () => {
+  isConfigured.value = true;
+} 
+
 // Provide context for child components
 provide('messenger-modal', {
   isConfigured,
@@ -111,7 +119,8 @@ defineExpose({ openModal, closeModal });
         v-show="activeTab === 'publish-bot'"
         ref="publishAgentTabRef"
         :is-loading="publishStore.facebookPages.loading"
-        @page-connection-change="checkConfiguration"
+        @page-disconnect="pageDisconnect"
+        @page-connect="pageConnect"
       />
 
       <!-- Comment Auto Responder Tab -->

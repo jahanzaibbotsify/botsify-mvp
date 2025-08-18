@@ -11,9 +11,10 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  isLoading: false
+  isLoading: false,
 });
 
+const emit = defineEmits(['check-config']);
 // Stores
 const publishStore = usePublishStore();
 const botStore = useBotStore();
@@ -108,6 +109,7 @@ const handleMetaIntegrationComplete = async () => {
   isConnected.value = true;
   // Reload whatsapp config to update the UI
   await publishStore.whatsappConfig.load();
+  emit('check-config');
 };
 
 const handleBackToPublishAgent = () => {
@@ -251,6 +253,7 @@ defineExpose({
             id="whatsapp-number"
             v-model="formFields.whatsapp"
             type="tel"
+            required
             placeholder="Enter your WhatsApp number"
             size="medium"
           />
@@ -263,6 +266,7 @@ defineExpose({
             id="dialog-api-key"
             v-model="formFields.api_key"
             type="password"
+            required
             placeholder="Enter your API key"
             size="medium"
           />
@@ -287,6 +291,7 @@ defineExpose({
             id="meta-token"
             v-model="formFields.temporary_token"
             type="text"
+            required
             placeholder="Enter your temporary access token"
             size="medium"
           />
@@ -294,10 +299,11 @@ defineExpose({
 
         <div v-if="selectedProvider === 'meta'" class="form-group">
           <Input 
-            label="Client ID"
+            label="App ID"
             id="meta-client-id"
             v-model="formFields.client_id"
             type="text"
+            required
             placeholder="Enter your client ID"
             size="medium"
           />
@@ -309,6 +315,7 @@ defineExpose({
             id="meta-client-secret"
             v-model="formFields.client_secret"
             type="password"
+            required
             placeholder="Enter your client secret"
             size="medium"
           />
@@ -320,6 +327,7 @@ defineExpose({
             id="meta-phone-id"
             v-model="formFields.whatsapp_phone_id"
             type="text"
+            required
             placeholder="Enter your phone number ID"
             size="medium"
           />
@@ -331,6 +339,7 @@ defineExpose({
             id="meta-business-id"
             v-model="formFields.whatsapp_account_id"
             type="text"
+            required
             placeholder="Enter your WhatsApp business account ID"
             size="medium"
           />

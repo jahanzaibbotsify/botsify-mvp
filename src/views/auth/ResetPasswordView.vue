@@ -393,7 +393,7 @@ onMounted(() => {
 
 .required {
   color: var(--color-error);
-  margin-left: 2px;
+  /* margin-left: 2px; */
 }
 
 .input-wrapper {
