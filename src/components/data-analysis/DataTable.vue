@@ -37,9 +37,9 @@ const paginatedData = computed(() => {
   return sortedData.value.slice(start, end)
 })
 
-const totalPages = computed(() => {
-  return Math.ceil(props.data.length / itemsPerPage.value)
-})
+// const totalPages = computed(() => {
+//   return Math.ceil(props.data.length / itemsPerPage.value)
+// })
 
 const handleSort = (column: string) => {
   if (sortColumn.value === column) {
