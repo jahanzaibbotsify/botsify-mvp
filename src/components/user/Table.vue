@@ -201,8 +201,10 @@ const getPageNumbers = computed(() => {
         <TableRow v-if="userStore.loading" v-for="i in 5" :key="`skeleton-${i}`" skeleton>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
-            <TableCell :isLoading="true" skeletonType="badge"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="text"></TableCell>
+            <TableCell :isLoading="true" skeletonType="badge"></TableCell>
             <TableCell :isLoading="true" skeletonType="actions"></TableCell>
           </TableRow>
 

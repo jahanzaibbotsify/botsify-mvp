@@ -285,6 +285,7 @@ const handleLogout = async () => {
   display: inline-block;
   letter-spacing: 0.5px;
   box-shadow: 0 1px 4px rgba(0,163,255,0.08);
+  width: fit-content;
 }
 
 .enhanced-logout {

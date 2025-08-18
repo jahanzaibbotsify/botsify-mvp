@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { PublishModalLayout } from "@/components/ui";
 import { Button, Textarea, Input } from "@/components/ui";
 import { usePublishStore } from "@/stores/publishStore";
-import type { SmsTemplate, SmsTemplateButton } from "@/types/publish";
+import type { SmsTemplate } from "@/types/publish";
 import { publishApi } from "@/services/publishApi";
 
 // Props
@@ -39,18 +39,84 @@ const form = ref({
     type: string;
     url: string;
     isEditing?: boolean;
+    isNew?: boolean;
   }>,
   image_url: '',
   attachment_link: ''
 });
 
-const errors = ref<{
-  name?: string;
-  text?: string;
-  buttons: Record<number, string>;
-  image_url?: string;
-  attachment_link?: string;
-}>({ buttons: {} });
+// Computed errors - reactive validation
+const errors = computed(() => {
+  const errs: {
+    name?: string;
+    text?: string;
+    buttons: Record<number, {
+      title?: string;
+      url?: string;
+      payload?: string;
+      response?: string;
+    }>;
+  } = { buttons: {} };
+
+  // // Validate name + text
+  // if (!form.value.name.trim()) {
+  //   errs.name = "Template name is required";
+  // }
+  // if (!form.value.text.trim()) {
+  //   errs.text = "Message text is required";
+  // }
+
+  // Validate buttons
+  form.value.buttons.forEach((button, index) => {
+    const buttonErrors: {
+      title?: string;
+      url?: string;
+      payload?: string;
+      response?: string;
+    } = {};
+
+    if (!button.title?.trim()) {
+      buttonErrors.title = "Button title is required";
+    }
+    if (button.type === "url") {
+      if (!button.url?.trim()) {
+        buttonErrors.url = "URL is required for URL buttons";
+      } else {
+        try {
+          new URL(button.url.trim());
+        } catch {
+          buttonErrors.url = "Please enter a valid URL";
+        }
+      }
+    }
+    if (button.type === "phone_number" && !button.payload?.trim()) {
+      buttonErrors.payload = "Phone number is required for Phone Number buttons";
+    }
+    if (button.type === "postback" && !button.response?.trim()) {
+      buttonErrors.response = "Response text is required for Postback buttons";
+    }
+
+    // Only add button errors if there are any
+    if (Object.keys(buttonErrors).some(key => buttonErrors[key as keyof typeof buttonErrors])) {
+      errs.buttons[index] = buttonErrors;
+    }
+  });
+
+  return errs;
+});
+
+// Computed property for save button disabled state
+const isSaveButtonDisabled = computed(() => {
+  if (isSaving.value) return true;
+  
+  // Check if there are any button errors
+  const hasButtonErrors = Object.values(errors.value.buttons).some(buttonErrors => 
+    buttonErrors && Object.values(buttonErrors).some(error => error)
+  );
+  
+  return !!(!form.value.name.trim() || !form.value.text.trim() || hasButtonErrors);
+});
+
 const isSaving = ref(false);
 
 // Dummy tabs for PublishModalLayout
@@ -62,21 +128,6 @@ const tabs = [
 const isEditMode = ref(false);
 const editingTemplateId = ref<number | null>(null);
 
-// Form validation
-const validateForm = () => {
-  errors.value = { buttons: {} };
-  
-  if (!form.value.name?.trim()) {
-    errors.value.name = 'Template name is required';
-  }
-  
-  if (!form.value.text?.trim()) {
-    errors.value.text = 'Template text is required';
-  }
-  
-  return Object.keys(errors.value).length === 1; // Only buttons object should remain
-};
-
 // Form reset
 const resetForm = () => {
   form.value = {
@@ -86,12 +137,11 @@ const resetForm = () => {
     image_url: '',
     attachment_link: ''
   };
-  errors.value = { buttons: {} };
 };
 
 // Button management
-const addButton = (type: SmsTemplateButton['type']) => {
-  const newButton: SmsTemplateButton = {
+const addButton = (type: string) => {
+  const newButton = {
     api: 0,
     error: false,
     payload: '',
@@ -100,7 +150,8 @@ const addButton = (type: SmsTemplateButton['type']) => {
     title: '',
     type: type,
     url: '',
-    isEditing: true // Start in editing mode for new buttons
+    isEditing: true, // Start in editing mode for new buttons
+    isNew: true // Mark as new button
   };
   form.value.buttons.push(newButton);
 };
@@ -115,62 +166,25 @@ const removeButton = (index: number) => {
 //   }
 // };
 
-const editButton = (index: number) => {
-  form.value.buttons[index].isEditing = true;
+const toggleButton = (index: number) => {
+  const button = form.value.buttons[index];
+  
+  // Simply toggle editing state - validation is handled by computed errors
+  button.isEditing = !button.isEditing;
 };
 
-// const saveButtonEdit = (index: number) => {
-//   const button = form.value.buttons[index];
-//   if (!button.title?.trim()) {
-//     errors.value.buttons[index] = 'Button title is required';
-//     return;
-//   }
-
-//   if (button.type === 'url' && !button.url?.trim()) {
-//     errors.value.buttons[index] = 'URL is required for URL buttons';
-//     return;
-//   }
-
-//   // Validate URL format for URL buttons
-//   if (button.type === 'url' && button.url?.trim()) {
-//     try {
-//       new URL(button.url.trim());
-//     } catch {
-//       errors.value.buttons[index] = 'Please enter a valid URL (e.g., https://example.com)';
-//       return;
-//     }
-//   }
-
-//   if (button.type === 'phone_number' && !button.payload?.trim()) {
-//     errors.value.buttons[index] = 'Phone number is required for Phone Number buttons';
-//     return;
-//   }
-
-//   if (button.type === 'postback' && !button.response?.trim()) {
-//     errors.value.buttons[index] = 'Response text is required for Postback buttons';
-//     return;
-//   }
-
-//   // Clear any previous errors
-//   if (errors.value.buttons[index]) {
-//     delete errors.value.buttons[index];
-//   }
-
-//   // Save the button edit
-//   button.isEditing = false;
-// };
-
-const cancelButtonEdit = (index: number) => {
-  form.value.buttons[index].isEditing = false;
-  // Clear errors for the button
-  if (errors.value.buttons[index]) {
-    delete errors.value.buttons[index];
-  }
-};
 
 // Template operations
 const createTemplate = async (templateData: Partial<SmsTemplate>) => {
   try {
+    // Check if there are any button validation errors
+    const hasButtonErrors = Object.values(errors.value.buttons).some(buttonErrors => 
+      buttonErrors && Object.values(buttonErrors).some(error => error)
+    );
+    
+    if (hasButtonErrors) {
+      return { success: false, error: 'Please fix the errors in the buttons' };
+    }
     const result = await publishApi.createTemplate(templateData, 'sms');
     return result;
   } catch (error) {
@@ -217,7 +231,8 @@ const openModalWithData = (templateData: any) => {
       title: tb.button?.title || '',
       type: tb.button?.type || 'postback',
       url: tb.button?.url || '',
-      isEditing: false
+      isEditing: false,
+      isNew: false // Mark as existing button
     })) || templateData.buttons || [],
     image_url: templateData.image_url || templateData.attachment_link || '',
     attachment_link: templateData.attachment_link || templateData.image_url || ''
@@ -225,9 +240,6 @@ const openModalWithData = (templateData: any) => {
   
   // Prefill form with transformed data
   form.value = transformedData;
-  
-  // Reset errors
-  errors.value = { buttons: {} };
 };
 
 const closeModal = () => {
@@ -240,7 +252,19 @@ const handleModalClose = () => {
 };
 
 const handleSave = async () => {
-  if (!validateForm()) {
+  if(!form.value.text.trim()){
+    return;
+  }
+  if(!form.value.name.trim()){
+    return;
+  }
+  
+  // Check if there are any button errors
+  const hasButtonErrors = Object.values(errors.value.buttons).some(buttonErrors => 
+    buttonErrors && Object.values(buttonErrors).some(error => error)
+  );
+  
+  if (hasButtonErrors) {
     return;
   }
   
@@ -291,12 +315,10 @@ const handleCancel = () => {
 
 // Button type options
 const buttonTypes = [
-  { label: 'Text', value: 'postback' as const },
-  { label: 'URL', value: 'url' as const },
-  { label: 'Phone Number', value: 'phone_number' as const }
+  { label: 'Text', value: 'postback' },
+  { label: 'URL', value: 'url' },
+  { label: 'Phone Number', value: 'phone_number' }
 ];
-
-
 
 defineExpose({ openModal, closeModal, openModalWithData });
 </script>
@@ -369,6 +391,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
                   v-for="(button, index) in form.buttons"
                   :key="index"
                   class="button-item"
+                  :class="{ 'has-error': errors.buttons[index] && Object.values(errors.buttons[index]).some(error => error) }"
                 >
                   <div class="button-header">
                     <div class="button-info">
@@ -379,9 +402,9 @@ defineExpose({ openModal, closeModal, openModalWithData });
                       <Button
                         variant="secondary"
                         size="small"
-                        icon="pi pi-pencil"
+                        :icon="button.isEditing ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
                         iconOnly
-                        @click="editButton(index)"
+                        @click="toggleButton(index)"
                         title="Edit button"
                       />
                       <Button
@@ -399,11 +422,11 @@ defineExpose({ openModal, closeModal, openModalWithData });
                   <div v-if="button.isEditing" class="button-fields">
                     <!-- Button Title -->
                     <div class="form-group">
-                      <label>Button title</label>
                       <Input
+                        label="Button title"
                         v-model="button.title"
                         placeholder="Enter button title"
-                        :error="errors.buttons[index]"
+                        :error="errors.buttons[index]?.title"
                       />
                     </div>
 
@@ -414,27 +437,27 @@ defineExpose({ openModal, closeModal, openModalWithData });
                         v-model="button.url"
                         type="url"
                         placeholder="https://example.com"
-                        :error="errors.buttons[index]"
+                        :error="errors.buttons[index]?.url"
                       />
                     </div>
 
-                    <div v-if="button.type === 'phone_number'" class="field-group">
+                    <div v-if="button.type === 'phone_number'" class="form-group">
                       <Input
                         label="Phone number"
                         v-model="button.payload"
                         type="tel"
                         placeholder="+1234567890"
-                        :error="errors.buttons[index]"
+                        :error="errors.buttons[index]?.payload"
                       />
                     </div>
 
-                    <div v-if="button.type === 'postback' && !isEditMode" class="field-group">
+                    <div v-if="button.type === 'postback' && (!isEditMode || button.isNew)" class="form-group">
                       <Textarea
                         label="Response text"
                         v-model="button.response"
                         placeholder="Enter response text"
                         :rows="2"
-                        :error="errors.buttons[index]"
+                        :error="errors.buttons[index]?.response"
                       />
                     </div>
 
@@ -446,13 +469,6 @@ defineExpose({ openModal, closeModal, openModalWithData });
                       >
                         Save
                       </Button> -->
-                      <Button
-                        variant="error"
-                        size="small"
-                        @click="cancelButtonEdit(index)"
-                      >
-                        Cancel
-                      </Button>
                     </div>
                   </div>
                 </div>
@@ -485,7 +501,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
           size="medium"
           @click="handleSave"
           :loading="isSaving"
-          :disabled="isSaving"
+          :disabled="isSaveButtonDisabled"
         >
           {{ isSaving ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update template' : 'Create template') }}
         </Button>
@@ -530,6 +546,12 @@ defineExpose({ openModal, closeModal, openModalWithData });
   border-radius: var(--radius-md);
   padding: var(--space-3);
   background-color: var(--color-bg-secondary);
+  transition: border-color var(--transition-normal);
+}
+
+.button-item.has-error {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 1px var(--color-error);
 }
 
 .button-header {

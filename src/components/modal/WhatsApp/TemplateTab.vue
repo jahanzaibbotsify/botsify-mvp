@@ -6,6 +6,7 @@ import MessagePreview from "./Create/MessagePreview.vue";
 import { PaginationData } from "@/types";
 import { publishApi } from "@/services/publishApi";
 import { useWhatsAppTemplate } from "@/composables/useWhatsappTemplate";
+import { formatDate } from "@/utils";
 
 // Props
 interface Props {
@@ -210,7 +211,7 @@ onMounted(async () => {
                 {{ template.status === 1 ? 'Approved' : 'Not Approved' }}
               </Badge>
             </TableCell>
-            <TableCell>{{ new Date(template.created_at).toLocaleDateString() }}</TableCell>
+            <TableCell>{{ formatDate(template.created_at) }}</TableCell>
             <TableCell>
               <div class="action-buttons">
                 <Button
