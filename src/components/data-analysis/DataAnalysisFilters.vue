@@ -128,6 +128,18 @@ const handleExport = () => {
   // Export current analysis data
   dataAnalysisStore.exportData()
 }
+
+// Numeric filter change
+const handleNumericChange = (event: Event): void => {
+  const target = event.target as HTMLInputElement
+  updateFilter('numeric', target?.value ?? '')
+}
+
+// Boolean filter change
+const handleBooleanChange = (event: Event): void => {
+  const target = event.target as HTMLSelectElement
+  updateFilter('boolean', target?.value ?? 'all')
+}
 </script>
 
 <template>
@@ -185,7 +197,7 @@ const handleExport = () => {
             type="number" 
             placeholder="Numeric value..."
             :value="filterData.numeric || ''"
-            @input="(e: any) => updateFilter('numeric', e.target.value)"
+            @input="handleNumericChange"
             class="numeric-input"
           />
         </div>
@@ -194,7 +206,7 @@ const handleExport = () => {
         <div class="boolean-filter" v-if="availableFilters.includes('boolean')">
           <select 
             :value="filterData.boolean || 'all'"
-            @change="(e: any) => updateFilter('boolean', e.target.value)"
+            @change="handleBooleanChange"
             class="boolean-select"
           >
             <option value="all">All</option>
@@ -389,6 +401,32 @@ const handleExport = () => {
   .numeric-filter,
   .boolean-filter {
     min-width: 100px;
+  }
+}
+
+/* Medium desktop responsiveness */
+@media (max-width: 1280px) and (min-width: 769px) {
+  .desktop-controls {
+    flex-wrap: wrap;
+    gap: 10px 12px;
+  }
+
+  .search-controls {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .filter-dropdown,
+  .segment-dropdown,
+  .date-range,
+  .numeric-filter,
+  .boolean-filter {
+    min-width: 160px;
+  }
+
+  .action-controls {
+    width: 100%;
+    justify-content: flex-start;
   }
 }
 

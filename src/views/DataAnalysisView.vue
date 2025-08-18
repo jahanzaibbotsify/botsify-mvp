@@ -760,6 +760,44 @@ const sendSuggestion = (suggestion: string) => {
   }
 }
 
+/* Medium desktop responsiveness */
+@media (max-width: 1280px) {
+  .page-header {
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .main-content {
+    padding: 0 var(--space-2);
+  }
+}
+
+@media (max-width: 1280px) and (min-width: 1024px) {
+  .main-content {
+    max-width: 1024px;
+  }
+
+  .input-section > * {
+    max-width: 760px;
+  }
+
+  .centered-heading h1 {
+    font-size: 1.5rem;
+  }
+
+  .suggestion-btn {
+    font-size: 0.75rem;
+    padding: var(--space-1) var(--space-2);
+  }
+}
+
 /* Small mobile devices */
 @media (max-width: 480px) {
   .analysis-content {

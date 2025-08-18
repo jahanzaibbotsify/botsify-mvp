@@ -136,11 +136,13 @@ const getPageNumbers = computed(() => {
         </thead>
         <tbody>
           <!-- Loading skeleton rows -->
-          <tr v-if="loading" v-for="i in itemsPerPage" :key="`skeleton-${i}`" class="skeleton-row">
-            <td v-for="column in columns" :key="column.key">
-              <div class="skeleton-text"></div>
-            </td>
-          </tr>
+          <template v-if="loading">
+            <tr v-for="i in itemsPerPage" :key="`skeleton-${i}`" class="skeleton-row">
+              <td v-for="column in columns" :key="column.key">
+                <div class="skeleton-text"></div>
+              </td>
+            </tr>
+          </template>
           
           <!-- No data state -->
           <tr v-else-if="data.length === 0" class="no-data-row">
@@ -543,6 +545,26 @@ const getPageNumbers = computed(() => {
   .pagination-btn {
     padding: 6px 10px;
     font-size: 12px;
+  }
+}
+
+/* Medium desktop responsiveness */
+@media (max-width: 1280px) and (min-width: 769px) {
+  .table-controls {
+    flex-wrap: wrap;
+    gap: 10px 12px;
+  }
+
+  .table-info {
+    flex: 1 1 100%;
+  }
+
+  .users-table {
+    min-width: 720px;
+  }
+
+  .pagination {
+    flex-wrap: wrap;
   }
 }
 </style>
