@@ -57,6 +57,7 @@ const handleClick = (event: MouseEvent) => {
     <!-- Loading Spinner -->
     <div v-if="loading" class="button-spinner">
       <i class="pi pi-spin pi-spinner"></i>
+      <span v-if="!iconOnly">&nbsp;<slot></slot></span>
     </div>
     
     <!-- Icon (Left) -->
