@@ -230,10 +230,10 @@ const getPageNumbers = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: 12px 16px;
   background-color: #f9fafb;
   border-bottom: 1px solid #e5e7eb;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .per-page-selector {
@@ -287,22 +287,23 @@ const getPageNumbers = computed(() => {
 .users-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 800px;
+  min-width: 100%;
   transition: filter 0.3s ease;
+  table-layout: fixed;
 }
 
 .users-table th {
   background-color: #f8fafc;
   color: #374151;
-  padding: 16px 12px;
+  padding: 10px 8px;
   text-align: left;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   position: sticky;
   top: 0;
-  white-space: nowrap;
+  white-space: normal;
   border-bottom: 2px solid #e5e7eb;
 }
 
@@ -318,33 +319,35 @@ const getPageNumbers = computed(() => {
 }
 
 .users-table th.sortable::after {
-  content: '↕';
+  content: '';
   position: absolute;
   right: 8px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 14px;
-  opacity: 0.7;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
 }
 
 .users-table th.sortable.asc::after {
-  content: '↑';
-  opacity: 1;
+  border-bottom: 6px solid #6b7280; /* Slate-500 */
+  border-top: none;
 }
 
 .users-table th.sortable.desc::after {
-  content: '↓';
-  opacity: 1;
+  border-top: 6px solid #6b7280; /* Slate-500 */
+  border-bottom: none;
 }
 
 .users-table td {
-  padding: 16px 12px;
+  padding: 10px 8px;
   border-bottom: 1px solid #f3f4f6;
-  font-size: 13px;
+  font-size: 12px;
   background-color: white;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .users-table tr:hover td {
@@ -451,13 +454,13 @@ const getPageNumbers = computed(() => {
 }
 
 .pagination-btn {
-  padding: 8px 12px;
+  padding: 6px 10px;
   border: 1px solid #d1d5db;
   background-color: white;
   color: var(--color-text-secondary);
   cursor: pointer;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
   transition: all 0.2s;
 }
 
@@ -565,6 +568,29 @@ const getPageNumbers = computed(() => {
 
   .pagination {
     flex-wrap: wrap;
+  }
+}
+
+/* Extra-large screens */
+@media (min-width: 1536px) {
+  .table-container {
+    max-width: 1440px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .users-table {
+    min-width: 1000px;
+  }
+
+  .users-table th {
+    font-size: 15px;
+    padding: 18px 14px;
+  }
+
+  .users-table td {
+    font-size: 14px;
+    padding: 16px 14px;
   }
 }
 </style>
