@@ -103,6 +103,7 @@ const performSendMessage = async () => {
         messageTag: '',
         message: ''
       };
+      window.$toast.success('Broadcast message sent successfully');
     } else {
       console.error('Failed to send broadcast:', result.message);
     }
