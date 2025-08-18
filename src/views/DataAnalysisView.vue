@@ -2,7 +2,6 @@
 import { ref, computed } from 'vue'
 import { useDataAnalysisStore } from '@/stores/dataAnalysisStore'
 import DataTable from '@/components/data-analysis/DataTable.vue'
-import Chart from '@/components/data-analysis/Chart.vue'
 import ComingSoon from '@/components/data-analysis/ComingSoon.vue'
 import DataAnalysisFilters from '@/components/data-analysis/DataAnalysisFilters.vue'
 import {axiosInstance} from "@/utils/axiosInstance";
@@ -20,27 +19,11 @@ const hasResults = computed(() => !!(responseData.value && (responseData.value.d
 
 /** UI mode switches from server response */
 const isTablePreview = computed(() => responseData.value?.previewType === 'table')
-const isChartPreview = computed(() => responseData.value?.previewType === 'chart')
-const isUnsupportedPreview = computed(() => responseData.value?.previewType && !isTablePreview.value && !isChartPreview.value && !isErrorPreview.value)
+const isUnsupportedPreview = computed(() => responseData.value?.previewType && !isTablePreview.value && !isErrorPreview.value)
 const isErrorPreview = computed(() => responseData.value?.previewType === 'error' || responseData.value?.error === true)
 
 const tableData = computed(() => {
   if (!isTablePreview.value || !responseData.value?.data) return []
-  return Array.isArray(responseData.value.data) ? responseData.value.data : []
-})
-
-const chartData = computed(() => {
-  if (!isChartPreview.value || !responseData.value?.data) return []
-  
-  // Handle chart data structure with labels and data arrays
-  if (responseData.value.data.labels && responseData.value.data.data) {
-    return responseData.value.data.labels.map((label: string, index: number) => ({
-      label,
-      value: responseData.value.data.data[index]
-    }))
-  }
-  
-  // Fallback for other chart data structures
   return Array.isArray(responseData.value.data) ? responseData.value.data : []
 })
 
@@ -131,7 +114,7 @@ const handleFilterChange = async (updatedFilters: Record<string, any>) => {
     if (response.data) {
       responseData.value = {
         ...responseData.value,
-        data: responseData.value?.previewType === 'chart' ? response.data : Array.isArray(response.data) ? response.data : [response.data],
+        data: Array.isArray(response.data) ? response.data : [response.data],
         filtersData: updatedFilters
       };
       
@@ -325,23 +308,6 @@ const sendSuggestion = (suggestion: string) => {
               :loading="dataAnalysisStore.loading"
           />
 
-          <!-- Chart Preview -->
-          <div v-else-if="isChartPreview && chartData.length > 0" class="chart-preview">
-            <!-- Chart Metadata -->
-            <div v-if="responseData?.data?.total_interactions !== undefined" class="chart-metadata">
-              <div class="metadata-item">
-                <span class="metadata-label">Total Interactions:</span>
-                <span class="metadata-value">{{ responseData.data.total_interactions.toLocaleString() }}</span>
-              </div>
-            </div>
-            
-            <!-- Chart Component -->
-            <Chart
-              :data="chartData"
-              type="auto"
-            />
-          </div>
-
           <!-- Unsupported Preview Type -->
           <ComingSoon
               v-else-if="isUnsupportedPreview"
@@ -441,40 +407,6 @@ const sendSuggestion = (suggestion: string) => {
 
 .filters-section {
   margin-bottom: var(--space-4);
-}
-
-.chart-preview {
-  margin-bottom: var(--space-4);
-}
-
-.chart-metadata {
-  background-color: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
-  margin-bottom: var(--space-3);
-}
-
-.metadata-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.metadata-label {
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-}
-
-.metadata-value {
-  font-weight: 600;
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-  background-color: var(--color-bg-tertiary);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
 }
 
 .main-content {
@@ -667,45 +599,9 @@ const sendSuggestion = (suggestion: string) => {
   border-color: var(--color-text-tertiary);
 }
 
-/* Bottom Message Input Container - exact copy from ChatView */
-.message-input-container {
-  padding: var(--space-4);
-  background-color: var(--color-bg-primary);
-  position: sticky;
-  bottom: 0;
-  z-index: var(--z-sticky);
-}
-
 .results-section {
   width: 100%;
   margin-bottom: var(--space-4);
-}
-
-.current-query {
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
-  margin-bottom: var(--space-4);
-  border-left: 4px solid var(--color-primary);
-}
-
-.query-info {
-  display: flex;
-  gap: var(--space-2);
-  align-items: flex-start;
-}
-
-.query-label {
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-  flex-shrink: 0;
-}
-
-.query-text {
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-  line-height: 1.5;
 }
 
 .error-message {
@@ -855,10 +751,6 @@ const sendSuggestion = (suggestion: string) => {
     margin: 0 var(--space-2);
     padding-left: var(--space-2);
     padding-right: var(--space-2);
-  }
-
-  .message-input-container {
-    margin: 0 var(--space-2) var(--space-2);
   }
 
   .page-header {
