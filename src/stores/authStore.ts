@@ -83,7 +83,6 @@ export const useAuthStore = defineStore('auth', () => {
         'Unlimited Users',
         'Integrate MCP',
         'Integrate Documents & Web Search',
-        'Scheduled Agents (Coming soon)',
         'FB, SMS, Website, WhatsApp, Instagram, Telegram',
         '1-Agent development free worth $100/Month',
         'Whitelabel Dashboard & Reselling Rights',
