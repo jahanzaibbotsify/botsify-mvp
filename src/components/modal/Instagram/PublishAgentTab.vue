@@ -19,9 +19,9 @@ const isRemoveLoading = ref(false);
 // Computed properties to sync with store state
 
 // Computed properties to sync with store state
-const storePages = computed(() => publishStore.facebookPages.data);
-const storePagesLoaded = computed(() => publishStore.facebookPages.valid);
-const storeIsLoadingPages = computed(() => publishStore.facebookPages.loading);
+const storePages = computed(() => publishStore.instagramPages.data);
+const storePagesLoaded = computed(() => publishStore.instagramPages.valid);
+const storeIsLoadingPages = computed(() => publishStore.instagramPages.loading);
 
 // Computed pages data from store
 const pages = computed(() => {
