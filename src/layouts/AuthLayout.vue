@@ -96,9 +96,9 @@ const pageContent = computed(() => {
         <div class="brand-footer">
           <p>&copy; 2025 Botsify. All rights reserved.</p>
           <div class="footer-links">
-            <a href="https://botsify.com/terms-and-conditions" class="footer-link">Terms & conditions</a>
+            <a href="https://botsify.com/terms-and-conditions" class="footer-link" target="_blank">Terms & conditions</a>
             <span class="footer-separator">•</span>
-            <a href="https://botsify.com/privacy-policy" class="footer-link">Privacy policy</a>
+            <a href="https://botsify.com/privacy-policy" class="footer-link" target="_blank">Privacy policy</a>
           </div>
         </div>
       </div>
