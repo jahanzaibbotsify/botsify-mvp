@@ -126,8 +126,7 @@ export const useAuthStore = defineStore('auth', () => {
         'Unlimited Users',
         'Unlimited Agents',
         'Integrate MCP',
-        'Integrate Documents & Web Search',
-        'Scheduled Agents'
+        'Integrate Documents & Web Search'
       ],
       limits: {
         conversations: 'unlimited',
