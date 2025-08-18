@@ -89,7 +89,6 @@ export const useAuthStore = defineStore('auth', () => {
         'Access to all Botsify Resources',
         'Personal Onboarding Session',
         'Bi-Weekly Training of 1 Agent Free for 12 Months',
-        'Message Scheduling',
         'Priority Support',
         'All integrations',
       ],
