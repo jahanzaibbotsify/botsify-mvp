@@ -654,15 +654,14 @@ export class PublishApiService {
   }): Promise<ApiResponse> {
     try {
       const {apiKey} = useBotStore();
-      const response = await axiosInstance.get('/v1/schedule/task/sms-broadcast/create', {
-        params: {
+      const response = await axiosInstance.post('/v1/schedule/task/sms-broadcast/create', {
           apikey: apiKey,
           template: payload.template_id,
           user_segment: payload.user_segment,
           users: payload.users,
           send_at: payload.send_at,
           type: 8
-        },
+      }, {
         timeout: 30000 // 30 seconds timeout
       });
 
