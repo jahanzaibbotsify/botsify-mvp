@@ -82,19 +82,19 @@ export const usePublishStore = defineStore('publish', () => {
   // SMS Templates
 
   const resetStore = () => {
-    smsTemplates.invalidate();
-    whatsappTemplates.invalidate();
-    whatsappSegmentUsers.invalidate();
-    whatsappConfig.invalidate();
-    whatsappReport.invalidate();
-    whatsappCatalog.invalidate();
-    smsSegmentUsers.invalidate();
-    smsReport.invalidate();
-    publishStatus.invalidate();
-    facebookPages.invalidate();
-    instagramPages.invalidate();
-    commentResponder.invalidate();
-    thirdPartyConfig.invalidate();
+    smsTemplates.clear();
+    whatsappTemplates.clear();
+    whatsappSegmentUsers.clear();
+    whatsappConfig.clear();
+    whatsappReport.clear();
+    whatsappCatalog.clear();
+    smsSegmentUsers.clear();
+    smsReport.clear();
+    publishStatus.clear();
+    facebookPages.clear();
+    instagramPages.clear();
+    commentResponder.clear();
+    thirdPartyConfig.clear();
   };
 
   const createTemplate = async (templateData: any, type?: string) => {
