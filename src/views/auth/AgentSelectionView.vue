@@ -786,17 +786,15 @@ onUnmounted(() => {
 
         <!-- Load More Button -->
         <div v-if="activeTab === 'my-agents' && hasMoreAgents && !isLoadingAgents" class="load-more-section">
-          <button
+          <Button
               @click="loadMoreAgents"
-              class="load-more-btn"
+              :loading="isLoadingMore"
               :disabled="isLoadingMore"
+              variant="primary"
+              icon="pi pi-plus"
           >
-            <span v-if="isLoadingMore" class="loading-spinner"></span>
-            <i v-else class="pi pi-plus"></i>
-            <span>{{
-                isLoadingMore ? 'Loading more agents...' : `Load More (${totalAgents - agentsData.length} remaining)`
-              }}</span>
-          </button>
+            {{ isLoadingMore ? 'Loading more agents...' : `Load More (${totalAgents - agentsData.length} remaining)` }}
+          </Button>
         </div>
 
         <!-- Pagination Info -->
@@ -855,7 +853,7 @@ onUnmounted(() => {
             variant="primary"
             :loading="isSavingAgent"
         >
-          {{ isSavingAgent ? 'Saving...' : (modalMode === 'create' ? 'Create Agent' : 'Save Changes') }}
+          {{ modalMode === 'create' ? 'Create Agent' : 'Save Changes' }}
         </Button>
       </div>
     </div>
@@ -1211,33 +1209,6 @@ onUnmounted(() => {
   margin-top: var(--space-4);
 }
 
-.load-more-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  padding: var(--space-3) var(--space-6);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  box-shadow: 0 2px 4px rgba(0, 163, 255, 0.2);
-}
-
-.load-more-btn:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 163, 255, 0.3);
-}
-
-.load-more-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
 
 /* Pagination Info */
 .pagination-info {

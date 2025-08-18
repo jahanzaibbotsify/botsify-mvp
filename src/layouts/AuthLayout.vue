@@ -180,12 +180,12 @@ const pageContent = computed(() => {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: var(--space-8);
+  padding: var(--space-5);
   max-width: 480px;
   width: 100%;
   z-index: 2;
   position: relative;
-  gap: var(--space-8);
+  gap: var(--space-7);
 }
 
 /* Logo Section */
