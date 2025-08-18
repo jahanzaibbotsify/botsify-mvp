@@ -224,8 +224,6 @@ function buildMCPHeaders(): Record<string, string> {
           const encoded = btoa(apiKey.value.trim());
           headers['Authorization'] = `Basic ${encoded}`;
           break;
-        default:
-          headers['X-API-Key'] = apiKey.value.trim();
       }
     }
     return headers;
