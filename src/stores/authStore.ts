@@ -37,11 +37,8 @@ export const useAuthStore = defineStore('auth', () => {
         '5,000 Users',
         '$10/1,000 additional users',
         'Integrate Documents & Web Search',
-        'Messenger, SMS, Website, Instagram, Telegram',
-        'Message Scheduling',
-        'Basic Support',
-        'All integrations',
-        '1 Month Chat History'
+        'Messenger, SMS, Website, Instagram, Telegram, WhatsApp',
+        'Basic Support'
       ],
       excludedFeatures: [
         'Integrate MCP 🔥',
@@ -53,8 +50,7 @@ export const useAuthStore = defineStore('auth', () => {
         'Personal Onboarding Session',
         'Bi-Weekly Training of 1 Agent Free for 12 Months',
         'WhatsApp Agents (1,000 free conversations each month)',
-        'Priority Support',
-        '3 Months Chat History'
+        'Priority Support'
       ],
       limits: {
         conversations: 5000,
