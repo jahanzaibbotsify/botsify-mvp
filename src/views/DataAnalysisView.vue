@@ -204,8 +204,8 @@ const sendSuggestion = (suggestion: string) => {
     <div class="analysis-content mt-5">
       <!-- Main Content Area -->
       <div class="main-content">
-        <!-- Centered Input for New Analysis -->
-        <div class="centered-message-input">
+        <!-- Input Section -->
+        <div class="input-section">
           <div class="centered-heading">
             <h1>What would you like to analyze?</h1>
             <p>Use natural language to query your Botsify data. Apply filters to refine your analysis.</p>
@@ -397,12 +397,8 @@ const sendSuggestion = (suggestion: string) => {
 .analysis-content {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-3);
+  padding: var(--space-5) var(--space-4);
   background-color: var(--color-bg-primary);
-  margin: 0 var(--space-4);
-  padding-left: 150px;
-  padding-right: 150px;
-  padding-top: 50px;
 }
 
 .filters-section {
@@ -413,26 +409,25 @@ const sendSuggestion = (suggestion: string) => {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
+  max-width: 1200px;
 }
 
-/* Centered Message Input - exact copy from ChatView */
-.centered-message-input {
+/* Input Section - dedicated layout for Data Analysis */
+.input-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 60vh;
   width: 100%;
   padding: 0;
   background-color: var(--color-bg-primary);
+  margin-bottom: var(--space-6);
 }
 
-.centered-message-input > * {
+.input-section > * {
   width: 100%;
-  max-width: 100%;
+  max-width: 900px;
 }
 
-/* Centered heading styles - exact copy from ChatView */
 .centered-heading {
   width: 100%;
   text-align: center;
@@ -456,23 +451,22 @@ const sendSuggestion = (suggestion: string) => {
   margin: 0 auto;
 }
 
-/* Input area - exact copy from MessageInput */
 .input-area {
   display: flex;
   width: 100%;
   flex-direction: column;
-  background-color: #ffffff;
+  background-color: var(--color-bg-secondary);
   border-radius: 24px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border);
   padding: var(--space-3);
   transition: all var(--transition-normal);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 [data-theme="dark"] .input-area {
   background-color: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-sm);
 }
 
 .input-area:focus-within {
@@ -527,7 +521,7 @@ const sendSuggestion = (suggestion: string) => {
 /* Send button - exact copy from MessageInput */
 .send-button {
   color: #ffffff;
-  background-color: #10a37f;
+  background-color: var(--color-primary);
   border-radius: var(--radius-full);
   width: 40px;
   height: 40px;
@@ -540,7 +534,7 @@ const sendSuggestion = (suggestion: string) => {
 }
 
 .send-button:hover:not(:disabled) {
-  background-color: #0d8b6b;
+  background-color: var(--color-primary-hover);
   transform: scale(1.05);
 }
 
@@ -747,10 +741,7 @@ const sendSuggestion = (suggestion: string) => {
 /* Mobile responsiveness - exact copy from ChatView */
 @media (max-width: 767px) {
   .analysis-content {
-    padding: var(--space-3) var(--space-2);
-    margin: 0 var(--space-2);
-    padding-left: var(--space-2);
-    padding-right: var(--space-2);
+    padding: var(--space-3);
   }
 
   .page-header {
@@ -763,12 +754,16 @@ const sendSuggestion = (suggestion: string) => {
   .page-header h1 {
     font-size: 1.5rem;
   }
+
+  .input-section > * {
+    max-width: 100%;
+  }
 }
 
 /* Small mobile devices */
 @media (max-width: 480px) {
   .analysis-content {
-    padding: var(--space-2) var(--space-1);
+    padding: var(--space-2);
   }
 }
 </style>
