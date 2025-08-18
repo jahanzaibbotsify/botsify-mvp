@@ -15,6 +15,7 @@
       <StepOne 
         v-if="currentStep === 1"
         :on-next="nextStep"
+        :on-back="props.onBack"
       />
       
       <!-- Step 2: Create Facebook App -->
@@ -72,6 +73,7 @@ import { usePublishStore } from '@/stores/publishStore';
 
 interface Props {
   onComplete: () => void;
+  onBack: () => void;
 }
 
 const props = defineProps<Props>();

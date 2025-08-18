@@ -160,6 +160,14 @@
     
     <div class="step-navigation">
       <Button 
+        v-if="currentChildPage === 1"
+        variant="secondary"
+        size="medium"
+        @click="backToPublishAgent"
+      >
+        Back
+      </Button>
+      <Button 
         v-if="currentChildPage > 1"
         variant="secondary"
         size="medium"
@@ -199,6 +207,7 @@ import { Button } from '@/components/ui';
 
 interface Props {
   onNext: () => void;
+  onBack: () => void;
 }
 
 const props = defineProps<Props>();
@@ -208,6 +217,10 @@ const totalChildPages = 4;
 
 const openFacebookDeveloper = () => {
   window.open('https://developers.facebook.com/', '_blank');
+};
+
+const backToPublishAgent = () => {
+  props.onBack();
 };
 
 const nextChildPage = () => {

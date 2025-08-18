@@ -110,6 +110,11 @@ const handleMetaIntegrationComplete = async () => {
   await publishStore.whatsappConfig.load();
 };
 
+const handleBackToPublishAgent = () => {
+  selectedProvider.value = null;
+  showProviderSelection.value = true;
+};
+
 const handleSaveSettings = async () => {
   // Validate fields based on selected provider
   if (selectedProvider.value === 'meta') {
@@ -176,6 +181,7 @@ defineExpose({
     <div v-if="!isConnected && selectedProvider === 'meta'" class="meta-integration">
       <MetaCloudIntegration 
         :on-complete="handleMetaIntegrationComplete"
+        :on-back="handleBackToPublishAgent"
       />
     </div>
 
@@ -196,16 +202,16 @@ defineExpose({
           :class="{ active: selectedProvider === 'meta' }"
           @click="selectProvider('meta')"
         >
+        Official Meta Cloud WhatsApp API
           <img src="/images/whatsapp-icon.png" alt="Meta Cloud" class="provider-icon" />
-          Official Meta cloud
         </button>
         <button 
           class="provider-button"
           :class="{ active: selectedProvider === 'dialog360' }"
           @click="selectProvider('dialog360')"
         >
+        Dialog360
           <img src="/images/360dialog-logo.png" alt="Dialog360" class="provider-icon" />
-          Dialog360
         </button>
       </div>
 
@@ -375,25 +381,27 @@ defineExpose({
 
 .provider-selection {
   display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: 26px;
+  margin: 24px auto;
+  width: 50%;
 }
 
 .provider-button {
   flex: 1;
-  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
   border: 2px solid var(--color-border, #e5e7eb);
   border-radius: var(--radius-md, 8px);
   background: var(--color-bg-secondary, #f9fafb);
   color: var(--color-text-primary, #111827);
   font-size: 18px;
-  font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-normal, 0.2s ease);
   font-family: inherit;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 25px 16px;
 }
 
 .provider-button:hover {
@@ -409,7 +417,7 @@ defineExpose({
 
 .provider-icon {
   /* width: 30px; */
-  height: 40px;
+  height: 50px;
   margin-right: 8px;
 }
 
