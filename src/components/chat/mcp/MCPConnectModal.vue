@@ -269,8 +269,6 @@ function buildMCPHeaders(): Record<string, string> {
     }
   }
 
-  console.log(headers)
-
   return headers;
 }
 
