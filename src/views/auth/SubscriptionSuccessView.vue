@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/authStore'
+import {onMounted} from 'vue'
+import {useRouter} from 'vue-router'
+import {useAuthStore} from '@/stores/authStore'
 import {axiosInstance} from "@/utils/axiosInstance.ts";
 import {useBotStore} from "@/stores/botStore.ts";
 
@@ -27,25 +27,45 @@ const createAgent = async () => {
 
 /**
  * Get updated user with subscription information.
+ * Returns true when the user with subscription is found so caller can stop retrying.
  */
-const getUpdatedUser = async () => {
-  await axiosInstance.get('v1/user-with-subscription')
-      .then(res => {
-        if (res.data.user && res.data.user.subs) {
-          authStore.setAuthData(null, res.data.user);
-          createAgent();
-        } else {
-          router.push('/choose-plan')
-        }
-      }).catch(error => {
-        console.log(error)
-      })
+const getUpdatedUser = async (attempts = 1): Promise<boolean> => {
+  try {
+    const res = await axiosInstance.get('v1/user-with-subscription')
+    if (res.data.user && res.data.user.subs) {
+      authStore.setAuthData(null, res.data.user)
+      await createAgent()
+      return true
+    }
+
+    if (attempts >= 3) {
+      router.push('/choose-plan')
+    }
+    return false
+  } catch (error) {
+    console.log(error)
+    if (attempts >= 3) {
+      router.push('/choose-plan')
+    }
+    return false
+  }
 }
 
 onMounted(() => {
-  setTimeout(() => {
-    getUpdatedUser()
-  }, 7000)
+  let attempts = 0
+  const maxAttempts = 3
+
+  const tryGetUser = async () => {
+    if (attempts < maxAttempts) {
+      attempts++
+      const success = await getUpdatedUser(attempts)
+      if (!success && attempts < maxAttempts) {
+        setTimeout(tryGetUser, 3000)
+      }
+    }
+  }
+
+  tryGetUser()
 })
 </script>
 
@@ -55,8 +75,8 @@ onMounted(() => {
       <!-- Animated Checkmark -->
       <div class="checkmark-wrapper">
         <svg class="checkmark" viewBox="0 0 52 52">
-          <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none" />
-          <path class="checkmark-check" fill="none" d="M14 27l7 7 16-16" />
+          <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+          <path class="checkmark-check" fill="none" d="M14 27l7 7 16-16"/>
         </svg>
       </div>
       <h2 class="success-title">Subscription Successful!</h2>
@@ -87,12 +107,12 @@ onMounted(() => {
   position: absolute;
   inset: 0;
   background: conic-gradient(
-    from 180deg,
-    #ff0080,
-    #7928ca,
-    #2afadf,
-    #7928ca,
-    #ff0080
+      from 180deg,
+      #ff0080,
+      #7928ca,
+      #2afadf,
+      #7928ca,
+      #ff0080
   );
   filter: blur(60px);
   opacity: 0.6;
@@ -110,15 +130,15 @@ onMounted(() => {
   mix-blend-mode: color-dodge;
   pointer-events: none;
 }
+
 .success-card {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-radius: var(--radius-lg, 12px);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 
-    0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+  0 10px 10px -5px rgba(0, 0, 0, 0.04),
+  0 0 0 1px rgba(255, 255, 255, 0.1);
   padding: var(--space-7, 48px) var(--space-6, 32px);
   max-width: 400px;
   width: 90%;
@@ -131,17 +151,18 @@ onMounted(() => {
 
 .success-card:hover {
   transform: translateY(-2px);
-  box-shadow: 
-    0 25px 30px -5px rgba(0, 0, 0, 0.15),
-    0 15px 15px -5px rgba(0, 0, 0, 0.06),
-    0 0 0 1px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.15),
+  0 15px 15px -5px rgba(0, 0, 0, 0.06),
+  0 0 0 1px rgba(255, 255, 255, 0.2);
 }
+
 .checkmark-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
   margin-bottom: var(--space-4, 16px);
 }
+
 .checkmark {
   width: 80px;
   height: 80px;
@@ -153,6 +174,7 @@ onMounted(() => {
   display: block;
   filter: drop-shadow(0 4px 8px rgba(0, 163, 255, 0.3));
 }
+
 .checkmark-circle {
   stroke-dasharray: 157;
   stroke-dashoffset: 157;
@@ -160,6 +182,7 @@ onMounted(() => {
   stroke: var(--color-primary, #00A3FF);
   animation: strokeCircle 0.8s cubic-bezier(0.65, 0, 0.45, 1) forwards;
 }
+
 .checkmark-check {
   stroke-dasharray: 48;
   stroke-dashoffset: 48;
@@ -167,16 +190,19 @@ onMounted(() => {
   stroke: var(--color-primary, #00A3FF);
   animation: strokeCheck 0.5s 0.8s cubic-bezier(0.65, 0, 0.45, 1) forwards;
 }
+
 @keyframes strokeCircle {
   100% {
     stroke-dashoffset: 0;
   }
 }
+
 @keyframes strokeCheck {
   100% {
     stroke-dashoffset: 0;
   }
 }
+
 .success-title {
   font-size: 2rem;
   font-weight: 700;
@@ -193,12 +219,14 @@ onMounted(() => {
   margin-bottom: var(--space-4, 16px);
   font-weight: 500;
 }
+
 .loading-dots {
   display: flex;
   justify-content: center;
   align-items: center;
   margin-bottom: var(--space-3, 12px);
 }
+
 .dot {
   width: 12px;
   height: 12px;
@@ -209,12 +237,15 @@ onMounted(() => {
   animation: bounce 1.2s infinite both;
   box-shadow: 0 2px 4px rgba(0, 163, 255, 0.3);
 }
+
 .dot:nth-child(2) {
   animation-delay: 0.2s;
 }
+
 .dot:nth-child(3) {
   animation-delay: 0.4s;
 }
+
 @keyframes bounce {
   0%, 80%, 100% {
     transform: scale(0.8);
@@ -231,6 +262,7 @@ onMounted(() => {
     padding: var(--space-5, 24px) var(--space-2, 8px);
     max-width: 95vw;
   }
+
   .success-title {
     font-size: 1.3rem;
   }

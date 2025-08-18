@@ -400,7 +400,7 @@ onMounted(() => {
         <div class="pt-20">
           <input type="text" v-model="description" id="description" placeholder="Description (optional)">
         </div>
-        <div class="auth-select-group pt-20" v-if="isCustom || (server && server.name === 'Shopify')">
+        <div class="auth-select-group pt-20" v-if="isCustom">
           <label class="auth-label" for="authType">
             Authentication
             <span class="info-icon">
