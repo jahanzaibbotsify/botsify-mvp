@@ -287,8 +287,7 @@ const hideLoading = () => {
 
     <!-- file loading from pin button -->
     <div v-if="loadingFor === 'fileUploadingFromPin'" class="text-muted px-3 loading-spinner-of-pin-file-container">
-      <small >Uploading Files</small>
-      <span class="loading-spinner "></span>
+      <small >Uploading Files...</small>
     </div>
     <!-- input area -->
     <div class="input-area">
