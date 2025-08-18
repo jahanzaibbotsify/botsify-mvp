@@ -21,12 +21,13 @@ const botStore = useBotStore();
 // MCP server configuration
 const mcpData = ref({
   type: "mcp",
-  server_label: "botsify_mcp_server",
-  server_url: "https://mcp.botsify.com/mcp",
+  server_label: "agentic_bot",
+  server_url: "https://mcp.botsify.com/agent/mcp",
   headers: {
     Authorization: `Bearer ${botStore.apiKey || ''}`
   },
-  // allowed_tools: [
+  allowed_tools: [
+    "getBotResponse"
   //   "updateBotSettings",
   //   "updateBotGeneralSettings",
   //   "getBotsifyChatBotApiKey",
@@ -47,8 +48,8 @@ const mcpData = ref({
   //   "updatePageMessage",
   //   "deletePageMessage",
   //   "getAllPageMessages"
-  // ],
-  require_approval: "never"
+  ],
+  require_approval: "always"
 });
 
 // Computed property to format MCP data as JSON

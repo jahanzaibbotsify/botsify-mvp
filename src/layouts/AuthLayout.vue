@@ -96,9 +96,9 @@ const pageContent = computed(() => {
         <div class="brand-footer">
           <p>&copy; 2025 Botsify. All rights reserved.</p>
           <div class="footer-links">
-            <router-link to="/terms-conditions" class="footer-link">Terms & conditions</router-link>
+            <a href="https://botsify.com/terms-and-conditions" class="footer-link">Terms & conditions</a>
             <span class="footer-separator">•</span>
-            <router-link to="/privacy-policy" class="footer-link">Privacy policy</router-link>
+            <a href="https://botsify.com/privacy-policy" class="footer-link">Privacy policy</a>
           </div>
         </div>
       </div>
@@ -198,10 +198,10 @@ const pageContent = computed(() => {
   align-items: center;
   justify-content: center;
   padding: var(--space-4);
-  background: rgba(255, 255, 255, 0.1);
+  /* background: rgba(255, 255, 255, 0.1); */
   border-radius: var(--radius-lg);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  /* backdrop-filter: blur(10px); */
+  /* border: 1px solid rgba(255, 255, 255, 0.1); */
 }
 
 .logo-image {

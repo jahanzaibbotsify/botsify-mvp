@@ -64,7 +64,7 @@ const validateForm = () => {
     errors.value.twilioAccountSid = 'Twilio account SID is required';
     isValid = false;
   } else if (smsFields.value.twilioAccountSid.trim().length < 10) {
-    errors.value.twilioAccountSid = 'Account SID must be at least 10 characters';
+    errors.value.twilioAccountSid = 'Invalid account SID';
     isValid = false;
   }
 
@@ -73,7 +73,7 @@ const validateForm = () => {
     errors.value.twilioAuthToken = 'Twilio auth token is required';
     isValid = false;
   } else if (smsFields.value.twilioAuthToken.trim().length < 10) {
-    errors.value.twilioAuthToken = 'Auth token must be at least 10 characters';
+    errors.value.twilioAuthToken = 'Invalid auth token';
     isValid = false;
   }
 
@@ -173,6 +173,7 @@ onMounted(() => {
           type="text"
           placeholder="Enter your Twilio account SID"
           size="medium"
+          required
           :error="errors.twilioAccountSid"
         />
         <small class="help-text">
@@ -188,11 +189,9 @@ onMounted(() => {
           type="password"
           placeholder="Enter your Twilio auth token"
           size="medium"
+          required
           :error="errors.twilioAuthToken"
         />
-        <small class="help-text">
-          Keep this secure - it's your authentication token
-        </small>
       </div>
       
       <div class="form-group">
@@ -203,6 +202,7 @@ onMounted(() => {
           type="tel"
           placeholder="Enter your Twilio phone number"
           size="medium"
+          required
           :error="errors.twilioSmsNumber"
         />
         <small class="help-text">

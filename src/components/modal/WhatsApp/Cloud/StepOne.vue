@@ -175,7 +175,6 @@
       >
         Previous
       </Button>
-      <div v-else class="nav-spacer"></div>
       
       <div class="child-page-indicator">
         Page {{ currentChildPage }} of {{ totalChildPages }}

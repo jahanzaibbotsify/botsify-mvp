@@ -19,7 +19,7 @@
                 <p class="card-text">In your app dashboard, click on "Add Product" and select "WhatsApp"</p>
               </div>
               <div class="content-image">
-                <img src="https://bot-file-upload-eu-1.s3.eu-west-1.amazonaws.com/templates/images/step-three-1_120323_1709720197.png" alt="Add WhatsApp Product" class="step-image" />
+                <img src="https://bot-file-upload-eu-1.s3.eu-west-1.amazonaws.com/templates/images/step-three-2_120323_1709720265.png" alt="Configure WhatsApp" class="step-image" />
               </div>
             </div>
           </div>
@@ -48,23 +48,16 @@
                       <p class="step-text">Add and verify your WhatsApp phone number</p>
                     </div>
                   </div>
-                  <div class="config-step">
-                    <div class="step-number-small">3</div>
-                    <div class="step-content">
-                      <h4 class="step-title">Webhook</h4>
-                      <p class="step-text">Configure webhook URL for message delivery</p>
-                    </div>
-                  </div>
                 </div>
               </div>
               <div class="content-image">
-                <img src="https://bot-file-upload-eu-1.s3.eu-west-1.amazonaws.com/templates/images/step-three-2_120323_1709720265.png" alt="Configure WhatsApp" class="step-image" />
+                <img src="https://bot-file-upload-eu-1.s3.eu-west-1.amazonaws.com/templates/images/step-three-3_120323_1709720295.png" alt="Get Access Token" class="step-image" />
               </div>
             </div>
           </div>
           
           <!-- Step 3: Get Access Token -->
-          <div class="info-card">
+          <!-- <div class="info-card">
             <div class="card-header">
               <div class="step-number">3</div>
               <h3 class="card-title">Get Access Token</h3>
@@ -77,13 +70,13 @@
                     <label class="field-label">Temporary Access Token</label>
                     <div class="token-display">
                       <span class="token-text">EAABwzLixnjYBO...</span>
-                      <!-- <Button 
+                      <Button 
                         variant="secondary"
                         size="small"
                         @click="copyToken"
                       >
                         Copy
-                      </Button> -->
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -92,7 +85,7 @@
                 <img src="https://bot-file-upload-eu-1.s3.eu-west-1.amazonaws.com/templates/images/step-three-3_120323_1709720295.png" alt="Get Access Token" class="step-image" />
               </div>
             </div>
-          </div>
+          </div> -->
         </div>
       </div>
     </div>

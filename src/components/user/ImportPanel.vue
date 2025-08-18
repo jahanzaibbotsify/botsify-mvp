@@ -85,10 +85,11 @@ const downloadSampleCSV = () => {
         <p class="progress-text">{{ importStatus }}</p>
       </div>
 
+      
       <div class="import-info">
         <p class="info-text">
           <strong>Note:</strong> Supported formats: .csv<br>
-          <strong>Sample Files:</strong> 
+          <strong>Sample Files:</strong>&nbsp;
           <button class="sample-link" @click="downloadSampleCSV">CSV</button> | 
         </p>
         <p class="info-text">
@@ -215,8 +216,7 @@ const downloadSampleCSV = () => {
 }
 
 .import-info {
-  background-color: hwb(46 80% 0%);
-  border: 1px solid var(--color-warning);
+  border: 1px solid var(--color-border-secondary);
   border-radius: 6px;
   padding: 12px;
   margin-bottom: 16px;
@@ -225,7 +225,6 @@ const downloadSampleCSV = () => {
 .info-text {
   margin: 0 0 8px 0;
   font-size: 13px;
-  color: #856404;
   line-height: 1.4;
 }
 
