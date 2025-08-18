@@ -214,7 +214,17 @@ function buildMCPHeaders(): Record<string, string> {
         }
       });
     } else {
-      headers[authType.value] = apiKey.value.trim();
+      switch (authType.value) {
+        case 'bearer_token':
+        case 'api_key':
+        case 'oauth':
+            headers['Authorization'] = `Bearer ${apiKey.value.trim()}`;
+          break;
+        case 'basic_auth':
+          const encoded = btoa(apiKey.value.trim());
+          headers['Authorization'] = `Basic ${encoded}`;
+          break;
+      }
     }
     return headers;
   }
