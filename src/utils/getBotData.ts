@@ -8,6 +8,7 @@ import { usePublishStore } from '@/stores/publishStore';
 import { useRoute, useRouter } from 'vue-router';
 import { getCurrentApiKey } from './apiKeyUtils';
 import { useMCPStore } from '@/stores/mcpStore';
+import { useUserStore } from '@/stores/userStore';
 
 // let isBotDataLoaded = false;
 
@@ -38,7 +39,8 @@ export async function getBotData() {
   // Reset publish store state for new agent
   const publishStore = usePublishStore();
   publishStore.resetStore();
-
+  useUserStore().clearAllCache();
+  
   try {
     const response = await axiosInstance.get(`/v1/bot/get-data?apikey=${apikey}`);
     const data = response.data.data;
@@ -73,6 +75,7 @@ export async function getBotData() {
     botStore.setBotName(data.bot.name);
     
     useMCPStore().connectedMCPs = data.mcp_count;
+    
     
          // Set global flag to prevent duplicate calls
     //  isBotDataLoaded = true;
