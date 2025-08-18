@@ -182,7 +182,7 @@ async function checkConnection() {
       error.value = "Unauthorized: Please check your API key or authentication method."
     } else if (err?.response?.data?.error.includes('404')) {
       error.value = "Server not found. Please check the MCP server URL and try again."
-    } else if(err?.response?.data?.error.includes('fetch failed')) {
+    } else if (err?.response?.data?.error.includes('fetch failed')) {
       error.value = "We couldn't reach the MCP server. Make sure it's running and the URL is correct."
     } else {
       error.value = err?.response?.data?.error || err?.message || 'Failed to connect to the server';
@@ -214,7 +214,7 @@ function buildMCPHeaders(): Record<string, string> {
         case 'bearer_token':
         case 'api_key':
         case 'oauth':
-            headers['Authorization'] = `Bearer ${apiKey.value.trim()}`;
+          headers['Authorization'] = `Bearer ${apiKey.value.trim()}`;
           break;
         case 'basic_auth':
           const encoded = btoa(apiKey.value.trim());
@@ -379,9 +379,12 @@ onMounted(() => {
 
       <div v-if="!serverTools.length">
         <div class="pt-20" v-if="server && server.name === 'Shopify'">
-          <input type="text" id="shopify-domain" v-model="serverUrl" placeholder="Your Shopify Store Base Domain *" required>
+          <input type="text" id="shopify-domain" v-model="serverUrl" placeholder="Your Shopify Store Base Domain *"
+                 required>
           <div class="text-center pt-5">
-            <a class="external-link" target="_blank" href="https://www.hulkapps.com/blogs/shopify-hub/how-to-find-your-shopify-domain-a-step-by-step-guide">Get Your Shopify Store's Base Domain <i class="pi pi-external-link"></i></a>
+            <a class="external-link" target="_blank"
+               href="https://www.hulkapps.com/blogs/shopify-hub/how-to-find-your-shopify-domain-a-step-by-step-guide">Get
+              Your Shopify Store's Base Domain <i class="pi pi-external-link"></i></a>
           </div>
         </div>
         <div v-if="isCustom">
@@ -400,7 +403,7 @@ onMounted(() => {
         <div class="pt-20">
           <input type="text" v-model="description" id="description" placeholder="Description (optional)">
         </div>
-        <!-- <div class="auth-select-group pt-20" v-if="isCustom || (server && server.name === 'Shopify')">
+        <div class="auth-select-group pt-20" v-if="isCustom">
           <label class="auth-label" for="authType">
             Authentication
             <span class="info-icon">
@@ -421,10 +424,13 @@ onMounted(() => {
             </svg>
           </span>
           </div>
-        </div> -->
+        </div>
+        -->
         <div class="pt-20" v-if="server && server.id === 'google-sheet'">
           <input type="file" v-on:change="handleFileChange">
-          <div class="header-container pt-5" style="font-size: 11px; text-align: justify; margin: auto;">Hint: Upload Google Service Account Key. We’ll handle token generation.</div>
+          <div class="header-container pt-5" style="font-size: 11px; text-align: justify; margin: auto;">Hint: Upload
+            Google Service Account Key. We’ll handle token generation.
+          </div>
         </div>
         <div class="pt-20" v-if="authType !== 'none' && authType !== 'custom_headers'">
           <div class="access-token-input">
@@ -472,7 +478,8 @@ onMounted(() => {
             </button>
           </div>
           <div class="text-center pt-5" v-if="server && server.externalData">
-            <a class="external-link" target="_blank" :href="server.externalData.link"> {{ server.externalData.label }} <i class="pi pi-external-link"></i></a>
+            <a class="external-link" target="_blank" :href="server.externalData.link"> {{ server.externalData.label }}
+              <i class="pi pi-external-link"></i></a>
           </div>
         </div>
         <div class="pt-10" v-if="authType === 'custom_headers'">
@@ -795,9 +802,11 @@ input {
   flex-shrink: 0;
   margin-top: 2px;
 }
+
 .external-link {
   font-size: 12px;
 }
+
 .pt-5 {
   padding-top: 5px;
 }
