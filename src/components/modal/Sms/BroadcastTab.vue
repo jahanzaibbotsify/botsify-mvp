@@ -262,7 +262,7 @@ watch(() => broadcastForm.value.uploadedFile, (newFile) => {
      </div>
     
          <!-- Broadcast Limits -->
-     <div class="limits-section">
+     <!-- <div class="limits-section">
         <div class="limits-row">
           <div class="limit-card">
           <div class="limit-header">
@@ -298,7 +298,7 @@ watch(() => broadcastForm.value.uploadedFile, (newFile) => {
           </div>
         </div>
         </div>
-           </div>
+           </div> -->
     </div>
 
     <!-- Action Button -->
@@ -330,7 +330,7 @@ watch(() => broadcastForm.value.uploadedFile, (newFile) => {
 
 .main-content{
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 20px;
 }
 

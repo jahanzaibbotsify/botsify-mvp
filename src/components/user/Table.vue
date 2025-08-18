@@ -160,7 +160,7 @@ const getPageNumbers = computed(() => {
     <!-- Users Table -->
     <Table>
       <TableHead>
-          <TableHeader>
+          <TableHeader width="50px" class="text-center">
             <input 
               type="checkbox" 
               :checked="userStore.selectAll" 
@@ -208,7 +208,7 @@ const getPageNumbers = computed(() => {
 
         <!-- Empty state -->
         <TableRow v-else-if="userStore.users.length === 0" noData>
-            <TableCell noData colspan="6">
+            <TableCell noData colspan="7">
               <div class="empty-state">
                 <i class="pi pi-file-o"></i>
                 <p>No user found</p>
@@ -224,7 +224,7 @@ const getPageNumbers = computed(() => {
           clickable
           @click="handleRowClick(user)"
         >
-          <TableCell>
+          <TableCell class="text-center">
             <input
               @click.stop
               type="checkbox" 
@@ -332,7 +332,7 @@ const getPageNumbers = computed(() => {
 .table-container {
   background-color: white;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 0px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   position: relative;
@@ -472,6 +472,10 @@ const getPageNumbers = computed(() => {
   padding: 8px 4px;
   color: var(--color-text-primary);
   font-size: 14px;
+}
+
+.text-center{
+  text-align: center;
 }
 
 @media (max-width: 768px) {

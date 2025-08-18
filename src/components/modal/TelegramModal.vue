@@ -200,6 +200,7 @@ defineExpose({ openModal, closeModal });
               id="access-token"
               v-model="telegramForm.accessToken"
               type="text"
+              required
               placeholder="Enter your Telegram bot access token"
               size="medium"
               :error="errors.accessToken"
@@ -215,6 +216,7 @@ defineExpose({ openModal, closeModal });
               id="bot-name"
               v-model="telegramForm.botName"
               type="text"
+              required
               placeholder="Enter your agent name"
               size="medium"
               :error="errors.botName"
@@ -227,6 +229,7 @@ defineExpose({ openModal, closeModal });
               id="telegram-number"
               v-model="telegramForm.telegramNumber"
               type="tel"
+              required
               placeholder="Enter your Telegram phone number"
               size="medium"
               :error="errors.telegramNumber"
@@ -242,6 +245,7 @@ defineExpose({ openModal, closeModal });
               id="chatbot-url"
               v-model="telegramForm.telegramChatbotUrl"
               type="url"
+              required
               placeholder="https://t.me/your_agent_username"
               size="medium"
               :error="errors.telegramChatbotUrl"
@@ -250,19 +254,19 @@ defineExpose({ openModal, closeModal });
               The URL where users can access your agent
             </small>
           </div>
-        </div>
-        <div class="agent-action-buttons">
-          <!-- Save Button for Publish Tab -->
-          <Button 
-            v-if="currentActiveTab === 'publish'" 
-            variant="primary"
-            size="medium"
-            :loading="isLoading"
-            :disabled="!isFormValid"
-            @click="handleSaveTelegramSettings"
-          >
-            Save Settings
-          </Button>
+          <div class="agent-action-buttons">
+            <!-- Save Button for Publish Tab -->
+            <Button 
+              v-if="currentActiveTab === 'publish'" 
+              variant="primary"
+              size="medium"
+              :loading="isLoading"
+              :disabled="!isFormValid"
+              @click="handleSaveTelegramSettings"
+            >
+              Save Settings
+            </Button>
+          </div>
         </div>
       </div>
     </template>

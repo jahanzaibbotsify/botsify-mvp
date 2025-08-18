@@ -19,7 +19,7 @@
                 <p class="card-text">Click on "Create App" button in the Facebook Developer Console</p>
               </div>
               <div class="content-image">
-                <img src="https://bot-file-upload-eu-1.s3.eu-west-1.amazonaws.com/templates/images/step-two-1_120323_1709720067.png" alt="Create App" class="step-image" />
+                <img src="https://bucket.osam.one/templates/images/image__11__131642_1755518347.png" alt="Create App" class="step-image" />
               </div>
             </div>
           </div>

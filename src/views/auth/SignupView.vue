@@ -375,9 +375,9 @@ const clearFieldError = (field: string) => {
           <span class="checkbox-custom"></span>
           <span class="checkbox-label">
             I agree to the 
-            <a href="https://agentic-dev.botsify.com/terms-conditions" target="_blank" class="terms-link">Terms & conditions</a>
+            <a href="https://botsify.com/terms-and-conditions" target="_blank" class="terms-link">Terms & conditions</a>
             and 
-            <a href="https://agentic-dev.botsify.com/privacy-policy" target="_blank" class="terms-link">Privacy policy</a>
+            <a href="https://botsify.com/privacy-policy" target="_blank" class="terms-link">Privacy policy</a>
           </span>
         </label>
         
@@ -479,7 +479,7 @@ const clearFieldError = (field: string) => {
 
 .required {
   color: var(--color-error);
-  margin-left: 2px;
+  /* margin-left: 2px; */
 }
 
 .input-wrapper {

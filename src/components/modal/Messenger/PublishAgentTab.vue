@@ -41,11 +41,13 @@ const pages = computed((): FacebookPageForTemplate[] => {
   // Check if we have pagesData structure (API response format)
   if (storePages.value.data && storePages.value.data?.pagesData?.data) {
     const pagesData = storePages.value.data.pagesData.data;
+    const currentPageId = storePages.value?.data.pageId;
+
     if (Array.isArray(pagesData) && pagesData.length > 0) {
       return pagesData.map((page: FacebookPage) => ({
         id: page.id,
         name: page.name,
-        is_bot_page: !!page.connected_page_bot,
+        is_bot_page: currentPageId === page.id,
         status: page.connected_page_bot ? 'connected' : 'disconnected',
         botName: page.connected_page_bot || null,
         accessToken: page.access_token || null,

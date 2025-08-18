@@ -145,24 +145,25 @@ defineExpose({ openModal, closeModal });
         v-show="activeTab === 'publish-agent'"
         ref="publishAgentTabRef"
         :is-loading="publishStore.whatsappConfig.loading"
+        @check-config="checkConfiguration"
       />
 
       <!-- Test Bot Tab -->
       <TestBotTab v-if="activeTab === 'test-bot'" />
 
-      <!-- Profile Tab (only for Dialog360) -->
-      <ProfileTab 
-        v-if="activeTab === 'profile' && isConfigured && configure === 'dialog360'"
-        ref="profileTabRef"
-        :is-loading="publishStore.whatsappConfig.loading"
-      />
 
       <!-- Loading State -->
-      <div v-if="publishStore.whatsappConfig.loading" class="loading-state">
+      <div v-if="publishStore.whatsappConfig.loading && activeTab !== 'publish-agent'" class="loading-state">
         <div class="loader-spinner"></div>
         <span>Loading WhatsApp settings...</span>
       </div>
       
+        <!-- Profile Tab (only for Dialog360) -->
+        <ProfileTab 
+        v-if="activeTab === 'profile' && isConfigured && configure === 'dialog360'"
+        ref="profileTabRef"
+        :is-loading="publishStore.whatsappConfig.loading"
+      />
       <!-- Broadcast Tab -->
       <BroadcastTab 
         v-if="activeTab === 'broadcast'"
