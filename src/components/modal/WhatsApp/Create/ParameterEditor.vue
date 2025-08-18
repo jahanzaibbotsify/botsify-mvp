@@ -3,6 +3,7 @@ import { Input } from "@/components/ui";
 import { useWhatsAppTemplateStore } from "@/stores/whatsappTemplateStore";
 import MessagePreview from "./MessagePreview.vue";
 import { ref, computed, watch } from 'vue';
+import { botsifyApi } from "@/services/botsifyApi";
 
 // Props
 interface Props {
@@ -15,6 +16,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const store = useWhatsAppTemplateStore();
 
+// Media handling
+const uploadingMedia = ref(false);
 // Local state to track field interactions
 const touchedFields = ref({
   templateName: false,
@@ -158,6 +161,51 @@ const shouldShowError = (fieldName: string, index?: number, subField?: string): 
   return false;
 };
 
+
+
+// Media handling methods
+const acceptedFileTypes = (headerType: string) => {
+  switch (headerType) {
+    case 'video':
+      return 'video/*';
+    case 'image':
+      return 'image/*';
+    case 'document':
+      return '.pdf,.doc,.docx,.txt';
+    default:
+      return '*/*';
+  }
+};
+
+const uploadMedia = async (event: Event, slideIndex?: number) => {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+
+  uploadingMedia.value = true;
+
+  try {
+    const result = await botsifyApi.uploadFileNew(file);
+    
+    if (result.success && result.data) {
+      console.log(result.data);
+      console.log(slideIndex);
+      if (store.template.type === 'generic' && slideIndex !== undefined) {
+        store.block.slides[slideIndex].attachment_link = result.data.url;
+      } else {
+        store.block.attachment_link = result.data.url;
+      }
+      window.$toast?.success('Media uploaded successfully!');
+    } else {
+      window.$toast?.error('Upload failed: ' + (result.message || 'Unknown error'));
+    }
+  } catch (error: any) {
+    console.error('Upload failed:', error);
+    window.$toast?.error('Upload failed: ' + (error.message || 'Unknown error'));
+  } finally {
+    uploadingMedia.value = false;
+  }
+};
+
 // Watch for changes to mark fields as touched
 watch(() => store.template.name, () => {
   if (store.template.name !== '') {
@@ -224,8 +272,27 @@ defineExpose({
       >
         <h3>Header {{ store.template.header.charAt(0).toUpperCase() + store.template.header.slice(1) }}</h3>
         <div class="form-group">
+          <div class="media-input-group">
+                <label class="required-label">
+                  {{store.template.header.charAt(0).toUpperCase() + store.template.header.slice(1) }} Link
+                </label>
+                <div class="media-actions">
+                  <div class="upload-media" :title="`Upload ${store.template.header}`">
+                    <div class="upload-icon">
+                      <div v-if="uploadingMedia" class="loader-spinner"></div>
+                      <i v-else class="pi pi-paperclip"></i>
+                    </div>
+                    <input 
+                      type="file" 
+                      :accept="acceptedFileTypes(store.template.header)" 
+                      @change="uploadMedia"
+                      :disabled="uploadingMedia"
+                      class="file-input-hidden"
+                    />
+                  </div>
+                </div>
+              </div>
           <Input
-            :label="store.template.header.charAt(0).toUpperCase() + store.template.header.slice(1) + 'Link'"
             type="url"
             v-model="store.block.attachment_link"
             :placeholder="`Enter URL for the ${store.template.header}`"
@@ -310,8 +377,27 @@ defineExpose({
                 
                 <!-- Dialog360 - URL Input -->
                 <div class="form-group" v-else-if="props.botService === 'dialog360'">
+                  <div class="media-input-group">
+                      <label class="required-label">
+                        {{slide.header.charAt(0).toUpperCase() + slide.header.slice(1) }} Link
+                      </label>
+                      <div class="media-actions">
+                        <div class="upload-media" :title="`Upload ${store.template.header}`">
+                          <div class="upload-icon">
+                            <div v-if="uploadingMedia" class="loader-spinner"></div>
+                            <i v-else class="pi pi-paperclip"></i>
+                          </div>
+                          <input 
+                            type="file" 
+                            :accept="acceptedFileTypes(store.template.header)" 
+                            @change="uploadMedia($event, slideIndex)"
+                            :disabled="uploadingMedia"
+                            class="file-input-hidden"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   <Input
-                    :label=" slide.header.charAt(0).toUpperCase() + slide.header.slice(1) + 'Link'"
                     type="url"
                     v-model="store.block.slides[slideIndex].attachment_link"
                     :placeholder="slide.header === 'video' ? 'https://example.com/video.mp4' : 'https://example.com/image.jpg'"
@@ -518,6 +604,66 @@ defineExpose({
   color: var(--color-text-secondary);
   line-height: 1.4;
 }
+
+
+.media-input-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-2);
+}
+
+.media-actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.upload-media {
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 27px;
+  height: 27px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  transition: all var(--transition-normal);
+  font-size: 12px;
+}
+
+.upload-media:hover {
+  background-color: var(--color-bg-hover);
+  border-color: var(--color-primary);
+}
+
+.upload-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+}
+
+.upload-media:hover .upload-icon {
+  color: var(--color-primary);
+}
+
+.file-input-hidden {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-input-hidden:disabled {
+  cursor: not-allowed;
+}
+
 
 /* Responsive Design */
 @media (max-width: 768px) {

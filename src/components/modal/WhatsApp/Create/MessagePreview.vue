@@ -581,6 +581,7 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   padding: var(--space-1);
+  overflow: hidden;
 }
 
 .slide-image,

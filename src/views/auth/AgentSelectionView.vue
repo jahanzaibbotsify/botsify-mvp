@@ -521,6 +521,22 @@ const getPublishedChannels = (agent: any) => {
   ]
   return channels.filter(c => c.active)
 }
+const validateImage = (url?: string, fallback = "/icons/img.png") => {
+  const result = ref(fallback);
+
+  if (!url) {
+    result.value = fallback;
+    return result;
+  }
+
+  const img = new Image();
+  img.onload = () => (result.value = url);
+  img.onerror = () => (result.value = fallback);
+  img.src = url;
+
+  return result;
+}
+
 
 onMounted(() => {
   // Fetch agents on component mount
@@ -751,7 +767,7 @@ onUnmounted(() => {
               <div class="agent-info-column">
                 <!-- Agent Avatar -->
                 <div class="agent-avatar-section">
-                  <img :src="agent.logo || '/icons/img.png'" :alt="agent.name" class="agent-avatar" @click="selectBot(agent)"
+                  <img :src="validateImage(agent.logo).value" :alt="agent.name" class="agent-avatar" @click="selectBot(agent)"
                        style="cursor:pointer; user-select: none"/>
                 </div>
 
