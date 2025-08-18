@@ -78,11 +78,13 @@ const handleImport = () => {
   <div class="controls-section">
     <!-- Desktop Layout -->
     <div class="desktop-controls">
-        <Input 
+        <div class="filters">
+          <Input 
             v-model="userStore.filterState.search" 
             placeholder="Search user..."
             @input="handleSearchChange"
             searchable
+            class="search-box"
           />
         
           <VueSelect
@@ -98,6 +100,7 @@ const handleImport = () => {
             @change="handleDateRangeChange"
           />
       
+        </div>
       <div class="action-controls">
         <VueSelect
           :model-value="userStore.selectedAction"
@@ -128,73 +131,18 @@ const handleImport = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
   flex-wrap: nowrap;
-  padding: 12px;
+  padding: 12px 8px;
   border-bottom: 1px solid var(--color-border);
 }
-
-.search-controls {
+.filters{
   display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: nowrap;
-  flex: 1;
-  min-width: 0;
-}
-
-.search-box {
-  position: relative;
-  display: flex;
-  min-width: 160px;
-  flex-shrink: 0;
-}
-
-.search-box input {
-  padding: 12px;
-  border: 1px solid #e4e4e7;
-  border-radius: 6px;
-  font-size: 13px;
+  gap: 10px;
   width: 100%;
-  background-color: white;
-  transition: border-color 0.2s;
-  height: 38px;
-  box-sizing: border-box;
 }
-
-.search-box input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(0, 163, 255, 0.1);
-}
-
-.search-icon {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--color-text-tertiary);
-  pointer-events: none;
-}
-
-.action-dropdown{
-  min-width: 180px;
-  flex-shrink: 0;
-}
-
-.date-range {
-  min-width: 160px;
-  flex-shrink: 0;
-}
-
-.date-range :deep(.vue3-date-time-picker) {
-  height: 44px;
-}
-
-.date-range :deep(.vue3-date-time-picker input) {
-  height: 44px;
-  padding: 12px 16px;
-  font-size: 13px;
+.search-box {
+  width: 200px;
 }
 
 .action-controls {
@@ -207,7 +155,6 @@ const handleImport = () => {
 /* Responsive Design */
 @media (max-width: 1024px) {
   .desktop-controls {
-    gap: 12px;
     padding: 10px;
   }
   
@@ -221,10 +168,6 @@ const handleImport = () => {
   
   .action-dropdown {
     min-width: 160px;
-  }
-  
-  .date-range {
-    min-width: 140px;
   }
 }
 
