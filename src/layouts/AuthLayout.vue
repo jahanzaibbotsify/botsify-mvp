@@ -94,11 +94,11 @@ const pageContent = computed(() => {
 
         <!-- Footer -->
         <div class="brand-footer">
-          <p>&copy; 2024 Botsify. All rights reserved.</p>
+          <p>&copy; 2025 Botsify. All rights reserved.</p>
           <div class="footer-links">
-            <router-link to="/terms-conditions" class="footer-link">Terms & Conditions</router-link>
+            <router-link to="/terms-conditions" class="footer-link">Terms & conditions</router-link>
             <span class="footer-separator">•</span>
-            <router-link to="/privacy-policy" class="footer-link">Privacy Policy</router-link>
+            <router-link to="/privacy-policy" class="footer-link">Privacy policy</router-link>
           </div>
         </div>
       </div>

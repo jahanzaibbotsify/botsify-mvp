@@ -33,14 +33,6 @@ const verificationToken = computed(() => {
 })
 
 /**
- * Check if user has visited before (stored in localStorage)
- * Prevents sending duplicate verification emails
- */
-const hasVisitedBefore = computed(() => {
-  return localStorage.getItem('emailVerificationVisited') === 'true'
-})
-
-/**
  * Start countdown timer for resend cooldown
  * Prevents spam clicking of resend button
  */
@@ -69,7 +61,7 @@ const verifyEmailWithToken = async (token: string) => {
 
     if (response.data && response.data.status === 'success') {
       verificationSuccess.value = true
-      localStorage.removeItem('emailVerificationVisited');
+      localStorage.removeItem(`emailVerificationVisited:${email.value}`);
       
       // Update user verification status in store and localStorage
       if (authStore.user) {
@@ -126,7 +118,7 @@ const sendVerificationEmail = async () => {
 
     if (response.data?.status === 'success') {
       startResendCooldown()
-      localStorage.setItem('emailVerificationVisited', 'true')
+      localStorage.setItem(`emailVerificationVisited:${email.value}`, 'true')
     } else {
       const errorMessage = response.data?.message || 'Failed to send verification email. Please try again.'
       verificationError.value = errorMessage
@@ -255,7 +247,12 @@ onMounted(async () => {
   }
 
   // Send verification email if user hasn't visited before
-  await sendVerificationEmail()
+ const emailValue = email.value
+  const visited = localStorage.getItem(`emailVerificationVisited:${email.value}`) === 'true'
+console.log(visited, emailValue);
+  //if (!visited && emailValue) {
+   // await sendVerificationEmail()
+  //}
 })
 </script>
 

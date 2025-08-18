@@ -70,7 +70,7 @@ export const useAuthStore = defineStore('auth', () => {
       billing: 'monthly',
       features: [
         '5 AI Agents',
-        '$25/month/Additional Agent',
+        '$25/month for an additional agent',
         'Unlimited Users',
         'Integrate MCP',
         'Integrate Documents & Web Search',

@@ -206,7 +206,7 @@ const handlePasswordInput = () => {
         :loading="authStore.isLoading"
         class="w-full"
       >
-        Sign In
+        Sign in
       </Button>
     </form>
 
