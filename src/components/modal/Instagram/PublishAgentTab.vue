@@ -224,7 +224,7 @@ const formatFollowerCount = (count: number) => {
 <template>
   <div class="tab-panel">
     <h3>Instagram integration</h3>
-    <p class="subtitle">Connect your Instagram pages to enable Instagram bot functionality</p>
+    <p class="subtitle">Connect your Instagram pages to enable Instagram agent functionality</p>
 
     <!-- Loading State -->
     <div v-if="storeIsLoadingPages" class="loading-state">

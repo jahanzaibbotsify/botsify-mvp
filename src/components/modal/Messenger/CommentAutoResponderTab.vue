@@ -125,6 +125,7 @@ const saveEditAutoResponder = async () => {
           isActive: true
         };
       }
+      publishStore.commentResponder.invalidate();
       cancelEditing();
       window.$toast.success('Auto responder updated successfully!');
     } else {
@@ -166,7 +167,7 @@ const saveNewAutoResponder = async () => {
       
       // Update total count
       totalItems.value += 1;
-      
+      publishStore.commentResponder.invalidate();
       cancelAddingNew();
       window.$toast.success('Auto responder created successfully!');
     } else {
@@ -213,6 +214,7 @@ const performDelete = async (id: string) => {
         // Update total count
         totalItems.value = Math.max(0, totalItems.value - 1);
       }
+      publishStore.commentResponder.invalidate();
       window.$toast.success('Auto responder deleted successfully!');
     } else {
       console.error('Failed to delete auto responder:', result.message);
