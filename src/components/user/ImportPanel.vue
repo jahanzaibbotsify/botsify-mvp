@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import FileUpload from '@/components/ui/FileUpload.vue'
 import { User } from '@/types/user'
 import { userApi } from '@/services/userApi'
+import Button from '../ui/Button.vue';
 
 
 const emit = defineEmits<{
@@ -96,14 +97,13 @@ const downloadSampleCSV = () => {
       </div>
 
       <div class="import-actions">
-        <button 
-          class="import-btn"
+        <Button 
+          :loading="isImporting"
           :disabled="!importFile || isImporting"
           @click="handleImport"
         >
-          <span v-if="isImporting" class="loading-spinner"></span>
-          {{ isImporting ? 'Importing...' : 'Import Users' }}
-        </button>
+          Import Users
+        </Button>
       </div>
     </div>
   </div>
@@ -250,43 +250,5 @@ const downloadSampleCSV = () => {
 .import-actions {
   display: flex;
   gap: 12px;
-}
-
-.import-btn {
-  background-color: var(--color-success);
-  color: white;
-  border: none;
-  padding: 10px 24px;
-  border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.import-btn:hover:not(:disabled) {
-  background-color: var(--color-success);
-}
-
-.import-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.loading-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid transparent;
-  border-top: 2px solid white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 </style>

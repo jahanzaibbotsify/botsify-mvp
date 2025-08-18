@@ -75,10 +75,6 @@ const checkAndPreFillConnectedServer = () => {
       serverUrl.value = connectedServer.setting?.server_url || '';
       serverLabel.value = connectedServer.setting?.server_label || '';
     }
-
-    // Show a message that this server is already connected
-    console.log(`Server ${props.server.name} is already connected`);
-    // checkConnection();
   }
 };
 
@@ -214,7 +210,17 @@ function buildMCPHeaders(): Record<string, string> {
         }
       });
     } else {
-      headers[authType.value] = apiKey.value.trim();
+      switch (authType.value) {
+        case 'bearer_token':
+        case 'api_key':
+        case 'oauth':
+            headers['Authorization'] = `Bearer ${apiKey.value.trim()}`;
+          break;
+        case 'basic_auth':
+          const encoded = btoa(apiKey.value.trim());
+          headers['Authorization'] = `Basic ${encoded}`;
+          break;
+      }
     }
     return headers;
   }
@@ -319,6 +325,7 @@ const addServer = async (allowedTools: string[]) => {
           mcpStore.servers[serverIndex].connectionId = connectedServer.id;
         }
       }
+      mcpStore.connectedMCPs = mcpStore.connectedServers.length;
       emit('quit');
     }
   }

@@ -55,7 +55,11 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: true,
       authMethod: 'oauth',
       authLabel: 'PayPal OAuth Token',
-      server_url: 'https://mcp.paypal.com/sse'
+      server_url: 'https://mcp.paypal.com/sse',
+      externalData: {
+        link: "https://developer.paypal.com/api/rest/#link-getclientidandclientsecret",
+        label: 'Get access token'
+      }
     },
     {
       id: 'hubspot',
@@ -66,7 +70,11 @@ export const useMCPStore = defineStore('mcp', () => {
       isPopular: true,
       authMethod: 'api_key',
       authLabel: 'HubSpot API Key',
-      server_url: 'https://app.hubspot.com/mcp/v1/http'
+      server_url: 'https://app.hubspot.com/mcp/v1/http',
+      externalData: {
+        link: "https://developers.hubspot.com/docs/guides/api/overview",
+        label: 'Get api key'
+      }
     },
     {
       id: 'zoho',
@@ -139,7 +147,8 @@ export const useMCPStore = defineStore('mcp', () => {
   ]);
   const connectedServers = ref([]);
   const initialized = ref(false);
-  
+  const connectedMCPs = ref(0);
+
   const setIntialize = async () => {
     if (initialized.value) return;
     initialized.value = true;
@@ -347,6 +356,7 @@ Remember: You have access to ${connectedServers.value.length} MCP server${connec
 
   return {
     servers,
+    connectedMCPs,
     setIntialize,
     connectedServers,
     getCombinedSystemPrompt,

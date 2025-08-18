@@ -1,10 +1,7 @@
 import {RouteRecordRaw, createRouter, createWebHistory} from 'vue-router'
-import {getCurrentApiKey} from "@/utils/apiKeyUtils.ts";
-import {axiosInstance} from "@/utils/axiosInstance.ts";
-import {useWhitelabelStore} from "@/stores/whitelabelStore.ts";
-import {useBotStore} from "@/stores/botStore.ts";
-import {useRoleStore} from "@/stores/roleStore.ts";
 import {useAuthStore} from "@/stores/authStore.ts";
+import { getCurrentApiKey } from '@/utils/apiKeyUtils';
+
 const routes: RouteRecordRaw[] = [
   // Auth Routes (with AuthLayout)
   {
@@ -110,8 +107,17 @@ const routes: RouteRecordRaw[] = [
       {
         path: '/users',
         name: 'users',
-        component: () => import('../views/UserView.vue'),
-        meta: { requiresAuth: true }
+        component: () => import('../views/UserView.vue')
+      },
+      // {
+      //   path: '/settings',
+      //   name: 'settings',
+      //   component: () => import('../views/SettingsView.vue')
+      // },
+      {
+        path: '/data-analysis',
+        name: 'data-analysis',
+        component: () => import('../views/DataAnalysisView.vue')
       }
     ]
   },
@@ -152,55 +158,7 @@ const router = createRouter({
 });
 
 
-async function getBotDetails() {
-  const apikey =  getCurrentApiKey();
-  if (!apikey) {
-    await router.push('/select-agent')
-    return;
-  } else {
-    // @ts-ignore
-    useBotStore().setApiKey(apikey);
-  }
-  return axiosInstance.get(`/v1/bot/get-data?apikey=${apikey}`)
-      .then(response => {
 
-        const roleStore = useRoleStore();
-        const whitelabelStore = useWhitelabelStore();
-
-        // Set user role and permissions
-        if (response.data.data.user) {
-          roleStore.setCurrentUser(response.data.data.user);
-
-          // Set whitelabel data if user is a whitelabel client
-          if (response.data.data.user.is_whitelabel_client) {
-            whitelabelStore.setWhitelabelData(response.data.data.user);
-            // Set favicon if present
-            if (response.data.data.user.whitelabel && response.data.data.user.whitelabel.favicon) {
-              let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-              if (!link) {
-                link = document.createElement('link');
-                link.rel = 'icon';
-                document.head.appendChild(link);
-              }
-              link.href = response.data.data.user.whitelabel.favicon;
-            }
-          }
-        }
-        const botStore = useBotStore();
-        botStore.setApiKeyConfirmed(true);
-        botStore.setBotId(response.data.data.bot.id);
-        botStore.setUser(response.data.data.user);
-        botStore.setBotName(response.data.data.bot.name);
-
-        return response.data.data;
-      })
-      .catch(error => {
-        console.error('API request error:', error);
-        router.push('/select-agent');
-        useBotStore().clearApiKey()
-        return false;
-      });
-}
 
 // @ts-ignore Navigation guards
 router.beforeEach(async (to, from, next) => {
@@ -272,17 +230,15 @@ router.beforeEach(async (to, from, next) => {
         return next();
       }
 
+      
+      if(typeof to.name === 'undefined'){
+        router.replace({ name: 'agent', params: { id: getCurrentApiKey() } });
+      }
       // Prevent infinite redirects by checking if we're already going to the redirect path
       if (from.path === to.path) {
         return next();
       }
-
-      // Avoid bot details fetch on routes where API key is not required
-      // Running this on /choose-plan causes a redirect to /select-agent when no API key is present
-      if (to.path !== '/select-agent' && to.path !== '/choose-plan') {
-        getBotDetails();
-      }
-
+     
       // Allow navigation to proceed
       return next();
     } else {

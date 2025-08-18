@@ -45,7 +45,7 @@ const getUpdatedUser = async () => {
 onMounted(() => {
   setTimeout(() => {
     getUpdatedUser()
-  }, 5000)
+  }, 7000)
 })
 </script>
 

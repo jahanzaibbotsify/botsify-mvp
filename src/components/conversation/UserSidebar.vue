@@ -4,7 +4,7 @@
     <div class="user-profile-header">
       <div class="user-avatar">
         <!-- Loading skeleton for avatar -->
-        <div v-if="loading" class="avatar-skeleton"></div>
+        <div v-if="conversationStore.loading" class="avatar-skeleton"></div>
         <!-- Avatar when loaded -->
         <div v-else class="avatar-placeholder">
           <i class="pi pi-user"></i>
@@ -12,7 +12,7 @@
       </div>
       <div class="user-info">
         <!-- Loading skeleton for user info -->
-        <div v-if="loading" class="user-info-skeleton">
+        <div v-if="conversationStore.loading" class="user-info-skeleton">
           <div class="skeleton-line name-skeleton"></div>
           <div class="skeleton-line email-skeleton"></div>
         </div>
@@ -24,7 +24,7 @@
       </div>
       <!-- Notification button - only show when not loading and user has permission -->
       <button 
-        v-if="!loading && roleStore.canChangeNotifications"
+        v-if="!conversationStore.loading && roleStore.canChangeNotifications"
         class="notification-button icon-button" 
         :class="{ enabled: notificationsEnabled, disabled: !notificationsEnabled }"
         @click="toggleNotifications"
@@ -35,7 +35,7 @@
     </div>
 
     <!-- User Details Tabs - only show when not loading -->
-    <div v-if="!loading" class="user-tabs">
+    <div v-if="!conversationStore.loading" class="user-tabs">
       <button 
         class="user-tab" 
         :class="{ active: activeTab === 'profile', disabled: !user?.fbid }"
@@ -58,7 +58,7 @@
     <!-- User Details Content -->
     <div class="user-content">
       <!-- Loading skeleton for content -->
-      <div v-if="loading" class="content-skeleton">
+      <div v-if="conversationStore.loading" class="content-skeleton">
         <div class="skeleton-section" v-for="i in 3" :key="i">
           <div class="skeleton-line"></div>
           <div class="skeleton-line short"></div>
@@ -76,7 +76,7 @@
     </div>
 
     <!-- User Satisfaction - only show when not loading -->
-    <div v-if="!loading" class="user-satisfaction">
+    <div v-if="!conversationStore.loading" class="user-satisfaction">
       <div class="satisfaction-header">
         <span class="satisfaction-label">User Satisfaction</span>
       </div>
@@ -88,7 +88,7 @@
     </div>
 
     <!-- Action Buttons - only show when not loading and user has permissions -->
-    <div v-if="!loading && (roleStore.canDownloadChats || roleStore.canDeleteUserChats)" class="user-actions">
+    <div v-if="!conversationStore.loading && (roleStore.canDownloadChats || roleStore.canDeleteUserChats)" class="user-actions">
       <div class="export-dropdown">
         <button class="user-action-button icon-button" @click="toggleExportDropdown">
         <i class="pi pi-file-export"></i>
@@ -115,14 +115,6 @@ import UserProfile from './UserProfile.vue'
 import UserAttributes from './UserAttributes.vue'
 import { useConversationStore } from '@/stores/conversationStore'
 import { useRoleStore } from '@/stores/roleStore'
-
-interface Props {
-  loading?: boolean
-}
-
-withDefaults(defineProps<Props>(), {
-  loading: false
-})
 
 const activeTab = ref('profile')
 
@@ -235,7 +227,7 @@ onUnmounted(() => {
 
 <style scoped>
 .user-sidebar {
-  width: 280px;
+  width: 240px;
   background-color: var(--color-bg-secondary);
   border-left: 1px solid var(--color-border);
   display: flex;
@@ -273,16 +265,16 @@ onUnmounted(() => {
 
 .user-name {
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.85rem;
   color: var(--color-text-primary);
-  margin-bottom: var(--space-1);
+  /* margin-bottom: var(--space-1); */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .user-email {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -569,12 +561,6 @@ onUnmounted(() => {
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
-}
-
-@media (max-width: 1024px) {
-  .user-sidebar {
-    width: 240px;
-  }
 }
 
 @media (max-width: 768px) {

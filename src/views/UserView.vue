@@ -108,7 +108,6 @@ const getActionText = (action: ActionType): string => {
 onMounted(() => {
   // Prevent live chat agents from accessing this page
   if (roleStore.isLiveChatAgent) {
-    console.log('🔄 Live chat agent redirected from UserView to conversation page');
     router.push('/conversation');
     return;
   }
@@ -129,7 +128,7 @@ onUnmounted(() => {
   <div class="user-view">
     <div class="page-header">
       <h1>User Management</h1>
-      <p>Manage your bot users, view attributes, and perform bulk actions.</p>
+      <p>Manage users, view attributes, and perform bulk actions.</p>
     </div>
 
     <!-- Main User Management View --> 
@@ -152,25 +151,24 @@ onUnmounted(() => {
 
 <style scoped>
 .user-view {
-  min-height: 100vh;
   background-color: var(--color-bg-primary);
 }
 
 .page-header {
   background-color: var(--color-bg-secondary);
-  padding: var(--space-6) var(--space-6) var(--space-4);
+  padding: var(--space-4) var(--space-6) var(--space-4);
   border-bottom: 1px solid var(--color-border);
 }
 
 .page-header h1 {
-  font-size: 1.875rem;
+  font-size: 1.2rem;
   font-weight: 600;
   color: var(--color-text-primary);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-1);
 }
 
 .page-header p {
-  font-size: 1rem;
+  font-size: 0.85rem;
   color: var(--color-text-secondary);
   margin: 0;
 }

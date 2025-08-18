@@ -12,7 +12,6 @@ export const useTabManagement = (tabs: any[], defaultTab: string = 'publish-bot'
   });
 
   const handleTabChange = (tabId: string) => {
-    console.log('Tab changed to:', tabId);
     currentTab.value = tabId;
   };
 

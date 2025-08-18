@@ -1,18 +1,15 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
-import {useRoute, useRouter} from 'vue-router';
+import {useRoute} from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 import LeftSidebar from '@/components/sidebar/LeftSidebar.vue';
+import { useSidebarToggle } from '@/composables/useSidebarToggle';
 import { useBotStore } from '@/stores/botStore';
 import { getBotData } from '@/utils/getBotData';
-import { useSidebarToggle } from '@/composables/useSidebarToggle';
 
+const botStore = useBotStore();
 const chatStore = useChatStore();
 const route = useRoute();
-const router = useRouter();
-const botStore = useBotStore();
-
-const apiKey = route.params.id as string;
 const selectedNavigationButton = ref('Agent');
 
 // Use the sidebar toggle composable
@@ -41,21 +38,19 @@ watch(() => route.path, () => {
 
 // Initialize sidebar state based on screen size
 onMounted(async () => {
-  if (apiKey) {
-    botStore.setApiKey(apiKey);
-  }
+  await getBotData();
   initializeSidebar()
-  // Await the bot data loading
-  try {
-    await getBotData();
-  } catch (error) {
-    router.push('/select-agent')
-    console.error('Failed to load bot data:', error);
-  }
 });
 </script>
 
 <template>
+  <div v-if="botStore.isLoading" class="loading-overlay">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <span>Loading...</span>
+    </div>
+  </div>
+  <div v-else>
   <div class="chat-layout">
     <!-- Overlay for mobile sidebar -->
     <div 
@@ -112,15 +107,23 @@ onMounted(async () => {
       <i class="pi pi-angle-right" style="font-size: 16px;"></i>
     </button>
   </div>
+  </div>
 </template>
 
 <style scoped>
+.loading-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
 .chat-layout {
   display: flex;
   height: 100vh;
   width: 100%;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .content-wrapper {
@@ -134,7 +137,6 @@ onMounted(async () => {
   flex: 1;
   height: 100%;
   position: relative;
-  overflow-x: hidden;
   background-color: var(--color-bg-primary);
 }
 

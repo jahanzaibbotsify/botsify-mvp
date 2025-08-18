@@ -19,7 +19,7 @@ const allPlans = computed(() => {
     if (billingCycle.value === 'annually' && plan.discount?.yearlyPrice) {
       return {
         ...plan,
-        price: Math.round(plan.discount.yearlyPrice / 12),
+        price: Math.round(plan.discount.yearlyPrice),
         billing: 'yearly' as const,
         showAnnualDiscount: true
       }

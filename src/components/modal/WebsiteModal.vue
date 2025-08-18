@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import {Button, Input, PublishModalLayout} from "@/components/ui";
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import { useBotStore } from "@/stores/botStore";
 import { usePublishStore } from "@/stores/publishStore";
 import { getWebUrl } from "@/utils";
+import { publishApi } from "@/services/publishApi";
 
 // Define tabs first
 const tabs = [
-  { id: 'install-code', label: 'Install Code Yourself' },
-  { id: 'inline-widget', label: 'Inline Widget' },
-  { id: 'landing-bot', label: 'Landing Agent' }
+  { id: 'install-code', label: 'Install code yourself' },
+  { id: 'inline-widget', label: 'Inline widget' },
+  { id: 'landing-bot', label: 'Landing agent' }
 ];
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
@@ -26,7 +27,7 @@ const isLoading = ref(false);
 const selectedColor = ref('#3b82f6');
 const showColorPicker = ref(false);
 const generatedInlineCode = ref('');
-const backgroundStyle = ref<'gradient' | 'plain-primary' | 'plain-secondary'>('gradient');
+const backgroundStyle = ref<'gradient' | 'primary' | 'secondary'>('gradient');
 const landingUrl = `${getWebUrl()}/web-bot/landing/${apikey}`;
 
 // Install code content - fixed template literal
@@ -37,33 +38,12 @@ const installCode = `&lt;script&gt;!function() {
   }(); webbot.load('${apikey}');
 &lt;/script&gt;`;
 
-const loadBotDetails = async () => {
-  try {
-    const result = await publishStore.getBotDetails();
-    
-    if (result.success && result.data) {
-      // Extract wizard_config from the response
-      const wizardConfig = result.data.wizard_config;
-      
-      if (wizardConfig && wizardConfig['landing-bot-bg-style']) {
-        const savedStyle = wizardConfig['landing-bot-bg-style'];
-        
-        // Validate that the saved style is one of the allowed values
-        if (['gradient', 'plain-primary', 'plain-secondary'].includes(savedStyle)) {
-          backgroundStyle.value = savedStyle as 'gradient' | 'plain-primary' | 'plain-secondary';
-          console.log('Loaded background style from bot details:', backgroundStyle.value);
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Failed to load bot details:', error);
-  }
-};
 
 const openModal = async () => {
   modalRef.value?.openModal();
   // Load bot details when modal opens
-  await loadBotDetails();
+  await publishStore.whatsappConfig.load();
+  backgroundStyle.value = publishStore.whatsappConfig.data?.data.config?.['landing-bot-bg-style'] || 'gradient';
 };
 
 const closeModal = () => {
@@ -75,7 +55,6 @@ const handleBack = () => {
 };
 
 const handleTabChange = (tabId: string) => {
-  console.log('Tab changed to:', tabId);
   currentActiveTab.value = tabId;
 };
 
@@ -109,12 +88,11 @@ o.src="${getWebUrl()}/web-bot/script/embed/"+e+"/"+s+"/"+bg+"/botsify.js"; n=doc
 const saveLandingSettings = async () => {
   isLoading.value = true;
   try {
-    const result = await publishStore.saveLandingSettings(backgroundStyle.value);
-    
+    const result = await publishApi.saveLandingSettings(backgroundStyle.value);
     if (result.success) {
-      console.log('Landing settings saved successfully');
+      window.$toast.success('Landing settings saved successfully!');
     } else {
-      console.error('Failed to save landing settings:', result.error);
+      window.$toast.error(result.message);
     }
   } catch (error) {
     console.error('Failed to save landing settings:', error);
@@ -126,11 +104,6 @@ const saveLandingSettings = async () => {
 const copyLandingUrl = () => {
   copyToClipboard(landingUrl);
 };
-
-// Load bot details on component mount
-onMounted(() => {
-  loadBotDetails();
-});
 
 defineExpose({ openModal, closeModal });
 </script>
@@ -232,7 +205,7 @@ defineExpose({ openModal, closeModal });
               <input 
                 type="radio" 
                 v-model="backgroundStyle" 
-                value="plain-primary"
+                value="primary"
               />
               <span class="radio-label">Plain primary</span>
             </label>
@@ -240,7 +213,7 @@ defineExpose({ openModal, closeModal });
               <input 
                 type="radio" 
                 v-model="backgroundStyle" 
-                value="plain-secondary"
+                value="secondary"
               />
               <span class="radio-label">Plain secondary</span>
             </label>
@@ -345,7 +318,6 @@ defineExpose({ openModal, closeModal });
 
 .form-label {
   display: block;
-  margin-bottom: 12px;
   font-weight: 500;
   color: var(--color-text-primary, #111827);
   font-size: 14px;

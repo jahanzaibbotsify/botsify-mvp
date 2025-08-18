@@ -16,12 +16,10 @@ export function useChatManagement(chatId: string) {
     
     if (!foundChat && chatId) {
       try {
-        console.log('Chat not found, creating new chat with ID:', chatId);
         const newChat = chatStore.createNewChat();
         newChat.id = chatId;
         foundChat = newChat;
       } catch (error) {
-        console.error('Error creating new chat:', error);
         return null;
       }
     }

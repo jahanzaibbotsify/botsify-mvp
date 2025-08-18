@@ -2,7 +2,7 @@
   <div class="chat-header">
     <div class="chat-user-info">
       <!-- Loading skeleton for user name -->
-      <div v-if="loading" class="user-name-skeleton">
+      <div v-if="conversationStore.loading" class="user-name-skeleton">
         <div class="skeleton-line"></div>
       </div>
       <!-- User name when loaded -->
@@ -10,7 +10,7 @@
     </div>
     <div class="chat-actions">
       <!-- Loading skeleton for actions -->
-      <div v-if="loading" class="actions-skeleton">
+      <div v-if="conversationStore.loading" class="actions-skeleton">
         <div class="skeleton-button"></div>
         <div class="skeleton-button"></div>
       </div>
@@ -42,14 +42,6 @@ import { ref, watch, computed } from 'vue'
 import { useConversationStore } from '@/stores/conversationStore'
 import TranslateModal from './TranslateModal.vue'
 import VueSelect from "vue3-select-component"
-
-interface Props {
-  loading?: boolean
-}
-
-withDefaults(defineProps<Props>(), {
-  loading: false
-})
 
 const conversationStore = useConversationStore()
 const userName = computed(() => conversationStore.selectedConversation?.title)

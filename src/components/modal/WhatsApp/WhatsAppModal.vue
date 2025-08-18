@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick } from "vue";
+import { ref, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 import { PublishModalLayout } from "@/components/ui";
 import PublishAgentTab from "./PublishAgentTab.vue";
@@ -16,11 +16,11 @@ import { useTabManagement } from "@/composables/useTabManagement";
 const tabs = [
   { id: 'publish-agent', label: 'Publish agent' },
   // { id: 'profile', label: 'Profile' },
-  { id: 'test-bot', label: 'Test Bot' },
   { id: 'template', label: 'Templates' },
   { id: 'broadcast', label: 'Broadcast' },
   { id: 'broadcast-report', label: 'Broadcast report' },
-  { id: 'catalog', label: 'Catalog' }
+  { id: 'catalog', label: 'Catalog' },
+  { id: 'test-bot', label: 'Test bot' }
 ];
 
 const modalRef = ref<InstanceType<typeof PublishModalLayout> | null>(null);
@@ -41,52 +41,21 @@ const emit = defineEmits<{
   back: [];
 }>();
 
-// Local reactive data
-const isLoading = ref(false);
-const isWhatsAppConfigured = ref(false);
-const isCheckingConfiguration = ref(false);
-
 // Use the tab management composable
 const { currentTab, handleTabChange } = useTabManagement(tabs, 'publish-agent');
 
-// Determine bot service based on configuration
-const botService = computed(() => {
-  if (publishStore.cache.botDetails?.dialog360) {
-    return 'dialog360';
-  } else if (publishStore.cache.botDetails?.whatsapp_cloud) {
-    return 'facebookAPI';
-  }
-  return 'facebookAPI'; // Default to Meta Cloud
-});
+// Computed configuration status
+const isConfigured = ref(false);
+const configure = ref<'meta' | 'dialog360' | null>(null);
 
 // Check if WhatsApp is configured
-const checkWhatsAppConfiguration = async () => {
-  // Only check if we don't have valid cached data
-  if (publishStore.cacheValid.botDetails && publishStore.cache.botDetails) {
-    // Use cached data to determine configuration
-    isWhatsAppConfigured.value = !!(publishStore.cache.botDetails.dialog360 || publishStore.cache.botDetails.whatsapp_cloud);
-    return;
-  }
-  
-  isCheckingConfiguration.value = true;
-  try {
-    const result = await publishStore.getBotDetails();
-    if (result.success && result.data) {
-      // Check if either Dialog360 or WhatsApp Cloud is configured
-      isWhatsAppConfigured.value = !!(result.data.dialog360 || result.data.whatsapp_cloud);
-    }
-  } catch (error) {
-    console.error('Failed to check WhatsApp configuration:', error);
-    isWhatsAppConfigured.value = false;
-  } finally {
-    isCheckingConfiguration.value = false;
-  }
-};
-
-// Load profile data for Dialog360
-const loadProfileData = () => {
-  if (profileTabRef.value && publishStore.cache.botDetails?.dialog360) {
-    profileTabRef.value.loadProfileData();
+const checkConfiguration = () => {
+  const data = publishStore.whatsappConfig.data;
+  if (data && data.data?.whatsapp) {
+    configure.value = data.data?.whatsapp.type === 'cloud_whatsapp' ? 'meta' : 'dialog360';
+    isConfigured.value = true;
+  } else{
+    isConfigured.value = false;
   }
 };
 
@@ -99,12 +68,11 @@ const whatsappComputedTabs = computed(() => {
       disabled = false; // Always enabled
     } else if (tab.id === 'profile') {
       // Profile tab is only enabled when Dialog360 is configured
-      disabled = !isWhatsAppConfigured.value || !publishStore.cache.botDetails?.dialog360;
+      disabled = !isConfigured.value || configure.value === 'dialog360';
     } else {
       // Other tabs are disabled when WhatsApp is not configured
-      disabled = !isWhatsAppConfigured.value;
+      disabled = !isConfigured.value;
     }
-    
     return {
       ...tab,
       disabled
@@ -112,21 +80,12 @@ const whatsappComputedTabs = computed(() => {
   });
 });
 
-const openModal = () => {
+const openModal = async () => {
   modalRef.value?.openModal();
   
   // Only check configuration if we don't have valid cached data
-  if (!publishStore.cacheValid.botDetails || !publishStore.cache.botDetails) {
-    checkWhatsAppConfiguration();
-  } else {
-    // Use cached data to determine configuration
-    isWhatsAppConfigured.value = !!(publishStore.cache.botDetails.dialog360 || publishStore.cache.botDetails.whatsapp_cloud);
-  }
-  
-  // Ensure we're on the correct tab and initialize it
-  nextTick(() => {
-    handleTabChange(currentTab.value);
-  });
+  await publishStore.whatsappConfig.load();
+  await checkConfiguration();
 };
 
 const closeModal = () => {
@@ -159,65 +118,11 @@ const handleBack = () => {
 };
 
 const onTabChange = (tabId: string) => {
-  console.log('WhatsAppModal - Tab changed to:', tabId);
-  
   // Only allow tab change if WhatsApp is configured or if it's the publish agent tab
-  if (tabId === 'publish-agent' || isWhatsAppConfigured.value) {
+  if (tabId === 'publish-bot' || isConfigured.value) {
+    currentTab.value = tabId;
     handleTabChange(tabId);
-    
-    // Load profile data when profile tab is selected
-    if (tabId === 'profile' && publishStore.cache.botDetails?.dialog360) {
-      nextTick(() => {
-        loadProfileData();
-        // Also initialize the profile tab component if it has a ref
-        if (profileTabRef.value) {
-          profileTabRef.value.loadProfileData();
-        }
-      });
-    }
-    
-    // Initialize templates when broadcast tab is selected
-    if (tabId === 'broadcast' && broadcastTabRef.value) {
-      nextTick(() => {
-        broadcastTabRef.value?.initializeTemplates();
-      });
-    }
-    
-    // Initialize templates when template tab is selected
-    if (tabId === 'template' && templateTabRef.value) {
-      // Add a small delay to ensure the component is fully rendered
-      nextTick(() => {
-        // Always fetch templates when template tab is selected to ensure fresh data
-        templateTabRef.value?.fetchTemplates(1, 20);
-      });
-    }
-    
-    // Refresh broadcast report data when broadcast report tab is selected
-    if (tabId === 'broadcast-report' && broadcastReportTabRef.value) {
-      nextTick(() => {
-        broadcastReportTabRef.value?.refreshData();
-      });
-    }
-    
-    // Initialize catalog when catalog tab is selected
-    if (tabId === 'catalog' && catalogTabRef.value) {
-      nextTick(() => {
-        catalogTabRef.value?.initializeCatalog();
-      });
-    }
   }
-};
-
-const handleFilterReport = (filters: any) => {
-  console.log('Filtering report:', filters);
-};
-
-const handleUpdateProduct = (product: any) => {
-  console.log('Updating product:', product);
-};
-
-const handleDeleteProduct = (id: number) => {
-  console.log('Deleting product:', id);
 };
 
 defineExpose({ openModal, closeModal });
@@ -239,7 +144,7 @@ defineExpose({ openModal, closeModal });
       <PublishAgentTab 
         v-show="activeTab === 'publish-agent'"
         ref="publishAgentTabRef"
-        :is-loading="isLoading"
+        :is-loading="publishStore.whatsappConfig.loading"
       />
 
       <!-- Test Bot Tab -->
@@ -247,35 +152,34 @@ defineExpose({ openModal, closeModal });
 
       <!-- Profile Tab (only for Dialog360) -->
       <ProfileTab 
-        v-if="activeTab === 'profile' && isWhatsAppConfigured && publishStore.cache.botDetails?.dialog360"
+        v-if="activeTab === 'profile' && isConfigured && configure === 'dialog360'"
         ref="profileTabRef"
-        :is-loading="isLoading"
+        :is-loading="publishStore.whatsappConfig.loading"
       />
 
       <!-- Loading State -->
-      <div v-if="isCheckingConfiguration || publishStore.loadingStates.botDetails" class="loading-state">
+      <div v-if="publishStore.whatsappConfig.loading" class="loading-state">
         <div class="loader-spinner"></div>
         <span>Loading WhatsApp settings...</span>
       </div>
       
       <!-- Broadcast Tab -->
       <BroadcastTab 
-        v-if="activeTab === 'broadcast' && isWhatsAppConfigured"
+        v-if="activeTab === 'broadcast'"
         ref="broadcastTabRef"
-        :is-loading="isLoading"
+        :is-loading="publishStore.whatsappConfig.loading"
       />
 
       <!-- Broadcast Report Tab -->
       <BroadcastReportTab 
-        v-if="activeTab === 'broadcast-report' && isWhatsAppConfigured"
+        v-if="activeTab === 'broadcast-report' && isConfigured"
         ref="broadcastReportTabRef"
-        :is-loading="isLoading"
-        @filter-report="handleFilterReport"
+        :is-loading="publishStore.whatsappConfig.loading"
       />
 
       <!-- Template Tab -->
       <TemplateTab
-        v-if="activeTab === 'template' && isWhatsAppConfigured"
+        v-if="activeTab === 'template' && isConfigured"
         ref="templateTabRef"
         @open-create-modal="handleTemplateOpenCreateModal"
         @close-whatsapp-modal="handleTemplateCloseWhatsAppModal"
@@ -283,15 +187,13 @@ defineExpose({ openModal, closeModal });
 
       <!-- Catalog Tab -->
       <CatalogTab 
-        v-if="activeTab === 'catalog' && isWhatsAppConfigured"
+        v-if="activeTab === 'catalog' && isConfigured"
         ref="catalogTabRef"
-        :is-loading="isLoading"
-        @update-product="handleUpdateProduct"
-        @delete-product="handleDeleteProduct"
+        :is-loading="publishStore.whatsappConfig.loading"
       />
 
       <!-- Configuration Required Message -->
-      <div v-if="activeTab !== 'publish-agent' && !isWhatsAppConfigured" class="configuration-required">
+      <div v-if="activeTab !== 'publish-agent' && !isConfigured" class="configuration-required">
         <div class="configuration-message">
           <i class="pi pi-exclamation-triangle"></i>
           <h3>Configuration Required</h3>
@@ -305,7 +207,7 @@ defineExpose({ openModal, closeModal });
   <CreateTemplateModal
     ref="createTemplateModalRef"
     @modal-closed="openModal"
-    :bot-service="botService"
+    :bot-service="configure === 'dialog360' ? 'dialog360' : 'facebookAPI'"
   />
 </template>
 

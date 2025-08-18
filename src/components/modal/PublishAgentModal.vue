@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import ModalLayout from "@/components/ui/ModalLayout.vue";
-import { ref, onMounted, defineAsyncComponent } from "vue";
+import Button from "@/components/ui/Button.vue";
+import Badge from "@/components/ui/Badge.vue";
+import { ref, defineAsyncComponent, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
-import { eventBus } from "@/utils/eventBus";
+import { botsifyApi } from "@/services/botsifyApi";
+import { useChatStore } from "@/stores/chatStore";
 
 // Change from async to direct import for WhatsAppModal
 const WhatsAppModal = defineAsyncComponent({
@@ -93,91 +96,30 @@ const instagramModalRef = ref<InstanceType<typeof InstagramModal> | null>(null);
 const portableAgentModalRef = ref<InstanceType<typeof PortableAgentModal> | null>(null);
 
 const publishStore = usePublishStore();
-const isLoading = ref(false);
+const chatStore = useChatStore();
+const isDeploying = ref(false);
 
-const agents = ref([
-  { icon: 'portable-agent-icon.svg', label: 'Portable agent', status: 'inactive' },
-  { icon: 'website.png', label: 'Website', status: 'inactive' },
-  { icon: 'whatsapp.png', label: 'WhatsApp', status: 'inactive' },
-  { icon: 'messenger.png', label: 'Messenger', status: 'inactive' },
-  { icon: 'instagram.png', label: 'Instagram', status: 'inactive' },
-  { icon: 'telegram.png', label: 'Telegram', status: 'inactive' },
-  { icon: 'sms.png', label: 'SMS', status: 'inactive' },
-]);
-
-const fetchPublishStatus = async () => {
-  // Only fetch if not already loaded
-  if (publishStore.loadingStates.publishStatus && publishStore.cache.publishStatus) {
-    updateAgentStatus(publishStore.cache.publishStatus);
-    return;
-  }
-  
-  isLoading.value = true;
-  try {
-    const result = await publishStore.getPublishStatus();
-    
-    if (result.success && result.data) {
-      updateAgentStatus(result.data);
-    }
-  } catch (error) {
-    console.error('Failed to fetch publish status:', error);
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-const updateAgentStatus = (publishStatus: any) => {
-  if (!publishStatus || !publishStatus.data) return;
-
-  const statusData = publishStatus.data;
-
-  // Update status based on publish status API response
-  agents.value.forEach(agent => {
-    switch (agent.label) {
-      case 'Telegram':
-        agent.status = statusData.telegram ? 'active' : 'inactive';
-        break;
-      case 'SMS':
-        agent.status = statusData.twilio ? 'active' : 'inactive';
-        break;
-      case 'WhatsApp':
-        agent.status = statusData.whatsapp ? 'active' : 'inactive';
-        break;
-      case 'Messenger':
-        agent.status = statusData.facebook ? 'active' : 'inactive';
-        break;
-      case 'Instagram':
-        agent.status = statusData.instagram ? 'active' : 'inactive';
-        break;
-      case 'Website':
-        // Website status might be handled differently
-        agent.status = 'inactive';
-        break;
-      case 'Portable agent':
-        // Portable agent status might be handled differently
-        agent.status = 'inactive';
-        break;
-      default:
-        agent.status = 'inactive';
-    }
-  });
-};
+const publishStatus = computed(() => publishStore.publishStatus.data);
+const agents = computed(() => {
+  const statusData = publishStatus.value?.data?.data;
+  return [
+    { icon: 'portable-agent-icon.svg', label: 'Portable agent', status: 'inactive' },
+    { icon: 'website.png', label: 'Website', status: 'inactive' },
+    { icon: 'whatsapp.png', label: 'WhatsApp', status: statusData?.whatsapp ? 'active' : 'inactive' },
+    { icon: 'messenger.png', label: 'Messenger', status: statusData?.facebook ? 'active' : 'inactive' },
+    { icon: 'instagram.png', label: 'Instagram', status: statusData?.instagram ? 'active' : 'inactive' },
+    { icon: 'telegram.png', label: 'Telegram', status: statusData?.telegram ? 'active' : 'inactive' },
+    { icon: 'sms.png', label: 'SMS', status: statusData?.twilio ? 'active' : 'inactive' },
+  ];
+});
 
 const openModal = () => {
   modalRef.value?.openModal();
   // Only fetch if not already cached
-  if (!publishStore.loadingStates.publishStatus || !publishStore.cache.publishStatus) {
-    fetchPublishStatus();
-  } else {
-    // Use cached data
-    updateAgentStatus(publishStore.cache.publishStatus);
-  }
+  publishStore.publishStatus.load();
 };
 
 const handleAgentClick = (agentLabel: string) => {
-  // Emit event for agent selection
-  eventBus.emit('publish-agent:selected', { agent: agentLabel });
-  
   if (agentLabel === 'Website') {
     websiteModalRef.value?.openModal();
   } else if (agentLabel === 'WhatsApp') {
@@ -198,50 +140,106 @@ const handleAgentClick = (agentLabel: string) => {
 
 const handleBackToMain = () => {
   modalRef.value?.openModal();
-  // Only fetch if not already cached
-  if (!publishStore.loadingStates.publishStatus || !publishStore.cache.publishStatus) {
-    fetchPublishStatus();
+};
+
+const handleDeploy = async () => {
+  // Prevent multiple clicks while deploying
+  if (isDeploying.value) {
+    return;
+  }
+  
+  // Set deploying state
+  isDeploying.value = true;
+  
+  try {
+    const result = await botsifyApi.deployAiAgent(
+      chatStore.activeAiPromptVersion?.version_id ?? parseInt(chatStore.activeAiPromptVersion?.id ?? '0'),
+      chatStore.createAiPromptVersionName()
+    );
+    
+    
+    if (result.success) {
+      // Update the story with the latest content
+      const currentChat = chatStore.chats[0];
+      if (currentChat) {
+        chatStore.updateStory(currentChat.id, currentChat.story?.content || '', true);
+        chatStore.updateActivePromptVersionId(result.data.version.id);
+      }
+      
+      // Show success message
+      window.$toast.success('Agent deployed successfully!');
+    } else {
+      window.$toast.error(`Deployment failed: ${result.message}`);
+    }
+  } catch (error) {
+    window.$toast.error('An unexpected error occurred during deployment.');
+  } finally {
+    isDeploying.value = false;
   }
 };
 
-// Event listeners
-onMounted(() => {
-  // Listen for status updates from child modals
-  eventBus.on('agent:status-updated', (data) => {
-    console.log('Agent status updated:', data);
-    // Refresh status if needed
-    fetchPublishStatus();
-  });
-});
+const closeModal = () => {
+  modalRef.value?.closeModal();
+};
 
-defineExpose({ openModal });
+defineExpose({ openModal, closeModal });
 </script>
 
 <template>
   <!-- Main Agent Selection Modal -->
   <ModalLayout
     ref="modalRef"
-    title="Publish agent"
+    title=""
     max-width="650px"
+    :showCloseButton="true"
   >
-    <div class="server-grid">
-      <div
-        class="server-card"
-        v-for="agent in agents"
-        :key="agent.icon"
-        @click="handleAgentClick(agent.label)"
-        :class="{ 'active': agent.status === 'active' }"
-      >
-        <div class="server-icon">
-          <img :src="`/bots/${agent.icon}`" width="28" height="28" :alt="`${agent.label} icon`"/>
+    <!-- Confirmation Message -->
+    <div class="confirmation-message">
+      <div class="confirmation-content">
+        <div>
+          <p>Are you sure you want to deploy changes?</p>
+          <small>This will deploy your AI Agent to connected platforms</small>
         </div>
-        <div class="text-sm text-emphasis">
-          <div>{{ agent.label }}</div>
-        </div>
-        <!-- Only show badge for active status -->
-        <div v-if="agent.status === 'active'" class="status-badge active">
-          <i class="pi pi-check"></i>
-          Connected
+        <Button 
+          variant="success" 
+          @click="handleDeploy" 
+          icon="pi pi-play"
+          :disabled="isDeploying"
+          :loading="isDeploying"
+        >
+          {{ isDeploying ? 'Deploying...' : 'Deploy agent' }}
+        </Button>
+      </div>
+    </div>
+    
+    <!-- Agent Selection Grid -->
+    <div class="agents-section">
+      <h4>Publish agent</h4>
+      <div class="server-grid">
+        <div
+          class="server-card"
+          v-for="agent in agents"
+          :key="agent.icon"
+          @click="handleAgentClick(agent.label)"
+          :class="{ 'active': agent.status === 'active' }"
+        >
+          <div class="server-icon">
+            <img :src="`/bots/${agent.icon}`" width="28" height="28" :alt="`${agent.label} icon`"/>
+          </div>
+          <div class="text-sm text-emphasis">
+            <div>{{ agent.label }}</div>
+          </div>
+          <!-- Status badges -->
+          <Badge 
+            v-if="agent.status === 'active'" 
+            variant="success" 
+            size="xs" 
+            icon="pi pi-check"
+            iconPosition="left"
+            class="status-badge"
+          >
+            Connected
+          </Badge>
         </div>
       </div>
     </div>
@@ -288,12 +286,27 @@ defineExpose({ openModal });
   />
 </template>
 
-<style>
+<style scoped>
 /* Common Modal Styles - Centralized for all modal components */
 .server-card {
   position: relative;
   cursor: pointer;
   transition: all var(--transition-normal, 0.2s ease);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-tertiary);
+  text-align: center;
+}
+
+.server-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary);
+}
+
+.server-card .server-icon {
+  margin-bottom: var(--space-2);
 }
 
 .server-card .server-icon img {
@@ -302,359 +315,74 @@ defineExpose({ openModal });
   object-fit: contain;
 }
 
-/* Active card styling */
-.server-card.active {
-  border: 2px solid var(--color-secondary, #10b981);
-  background-color: var(--color-bg-secondary, #f9fafb);
-}
-
 /* Status Badge Styles */
 .status-badge {
   position: absolute;
-  top: 8px;
-  padding: 4px 7px;
-  border-radius: var(--radius-sm, 4px);
-  font-size: 11px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--color-secondary, #10b981);
-  color: white;
+  top: 2px;
+  right: 4px;
   z-index: 1;
-  right: 10px;
-}
-
-.status-badge.active {
-  background: var(--color-secondary, #10b981);
-  color: white;
-}
-
-.status-badge i {
-  font-size: 10px;
-}
-
-/* Tab Panel Styles */
-.tab-panel {
-  padding: 0;
-}
-
-.tab-panel h3 {
-  margin: 0 0 8px 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-}
-
-.tab-panel h4 {
-  margin: 0 0 12px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-}
-
-.subtitle {
-  margin: 0 0 12px 0;
-  font-size: 14px;
+  font-size: 0.6rem;
   font-weight: 500;
-  color: var(--color-text-secondary, #6b7280);
+  transition: transform var(--transition-fast);
 }
 
-.description {
-  margin: 0 0 20px 0;
-  color: var(--color-text-secondary, #6b7280);
-  line-height: 1.6;
-  font-size: 14px;
+.status-badge:hover {
+  transform: scale(1.05);
 }
 
-/* Form Styles */
-.form-section {
-  margin: 24px 0;
+/* Active card styling */
+.server-card.active {
+  border: 2px solid var(--color-secondary, #10b981);
+  background-color: rgba(16, 185, 129, 0.1);
 }
 
-.form-group {
-  margin-bottom: 16px;
+/* Single Screen Layout Styles */
+.confirmation-message {
+  border-bottom: 1px solid var(--color-border);
+  margin-left: -16px;
+  margin-right: -16px;
+  padding-bottom: var(--space-4);
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
 }
 
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--color-text-primary, #111827);
-  font-size: 14px;
-}
 
-.form-input {
-  width: 100%;
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--color-border-secondary);
-  border-radius: var(--radius-md, 8px);
-  background: white;
-  color: var(--color-text-primary);
-  font-size: 14px;
-  font-family: inherit;
-  transition: border-color var(--transition-normal, 0.2s ease);
-  box-sizing: border-box;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--color-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.form-input::placeholder {
-  color: var(--color-text-tertiary, #9ca3af);
-}
-
-textarea.form-input {
-  resize: vertical;
-  min-height: 80px;
-}
-
-select.form-input {
-  cursor: pointer;
-}
-
-.help-text {
-  font-size: 12px;
-  color: var(--color-text-secondary, #6b7280);
-  margin-top: 4px;
-  display: block;
-}
-
-/* Action Button Styles */
-.action-buttons {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-start;
-}
-
-.action-button {
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  border: none;
-  font-family: inherit;
-}
-
-.action-button.primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.action-button.primary:hover:not(:disabled) {
-  background: var(--color-primary-hover, #2563eb);
-}
-
-.action-button.delete {
-  color: var(--color-error, #ef4444);
-}
-
-.action-button.clone {
-  color: var(--color-primary, #3b82f6);
-}
-
-.action-button.preview {
-  color: var(--color-info, #3b82f6);
-}
-
-.action-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Table Styles */
-.table-header {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
-  background: var(--color-bg-tertiary, #f3f4f6);
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
-}
-
-.header-cell {
-  padding: 12px 16px;
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--color-text-primary, #111827);
-}
-
-.table-row {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
-  transition: background var(--transition-normal, 0.2s ease);
-}
-
-.table-row:hover {
-  background: var(--color-bg-secondary, #f9fafb);
-}
-
-.table-row:last-child {
-  border-bottom: none;
-}
-
-.table-cell {
-  padding: 12px 16px;
-  font-size: 14px;
-  color: var(--color-text-primary, #111827);
-  display: flex;
-  align-items: center;
-}
-
-/* Code Block Styles */
-.code-block {
-  background: var(--color-bg-secondary, #f9fafb);
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  margin: 20px 0;
-  overflow: hidden;
-}
-
-.code-header {
+.confirmation-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background: var(--color-bg-tertiary, #f3f4f6);
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  gap: var(--space-4);
+  
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
 }
 
-.code-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-secondary, #6b7280);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.copy-button {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.copy-button:hover {
-  background: var(--color-primary-hover, #2563eb);
-}
-
-.code-block pre {
+.confirmation-message p {
   margin: 0;
-  padding: 16px;
-  overflow-x: auto;
-}
-
-.code-block code {
   color: var(--color-text-primary, #111827);
-  font-size: 13px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  line-height: 1.5;
-  white-space: pre;
-}
-
-/* Search and Create Button Styles */
-.search-create-section {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: end;
-}
-
-.create-button {
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md, 8px);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal, 0.2s ease);
-  border: none;
-  font-family: inherit;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  line-height: 1.4;
 }
 
-.create-button.primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
+.agents-section {
+  padding-top: var(--space-3);
 }
 
-.create-button.primary:hover {
-  background: var(--color-primary-hover, #2563eb);
+.agents-section h4 {
+  margin: 0 0 var(--space-4) 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+  text-align: left;
 }
 
-/* Media List Styles */
-.media-list {
-  margin-top: 16px;
-}
-
-.media-table {
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  overflow: hidden;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .search-create-section {
-    flex-direction: column;
-  }
-  
-  .media-table {
-    font-size: 12px;
-  }
-  
-  .table-header,
-  .table-row {
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
-  }
-  
-  .header-cell,
-  .table-cell {
-    padding: 8px 12px;
-  }
-  
-  .action-buttons {
-    gap: 4px;
-  }
-  
-  .action-button {
-    padding: 4px;
-  }
-  
-  .form-group {
-    margin-bottom: 16px;
-  }
-  
-  .form-input {
-    font-size: 16px; /* Prevent zoom on iOS */
-  }
-}
-
-@media (max-width: 640px) {
-  .color-picker-container {
-    flex-wrap: wrap;
-  }
-  
-  .url-display {
-    flex-direction: column;
-  }
-  
-  .copy-url-button {
-    align-self: flex-start;
-  }
-  
-  .radio-group {
-    gap: 16px;
-  }
+.server-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
 }
 </style>

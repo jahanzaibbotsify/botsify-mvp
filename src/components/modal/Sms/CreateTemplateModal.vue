@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import { PublishModalLayout } from "@/components/ui";
 import { Button, Textarea, Input } from "@/components/ui";
 import { usePublishStore } from "@/stores/publishStore";
-import { eventBus } from "@/utils/eventBus";
+import type { SmsTemplate, SmsTemplateButton } from "@/types/publish";
+import { publishApi } from "@/services/publishApi";
 
 // Props
 interface Props {
@@ -16,8 +17,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Emits
 const emit = defineEmits<{
-  'create-template': [template: any];
-  'update-template': [template: any];
+  'create-template': [template: SmsTemplate];
+  'update-template': [template: SmsTemplate];
   'modal-closed': [];
 }>();
 
@@ -89,8 +90,8 @@ const resetForm = () => {
 };
 
 // Button management
-const addButton = (type: string) => {
-  const newButton = {
+const addButton = (type: SmsTemplateButton['type']) => {
+  const newButton: SmsTemplateButton = {
     api: 0,
     error: false,
     payload: '',
@@ -118,46 +119,46 @@ const editButton = (index: number) => {
   form.value.buttons[index].isEditing = true;
 };
 
-const saveButtonEdit = (index: number) => {
-  const button = form.value.buttons[index];
-  if (!button.title?.trim()) {
-    errors.value.buttons[index] = 'Button title is required';
-    return;
-  }
+// const saveButtonEdit = (index: number) => {
+//   const button = form.value.buttons[index];
+//   if (!button.title?.trim()) {
+//     errors.value.buttons[index] = 'Button title is required';
+//     return;
+//   }
 
-  if (button.type === 'url' && !button.url?.trim()) {
-    errors.value.buttons[index] = 'URL is required for URL buttons';
-    return;
-  }
+//   if (button.type === 'url' && !button.url?.trim()) {
+//     errors.value.buttons[index] = 'URL is required for URL buttons';
+//     return;
+//   }
 
-  // Validate URL format for URL buttons
-  if (button.type === 'url' && button.url?.trim()) {
-    try {
-      new URL(button.url.trim());
-    } catch {
-      errors.value.buttons[index] = 'Please enter a valid URL (e.g., https://example.com)';
-      return;
-    }
-  }
+//   // Validate URL format for URL buttons
+//   if (button.type === 'url' && button.url?.trim()) {
+//     try {
+//       new URL(button.url.trim());
+//     } catch {
+//       errors.value.buttons[index] = 'Please enter a valid URL (e.g., https://example.com)';
+//       return;
+//     }
+//   }
 
-  if (button.type === 'phone_number' && !button.payload?.trim()) {
-    errors.value.buttons[index] = 'Phone number is required for Phone Number buttons';
-    return;
-  }
+//   if (button.type === 'phone_number' && !button.payload?.trim()) {
+//     errors.value.buttons[index] = 'Phone number is required for Phone Number buttons';
+//     return;
+//   }
 
-  if (button.type === 'postback' && !button.response?.trim()) {
-    errors.value.buttons[index] = 'Response text is required for Postback buttons';
-    return;
-  }
+//   if (button.type === 'postback' && !button.response?.trim()) {
+//     errors.value.buttons[index] = 'Response text is required for Postback buttons';
+//     return;
+//   }
 
-  // Clear any previous errors
-  if (errors.value.buttons[index]) {
-    delete errors.value.buttons[index];
-  }
+//   // Clear any previous errors
+//   if (errors.value.buttons[index]) {
+//     delete errors.value.buttons[index];
+//   }
 
-  // Save the button edit
-  button.isEditing = false;
-};
+//   // Save the button edit
+//   button.isEditing = false;
+// };
 
 const cancelButtonEdit = (index: number) => {
   form.value.buttons[index].isEditing = false;
@@ -168,9 +169,9 @@ const cancelButtonEdit = (index: number) => {
 };
 
 // Template operations
-const createTemplate = async (templateData: any) => {
+const createTemplate = async (templateData: Partial<SmsTemplate>) => {
   try {
-    const result = await publishStore.createSmsTemplate(templateData);
+    const result = await publishApi.createTemplate(templateData, 'sms');
     return result;
   } catch (error) {
     console.error('Failed to create template:', error);
@@ -178,18 +179,16 @@ const createTemplate = async (templateData: any) => {
   }
 };
 
-const updateTemplate = async (id: number, templateData: any) => {
+const updateTemplate = async (id: number, templateData: Partial<SmsTemplate>) => {
   try {
-    const result = await publishStore.createSmsTemplate({
-      id,
-      ...templateData
-    });
+    const payload = {id, ...templateData}
+    const result = await publishApi.createTemplate(payload, 'sms');
     return result;
   } catch (error) {
     console.error('Failed to update template:', error);
     return { success: false, error };
   }
-};
+ };
 
 const openModal = () => {
   modalRef.value?.openModal();
@@ -229,9 +228,6 @@ const openModalWithData = (templateData: any) => {
   
   // Reset errors
   errors.value = { buttons: {} };
-  
-  console.log('Opening with data for edit:', templateData);
-  console.log('Form data after transformation:', form.value);
 };
 
 const closeModal = () => {
@@ -244,8 +240,6 @@ const handleModalClose = () => {
 };
 
 const handleSave = async () => {
-  console.log('SMS CreateTemplateModal - Form data before save:', form.value);
-  
   if (!validateForm()) {
     return;
   }
@@ -255,25 +249,32 @@ const handleSave = async () => {
   try {
     if (isEditMode.value && editingTemplateId.value) {
       // Update existing template
-      console.log('Updating template with ID:', editingTemplateId.value);
-      const result = await updateTemplate(editingTemplateId.value, form.value);
+      const result = await updateTemplate(editingTemplateId.value, form.value as Partial<SmsTemplate>);
       if (result?.success) {
+        publishStore.smsTemplates.invalidate();
         window.$toast?.success('Template updated successfully!');
-        emit('update-template', { ...form.value, id: editingTemplateId.value });
+        emit('update-template', { 
+          ...form.value, 
+          id: editingTemplateId.value,
+          type: 'sms',
+          status: 'active',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        } as SmsTemplate);
         closeModal();
       } else {
-        window.$toast?.error(result?.error || 'Failed to update template');
+        window.$toast?.error('Failed to update template');
       }
     } else {
       // Create new template
-      console.log('Creating new template');
-      const result = await createTemplate(form.value);
+      const result = await createTemplate(form.value as SmsTemplate);
       if (result?.success && 'data' in result && result.data) {
+        publishStore.smsTemplates.invalidate();
         window.$toast?.success('Template created successfully!');
-        emit('create-template', result.data);
+        emit('create-template', result.data as SmsTemplate);
         closeModal();
       } else {
-        window.$toast?.error(result?.error || 'Failed to create template');
+        window.$toast?.error('Failed to create template');
       }
     }
   } catch (error) {
@@ -295,15 +296,7 @@ const buttonTypes = [
   { label: 'Phone Number', value: 'phone_number' as const }
 ];
 
-// Event listeners
-onMounted(() => {
-  // Listen for template creation events
-  eventBus.on('template:created', (data) => {
-    console.log('Template created:', data);
-    // Refresh templates in parent
-    eventBus.emit('sms:template:refresh');
-  });
-});
+
 
 defineExpose({ openModal, closeModal, openModalWithData });
 </script>
@@ -311,7 +304,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
 <template>
   <PublishModalLayout
     ref="modalRef"
-    :title="isEditMode ? 'Edit sms template' : 'SMS template'"
+    :title="isEditMode ? 'Edit SMS template' : 'SMS template'"
     icon="/bots/sms.png"
     :tabs="tabs"
     max-width="1000px"
@@ -327,8 +320,8 @@ defineExpose({ openModal, closeModal, openModalWithData });
             <div class="form-section">
               <!-- Template Name -->
               <div class="form-group">
-                <label for="template-name">Template name</label>
                 <Input
+                  label="Template name"
                   id="template-name"
                   v-model="form.name"
                   placeholder="Enter template name"
@@ -338,8 +331,8 @@ defineExpose({ openModal, closeModal, openModalWithData });
 
               <!-- Template Text -->
               <div class="form-group">
-                <label for="template-text">Message text</label>
                 <Textarea
+                  label="Message text"
                   id="template-text"
                   v-model="form.text"
                   placeholder="Enter your message content here..."
@@ -355,7 +348,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
             <div class="form-section">
               <div class="buttons-header">
                 <label>Buttons (max 3)</label>
-                <div class="button-actions">
+                <div class="action-buttons">
                   <Button
                     v-for="type in buttonTypes"
                     :key="type.value"
@@ -382,7 +375,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
                       <span class="button-type-badge">{{ button.type.replace('_', ' ').toUpperCase() }}</span>
                       <span class="button-title">{{ button.title || 'Untitled Button' }}</span>
                     </div>
-                    <div class="button-controls">
+                    <div class="action-buttons">
                       <Button
                         variant="secondary"
                         size="small"
@@ -390,7 +383,6 @@ defineExpose({ openModal, closeModal, openModalWithData });
                         iconOnly
                         @click="editButton(index)"
                         title="Edit button"
-                        class="edit-btn"
                       />
                       <Button
                         variant="error-outline"
@@ -399,7 +391,6 @@ defineExpose({ openModal, closeModal, openModalWithData });
                         iconOnly
                         @click="removeButton(index)"
                         title="Remove button"
-                        class="delete-btn"
                       />
                     </div>
                   </div>
@@ -407,7 +398,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
                   <!-- Button Fields (shown when editing) -->
                   <div v-if="button.isEditing" class="button-fields">
                     <!-- Button Title -->
-                    <div class="field-group">
+                    <div class="form-group">
                       <label>Button title</label>
                       <Input
                         v-model="button.title"
@@ -417,9 +408,9 @@ defineExpose({ openModal, closeModal, openModalWithData });
                     </div>
 
                     <!-- Button Type Specific Fields -->
-                    <div v-if="button.type === 'url'" class="field-group">
-                      <label>URL</label>
+                    <div v-if="button.type === 'url'" class="form-group">
                       <Input
+                        label="URL"
                         v-model="button.url"
                         type="url"
                         placeholder="https://example.com"
@@ -428,8 +419,8 @@ defineExpose({ openModal, closeModal, openModalWithData });
                     </div>
 
                     <div v-if="button.type === 'phone_number'" class="field-group">
-                      <label>Phone number</label>
                       <Input
+                        label="Phone number"
                         v-model="button.payload"
                         type="tel"
                         placeholder="+1234567890"
@@ -438,8 +429,8 @@ defineExpose({ openModal, closeModal, openModalWithData });
                     </div>
 
                     <div v-if="button.type === 'postback' && !isEditMode" class="field-group">
-                      <label>Response text</label>
                       <Textarea
+                        label="Response text"
                         v-model="button.response"
                         placeholder="Enter response text"
                         :rows="2"
@@ -447,16 +438,16 @@ defineExpose({ openModal, closeModal, openModalWithData });
                       />
                     </div>
 
-                    <div class="button-actions-footer">
-                      <Button
+                    <div class="action-buttons">
+                      <!-- <Button
                         variant="primary"
                         size="small"
                         @click="saveButtonEdit(index)"
                       >
                         Save
-                      </Button>
+                      </Button> -->
                       <Button
-                        variant="error-outline"
+                        variant="error"
                         size="small"
                         @click="cancelButtonEdit(index)"
                       >
@@ -520,56 +511,12 @@ defineExpose({ openModal, closeModal, openModalWithData });
   gap: var(--space-4);
 }
 
-.form-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.form-group label {
-  font-weight: 600;
-  color: var(--color-text-primary);
-  margin-bottom: var(--space-1);
-}
-
-.form-input {
-  font-family: inherit;
-  font-size: 0.875rem;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background-color: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-  transition: border-color var(--transition-normal);
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.form-input.error {
-  border-color: var(--color-error);
-}
-
-
 /* Buttons Section */
 .buttons-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--space-3);
-}
-
-.button-actions {
-  display: flex;
-  gap: var(--space-2);
 }
 
 .buttons-list {
@@ -619,14 +566,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
   max-width: 150px; /* Adjust as needed */
 }
 
-.button-controls {
-  display: flex;
-  gap: var(--space-1);
-}
 
-.edit-btn, .delete-btn {
-  padding: var(--space-1);
-}
 
 .button-fields {
   display: flex;
@@ -634,24 +574,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
   gap: var(--space-3);
 }
 
-.field-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
 
-.field-group label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--color-text-primary);
-}
-
-.button-actions-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-}
 
 .no-buttons {
   text-align: center;
@@ -700,8 +623,6 @@ defineExpose({ openModal, closeModal, openModalWithData });
     gap: var(--space-2);
   }
   
-  .button-actions {
-    flex-wrap: wrap;
-  }
+
 }
 </style> 

@@ -34,7 +34,6 @@ const toggleTool = (tool: Tool) => {
 };
 
 const viewToolDetails = (tool: Tool) => {
-  console.log(`Viewing details for tool: ${tool.name}`);
   const details = props.tools?.find((t: Tool) => t.name === tool.name);
   if (details) {
     selectedTool.value = details;

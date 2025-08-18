@@ -1,48 +1,17 @@
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
+import { useConversationStore } from '@/stores/conversationStore'
 import type { ExtendedChat } from '@/types'
 import ConversationSkeleton from './ConversationSkeleton.vue'
 import FilterSection from './Filter.vue'
 import Input from '@/components/ui/Input.vue'
 import { formatTime, getPlatformClass, getPlatformIcon } from '@/utils'
 
-interface Props {
-  searchQuery: string
-  activeFilter: string
-  activeTab: string
-  readFilter: 'all' | 'read' | 'unread'
-  chatTypeFilter: 'all' | 'my' | 'other'
-  sortOrder: 'asc' | 'desc'
-  conversations: ExtendedChat[]
-  selectedConversation?: ExtendedChat | null
-  isLoadingMore?: boolean
-  loading?: boolean
-  error?: string | null
-  isSearching?: boolean
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  isLoadingMore: false,
-  isSearching: false
-})
-
+const conversationStore = useConversationStore()
 const conversationList = ref<HTMLDivElement>()
 const filtersExpanded = ref(false)
 const currentQuickFilter = ref<string | null>(null)
-
-const emit = defineEmits<{
-  'update:searchQuery': [value: string]
-  'update:activeFilter': [value: string]
-  'update:activeTab': [value: string]
-  'update:readFilter': [value: 'all' | 'read' | 'unread']
-  'update:chatTypeFilter': [value: 'all' | 'my' | 'other']
-  'update:sortOrder': [value: 'asc' | 'desc']
-  'select-conversation': [conversation: ExtendedChat]
-  'load-more-conversations': []
-  'retry': []
-  'search': [query: string]
-}>()
 
 // Filter Options
 const quickFilterOptions = [
@@ -69,9 +38,9 @@ const platformOptions = [
 // Computed Properties
 const activeFiltersCount = computed(() => {
   let count = 0
-  if (props.activeFilter !== 'all') count++
-  if (props.readFilter !== 'all') count++
-  if (props.activeTab !== 'all') count++
+  if (conversationStore.activeFilter !== 'all') count++
+  if (conversationStore.readFilter !== 'all') count++
+  if (conversationStore.activeTab !== 'all') count++
   return count
 })
 
@@ -80,27 +49,27 @@ const hasActiveFilters = computed(() => activeFiltersCount.value > 0)
 const activeFiltersList = computed(() => {
   const filters = []
   
-  if (props.activeFilter !== 'all') {
+  if (conversationStore.activeFilter !== 'all') {
     filters.push({
       key: 'activeFilter',
       label: 'Status',
-      value: quickFilterOptions.find(opt => opt.value === props.activeFilter)?.label || props.activeFilter
+      value: quickFilterOptions.find(opt => opt.value === conversationStore.activeFilter)?.label || conversationStore.activeFilter
     })
   }
   
-  if (props.readFilter !== 'all') {
+  if (conversationStore.readFilter !== 'all') {
     filters.push({
       key: 'readFilter',
       label: 'Read Status',
-      value: readStatusOptions.find(opt => opt.value === props.readFilter)?.label || props.readFilter
+      value: readStatusOptions.find(opt => opt.value === conversationStore.readFilter)?.label || conversationStore.readFilter
     })
   }
   
-  if (props.activeTab !== 'all') {
+  if (conversationStore.activeTab !== 'all') {
     filters.push({
       key: 'activeTab',
       label: 'Platform',
-      value: platformOptions.find(opt => opt.value === props.activeTab)?.label || props.activeTab
+      value: platformOptions.find(opt => opt.value === conversationStore.activeTab)?.label || conversationStore.activeTab
     })
   }
   
@@ -113,56 +82,54 @@ const toggleFilters = () => {
 }
 
 const clearAllFilters = () => {
-  emit('update:activeFilter', 'all')
-  emit('update:readFilter', 'all')
-  emit('update:activeTab', 'all')
+  conversationStore.setActiveFilter('all')
+  conversationStore.setReadFilter('all')
+  conversationStore.setActiveTab('all')
   currentQuickFilter.value = null
 }
 
 const removeFilter = (filterKey: string) => {
   switch (filterKey) {
     case 'activeFilter':
-      emit('update:activeFilter', 'all')
+      conversationStore.setActiveFilter('all')
       break
     case 'readFilter':
-      emit('update:readFilter', 'all')
+      conversationStore.setReadFilter('all')
       break
     case 'activeTab':
-      emit('update:activeTab', 'all')
+      conversationStore.setActiveTab('all')
       break
   }
 }
 
 const applyQuickFilter = (value: string) => {
   currentQuickFilter.value = value
-  emit('update:activeFilter', value)
+  conversationStore.setActiveFilter(value)
 }
 
 // Event handlers for FilterSection components
 const handleReadFilterUpdate = (value: string | string[]) => {
   const finalValue = Array.isArray(value) ? value[0] || 'all' : value
-  emit('update:readFilter', finalValue as 'all' | 'read' | 'unread')
+  conversationStore.setReadFilter(finalValue as 'all' | 'read' | 'unread')
 }
 
 const handleActiveTabUpdate = (value: string | string[]) => {
   const finalValue = Array.isArray(value) ? value[0] || 'all' : value
-  emit('update:activeTab', finalValue)
+  conversationStore.setActiveTab(finalValue)
 }
 
 const handleSearch = (query: string) => {
- setTimeout(() => {
-  emit('update:searchQuery', query)
-  emit('search', query)
- }, 1000)
+  conversationStore.setSearchQuery(query)
 }
 
 const handleScroll = (event: Event) => {
+  if(conversationStore.conversations.length === 0) return
   const target = event.target as HTMLDivElement
   const { scrollTop, scrollHeight, clientHeight } = target
   
   // Load more when user scrolls to bottom (with 50px threshold)
-  if (scrollHeight - scrollTop - clientHeight < 50 && !props.isLoadingMore) {
-    emit('load-more-conversations')
+  if (scrollHeight - scrollTop - clientHeight < 50 && !conversationStore.isLoadingMore) {
+    conversationStore.loadMoreConversations()
   }
 }
 
@@ -179,6 +146,10 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   // Mock unread count - in real app this would come from the conversation data
   return conversation.unread ? Math.floor(Math.random() * 10) + 1 : 0
 }
+
+// Cleanup on unmount
+onUnmounted(() => {
+})
 </script>
 
 <template>
@@ -188,9 +159,10 @@ const getUnreadCount = (conversation: ExtendedChat) => {
       <h2 class="sidebar-title">Conversations</h2>
       <div class="search-container">
         <Input 
-          :model-value="searchQuery" 
+          :model-value="conversationStore.searchQuery" 
           placeholder="Search conversations..."
           searchable
+          :loading="conversationStore.isSearching"
           @update:model-value="handleSearch"
         />
       </div>
@@ -217,6 +189,9 @@ const getUnreadCount = (conversation: ExtendedChat) => {
             <i class="pi pi-times"></i>
             Clear
           </button>
+          <div v-if="conversationStore.isSearching" class="filter-loading-indicator">
+            <i class="pi pi-spin pi-spinner"></i>
+          </div>
           <button 
             @click="toggleFilters" 
             class="toggle-filters-btn"
@@ -254,7 +229,7 @@ const getUnreadCount = (conversation: ExtendedChat) => {
               title="Read Status"
               icon="pi pi-eye"
               :options="readStatusOptions"
-              :selected="readFilter"
+              :selected="conversationStore.readFilter"
               @update="handleReadFilterUpdate"
             />
 
@@ -263,7 +238,7 @@ const getUnreadCount = (conversation: ExtendedChat) => {
               title="Platform"
               icon="pi pi-mobile"
               :options="platformOptions"
-              :selected="activeTab"
+              :selected="conversationStore.activeTab"
               @update="handleActiveTabUpdate"
             />
           </div>
@@ -300,14 +275,14 @@ const getUnreadCount = (conversation: ExtendedChat) => {
       @scroll="handleScroll"
     >
       <div 
-        v-for="conversation in conversations"
+        v-for="conversation in conversationStore.conversations"
         :key="conversation.id"
         class="conversation-item"
         :class="{ 
-          active: selectedConversation?.id === conversation.id,
+          active: conversationStore.selectedConversation?.id === conversation.id,
           unread: conversation.unread 
         }"
-        @click="$emit('select-conversation', conversation)"
+        @click="conversationStore.selectConversation(conversation)"
       >
         <!-- Avatar -->
         <div class="conversation-avatar">
@@ -342,30 +317,35 @@ const getUnreadCount = (conversation: ExtendedChat) => {
       </div>
 
       <!-- Loading More Skeleton -->
-      <div v-if="isLoadingMore" class="loading-more-skeletons">
+      <div v-if="conversationStore.isLoadingMore" class="loading-more-skeletons">
         <ConversationSkeleton v-for="i in 3" :key="`skeleton-${i}`" />
       </div>
 
       <!-- Error State -->
-      <div v-if="error" class="error-state">
+      <div v-if="conversationStore.error" class="error-state">
         <div class="error-icon">
           <i class="pi pi-exclamation-triangle"></i>
         </div>
         <p class="error-text">Failed to load conversations</p>
-        <p class="error-subtext">{{ error }}</p>
-        <button class="retry-btn" @click="$emit('retry')">
+        <p class="error-subtext">{{ conversationStore.error }}</p>
+        <button class="retry-btn" @click="() => conversationStore.fetchConversations(false)">
           <i class="pi pi-refresh retry-icon"></i>
           Retry
         </button>
       </div>
 
       <!-- Initial Loading State -->
-      <div v-else-if="loading && conversations.length === 0" class="initial-loading-skeletons">
+      <div v-else-if="conversationStore.loading && conversationStore.conversations.length === 0" class="initial-loading-skeletons">
         <ConversationSkeleton v-for="i in 8" :key="`initial-skeleton-${i}`" />
       </div>
 
+      <!-- Search Loading State -->
+      <div v-else-if="conversationStore.isSearching && conversationStore.conversations.length === 0" class="search-loading-skeletons">
+        <ConversationSkeleton v-for="i in 3" :key="`search-skeleton-${i}`" />
+      </div>
+
       <!-- Empty State -->
-      <div v-else-if="conversations.length === 0 && !isLoadingMore" class="empty-state">
+      <div v-else-if="conversationStore.conversations.length === 0 && !conversationStore.isLoadingMore" class="empty-state">
         <div class="empty-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
@@ -380,7 +360,7 @@ const getUnreadCount = (conversation: ExtendedChat) => {
 
 <style scoped>
 .conversation-sidebar {
-  width: 320px;
+  width: 280px;
   background-color: var(--color-bg-secondary);
   border-right: 1px solid var(--color-border);
   display: flex;
@@ -450,6 +430,22 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+.filter-loading-indicator {
+  display: flex;
+  align-items: center;
+  color: var(--color-primary);
+  font-size: 0.875rem;
+}
+
+.filter-loading-indicator i {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .clear-all-btn {
@@ -786,6 +782,11 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   padding: var(--space-2);
 }
 
+/* Search Loading Skeletons */
+.search-loading-skeletons {
+  padding: var(--space-2);
+}
+
 /* Error State */
 .error-state {
   display: flex;
@@ -863,13 +864,6 @@ const getUnreadCount = (conversation: ExtendedChat) => {
   margin: 0;
   font-size: 0.875rem;
   color: var(--color-text-tertiary);
-}
-
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .conversation-sidebar {
-    width: 280px;
-  }
 }
 
 @media (max-width: 768px) {

@@ -13,7 +13,7 @@ export const formatTime = (timestamp: string) => {
 
 export const formatDate = (timestamp: string) => {
   // Format to a fixed date in UTC, ignoring time
-  return moment.utc(timestamp).format('YYYY-MM-DD'); // e.g. "2025-08-13"
+  return moment.utc(timestamp).format('MMM DD YYYY'); // e.g. "2025-08-13"
 };
 
 export const getPlatformClass = (platform: string = '') => {
