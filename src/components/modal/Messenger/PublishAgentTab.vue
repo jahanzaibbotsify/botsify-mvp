@@ -257,7 +257,7 @@ const openAuthPopup = (url: string, action: string) => {
 <template>
   <div class="tab-panel">
     <h3>Messenger integration</h3>
-    <p class="subtitle">Connect your Facebook pages to enable Messenger bot functionality</p>
+    <p class="subtitle">Connect your Facebook pages to enable Messenger agent functionality</p>
 
     <!-- Loading State -->
     <div v-if="storeIsLoadingPages" class="loading-state">

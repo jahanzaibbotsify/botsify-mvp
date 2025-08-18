@@ -250,9 +250,9 @@ onMounted(async () => {
  const emailValue = email.value
   const visited = localStorage.getItem(`emailVerificationVisited:${email.value}`) === 'true'
 console.log(visited, emailValue);
-  if (!visited && emailValue) {
-    await sendVerificationEmail()
-  }
+  //if (!visited && emailValue) {
+   // await sendVerificationEmail()
+  //}
 })
 </script>
 

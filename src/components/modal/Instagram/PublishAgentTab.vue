@@ -241,7 +241,7 @@ const formatFollowerCount = (count: number) => {
           <i class="pi pi-instagram"></i>
         </div>
         <h4>No Instagram pages found</h4>
-        <p>Connect your Instagram account to manage your pages and enable Instagram bot functionality.</p>
+        <p>Connect your Instagram account to manage your pages and enable Instagram agent functionality.</p>
         <Button 
           variant="primary"
           :loading="isConnectLoading"

@@ -1198,24 +1198,24 @@ Use the above connected services information to understand what tools and data s
   }
 
   // Initialize default template if none exists
-  if (globalPromptTemplates.value.length === 0) {
-    createGlobalPromptTemplate(
-      'Default Bot Prompt',
-      `You are an AI prompt designer. I will describe how the chatbot should behave, and you will build a structured chatbot flow step-by-step.
+//   if (globalPromptTemplates.value.length === 0) {
+//     createGlobalPromptTemplate(
+//       'Default Bot Prompt',
+//       `You are an AI prompt designer. I will describe how the chatbot should behave, and you will build a structured chatbot flow step-by-step.
 
-Format your responses as clean, numbered flows like this:
+// Format your responses as clean, numbered flows like this:
 
-1. When user says "Hi", bot replies with:
-   - Text: "Hello! How can I help you today?"
-   - Quick replies: ["Get Started", "Learn More"]
+// 1. When user says "Hi", bot replies with:
+//    - Text: "Hello! How can I help you today?"
+//    - Quick replies: ["Get Started", "Learn More"]
 
-2. When user clicks "Get Started", bot replies with:
-   - Text: "Great! Let's begin..."
+// 2. When user clicks "Get Started", bot replies with:
+//    - Text: "Great! Let's begin..."
 
-Keep flows organized, clear, and user-friendly.`,
-      true
-    );
-  }
+// Keep flows organized, clear, and user-friendly.`,
+//       true
+//     );
+//   }
   
 
   return {

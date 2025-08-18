@@ -61,7 +61,7 @@ const goBack = () => {
 <template>
   <div class="forgot-password-view">
     <div class="forgot-header">
-      <h2 class="header-title">Forgot Password?</h2>
+      <h2 class="header-title">Forgot password?</h2>
       <p class="header-subtitle">
         No worries! Enter your email address and we'll send you a link to reset your password.
       </p>
@@ -80,7 +80,7 @@ const goBack = () => {
         <!-- Email Field -->
         <div class="form-group">
           <label for="email" class="form-label">
-            Email Address
+            Email address
             <span class="required">*</span>
           </label>
           <div class="input-wrapper" :class="{ error: validationError }">
@@ -111,7 +111,7 @@ const goBack = () => {
         >
           <span v-if="isLoading" class="loading-spinner"></span>
           <i v-else class="pi pi-send"></i>
-          <span>{{ isLoading ? 'Sending...' : 'Send Reset Link' }}</span>
+          <span>{{ isLoading ? 'Sending...' : 'Send reset link' }}</span>
         </button>
       </form>
     </div>
@@ -121,7 +121,7 @@ const goBack = () => {
       <div class="success-icon">
         <i class="pi pi-check-circle"></i>
       </div>
-      <h3 class="success-title">Check Your Email</h3>
+      <h3 class="success-title">Check your email</h3>
       <p class="success-message">
         We've sent password reset instructions to <strong>{{ form.email }}</strong>
       </p>
@@ -135,7 +135,7 @@ const goBack = () => {
     <div class="forgot-footer">
       <button @click="goBack" class="back-button">
         <i class="pi pi-arrow-left"></i>
-        <span>Back to Login</span>
+        <span>Back to login</span>
       </button>
     </div>
   </div>
