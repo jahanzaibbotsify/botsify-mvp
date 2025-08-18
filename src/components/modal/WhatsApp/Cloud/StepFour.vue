@@ -18,8 +18,8 @@
               <div class="content-text">
                 <p class="card-text">Copy your temporary access token from the Facebook Developer Console and paste it below.</p>
                 <div class="form-field">
-                  <label class="field-label">Temporary Access Token</label>
                   <Input 
+                    label="Temporary Access Token"
                     type="text"
                     placeholder="Temporary Access Token"
                     v-model="formData.temporaryToken"
@@ -63,8 +63,8 @@
                 </div>
                 <div class="form-fields">
                   <div class="form-field">
-                    <label class="field-label">Phone Number</label>
                     <Input 
+                      label="Phone Number"
                       type="tel"
                       placeholder="15550000000"
                       v-model="formData.phoneNumber"
@@ -72,8 +72,8 @@
                     />
                   </div>
                   <div class="form-field">
-                    <label class="field-label">Phone Number ID</label>
                     <Input 
+                      label="Phone Number ID"
                       type="text"
                       placeholder="2381923498572"
                       v-model="formData.phoneNumberId"
@@ -287,18 +287,6 @@ const prevStep = () => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.field-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-primary, #111827);
 }
 
 .content-image {

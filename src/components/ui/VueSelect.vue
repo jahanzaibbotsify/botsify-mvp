@@ -314,7 +314,7 @@ const handleChange = (value: any) => {
 }
 
 .ui-vue-select--medium:deep(.control) {
-  padding: var(--space-1) var(--space-3);
+  padding: var(--space-1) var(--space-2);
   min-height: 40px;
   height: 40px;
   display: flex;

@@ -2,6 +2,8 @@
 import { ref, computed, onMounted, watch } from "vue";
 import {FileUpload, Button, VueSelect} from "@/components/ui";
 import { usePublishStore } from "@/stores/publishStore";
+import { SmsTemplate } from "@/types";
+import { useBroadcast } from "@/composables/useBroadcast";
 
 // Props
 interface Props {
@@ -21,21 +23,21 @@ const broadcastForm = ref({
   uploadedFile: null as any | null
 });
 
+const { parseCSVFile, downloadSampleFile, csvError, uploadedUsers, isDownloadingSample } = useBroadcast();
+
 const publishStore = usePublishStore();
+
+const smsTemplates = computed(() => publishStore.smsTemplates.data);
+const smsTemplatesLoading = computed(() => publishStore.smsTemplates.loading);
+
+const subscribedUsers = computed(() => publishStore.smsSegmentUsers.data?.data);
+const subscribedUsersLoading = computed(() => publishStore.smsSegmentUsers.loading);
 
 // Loading states
 const isSendingBroadcast = ref(false);
-const isLoadingData = ref(false);
-const isDownloadingSample = ref(false);
-
-// Add subscribed users state
-const subscribedUsers = ref<Array<{phone_number: string}>>([]);
-const isLoadingSubscribedUsers = ref(false);
-
 
 // Message templates
 const messageTemplates = ref<Array<{value: string, label: string}>>([]);
-const fullTemplates = ref<Array<any>>([]);
 
 // User segments with proper structure
 const userSegments = ref([
@@ -54,12 +56,6 @@ const remainingLimits = ref({
   monthly: 0
 });
 
-// Uploaded users data
-const uploadedUsers = ref<Array<{phone_number: string}>>([]);
-
-// Error state for CSV parsing
-const csvError = ref<string | null>(null);
-
 // Computed properties
 const showFileUpload = computed(() => broadcastForm.value.userSegment === 'file');
 
@@ -68,39 +64,8 @@ const templateError = ref('');
 const userSegmentError = ref('');
 const fileUploadError = ref('');
 
-// Methods
-const loadData = async () => {
-  isLoadingData.value = true;
-  try {
-    const result = await publishStore.loadDataForPlugins("test_users,sms_templates,user_task");
-    if (result.success && result.data) {
-      // Update segments with additional data
-      if (result.data.segments) {
-        userSegments.value = userSegments.value.concat(result.data.segments);
-      }
-      
-      // Set broadcast limits
-      if (result.data.limits) {
-        setBroadcastRemainingLimits(result.data.limits);
-      }
-      
-      // Update message templates
-      if (result.data.sms_templates) {
-        fullTemplates.value = result.data.sms_templates;
-        messageTemplates.value = result.data.sms_templates.map((template: any) => ({
-          value: template.id,
-          label: template.name
-        }));
-      }
-    }
-  } catch (error) {
-    console.error('Failed to load broadcast data:', error);
-  } finally {
-    isLoadingData.value = false;
-  }
-};
 
-const setBroadcastRemainingLimits = (remLimit: any) => {
+const setBroadcastRemainingLimits = (remLimit: {daily: number, monthly: number}) => {
   const calculated = {
     daily: limits.value.daily - remLimit.daily,
     monthly: limits.value.monthly - remLimit.monthly
@@ -119,79 +84,10 @@ const setBroadcastRemainingLimits = (remLimit: any) => {
 
 const handleTemplateChange = (selectedTemplate: any) => {
   // Load template content based on selection
-  const selectedTemplateData = fullTemplates.value.find(t => t.id?.toString() === selectedTemplate);
+  const selectedTemplateData = smsTemplates.value?.data.templates.data.find((t: SmsTemplate) => t.id?.toString() === selectedTemplate);
   if (selectedTemplateData && selectedTemplateData.text) {
     broadcastForm.value.message = selectedTemplateData.text;
   }
-};
-
-const parseCSVFile = (file: File) => {
-  console.log('Parsing CSV file:', file.name, 'Type:', file.type, 'Size:', file.size);
-  
-  if (!file || !(file instanceof File)) {
-    console.error('Invalid file object passed to parseCSVFile:', file);
-    csvError.value = 'Invalid file object';
-    return;
-  }
-  
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const text = e.target?.result as string;
-      const users = csvToArray(text);
-      if (users.length === 0) {
-        csvError.value = 'No valid users found in CSV file';
-      } else {
-        uploadedUsers.value = users;
-        csvError.value = null;
-        console.log('Parsed users:', users);
-      }
-    } catch (error) {
-      console.error('Error parsing CSV:', error);
-      csvError.value = 'Failed to parse CSV file';
-    }
-  };
-  
-  reader.onerror = (error) => {
-    console.error('Error reading file:', error);
-    csvError.value = 'Failed to read file';
-  };
-  
-  reader.readAsText(file);
-};
-
-const csvToArray = (str: string, delimiter = ",") => {
-  // Get headers
-  const headers = str.slice(0, str.indexOf("\n")).split(delimiter);
-  const rows = str.slice(str.indexOf("\n") + 1).split("\n");
-  const nameColumn = ['name', 'name\r', 'phone', 'phone\r'];
-  
-  if (headers.length !== 2 || 
-      !nameColumn.includes(headers[0].toLowerCase()) || 
-      !nameColumn.includes(headers[1].toLowerCase()) || 
-      rows.length === 0) {
-    console.error('Invalid CSV file format');
-    return [];
-  }
-
-  // Map the rows
-  const arr = rows.map((row) => {
-    const values = row.split(delimiter).map(val => val.trim().replace(/^"|"$/g, ''));
-    if (!values[1]) return;
-
-    let phoneNumber = values[1];
-
-    // Fix scientific notation (e.g., "9.23313E+11")
-    if (phoneNumber.toLowerCase().includes('e+')) {
-      phoneNumber = Number(phoneNumber).toFixed(0);
-    }
-
-    return {
-      phone_number: phoneNumber
-    };
-  });
-
-  return arr.filter((value) => value != undefined);
 };
 
 const sendBroadcast = async () => {
@@ -215,6 +111,7 @@ const sendBroadcast = async () => {
   window.$confirm({
     text: 'Are you sure you want to send this broadcast? You won\'t be able to undo this action!',
     confirmButtonText: "Yes, Send it!",
+    cancelButtonText: "Cancel"
   }, () => {
     // User confirmed - proceed with broadcast
     executeBroadcast();
@@ -223,7 +120,6 @@ const sendBroadcast = async () => {
 
 const executeBroadcast = async () => {
   isSendingBroadcast.value = true;
-  
   try {
     // Prepare payload according to the specified structure
     const payload = {
@@ -232,7 +128,6 @@ const executeBroadcast = async () => {
       users: broadcastForm.value.userSegment === 'file' ? uploadedUsers.value : broadcastForm.value.userSegment === '-1' ? subscribedUsers.value : []
     };
     
-    console.log('Sending broadcast with payload:', payload);
     const result = await publishStore.sendSmsBroadcast(payload);
     if (result.success) {
       window.$toast.success('Broadcast sent successfully');
@@ -248,59 +143,22 @@ const executeBroadcast = async () => {
   }
 };
 
-const downloadSampleFile = async () => {
-  isDownloadingSample.value = true;
-  try {
-    const response = await fetch('https://bot-file-upload-eu-1.s3.eu-west-1.amazonaws.com/templates/images/users_120323_1709725833.csv');
-    if (!response.ok) {
-      throw new Error('Failed to fetch sample file');
-    }
-    
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'sms_users_sample.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error('Failed to download sample file:', error);
-    // Fallback: open in new tab
-    window.open('https://bot-file-upload-eu-1.s3.eu-west-1.amazonaws.com/templates/images/users_120323_1709725833.csv', '_blank');
-  } finally {
-    isDownloadingSample.value = false;
-  }
-};
-
-const fetchSubscribedUsers = async () => {
-  if (isLoadingSubscribedUsers.value) return;
-  
-  isLoadingSubscribedUsers.value = true;
-  try {
-    const result = await publishStore.getSegmentUsers('-1', 'sms');
-    if (result.success && result.data) {
-      subscribedUsers.value = result.data.map((user: any) => ({
-        phone_number: user.phone_number || user.phone || user.phoneNumber
-      }));
-    }
-  } catch (error) {
-    console.error('Error fetching subscribed users:', error);
-    window.$toast?.error('Failed to fetch subscribed users');
-  } finally {
-    isLoadingSubscribedUsers.value = false;
-  }
-};
-
 // Load data on mount
-onMounted(() => {
-  loadData();
+onMounted(async() => {
+  await publishStore.smsTemplates.load();
+  setBroadcastRemainingLimits({
+    daily: smsTemplates.value?.data.templates.total,
+    monthly: smsTemplates.value?.data.templates.total
+  });
+  messageTemplates.value = smsTemplates.value?.data.templates.data.map((template: SmsTemplate) => ({
+    value: template.id,
+    label: template.name
+  }));
 });
 
 watch(() => broadcastForm.value.userSegment, (newSegment) => {
   if (newSegment === '-1') {
-    fetchSubscribedUsers();
+    publishStore.smsSegmentUsers.load();
   }
 });
 
@@ -315,11 +173,6 @@ watch(() => broadcastForm.value.uploadedFile, (newFile) => {
   }
 });
 
-// Expose methods for parent component
-defineExpose({
-  sendBroadcast,
-  isSendingBroadcast
-});
 </script>
 
 <template>
@@ -328,9 +181,11 @@ defineExpose({
     <p class="subtitle">Send broadcast messages to your audience</p>
     
     <!-- Loading State -->
-    <div v-if="isLoadingData" class="loading-state">
-      <div class="loader-spinner"></div>
-      <span>Loading broadcast data...</span>
+    <div v-if="smsTemplatesLoading" class="loading-state">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <span>Loading broadcast data...</span>
+      </div>
     </div>
     
     <div v-else class="main-content">
@@ -338,8 +193,8 @@ defineExpose({
      <div class="broadcast-form">
                          <!-- Message Template -->
                 <div class="form-group">
-                  <label for="broadcast-template" class="required-label">Message template</label>
                   <VueSelect
+                    label="Message template"
                     v-model="broadcastForm.template"
                     @change="handleTemplateChange"
                     :options="messageTemplates"
@@ -350,8 +205,8 @@ defineExpose({
          
                          <!-- User Segment -->
                 <div class="form-group">
-                  <label for="broadcast-segment" class="required-label">User segment</label>
                   <VueSelect
+                    label="User segment"
                     v-model="broadcastForm.userSegment"
                     :options="userSegments"
                     placeholder="Select a user segment"
@@ -361,7 +216,7 @@ defineExpose({
                   
                 <!-- Show loading and user count for subscribed users -->
                 <div v-if="broadcastForm.userSegment === '-1'" class="subscribed-users-info">
-                  <div v-if="isLoadingSubscribedUsers" class="loading-indicator">
+                  <div v-if="subscribedUsersLoading" class="loading-indicator">
                     <i class="pi pi-spin pi-spinner"></i>
                     <span>Loading users...</span>
                   </div>
@@ -370,7 +225,7 @@ defineExpose({
                     <span>{{ subscribedUsers.length }} users</span>
                   </div>
                   <div v-else class="no-users">
-                    <i class="pi pi-exclamation-triangle"></i>
+                    <i class="pi pi-exclamation-triangle"></i>&nbsp;
                     <span>No users found</span>
                   </div>
                 </div>
@@ -378,8 +233,8 @@ defineExpose({
        
        <!-- File Upload (Upload user only) -->
        <div v-if="showFileUpload" class="form-group">
-         <label>Upload File (CSV)</label>
          <FileUpload
+           label="Upload File (CSV)"
            v-model="broadcastForm.uploadedFile"
            accept=".csv"
            :emit-raw-file="true"
@@ -451,8 +306,8 @@ defineExpose({
       <Button 
         variant="primary"
         size="medium"
-        :loading="isSendingBroadcast || isLoadingSubscribedUsers"
-        :disabled="isSendingBroadcast || isLoadingSubscribedUsers"
+        :loading="isSendingBroadcast"
+        :disabled="!broadcastForm.template || !broadcastForm.userSegment || (!uploadedUsers.length && broadcastForm.userSegment === 'file') || isSendingBroadcast"
         @click="sendBroadcast"
       >
         {{ isSendingBroadcast ? 'Sending...' : 'Send message' }}
@@ -548,29 +403,6 @@ defineExpose({
   color: var(--color-error);
 }
 
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  gap: var(--space-3);
-  color: var(--color-text-secondary);
-}
-
-.loader-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--color-border);
-  border-top: 3px solid var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
 
 .limits-section {
   margin-top: 24px;

@@ -40,31 +40,15 @@ export class FirebaseService {
     
     const unsubscribe = onChildAdded(liveChatRef, (snapshot) => {
       try {
-        console.log('📨 Firebase snapshot received:', {
-          key: snapshot.key,
-          exists: snapshot.exists(),
-          hasChildren: snapshot.hasChildren()
-        })
-        
         const data = snapshot.val()
-        console.log('📨 Raw Firebase data:', data)
         
         if (data) {
           // Parse message if it's a string
           const parsedData = typeof data === 'string' ? JSON.parse(data) : data
-          console.log('📨 Parsed Firebase data:', parsedData)
-          
           const fbId = parsedData.user?.fbId || parsedData.user_id || snapshot.key
-          console.log('👤 Extracted fbId:', fbId)
-          
           if (fbId) {
-            console.log('✅ Calling onMessageReceived with fbId:', fbId)
             onMessageReceived(fbId, parsedData)
-          } else {
-            console.warn('⚠️ No fbId found in message data')
           }
-        } else {
-          console.log('📨 Empty data received from Firebase')
         }
       } catch (error) {
         console.error('❌ Error processing Firebase message:', error)
@@ -72,10 +56,6 @@ export class FirebaseService {
       }
     }, (error) => {
       console.error('❌ Firebase listener error:', error)
-      console.error('❌ Error details:', {
-        message: error.message,
-        stack: error.stack
-      })
       onError?.(error)
     })
 
@@ -103,14 +83,9 @@ export class FirebaseService {
     const conversationPath = `botsify_live_chat/presence-agents-${botApiKey}/${fbId}`
     const conversationRef = ref(database, conversationPath)
     
-    console.log('👂 Setting up conversation listener for:', fbId)
-    console.log('📡 Conversation path:', conversationPath)
-
     const unsubscribe = onValue(conversationRef, (snapshot) => {
       try {
-        console.log('💬 Conversation snapshot received for:', fbId)
         const data = snapshot.val()
-        console.log('💬 Conversation data:', data)
         
         if (data && data.message) {
           const message: Message = {
@@ -120,7 +95,6 @@ export class FirebaseService {
             timestamp: currentTime(),
             status: 'sent'
           }
-          console.log('💬 Created message object:', message)
           onMessageReceived(message)
         }
       } catch (error) {
@@ -148,7 +122,6 @@ export class FirebaseService {
     if (unsubscribe) {
       unsubscribe()
       this.listeners.delete(listenerKey)
-      console.log('🔇 Stopped listening to conversation:', fbId)
     }
   }
 
@@ -156,10 +129,8 @@ export class FirebaseService {
    * Stop all listeners
    */
   stopAllListeners() {
-    console.log('🔇 Stopping all Firebase listeners...')
-    this.listeners.forEach((unsubscribe, key) => {
+    this.listeners.forEach((unsubscribe) => {
       unsubscribe()
-      console.log('🔇 Stopped listener:', key)
     })
     this.listeners.clear()
   }
@@ -169,7 +140,6 @@ export class FirebaseService {
    */
   disconnect() {
     this.stopAllListeners()
-    console.log('🔌 Disconnected from Firebase')
   }
 
   /**

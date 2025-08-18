@@ -13,7 +13,6 @@ export class NotificationService {
 
     try {
       const registration = await navigator.serviceWorker.register('/service-worker.js');
-      console.log('Service worker successfully registered:', registration);
       _registration = registration;
       return registration;
     } catch (err) {
@@ -86,7 +85,6 @@ export class NotificationService {
       };
       
       const subscription = await registration.pushManager.subscribe(subscribeOptions);
-      console.log('Received PushSubscription:', JSON.stringify(subscription));
       return subscription;
     } catch (error) {
       console.error('Error subscribing to push:', error);
@@ -107,7 +105,6 @@ export class NotificationService {
       
       if (subscription) {
         await subscription.unsubscribe();
-        console.log('User unsubscribed from push notifications');
         return true;
       }
       return false;

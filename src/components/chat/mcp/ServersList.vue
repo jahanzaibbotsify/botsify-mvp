@@ -18,6 +18,7 @@ const disconnectMCP = async (server: any) => {
   const response = await botsifyApi.disconnectMCP(server.connectionId);
   if (response.success) {
     mcpStore.removeServer(server);
+    mcpStore.connectedMCPs = mcpStore.connectedServers.length;
   } else {
     console.error('Failed to disconnect from MCP server:', response.message);
   }

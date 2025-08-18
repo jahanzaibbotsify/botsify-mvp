@@ -33,14 +33,6 @@ const verificationToken = computed(() => {
 })
 
 /**
- * Check if user has visited before (stored in localStorage)
- * Prevents sending duplicate verification emails
- */
-const hasVisitedBefore = computed(() => {
-  return localStorage.getItem('emailVerificationVisited') === 'true'
-})
-
-/**
  * Start countdown timer for resend cooldown
  * Prevents spam clicking of resend button
  */
@@ -69,7 +61,7 @@ const verifyEmailWithToken = async (token: string) => {
 
     if (response.data && response.data.status === 'success') {
       verificationSuccess.value = true
-      localStorage.removeItem('emailVerificationVisited');
+      localStorage.removeItem(`emailVerificationVisited:${email.value}`);
       
       // Update user verification status in store and localStorage
       if (authStore.user) {
@@ -126,7 +118,7 @@ const sendVerificationEmail = async () => {
 
     if (response.data?.status === 'success') {
       startResendCooldown()
-      localStorage.setItem('emailVerificationVisited', 'true')
+      localStorage.setItem(`emailVerificationVisited:${email.value}`, 'true')
     } else {
       const errorMessage = response.data?.message || 'Failed to send verification email. Please try again.'
       verificationError.value = errorMessage
@@ -255,9 +247,12 @@ onMounted(async () => {
   }
 
   // Send verification email if user hasn't visited before
-  if (!hasVisitedBefore.value && email.value) {
-    await sendVerificationEmail()
-  }
+ const emailValue = email.value
+  const visited = localStorage.getItem(`emailVerificationVisited:${email.value}`) === 'true'
+console.log(visited, emailValue);
+  //if (!visited && emailValue) {
+   // await sendVerificationEmail()
+  //}
 })
 </script>
 
@@ -300,7 +295,7 @@ onMounted(async () => {
         <div class="header-icon">
           <i class="pi pi-envelope"></i>
         </div>
-        <h2 class="header-title">Verify Your Email</h2>
+        <h2 class="header-title">Verify your email</h2>
         <p class="header-subtitle">
           We've sent a verification link to
           <br>
@@ -345,7 +340,7 @@ onMounted(async () => {
           class="resend-button"
           :disabled="resendCooldown > 0 || isResending"
         >
-          <span v-if="isResending" class="loading-spinner"></span>
+          <span v-if="isResending" class="vloading-spinner"></span>
           <span v-if="resendCooldown > 0">
             Resend in {{ resendCooldown }}s
           </span>
@@ -353,7 +348,7 @@ onMounted(async () => {
             Sending...
           </span>
           <span v-else>
-            Resend Verification Email
+            Resend verification email
           </span>
         </button>
       </div>
@@ -656,7 +651,7 @@ onMounted(async () => {
 }
 
 /* Loading Spinner */
-.loading-spinner {
+.vloading-spinner {
   width: 16px;
   height: 16px;
   border: 2px solid transparent;

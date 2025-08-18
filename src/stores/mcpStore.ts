@@ -147,7 +147,8 @@ export const useMCPStore = defineStore('mcp', () => {
   ]);
   const connectedServers = ref([]);
   const initialized = ref(false);
-  
+  const connectedMCPs = ref(0);
+
   const setIntialize = async () => {
     if (initialized.value) return;
     initialized.value = true;
@@ -355,6 +356,7 @@ Remember: You have access to ${connectedServers.value.length} MCP server${connec
 
   return {
     servers,
+    connectedMCPs,
     setIntialize,
     connectedServers,
     getCombinedSystemPrompt,

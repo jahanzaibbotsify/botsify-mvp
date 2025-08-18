@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, provide, computed } from "vue";
+import { ref, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
 import { Button, Input } from "@/components/ui";
 import { useTabManagement } from "@/composables/useTabManagement";
+import { publishApi } from "@/services/publishApi";
 
 // Define tabs
 const tabs = [
@@ -19,14 +20,15 @@ const emit = defineEmits<{
 
 // Stores
 const publishStore = usePublishStore();
+const isLoading = ref(false);
 
 // Local state
-const isLoading = ref(false);
+const telegramConfig = computed(() => publishStore.thirdPartyConfig.data?.data?.telegramConf);
 const telegramForm = ref({
   accessToken: '',
   botName: '',
   telegramNumber: '',
-  telegramChatbotUrl: ''
+  telegramChatbotUrl:  ''
 });
 
 // Validation state
@@ -37,7 +39,7 @@ const errors = ref({
   telegramChatbotUrl: ''
 });
 
-const { currentTab, computedTabs, handleTabChange } = useTabManagement(tabs, 'publish');
+const { computedTabs, handleTabChange } = useTabManagement(tabs, 'publish');
 
 // Computed property to check if all required fields are filled
 const isFormValid = computed(() => {
@@ -47,32 +49,15 @@ const isFormValid = computed(() => {
          telegramForm.value.telegramChatbotUrl.trim() !== '';
 });
 
-// Load existing Telegram settings
-const loadTelegramSettings = async () => {
-  isLoading.value = true;
-  try {
-    const result = await publishStore.getThirdPartyConfig();
-    if (result.success && result.data?.telegramConf?.setting) {
-      const settings = result.data.telegramConf.setting;
-      telegramForm.value = {
-        accessToken: settings.access_token || '',
-        botName: settings.bot_name || '',
-        telegramNumber: settings.telegram_number || '',
-        telegramChatbotUrl: settings.telegram_url || ''
-      };
-    }
-  } catch (error) {
-    console.error('Failed to load Telegram settings:', error);
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-const openModal = () => {
+const openModal = async () => {
   modalRef.value?.openModal();
-  loadTelegramSettings();
-  // Clear errors when opening modal
-  clearErrors();
+  await publishStore.thirdPartyConfig.load();
+  telegramForm.value = {
+    accessToken: telegramConfig.value?.access_token || '',
+    botName: telegramConfig.value?.bot_name || '',
+    telegramNumber: telegramConfig.value?.telegram_number || '',
+    telegramChatbotUrl: telegramConfig.value?.telegram_url || ''
+  }
 };
 
 const closeModal = () => {
@@ -84,7 +69,6 @@ const handleBack = () => {
 };
 
 const onTabChange = (tabId: string) => {
-  console.log('TelegramModal - Tab changed to:', tabId);
   currentActiveTab.value = tabId;
   handleTabChange(tabId);
 };
@@ -116,12 +100,6 @@ const validateForm = () => {
   if (!telegramForm.value.telegramNumber.trim()) {
     errors.value.telegramNumber = 'Telegram number is required';
     isValid = false;
-  } else {
-    const phoneRegex = /^\+[1-9]\d{1,14}$/;
-    if (!phoneRegex.test(telegramForm.value.telegramNumber.trim())) {
-      errors.value.telegramNumber = 'Please enter a valid phone number with country code (e.g., +1234567890)';
-      isValid = false;
-    }
   }
 
   // Validate chatbot URL (required)
@@ -167,36 +145,26 @@ const handleSaveTelegramSettings = async () => {
 
   isLoading.value = true;
   try {
-    const result = await publishStore.saveTelegramSettings(telegramForm.value);
+    const result = await publishApi.saveTelegramSettings(telegramForm.value);
     
     if (result.success) {
-      console.log('Telegram settings saved successfully');
-      clearErrors();
+      telegramConfig.value.access_token = telegramForm.value.accessToken;
+      telegramConfig.value.bot_name = telegramForm.value.botName;
+      telegramConfig.value.telegram_number = telegramForm.value.telegramNumber;
+      telegramConfig.value.telegram_url = telegramForm.value.telegramChatbotUrl;
+
+      publishStore.publishStatus.invalidate();
       // You can add a toast notification here
-      if (window.$toast) {
-        window.$toast.success('Telegram settings saved successfully!');
-      }
+      window.$toast.success('Telegram settings saved successfully!');
     } else {
-      console.error('Failed to save Telegram settings:', result.error);
-      if (window.$toast) {
-        window.$toast.error(result.error || 'Failed to save Telegram settings');
-      }
+      window.$toast.error(result.message || 'Failed to save Telegram settings');
     }
   } catch (error) {
-    console.error('Failed to save Telegram settings:', error);
-    if (window.$toast) {
-      window.$toast.error('Failed to save Telegram settings');
-    }
+    window.$toast.error('Failed to save Telegram settings');
   } finally {
     isLoading.value = false;
   }
 };
-
-// Provide context for child components
-provide('telegram-modal', {
-  currentTab,
-  botService: ref('telegram')
-});
 
 defineExpose({ openModal, closeModal });
 </script>
@@ -216,19 +184,19 @@ defineExpose({ openModal, closeModal });
       <!-- Publish Tab -->
       <div v-if="activeTab === 'publish'" class="tab-panel">
         <h3>Telegram agent configuration</h3>
-        <p class="subtitle">Configure your Telegram bot settings</p>
+        <p class="subtitle">Configure your Telegram settings</p>
         
         <!-- Loading State -->
-        <div v-if="publishStore.loadingStates.thirdPartyConfig" class="loading-state">
-          <div class="loader-spinner"></div>
-          <span>Loading Telegram settings...</span>
+        <div v-if="publishStore.thirdPartyConfig.loading" class="loading-content">
+          <div class="loading-spinner"></div>
+          <span>Loading...</span>
         </div>
         
         <!-- Form Content -->
         <div v-else class="form-section">
           <div class="form-group">
-            <label for="access-token">Access token</label>
             <Input 
+              label="Access token"
               id="access-token"
               v-model="telegramForm.accessToken"
               type="text"
@@ -237,13 +205,13 @@ defineExpose({ openModal, closeModal });
               :error="errors.accessToken"
             />
             <small class="help-text">
-              Get this from @BotFather on Telegram
+              Get this from @BotFather on Telegram. <a href="https://bot-file-upload-eu-1.s3.eu-west-1.amazonaws.com/templates/images/Telegram-Chatbot-Botsify_120323_1709726199.pdf" target="_blank">Here is how to get it.</a>
             </small>
           </div>
           
           <div class="form-group">
-            <label for="bot-name">Agent name</label>
             <Input 
+              label="Agent name"
               id="bot-name"
               v-model="telegramForm.botName"
               type="text"
@@ -254,8 +222,8 @@ defineExpose({ openModal, closeModal });
           </div>
           
           <div class="form-group">
-            <label for="telegram-number">Telegram number</label>
-            <Input 
+            <Input
+              label="Telegram number" 
               id="telegram-number"
               v-model="telegramForm.telegramNumber"
               type="tel"
@@ -269,8 +237,8 @@ defineExpose({ openModal, closeModal });
           </div>
           
           <div class="form-group">
-            <label for="chatbot-url">Telegram agent URL</label>
             <Input 
+              label="Telegram agent URL"
               id="chatbot-url"
               v-model="telegramForm.telegramChatbotUrl"
               type="url"
@@ -283,71 +251,21 @@ defineExpose({ openModal, closeModal });
             </small>
           </div>
         </div>
-      </div>
-      <div class="agent-action-buttons">
-        <!-- Save Button for Publish Tab -->
-        <Button 
-          v-if="currentActiveTab === 'publish'" 
-          variant="primary"
-          size="medium"
-          :loading="isLoading || publishStore.loadingStates.thirdPartyConfig"
-          :disabled="!isFormValid"
-          @click="handleSaveTelegramSettings"
-        >
-          {{ (isLoading || publishStore.loadingStates.thirdPartyConfig) ? 'Saving...' : 'Save' }}
-        </Button>
+        <div class="agent-action-buttons">
+          <!-- Save Button for Publish Tab -->
+          <Button 
+            v-if="currentActiveTab === 'publish'" 
+            variant="primary"
+            size="medium"
+            :loading="isLoading"
+            :disabled="!isFormValid"
+            @click="handleSaveTelegramSettings"
+          >
+            Save Settings
+          </Button>
+        </div>
       </div>
     </template>
     
   </PublishModalLayout>
 </template>
-
-<style scoped>
-.subtitle {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-secondary, #6b7280);
-}
-
-.form-section {
-  margin-top: 20px;
-}
-
-.help-text {
-  font-size: 12px;
-  color: var(--color-text-secondary, #6b7280);
-  margin-top: 4px;
-  display: block;
-}
-
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  gap: var(--space-3);
-  color: var(--color-text-secondary);
-}
-
-.loader-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--color-border);
-  border-top: 3px solid var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@media (max-width: 640px) {
-  .form-group {
-    margin-bottom: 16px;
-  }
-}
-</style> 

@@ -405,8 +405,8 @@ onMounted(() => {
       </div>
 
       <!-- Message footer -->
-      <div v-if="showTimestamp || getStatusIcon" class="message-footer">
-        <span v-if="showTimestamp" class="timestamp">
+      <div  class="message-footer">
+        <span class="timestamp">
           {{ formatTime(message.timestamp) }}
         </span>
         <i 

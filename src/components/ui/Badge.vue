@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 interface Props {
   variant?: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'secondary'
-  size?: 'small' | 'medium' | 'large'
+  size?: 'xs' | 'small' | 'medium' | 'large'
   text?: string
   icon?: string
   iconPosition?: 'left' | 'right'
@@ -144,6 +144,21 @@ const badgeClasses = computed(() => {
 }
 
 /* Sizes */
+.ui-badge--xs {
+  padding: var(--space-1);
+  font-size: 0.625rem;
+  line-height: 1;
+  min-height: 16px;
+}
+
+.ui-badge--xs.ui-badge--rounded {
+  border-radius: var(--radius-full);
+}
+
+.ui-badge--xs:not(.ui-badge--rounded) {
+  border-radius: var(--radius-sm);
+}
+
 .ui-badge--small {
   padding: var(--space-1) var(--space-2);
   font-size: 0.75rem;
@@ -210,6 +225,12 @@ const badgeClasses = computed(() => {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .ui-badge--xs {
+    padding: var(--space-1);
+    font-size: 0.625rem;
+    min-height: 16px;
+  }
+  
   .ui-badge--large {
     padding: var(--space-2) var(--space-3);
     font-size: 0.875rem;

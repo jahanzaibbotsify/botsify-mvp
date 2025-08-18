@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { Input, Button, Table, TableHead, TableBody, TableRow, TableCell, TableHeader } from "@/components/ui";
 import { usePublishStore } from "@/stores/publishStore";
+import { publishApi } from "@/services/publishApi";
 
 // Props
 interface Props {
@@ -16,9 +17,7 @@ withDefaults(defineProps<Props>(), {
 const publishStore = usePublishStore();
 
 // Reactive data
-const loading = ref(false);
 const saving = ref(false);
-const catalogData = ref<any>(null);
 
 // Form data
 const webhookDetails = ref({
@@ -29,93 +28,31 @@ const webhookDetails = ref({
 });
 
 // Computed properties
-const whatsappCloudData = computed(() => {
-  if (publishStore.cache.botDetails?.dialog360) {
-    return publishStore.cache.botDetails.dialog360;
-  } else if (publishStore.cache.botDetails?.whatsapp_cloud) {
-    return publishStore.cache.botDetails.whatsapp_cloud;
-  }
-  return null;
+const whatsappData = computed(() => {
+  return publishStore.whatsappConfig.data?.data?.whatsapp;
 });
 
 const hasAccessToken = computed(() => {
-  return whatsappCloudData.value?.catalog_access_token;
+  return whatsappData.value?.catalog_access_token;
 });
 
-const hasCatalogData = computed(() => {
-  return catalogData.value?.data && catalogData.value.data.length > 0;
+const catalogData = computed(() => {
+  return publishStore.whatsappCatalog.data?.data;
 });
-
-// Methods
-const getWhatsAppCloudDetails = async () => {
-  // Use cached data if available
-  if (publishStore.cacheValid.botDetails && publishStore.cache.botDetails) {
-    // const details = publishStore.cache.botDetails;
-    // Populate form with existing data
-    if (whatsappCloudData.value) {
-      webhookDetails.value.business_id = whatsappCloudData.value.business_id || '';
-      webhookDetails.value.catalog_access_token = whatsappCloudData.value.catalog_access_token || '';
-      webhookDetails.value.order_webhook = whatsappCloudData.value.order_webhook || '';
-      webhookDetails.value.catalog_id = whatsappCloudData.value.catalog_id || null;
-    }
-    
-    // Load catalog data if we have access token
-    if (hasAccessToken.value) {
-      await loadCatalogData();
-    }
-    return;
-  }
-  
-  loading.value = true;
-  try {
-    const result = await publishStore.getBotDetails();
-    if (result.success && result.data) {
-      // Populate form with existing data
-      if (whatsappCloudData.value) {
-        webhookDetails.value.business_id = whatsappCloudData.value.business_id || '';
-        webhookDetails.value.catalog_access_token = whatsappCloudData.value.catalog_access_token || '';
-        webhookDetails.value.order_webhook = whatsappCloudData.value.order_webhook || '';
-        webhookDetails.value.catalog_id = whatsappCloudData.value.catalog_id || null;
-      }
-      
-      // Load catalog data if we have access token
-      if (hasAccessToken.value) {
-        await loadCatalogData();
-      }
-    }
-  } catch (error) {
-    console.error('Failed to get WhatsApp cloud details:', error);
-  } finally {
-    loading.value = false;
-  }
-};
-
-const loadCatalogData = async () => {
-  if (!hasAccessToken.value) return;
-  
-  try {
-    const result = await publishStore.getCatalog();
-    if (result.success) {
-      catalogData.value = result.data;
-    }
-  } catch (error) {
-    console.error('Failed to load catalog data:', error);
-  }
-};
 
 const handleSaveSettings = async (event: Event) => {
   event.preventDefault();
   
   saving.value = true;
   try {
-    const result = await publishStore.saveWebhookSettings(webhookDetails.value);
+    const result = await publishApi.saveWebhookSettings(webhookDetails.value);
     
     if (result.success) {
       // Refresh bot details
-      await getWhatsAppCloudDetails();
+      await publishStore.whatsappCatalog.load();
       window.$toast?.success('Settings saved successfully!');
     } else {
-      window.$toast?.error(result.error || 'Failed to save settings');
+      window.$toast?.error(result.message || 'Failed to save settings');
     }
   } catch (error) {
     console.error('Failed to save settings:', error);
@@ -133,15 +70,8 @@ const openFacebookExplorer = () => {
   window.open('https://developers.facebook.com/tools/explorer?method=GET&path=%7BcatalogID%7D%2Fproducts&version=v15.0', '_blank');
 };
 
-// Expose method for parent component to call when tab is activated
-const initializeCatalog = () => {
-  console.log('Initializing catalog...');
-  getWhatsAppCloudDetails();
-};
-
-// Expose only necessary methods for parent component
-defineExpose({
-  initializeCatalog
+onMounted(async() => {
+  await publishStore.whatsappCatalog.load();
 });
 </script>
 
@@ -151,7 +81,7 @@ defineExpose({
     <p class="subtitle">Manage your WhatsApp catalog settings</p>
     
     <!-- Loading state -->
-    <div v-if="loading" class="loading-state">
+    <div v-if="publishStore.whatsappCatalog.loading" class="loading-state">
       <div class="loading-spinner"></div>
       <p>Loading catalog data...</p>
     </div>
@@ -171,7 +101,7 @@ defineExpose({
           
           <TableBody>
             <!-- Loading skeleton -->
-            <TableRow v-if="loading" v-for="i in 3" :key="`skeleton-${i}`" skeleton>
+            <TableRow v-if="publishStore.whatsappCatalog.loading" v-for="i in 3" :key="`skeleton-${i}`" skeleton>
               <TableCell :isLoading="true" skeletonType="text"></TableCell>
               <TableCell :isLoading="true" skeletonType="badge"></TableCell>
               <TableCell :isLoading="true" skeletonType="actions"></TableCell>
@@ -196,7 +126,7 @@ defineExpose({
             </TableRow>
             
             <!-- No catalog data message -->
-            <TableRow v-else-if="!hasCatalogData" noData>
+            <TableRow v-else-if="!catalogData?.data" noData>
               <TableCell noData colspan="3">
                 <div class="empty-state">
                   <i class="pi pi-shopping-cart"></i>
@@ -217,7 +147,7 @@ defineExpose({
             <TableRow v-else v-for="catalog in catalogData.data" :key="catalog.id">
               <TableCell>{{ catalog.name }}</TableCell>
               <TableCell>
-                <span v-if="whatsappCloudData?.catalog_id === catalog.id" class="status-connected">
+                <span v-if="whatsappData?.catalog_id === catalog.id" class="status-connected">
                   Connected
                 </span>
                 <span v-else class="status-disconnected">
@@ -227,10 +157,10 @@ defineExpose({
               <TableCell>
                 <div class="action-buttons">
                   <Button
-                    v-if="whatsappCloudData?.catalog_id === catalog.id"
+                    v-if="whatsappData?.catalog_id === catalog.id"
                     variant="error"
                     size="small"
-                    @click="publishStore.connectCatalog('/v1/bot/whatsapp/catalog/disconnect')"
+                    @click="publishApi.connectCatalog('/v1/bot/whatsapp/catalog/disconnect')"
                   >
                     Disconnect
                   </Button>
@@ -238,7 +168,7 @@ defineExpose({
                     v-else
                     variant="primary"
                     size="small"
-                    @click="publishStore.connectCatalog(`/v1/bot/whatsapp/catalog/connect/${catalog.id}`)"
+                    @click="publishApi.connectCatalog(`/v1/bot/whatsapp/catalog/connect/${catalog.id}`)"
                   >
                     Connect
                   </Button>
@@ -269,8 +199,9 @@ defineExpose({
               variant="primary"
               type="submit"
               :loading="saving"
+              :disabled="saving"
             >
-              {{ saving ? 'Saving...' : 'Save Settings' }}
+              Save Settings
             </Button>
           </div>
         </form>
@@ -301,29 +232,6 @@ defineExpose({
 .subtitle {
   color: var(--color-text-secondary);
   margin-bottom: var(--space-4);
-}
-
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  gap: var(--space-4);
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--color-border);
-  border-top: 4px solid var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 
 .catalog-layout {

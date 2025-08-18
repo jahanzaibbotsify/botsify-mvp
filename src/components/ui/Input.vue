@@ -14,7 +14,6 @@ interface Props {
   success?: boolean;
   icon?: string;
   iconPosition?: 'left' | 'right';
-  clearable?: boolean;
   searchable?: boolean;
 }
 
@@ -26,7 +25,6 @@ const props = withDefaults(defineProps<Props>(), {
   required: false,
   success: false,
   iconPosition: 'left',
-  clearable: false,
   searchable: false
 });
 
@@ -35,12 +33,11 @@ const emit = defineEmits<{
   'input': [event: Event];
   'focus': [event: FocusEvent];
   'blur': [event: FocusEvent];
-  'clear': [];
   'search': [value: string];
 }>();
 
 const inputClasses = computed(() => {
-  const classes = [
+  return [
     'ui-input',
     `ui-input--${props.size}`,
     {
@@ -51,12 +48,9 @@ const inputClasses = computed(() => {
       'ui-input--with-icon': props.icon,
       'ui-input--with-icon-left': props.searchable && props.iconPosition === 'left',
       'ui-input--with-icon-right': props.searchable && props.iconPosition === 'right',
-      'ui-input--clearable': props.clearable,
       'ui-input--searchable': props.searchable
     }
   ];
-  
-  return classes;
 });
 
 const handleInput = (event: Event) => {
@@ -65,7 +59,6 @@ const handleInput = (event: Event) => {
   emit('update:modelValue', value);
   emit('input', event);
   
-  // Emit search event for searchable inputs
   if (props.searchable) {
     emit('search', value);
   }
@@ -79,17 +72,6 @@ const handleBlur = (event: FocusEvent) => {
   emit('blur', event);
 };
 
-const handleClear = () => {
-  emit('update:modelValue', '');
-  emit('clear');
-  
-  // Emit search event for searchable inputs
-  if (props.searchable) {
-    emit('search', '');
-  }
-};
-
-// Default search icon if searchable is true and no icon is provided
 const searchIcon = computed(() => {
   if (props.searchable && !props.icon) {
     return 'pi pi-search';
@@ -100,22 +82,18 @@ const searchIcon = computed(() => {
 
 <template>
   <div class="input-wrapper">
-    <!-- Label -->
     <label v-if="label" class="input-label" :for="`input-${Math.random()}`">
       {{ label }}
       <span v-if="required" class="required-mark">*</span>
     </label>
     
-    <!-- Input Container -->
     <div class="input-container" :class="inputClasses">
-      <!-- Left Icon -->
       <i 
         v-if="searchIcon && iconPosition === 'left'" 
         :class="searchIcon"
         class="input-icon input-icon--left"
       ></i>
       
-      <!-- Input Field -->
       <input
         :id="`input-${Math.random()}`"
         :type="type"
@@ -130,27 +108,13 @@ const searchIcon = computed(() => {
         @blur="handleBlur"
       />
       
-      <!-- Right Icon or Clear Button -->
-      <div class="input-actions">
-        <i 
-          v-if="searchIcon && iconPosition === 'right'" 
-          :class="searchIcon"
-          class="input-icon input-icon--right"
-        ></i>
-        
-        <button
-          v-if="(clearable || searchable) && modelValue"
-          type="button"
-          class="clear-button"
-          @click="handleClear"
-          title="Clear"
-        >
-          <i class="pi pi-times"></i>
-        </button>
-      </div>
+      <i 
+        v-if="searchIcon && iconPosition === 'right'" 
+        :class="searchIcon"
+        class="input-icon input-icon--right"
+      ></i>
     </div>
     
-    <!-- Error Message -->
     <div v-if="error" class="input-error">
       {{ error }}
     </div>

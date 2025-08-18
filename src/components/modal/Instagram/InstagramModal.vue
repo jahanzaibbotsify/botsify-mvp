@@ -5,6 +5,7 @@ import PublishModalLayout from "@/components/ui/PublishModalLayout.vue";
 import PublishAgentTab from "./PublishAgentTab.vue";
 import { usePublishStore } from "@/stores/publishStore";
 import { useTabManagement } from "@/composables/useTabManagement";
+import { InstagramPage } from "@/types";
 
 // Define tabs
 const tabs = [
@@ -28,21 +29,23 @@ const emit = defineEmits<{
 }>();
 
 // Local state - removed isLoading as it's not needed
-
 const { currentTab, handleTabChange } = useTabManagement(tabs, 'publish-bot');
 
-// Configuration checking
-const isConfigured = computed(() => {
-  const pages = publishStore.cache.instagramPages;
-  if (pages && pages.pagesData && pages.pagesData.data) {
-    const pagesData = pages.pagesData.data;
-    // Check if any page is connected to the current bot
-    return pagesData.some((page: any) => 
-      page.connected_page_bot === botStore.botName
+// Computed configuration status
+const isConfigured = ref(false);
+
+// Configuration check
+const checkConfiguration = () => {
+  const pages = publishStore.instagramPages.data;
+  if (pages && pages.data?.pagesData?.data) {
+    const pagesData = pages.data.pagesData.data;
+    isConfigured.value = pagesData.some(
+      (page: InstagramPage) => page.connected_page_bot === botStore.botName
     );
+  } else {
+    isConfigured.value = false;
   }
-  return false;
-});
+};
 
 // Override computedTabs to include disabled state based on configuration
 const instagramComputedTabs = computed(() => {
@@ -52,10 +55,11 @@ const instagramComputedTabs = computed(() => {
   }));
 });
 
-const openModal = () => {
+const openModal = async () => {
   modalRef.value?.openModal();
   // Load Instagram pages when modal opens
-  publishStore.getInstagramPages();
+  await publishStore.instagramPages.load();
+  await checkConfiguration()
 };
 
 const closeModal = () => {
@@ -67,8 +71,6 @@ const handleBack = () => {
 };
 
 const onTabChange = (tabId: string) => {
-  console.log('InstagramModal - Tab changed to:', tabId);
-  
   // Only allow tab change if Instagram is configured or if it's the publish agent tab
   if (tabId === 'publish-bot' || isConfigured.value) {
     currentActiveTab.value = tabId;

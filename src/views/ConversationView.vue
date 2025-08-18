@@ -51,28 +51,7 @@ onMounted(async () => {
     <!-- Main Conversation Area -->
     <div class="conversation-content">
       <!-- Left Sidebar - Conversation List -->
-      <ConversationSidebar 
-        :search-query="conversationStore.searchQuery"
-        :active-filter="conversationStore.activeFilter"
-        :active-tab="conversationStore.activeTab"
-        :read-filter="conversationStore.readFilter"
-        :chat-type-filter="conversationStore.chatTypeFilter"
-        :sort-order="conversationStore.sortOrder"
-        :conversations="conversationStore.filteredConversations"
-        :selected-conversation="conversationStore.selectedConversation"
-        :loading="conversationStore.loading"
-        :error="conversationStore.error"
-        :is-loading-more="conversationStore.isLoadingMore"
-        @update:search-query="conversationStore.setSearchQuery"
-        @update:active-filter="conversationStore.setActiveFilter"
-        @update:active-tab="conversationStore.setActiveTab"
-        @update:read-filter="conversationStore.setReadFilter"
-        @update:chat-type-filter="conversationStore.setChatTypeFilter"
-        @update:sort-order="conversationStore.setSortOrder"
-        @select-conversation="conversationStore.selectConversation"
-        @load-more-conversations="conversationStore.loadMoreConversations"
-        @retry="conversationStore.fetchConversations"
-      />
+      <ConversationSidebar />
 
       <!-- No Conversation Selected - Only show when not loading and no conversation selected -->
     <div 
@@ -90,10 +69,7 @@ onMounted(async () => {
       <!-- Main Chat Area -->
       <div class="chat-main">
         <!-- Chat Header -->
-        <ChatHeader 
-          :loading="conversationStore.loading"
-          @translate-language="handleTranslateLanguage"
-        />
+        <ChatHeader @translate-language="handleTranslateLanguage"/>
 
         <!-- Chat Messages Area -->
         <ChatMessages 
@@ -116,7 +92,7 @@ onMounted(async () => {
       </div>
 
       <!-- Right Sidebar - User Details -->
-      <UserSidebar :loading="conversationStore.loading" />
+      <UserSidebar />
     </template>
     </div>
   </div>

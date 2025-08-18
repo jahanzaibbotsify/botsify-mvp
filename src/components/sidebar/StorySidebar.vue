@@ -22,8 +22,7 @@ const showTemplateManager = ref(false);
 const messagesContainer = ref<HTMLElement | null>(null);
 
 // Use the chat management composable for better data access
-const { chat, latestPromptContent } = useChatManagement(props.chatId);
-console.log(latestPromptContent)
+const { chat } = useChatManagement(props.chatId);
 // Check if we're on mobile and set initial collapsed state
 onMounted(() => {
   const isMobile = window.innerWidth <= 767;
@@ -36,18 +35,7 @@ const story = computed(() => {
 
 const isAIPromptGenerating = computed(() => chatStore.isAIPromptGenerating);
 
-// Watch for story changes
-watch(story, (newStory, oldStory) => {
-  console.log('Story changed in sidebar:', {
-    newContent: newStory?.content?.substring(0, 50) + '...',
-    oldContent: oldStory?.content?.substring(0, 50) + '...',
-    hasNewContent: !!newStory?.content,
-    hasOldContent: !!oldStory?.content
-  });
-}, { deep: true });
-
 const parsedStoryContent = computed(() => {
-  console.log('Parsing story content, story exists:', !!story.value?.content);
   if (!story.value?.content) {
     return `
       <div class="empty-state">
@@ -64,7 +52,6 @@ const parsedStoryContent = computed(() => {
 
   try {
     const parsed = marked(story.value.content);
-    console.log('Successfully parsed story content');
     return parsed;
   } catch (error) {
     console.error('Error parsing markdown:', error);
@@ -72,8 +59,7 @@ const parsedStoryContent = computed(() => {
   }
 });
 
-watch(() => parsedStoryContent.value.length, (newLength, oldLength) => {
-  console.log('Messages length changed:', { newLength, oldLength });
+watch(() => parsedStoryContent.value.length, () => {
   scrollToBottom();
 });
 

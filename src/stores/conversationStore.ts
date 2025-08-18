@@ -24,6 +24,7 @@ export const useConversationStore = defineStore('conversation', () => {
   const chatTypeFilter = ref<'all' | 'my' | 'other'>('all')
   const sortOrder = ref<'asc' | 'desc'>('desc')
   const loading = ref(false)
+  const isSearching = ref(false)
   const error = ref<string | null>(null)
   const limitReached = ref(false)
   const isLoadingMore = ref(false)
@@ -41,6 +42,9 @@ export const useConversationStore = defineStore('conversation', () => {
 
   // Cache expiration time (5 minutes)
   const CACHE_EXPIRY_TIME = 5 * 60 * 1000
+
+  // Search timeout for debouncing
+  let searchTimeout: NodeJS.Timeout | null = null
 
   // Helper function to check if cache is valid
   const isCacheValid = (timestamp: number) => {
@@ -106,13 +110,13 @@ export const useConversationStore = defineStore('conversation', () => {
     
     // If message is an object, extract the text and check for attachments
     if (typeof msg.message === 'object') {
-      console.log('Converting object message:', msg.message);
+
       const messageObj = msg.message as any;
       
       // Check for attachment
       if (messageObj.attachment) {
         const attachment = messageObj.attachment;
-        console.log('📎 Processing API attachment:', attachment);
+  
         
         // Create JSON string for attachment data
         const attachmentData = {
@@ -193,24 +197,14 @@ export const useConversationStore = defineStore('conversation', () => {
         isFirebaseConnected.value = false
       }
     } catch (error) {
-      console.error('❌ Error initializing Firebase:', error)
       firebaseError.value = error instanceof Error ? error.message : 'Failed to initialize Firebase'
       isFirebaseConnected.value = false
     }
   }
 
   const handleFirebaseMessage = (fbId: string, data: FirebaseMessage) => {
-    console.log('📨 Processing Firebase message for:', fbId, data)
-    
-    // Check if this is a human help request or bot stop
-    if (data.message?.human_help !== undefined && data.message?.stop_bot) {
-      console.log('🤖 Bot deactivated for conversation:', fbId)
-      // Handle bot deactivation if needed
-    }
-
     // Find existing conversation or create new one
     let conversation = conversations.value.find(conv => conv.fbid === fbId)
-    
     if (!conversation) {
       // Create new conversation from Firebase data
       if (data.user) {
@@ -230,7 +224,6 @@ export const useConversationStore = defineStore('conversation', () => {
         
         conversations.value.unshift(newConversation)
         conversation = newConversation
-        console.log('🆕 New conversation created from Firebase:', newConversation)
       }
     } else {
       // Update existing conversation
@@ -249,8 +242,6 @@ export const useConversationStore = defineStore('conversation', () => {
         conversations.value.splice(index, 1)
         conversations.value.unshift(conversation)
       }
-      
-      console.log('📝 Updated existing conversation from Firebase:', conversation.title)
     }
 
     // If this conversation is currently selected, add message to chat
@@ -261,7 +252,6 @@ export const useConversationStore = defineStore('conversation', () => {
       // Check if message has attachment
       if (data.message?.attachment) {
         const attachment = data.message.attachment;
-        console.log('📎 Processing attachment:', attachment);
         
         // Create JSON string for attachment data
         const attachmentData = {
@@ -291,7 +281,6 @@ export const useConversationStore = defineStore('conversation', () => {
       
       // Duplicate check: Only add if not already present (by content and timestamp)
       const isDuplicate = messages.value.some(m => {
-        console.log('💬 Checking for duplicate message:', m.content, content)
         // Check if content matches
         const contentMatches = m.content === content;
       
@@ -315,9 +304,6 @@ export const useConversationStore = defineStore('conversation', () => {
           status: 'sent',
         }
         messages.value.push(newMessage)
-        // console.log('💬 Added message to current conversation:', newMessage)
-      } else {
-        console.log('⚠️ Duplicate message ignored:', { content, sender, timestamp: new Date() })
       }
     }
   }
@@ -334,7 +320,6 @@ export const useConversationStore = defineStore('conversation', () => {
         // Add message to current conversation if it matches
         if (selectedConversation.value?.fbid === fbId) {
           messages.value.push(message)
-          console.log('💬 Real-time message added:', message)
         }
       },
       (error: Error) => {
@@ -352,29 +337,19 @@ export const useConversationStore = defineStore('conversation', () => {
     firebaseService.disconnect()
     isFirebaseConnected.value = false
     firebaseError.value = null
-    console.log('🔌 Firebase disconnected')
   }
 
   const checkFirebaseStatus = () => {
-    console.log('📊 Firebase Status Check:')
-    console.log('- Firebase Connected:', isFirebaseConnected.value)
-    console.log('- Firebase Error:', firebaseError.value)
-    console.log('- Environment Config:', {
-      apiKey: !!import.meta.env.VITE_FIREBASE_API_KEY,
-      databaseURL: !!import.meta.env.VITE_FIREBASE_DATABASE_URL,
-      projectId: !!import.meta.env.VITE_FIREBASE_PROJECT_ID
-    })
-    
     // Get Firebase service status
-    const firebaseStatus = firebaseService.getConnectionStatus()
-    console.log('- Firebase Service Status:', firebaseStatus)
+    firebaseService.getConnectionStatus()
   }
 
   // Actions
   const fetchConversations = async (isLoadMore = false, chatId?: string) => {
     if (isLoadMore) {
       isLoadingMore.value = true
-    } else {
+    } else if (!isSearching.value) {
+      // Only set loading for initial loads, not for search/filter operations
       loading.value = true
       limitReached.value = false
     }
@@ -447,7 +422,8 @@ export const useConversationStore = defineStore('conversation', () => {
     } finally {
       if (isLoadMore) {
         isLoadingMore.value = false
-      } else {
+      } else if (!isSearching.value) {
+        // Only reset loading for initial loads, not for search/filter operations
         loading.value = false
       }
     }
@@ -465,7 +441,6 @@ export const useConversationStore = defineStore('conversation', () => {
       const cached = getCachedMessages(messengerUserId)
       if (cached) {
         messages.value = cached.messages
-        console.log('Using cached messages for conversation:', messengerUserId)
         return
       }
     }
@@ -510,11 +485,12 @@ export const useConversationStore = defineStore('conversation', () => {
       const response = await conversationApi.sendMessage(to, content, type)
       if (response.success) {
         if (selectedConversation.value) {
+          selectedConversation.value.active_for_bot = 0;
           selectedConversation.value.lastMessage = content
           selectedConversation.value.timestamp = currentTime()
         }
         
-        console.log('✅ Message sent successfully')
+  
       } else {
         error.value = response.message || 'Failed to send message'
       }
@@ -526,36 +502,55 @@ export const useConversationStore = defineStore('conversation', () => {
 
   const setSearchQuery = async (query: string) => {
     searchQuery.value = query
+    
+    // Clear existing timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout)
+    }
+    
+    // Set isSearching to true immediately
+    isSearching.value = true
+    
     // Debounce search to avoid too many API calls
-    clearTimeout((window as any).searchTimeout)
-    ;(window as any).searchTimeout = setTimeout(() => {
-      fetchConversations()
-    }, 300)
+    searchTimeout = setTimeout(async () => {
+      await fetchConversations()
+      isSearching.value = false
+    }, 1000)
   }
 
   const setActiveFilter = async (filter: string) => {
     activeFilter.value = filter
+    isSearching.value = true
     await fetchConversations()
+    isSearching.value = false
   }
 
   const setActiveTab = async (tab: string) => {
     activeTab.value = tab
+    isSearching.value = true
     await fetchConversations()
+    isSearching.value = false
   }
 
   const setReadFilter = async (filter: 'all' | 'read' | 'unread') => {
     readFilter.value = filter
+    isSearching.value = true
     await fetchConversations()
+    isSearching.value = false
   }
 
   const setChatTypeFilter = async (filter: 'all' | 'my' | 'other') => {
     chatTypeFilter.value = filter
+    isSearching.value = true
     await fetchConversations()
+    isSearching.value = false
   }
 
   const setSortOrder = async (order: 'asc' | 'desc') => {
     sortOrder.value = order
+    isSearching.value = true
     await fetchConversations()
+    isSearching.value = false
   }
 
   const selectConversation = async (conversation: ExtendedChat) => {
@@ -646,7 +641,7 @@ export const useConversationStore = defineStore('conversation', () => {
     try {
       const response = await conversationApi.exportChat(selectedConversation.value.fbid, extension)
       if (response.success) {
-        console.log('✅ Chat exported successfully:', extension)
+  
       } else {
         error.value = response.message || 'Failed to export chat'
       }
@@ -746,7 +741,6 @@ export const useConversationStore = defineStore('conversation', () => {
       // Save subscription to backend
       const response = await conversationApi.saveSubscription(subscription, userId)
       if (response.success) {
-        console.log('✅ Notifications enabled successfully')
         return { success: true, message: 'Notifications enabled successfully' }
       } else {
         return { success: false, message: response.message || 'Failed to save subscription' }
@@ -782,7 +776,6 @@ export const useConversationStore = defineStore('conversation', () => {
         // Delete subscription from backend
         const response = await conversationApi.deleteSubscription(subscription, userId)
         if (response.success) {
-          console.log('✅ Notifications disabled successfully')
           return { success: true, message: 'Notifications disabled successfully' }
         } else {
           return { success: false, message: response.message || 'Failed to delete subscription' }
@@ -822,6 +815,14 @@ export const useConversationStore = defineStore('conversation', () => {
     }
   }
 
+  // Cleanup method for search timeout
+  const clearSearchTimeout = () => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout)
+      searchTimeout = null
+    }
+  }
+
   return {
     // State
     conversations,
@@ -834,6 +835,7 @@ export const useConversationStore = defineStore('conversation', () => {
     chatTypeFilter,
     sortOrder,
     loading,
+    isSearching,
     error,
     limitReached,
     isLoadingMore,
@@ -878,12 +880,15 @@ export const useConversationStore = defineStore('conversation', () => {
     // Delete method
     deleteConversation,
     
-      // Bot activation method
-  changeBotActivation,
-  
-  // Notification methods
-  enableNotifications,
-  disableNotifications,
-  checkNotificationStatus
+    // Bot activation method
+    changeBotActivation,
+    
+    // Notification methods
+    enableNotifications,
+    disableNotifications,
+    checkNotificationStatus,
+    
+    // Utility methods
+    clearSearchTimeout
   }
 }) 

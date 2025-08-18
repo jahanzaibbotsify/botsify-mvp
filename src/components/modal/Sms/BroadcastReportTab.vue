@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
-import { Table, TableHead, TableBody, TableHeader, TableCell, Badge,  Input, Button, DateRange } from "@/components/ui";
-import { formatTime } from "@/utils";
+import { Table, TableHead, TableBody, TableHeader, TableCell, Badge,  Input, Button, DateRange, Pagination } from "@/components/ui";
+import { formatDate } from "@/utils";
+import { PaginationData } from "@/types";
+import TableRow from "@/components/ui/TableRow.vue";
 
 defineEmits<{
   'page-change': [page: number];
@@ -27,32 +29,42 @@ const getDefaultDateRange = () => {
 
 const dateRange = ref(getDefaultDateRange());
 
-// Reactive data
-const reportData = ref<any>(null);
-const currentPage = ref(1);
-const totalPages = ref(1);
-const totalItems = ref(0);
-const isLoading = ref(false);
 
+// Computed properties for SMS templates resource
+const currentPage = ref(1);
+const itemsPerPage = 20; // Match the API per_page default
+
+// Add local pagination data
+const paginationData = ref<PaginationData | null>(null);
+
+// Computed properties for SMS templates resource
+const smsReportData = computed(() => publishStore.smsReport.data?.data?.messages?.data || []);
+
+const totalPages = computed(() => {
+  if (paginationData.value) {
+    return Math.ceil(paginationData.value.total / paginationData.value.perPage);
+  }
+  return 1;
+});
 
 // Stats cards data
 const statsCards = ref([
   { 
-    title: 'Sent Today', 
+    title: 'SENT', 
     value: 0, 
     icon: 'pi pi-send',
     color: 'var(--color-primary, #3b82f6)',
     bgColor: 'rgba(59, 130, 246, 0.1)'
   },
   { 
-    title: 'Delivered Today', 
+    title: 'DELIVERED', 
     value: 0, 
     icon: 'pi pi-check-circle',
     color: 'var(--color-secondary, #10b981)',
     bgColor: 'rgba(16, 185, 129, 0.1)'
   },
   { 
-    title: 'Failed Today', 
+    title: 'FAILED', 
     value: 0, 
     icon: 'pi pi-times-circle',
     color: 'var(--color-error, #ef4444)',
@@ -60,33 +72,34 @@ const statsCards = ref([
   }
 ]);
 
-// Fetch SMS report data
-const fetchSmsReport = async (page: number = 1) => {
-  isLoading.value = true;
+
+// Sync report when loaded
+const loadReport = async (page = 1) => {
   try {
-    const result = await publishStore.getSmsReport(page, 20, searchQuery.value, dateRange.value.start, dateRange.value.end);
-    if (result.success && result.data) {
-      reportData.value = result.data;
-      currentPage.value = result.data.messages?.current_page || 1;
-      totalPages.value = result.data.messages?.last_page || 1;
-      totalItems.value = result.data.messages?.total || 0;
-      
-      // Update stats cards
-      statsCards.value[0].value = result.data.sent_today || 0;
-      statsCards.value[1].value = result.data.delivered_today || 0;
-      statsCards.value[2].value = result.data.failed_today || 0;
-    } else {
-      window.$toast.error(result.error || 'Failed to fetch SMS report');
+    const result = await publishStore.smsReport.load(page, itemsPerPage, searchQuery.value, dateRange.value.start, dateRange.value.end);
+    if (result?.data?.messages) {
+      paginationData.value = {
+        page: result.data.messages.page || page,
+        perPage: result.data.messages.per_page || itemsPerPage,
+        total: result.data.messages.total || 0,
+        to: result.data.messages.to || 0,
+        prev_page_url: result.data.messages.prev_page_url || null,
+      };
+
+      currentPage.value = result.data.messages.page || page;
+
+      // update stats
+      statsCards.value[0].value = result.data.sent || 0;
+      statsCards.value[1].value = result.data.delivered || 0;
+      statsCards.value[2].value = result.data.failed || 0;
     }
-  } catch (error) {
-    console.error('Failed to fetch SMS report:', error);
-  } finally {
-    isLoading.value = false;
+  } catch (err) {
+    console.error("Failed to load report:", err);
   }
 };
 
 const handlePageChange = (page: number) => {
-  fetchSmsReport(page);
+  loadReport(page);
 };
 
 // Helper functions
@@ -110,17 +123,16 @@ const truncateMessage = (message: string) => {
   return message.substring(0, 200) + '...';
 };
 
-// Expose methods for parent component
-defineExpose({
-  fetchSmsReport,
-  currentPage,
-  totalPages,
-  totalItems
-});
+const applyFilter = () => {
+  // Invalidate SMS broadcast report cache to force fresh data
+  publishStore.smsReport.invalidate();
+  loadReport(1);
+}
+
 
 // Load data on mount
 onMounted(() => {
-  fetchSmsReport();
+  loadReport(1)
 });
 </script>
 
@@ -144,6 +156,7 @@ onMounted(() => {
         <DateRange
           v-model="dateRange"
           label="Date Range"
+          placeholder="Select date range"
         />
       </div>
       
@@ -151,9 +164,10 @@ onMounted(() => {
         <Button
           variant="primary"
           size="medium"
-          :loading="publishStore.isLoading"
+          :loading="publishStore.smsReport.loading"
+          @click="applyFilter"
         >
-          {{ publishStore.isLoading ? 'Filtering...' : 'Apply filters' }}
+          {{ publishStore.smsReport.loading ? 'Filtering...' : 'Apply filters' }}
         </Button>
       </div>
     </div>
@@ -174,7 +188,6 @@ onMounted(() => {
         </div>
       </div>
     </div>
-
     <!-- Messages Table -->
     <div class="table-section">
       <Table>
@@ -187,29 +200,29 @@ onMounted(() => {
         </TableHead>
         <TableBody>
           <!-- Loading State -->
-          <tr v-if="isLoading" v-for="i in 5" :key="`loading-${i}`">
+          <TableRow v-if="publishStore.smsReport.loading" v-for="i in 5" :key="`loading-${i}`">
             <TableCell :isLoading="true" skeletonType="badge"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
-          </tr>
+          </TableRow>
 
           <!-- Empty State -->
-          <tr v-else-if="!reportData?.messages?.data?.length">
+          <TableRow v-else-if="!smsReportData.length">
             <TableCell :noData="true" colspan="5">
               <div class="empty-state">
                 <div class="empty-icon">
                   <i class="pi pi-inbox"></i>
                 </div>
-                <h4>No SMS messages found</h4>
-                <p>No SMS messages have been sent yet. Start sending messages to see them here.</p>
+                <h4>No SMS broadcast found</h4>
+                <p>No SMS broadcast have been sent yet. Start sending broadcast to see them here.</p>
               </div>
             </TableCell>
-          </tr>
+          </TableRow>
 
           <!-- Data State -->
-          <tr v-else v-for="message in reportData?.messages?.data" :key="message.id">
+          <TableRow v-else v-for="message in smsReportData" :key="message.id">
             <TableCell>
               <Badge :variant="getStatusVariant(message)" size="small">
                 {{ getStatusText(message) }}
@@ -218,21 +231,21 @@ onMounted(() => {
             <TableCell>{{ message.number }}</TableCell>
             <TableCell>{{ truncateMessage(message.message) }}</TableCell>
             <TableCell>{{ message.failure_reason || '-' }}</TableCell>
-            <TableCell>{{ formatTime(message.sent_time) }}</TableCell>
-          </tr>
+            <TableCell>{{ formatDate(message.sent_time) }}</TableCell>
+          </TableRow>
         </TableBody>
       </Table>
     </div>
 
     <!-- Pagination -->
-    <div v-if="totalPages > 1" class="agent-pagination-section">
+    <div class="agent-pagination-section">
       <Pagination
         :current-page="currentPage"
         :total-pages="totalPages"
-        :total-items="totalItems"
+        :total-items="paginationData?.total || 0"
         :items-per-page="20"
         :show-page-info="false"
-        :disabled="isLoading"
+        :disabled="publishStore.smsReport.loading"
         @page-change="handlePageChange"
       />
     </div>

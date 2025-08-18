@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
-import { usePublishStore } from "../../../stores/publishStore";
-import { useBotStore } from "../../../stores/botStore";
-import Button from "../../../components/ui/Button.vue";
+import { ref, computed } from "vue";
+import { usePublishStore } from "@/stores/publishStore";
+import { useBotStore } from "@/stores/botStore";
+import Button from "@/components/ui/Button.vue";
 import { APP_URL } from "@/utils/config";
+import type { FacebookPage, FacebookPageForTemplate } from "@/types";
+import { publishApi } from "@/services/publishApi";
 
 // Props
 interface Props {
@@ -26,67 +28,21 @@ const emit = defineEmits<{
 const publishStore = usePublishStore();
 const botStore = useBotStore();
 
-// Load Facebook pages function
-const loadPages = async () => {
-  try {
-    await publishStore.getFbPages();
-  } catch (error) {
-    console.error('Failed to load Facebook pages:', error);
-  }
-};
-
-// Refresh Facebook page permissions function
-const refreshPermissions = async () => {
-  try {
-    const result = await publishStore.refreshFbPagePermission();
-    return result;
-  } catch (error) {
-    console.error('Failed to refresh Facebook page permissions:', error);
-    return { success: false, error };
-  }
-};
-
-// Remove Facebook page permissions function
-const removePermissions = async () => {
-  try {
-    const result = await publishStore.removeFbPagePermission();
-    return result;
-  } catch (error) {
-    console.error('Failed to remove Facebook page permissions:', error);
-    return { success: false, error };
-  }
-};
-
-// Connect Facebook page function
-const connectPage = async (type: string, pageId: string, pageName: string, accessToken: string) => {
-  try {
-    const result = await publishStore.connectionFbPage(type, pageId, pageName, accessToken);
-    if (result.success) {
-      emit('page-connection-change');
-    }
-    return result;
-  } catch (error) {
-    console.error('Failed to connect Facebook page:', error);
-    return { success: false, error };
-  }
-};
 
 // Computed properties to sync with store state
-const storePages = computed(() => publishStore.cache.facebookPages);
-const storePagesLoaded = computed(() => publishStore.cacheValid.facebookPages);
-const storeIsLoadingPages = computed(() => publishStore.loadingStates.facebookPages);
+const storePages = computed(() => publishStore.facebookPages.data);
+const storePagesLoaded = computed(() => publishStore.facebookPages.valid);
+const storeIsLoadingPages = computed(() => publishStore.facebookPages.loading);
 
-// Computed pages data from store
-const pages = computed(() => {
-  if (!storePages.value) {
-    return [];
-  }
+// Computed pages data for template
+const pages = computed((): FacebookPageForTemplate[] => {
+  if (!storePages.value) return [];
   
   // Check if we have pagesData structure (API response format)
-  if (storePages.value.pagesData && storePages.value.pagesData.data) {
-    const pagesData = storePages.value.pagesData.data;
+  if (storePages.value.data && storePages.value.data?.pagesData?.data) {
+    const pagesData = storePages.value.data.pagesData.data;
     if (Array.isArray(pagesData) && pagesData.length > 0) {
-      return pagesData.map((page: any) => ({
+      return pagesData.map((page: FacebookPage) => ({
         id: page.id,
         name: page.name,
         is_bot_page: !!page.connected_page_bot,
@@ -97,17 +53,6 @@ const pages = computed(() => {
         profile_picture_url: page.profile_picture_url || null
       }));
     }
-  } else if (Array.isArray(storePages.value) && storePages.value.length > 0) {
-    // Direct array structure (fallback)
-    return storePages.value.map((page: any) => ({
-      id: page.id,
-      name: page.name,
-      is_bot_page: page.is_bot_page || false,
-      status: page.status || 'disconnected',
-      botName: page.botName || null,
-      category: page.category,
-      profile_picture_url: page.profile_picture_url || null
-    }));
   }
   
   return [];
@@ -119,23 +64,25 @@ const showConnectButton = computed(() => {
 });
 
 const isConnectLoading = ref(false);
-const isDisconnectLoading = ref(false);
+const connectId = ref('');
+const disconnectId = ref('');
 const isRefreshLoading = ref(false);
 const isRemoveLoading = ref(false);
 
-// Load Facebook pages
-const loadFbPages = async () => {
-  // Check if we're already loading
-  if (storeIsLoadingPages.value) {
-    return;
-  }
-  
+// Refresh Facebook page permissions function
+const refreshPermissions = async () => {
   try {
-    await loadPages();
-    emit('page-connection-change');
-    // The computed pages will automatically update when store data changes
+    const result = await publishApi.refreshFbPagePermission();
+    if(result.success){
+      publishStore.facebookPages.invalidate();
+      publishStore.facebookPages.load();
+    } else{
+      window.$toast.error(result?.message || 'Failed to refresh Facebook page permissions');
+    }
+    return result;
   } catch (error) {
-    console.error('Failed to load Facebook pages:', error);
+    console.error('Failed to refresh Facebook page permissions:', error);
+    return { success: false, error };
   }
 };
 
@@ -153,16 +100,11 @@ const connectAccount = async () => {
     if (result.success && 'data' in result && result.data?.redirect) {
       openAuthPopup(result.data.redirect, 'connection');
     } else {
-      console.error('Failed to get redirect URL:', result.error);
-      if (window.$toast) {
-        window.$toast.error(result.error || 'Failed to get authentication URL');
-      }
+      window.$toast.error(result || 'Failed to get authentication URL');
     }
   } catch (error) {
     console.error('Failed to connect account:', error);
-    if (window.$toast) {
-      window.$toast.error('Failed to connect Facebook account');
-    }
+    window.$toast.error('Failed to connect Facebook account');
   } finally {
     isConnectLoading.value = false;
   }
@@ -170,33 +112,29 @@ const connectAccount = async () => {
 
 const connectionPage = async (type: string, page: any) => {
   if (type === 'connect') {
-    isConnectLoading.value = true;
+    connectId.value = page.id;
   } else if (type === 'disconnect') {
-    isDisconnectLoading.value = true;
+    disconnectId.value = page.id;
   }
   try {
-    const result = await connectPage(type, page.id, page.name, page.accessToken);
-    if (result.success) {
-      // Clear cache and reload pages to update the status
-      publishStore.clearFbPagesCache();
-      await loadFbPages();
-      if (window.$toast) {
-        window.$toast.success('Page connected successfully!');
-      }
-    } else {
-      console.error('Failed to connect page:', result.error);
-      if (window.$toast) {
-        window.$toast.error(result.error || 'Failed to connect page');
-      }
+    const result = await publishApi.connectionFbPage(
+      type,
+      page.id,
+      page.name,
+      page.accessToken
+    );
+    if(result.success){
+      window.$toast.success(`Page ${type}ed successfully!`);
+      publishStore.facebookPages.invalidate();
+      publishStore.facebookPages.load();
+    } else{
+      window.$toast.error(result?.message || 'Failed to connect page');
     }
   } catch (error) {
-    console.error('Failed to connect page:', error);
-    if (window.$toast) {
-      window.$toast.error('Failed to connect page');
-    }
+    window.$toast.error('Failed to connect page');
   } finally {
-    isConnectLoading.value = false;
-    isDisconnectLoading.value = false;
+    connectId.value = '';
+    disconnectId.value = '';
   }
 };
 
@@ -212,16 +150,12 @@ const refreshFbPagePermissions = async () => {
     if (result.success && 'data' in result && result.data?.redirect) {
       openAuthPopup(result.data.redirect, 'permission refresh');
     } else {
-      console.error('Failed to get redirect URL:', result.error);
-      if (window.$toast) {
-        window.$toast.error(result.error || 'Failed to get authentication URL');
-      }
+      console.error('Failed to get redirect URL:', result);
+      window.$toast.error(result || 'Failed to get authentication URL');
     }
   } catch (error) {
     console.error('Failed to refresh page permissions:', error);
-    if (window.$toast) {
-      window.$toast.error('Failed to refresh Facebook permissions');
-    }
+    window.$toast.error('Failed to refresh Facebook permissions');
   } finally {
     isRefreshLoading.value = false;
   }
@@ -230,20 +164,15 @@ const refreshFbPagePermissions = async () => {
 const removeFbPagePermissions = async () => {
   isRemoveLoading.value = true;
   try {
-    const result = await removePermissions();
-    if (result.success) {
-      publishStore.clearFbPagesCache();
-      await loadFbPages();
-      if (window.$toast) {
-        window.$toast.success('Page disconnected successfully!');
-      }
+    const result = await publishApi.removeFbPagePermission();
+    if(result.success){
+      publishStore.facebookPages.data = null;
+    } else{
+      window.$toast.error(result?.message || 'Failed to remove Facebook page permissions');
     }
     return result;
   } catch (error) {
-    console.error('Failed to refresh page permissions:', error);
-    if (window.$toast) {
-      window.$toast.error('Failed to remove Facebook permissions');
-    }
+    window.$toast.error('Failed to remove Facebook permissions');
   } finally {
     isRemoveLoading.value = false;
   }
@@ -282,7 +211,9 @@ const openAuthPopup = (url: string, action: string) => {
     if (event.data.type === 'FB_CONNECT_SUCCESS') {
       popup.close();
       window.removeEventListener('message', messageHandler);
-      loadFbPages();
+      
+      publishStore.facebookPages.invalidate();
+      publishStore.facebookPages.load();
       window.$toast?.success(`Facebook ${action} completed successfully!`);
     } else if (event.data.type === 'FACEBOOK_AUTH_ERROR') {
       popup.close();
@@ -300,7 +231,9 @@ const openAuthPopup = (url: string, action: string) => {
         popup.close();
         clearInterval(checkClosed);
         window.removeEventListener('message', messageHandler);
-        loadFbPages();
+        
+        publishStore.facebookPages.invalidate();
+        publishStore.facebookPages.load();
         window.$toast?.success(`Facebook ${action} completed successfully!`);
       }
     } catch {
@@ -311,32 +244,20 @@ const openAuthPopup = (url: string, action: string) => {
     if (popup.closed) {
       clearInterval(checkClosed);
       window.removeEventListener('message', messageHandler);
-      loadFbPages();
+      publishStore.facebookPages.invalidate();
+      publishStore.facebookPages.load();
     }
   }, 1000);
   
   return popup;
 };
 
-
-// Load data when component mounts
-onMounted(() => {
-  // Only load if not already loaded in store
-  if (!storePagesLoaded.value) {
-    loadFbPages();
-  }
-});
-
-// Expose methods for parent component
-defineExpose({
-  loadFbPages
-});
 </script>
 
 <template>
   <div class="tab-panel">
     <h3>Messenger integration</h3>
-    <p class="subtitle">Connect your Facebook pages to enable Messenger bot functionality</p>
+    <p class="subtitle">Connect your Facebook pages to enable Messenger agent functionality</p>
 
     <!-- Loading State -->
     <div v-if="storeIsLoadingPages" class="loading-state">
@@ -387,7 +308,6 @@ defineExpose({
         </Button>
         <Button 
           variant="secondary"
-          :loading="isConnectLoading"
           icon="pi pi-plus"
           @click="createNewPage"
         >
@@ -432,7 +352,8 @@ defineExpose({
                 v-if="!page.is_bot_page"
                 variant="primary"
                 size="small"
-                :loading="isConnectLoading"
+                :loading="connectId == page.id"
+                :disabled="connectId == page.id"
                 icon="pi pi-link"
                 @click="connectionPage('connect', page)"
               >
@@ -443,7 +364,8 @@ defineExpose({
                 <Button 
                   variant="success"
                   size="small"
-                  :loading="isConnectLoading"
+                  :loading="connectId == page.id"
+                  :disabled="connectId == page.id"
                   icon="pi pi-refresh"
                   @click="connectionPage('connect', page)"
                 >
@@ -453,7 +375,8 @@ defineExpose({
                 <Button 
                   variant="error"
                   size="small"
-                  :loading="isDisconnectLoading"
+                  :loading="disconnectId == page.id"
+                  :disabled="disconnectId == page.id"
                   icon="pi pi-times"
                   @click="connectionPage('disconnect', page)"
                 >
@@ -485,46 +408,6 @@ defineExpose({
 
 <style scoped>
 /* Component-specific styles only - common styles moved to PublishAgentModal.vue */
-
-.subtitle {
-  margin: 0 0 20px 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-secondary, #6b7280);
-}
-
-/* Loading State */
-.loading-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--color-text-secondary, #6b7280);
-}
-
-.loading-content {
-  max-width: 400px;
-  margin: 0 auto;
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--color-bg-tertiary, #f3f4f6);
-  border-top: 3px solid var(--color-primary, #3b82f6);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 16px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.loading-state p {
-  margin: 0;
-  font-size: 14px;
-}
-
 /* Empty State */
 .empty-state {
   text-align: center;

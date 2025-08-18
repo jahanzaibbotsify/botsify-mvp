@@ -162,7 +162,7 @@ const handleBlur = (event: FocusEvent) => {
 
 .textarea-field {
   width: 100%;
-  background: transparent;
+  background: white;
   border: none;
   outline: none;
   color: var(--color-text-primary);

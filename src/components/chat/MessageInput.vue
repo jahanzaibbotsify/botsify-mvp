@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { useChatStore } from '@/stores/chatStore';
 import { useMCPStore } from '@/stores/mcpStore';
 import type { Attachment } from '@/types';
@@ -38,10 +38,6 @@ const openFileSearchModal = () => {
 const openWebSearchModal = () => {
   webSearchModalRef.value?.openModal()
 }
-
-onMounted(async () => {
-  await mcpStore.setIntialize();
-});
 
 const resizeTextarea = () => {
   if (!textareaRef.value) return;
@@ -204,6 +200,7 @@ const closeMCPDropdown = () => {
 
 // New methods for dropdown actions
 const openMCPServers = async() => {
+  await mcpStore.setIntialize();
   showMCPModal.value = true;
   closeMCPDropdown();
 };
@@ -381,8 +378,8 @@ const hideLoading = () => {
                   <path d="M17.4999 9.74921L11.3282 15.921C10.2237 17.0255 8.43272 17.0255 7.32823 15.921C6.22373 14.8164 6.22373 13.0255 7.32823 11.921L13.4999 5.74939" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
               </svg>
               <!-- Connection indicator -->
-              <span v-if="mcpStore.connectedServers.length > 0" class="connection-indicator">
-                {{ mcpStore.connectedServers.length }}
+              <span v-if="mcpStore.connectedMCPs > 0" class="connection-indicator">
+                {{ mcpStore.connectedMCPs }}
               </span>
           </button>
         </div>

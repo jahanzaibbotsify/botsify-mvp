@@ -86,15 +86,21 @@ const shouldDisableControls = computed(() => {
 
         <!-- Slide Actions -->
         <div class="slide-actions">
-          <Button
-            type="button"
-            variant="primary"
-            size="small"
-            @click="store.addSlide"
-            :disabled="store.template.slides.length >= 10"
-          >
-            Add slide
-          </Button>
+          <div class="add-slide-container">
+            <Button
+              type="button"
+              variant="primary"
+              size="small"
+              @click="store.addSlide"
+              :disabled="!store.canAddSlide"
+              :title="!store.canAddSlide ? 'Complete the first slide (title and ALL buttons) before adding more slides' : 'Add a new slide'"
+            >
+              Add slide
+            </Button>
+            <span v-if="!store.canAddSlide" class="add-slide-hint">
+              Complete first slide (title and ALL buttons) to add more
+            </span>
+          </div>
           <Button
             v-if="store.template.slides.length > 1"
             type="button"
@@ -186,9 +192,23 @@ const shouldDisableControls = computed(() => {
 
 .slide-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-3);
+}
+
+.add-slide-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.add-slide-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  font-style: italic;
 }
 
 .form-group {

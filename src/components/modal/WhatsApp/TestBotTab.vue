@@ -13,7 +13,7 @@ const handleTestBot = async () => {
   
   try {
     // Open WhatsApp with test message
-    const whatsappUrl = `https://web.whatsapp.com/send?phone=923313014733&text=Start%20Bot%${botStore.botId}`;
+    const whatsappUrl = `https://web.whatsapp.com/send?phone=923313014733&text=Hi`;
     window.open(whatsappUrl, '_blank');
   } catch (error) {
     console.error('Error opening WhatsApp test:', error);

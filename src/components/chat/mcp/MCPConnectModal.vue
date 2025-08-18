@@ -75,10 +75,6 @@ const checkAndPreFillConnectedServer = () => {
       serverUrl.value = connectedServer.setting?.server_url || '';
       serverLabel.value = connectedServer.setting?.server_label || '';
     }
-
-    // Show a message that this server is already connected
-    console.log(`Server ${props.server.name} is already connected`);
-    // checkConnection();
   }
 };
 
@@ -329,6 +325,7 @@ const addServer = async (allowedTools: string[]) => {
           mcpStore.servers[serverIndex].connectionId = connectedServer.id;
         }
       }
+      mcpStore.connectedMCPs = mcpStore.connectedServers.length;
       emit('quit');
     }
   }

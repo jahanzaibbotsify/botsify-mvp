@@ -128,11 +128,6 @@
             
             <!-- Regular Client Plans -->
             <div v-else>
-              <!-- Debug info -->
-              <div style="font-size: 0.75rem; color: var(--color-text-tertiary); margin-bottom: var(--space-3); padding: var(--space-2); background: var(--color-bg-tertiary); border-radius: var(--radius-sm);">
-                Debug: Current Plan ID = "{{ currentPlanId }}" | Type: {{ typeof currentPlanId }}
-              </div>
-              
               <!-- Personal Plan Monthly to Annual -->
               <button 
                 v-show="currentPlanId === 'Personal Plan'" 

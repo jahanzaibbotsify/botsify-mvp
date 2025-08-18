@@ -78,17 +78,10 @@ const fetchAttributes = async (forceRefresh = false) => {
     
     if (response.success && response.data) {
       attributes.value = response.data
-      if (response.fromCache) {
-        console.log('✅ User attributes loaded from cache for user:', props.user.fbid)
-      } else {
-        console.log('✅ User attributes fetched from API for user:', props.user.fbid)
-      }
     } else {
       error.value = response.message || 'Failed to fetch user attributes'
-      console.error('❌ Failed to fetch user attributes:', response.message)
     }
   } catch (err) {
-    console.error('❌ Error fetching user attributes:', err)
     error.value = err instanceof Error ? err.message : 'Failed to fetch user attributes'
   } finally {
     loading.value = false

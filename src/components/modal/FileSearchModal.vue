@@ -3,6 +3,8 @@ import { ref, reactive } from 'vue'
 import ModalLayout from '@/components/ui/ModalLayout.vue'
 import { botsifyApi } from '@/services/botsifyApi'
 import { useChatStore } from '@/stores/chatStore'
+import { createResource } from "@/utils/caching.ts"
+import Button from '../ui/Button.vue'
 
 interface Props {
   chatId: string
@@ -24,6 +26,12 @@ const selectedFile = ref<File | null>(null)
 const uploadProgress = ref(0)
 const isUploading = ref(false)
 
+// Create cached resource for file search data
+const fileSearchResource = createResource(async () => {
+  const response = await botsifyApi.getFileSearch()
+  return response
+})
+
 const openModal = async () => {
   modalRef.value?.openModal()
   if (fileSearchResults.length === 0) {
@@ -36,14 +44,10 @@ const openModal = async () => {
 // Load existing File Search data for this bot assistant
 const loadFileSearchData = async () => {
   try {
-    console.log('Loading existing File Search data for bot assistant:', props.chatId)
-    const response = await botsifyApi.getFileSearch()
+    const response = await fileSearchResource.load()
     
     if (response.success) {
-      console.log('file search result:', response.data)
       fileSearchResults.push(...response.data)
-    } else {
-      console.log('No existing File Search data found or failed to load:', response.message)
     }
   } catch (error: any) {
     console.error('Error loading File Search data:', error)
@@ -71,8 +75,6 @@ const connectFileSearch = async () => {
 
   try {
     fileSearchLoading.value = true
-    console.log('Uploading file and creating File Search for bot assistant:', props.chatId)
-    console.log('Selected file:', selectedFile.value.name)
     isUploading.value = true
     
     uploadProgress.value = 50
@@ -88,11 +90,12 @@ const connectFileSearch = async () => {
       response.data.filename = selectedFile.value.name
       fileSearchResults.push(response.data.data)
 
+      // Invalidate cache after adding new file
+      fileSearchResource.invalidate()
+
       // Add success message to chat
       const successMessage = `✅ File "${selectedFile.value.name}" uploaded and File Search connected successfully!`
       await chatStore.addMessage(props.chatId, successMessage, 'assistant')
-
-      closeModal()
     } else {
       console.error('Failed to create File Search:', response.message)
       window.$toast.error('Failed to create File Search: ' + response.message)
@@ -114,23 +117,21 @@ const deleteFileSearchEntry = (fileSearchId: string, fileSearchName: string) => 
     try {
       fileSearchDeleteLoading.value = true
       fileSearchSelectedId.value = fileSearchId
-      console.log('Deleting File Search entry:', fileSearchId)
       const response = await botsifyApi.deleteAllFileSearch([fileSearchId])
       
       if (response.success) {
-        console.log('File Search entry deleted successfully')
-  
         const index = fileSearchResults.findIndex(file => file.id === fileSearchId)
   
         if (index !== -1) {
           fileSearchResults.splice(index, 1)
         }
         
+        // Invalidate cache after deletion
+        fileSearchResource.invalidate()
+        
         // Add success message to chat
         const successMessage = `✅ File Search ${fileSearchName} removed successfully`
         await chatStore.addMessage(props.chatId, successMessage, 'assistant')
-  
-        closeModal()
       } else {
         console.error('Failed to delete File Search entry:', response.message)
         window.$toast.error('Failed to delete File Search entry: ' + response.message)
@@ -157,11 +158,13 @@ const deleteAllFileSearchEntry = () => {
       if (response.success) {
         console.log('All File Search entry deleted successfully')
         fileSearchResults.splice(0, fileSearchResults.length)
+        
+        // Invalidate cache after deletion
+        fileSearchResource.invalidate()
+        
         // Add success message to chat
         const successMessage = `✅ All File Search removed successfully`
         await chatStore.addMessage(props.chatId, successMessage, 'assistant')
-  
-        closeModal()
       } else {
         console.error('Failed to delete File Search entry:', response.message)
         window.$toast.error('Failed to delete File Search entry: ' + response.message)
@@ -173,13 +176,6 @@ const deleteAllFileSearchEntry = () => {
       fileSearchAllDeleteLoading.value = false
     }
   })
-}
-
-const closeModal = () => {
-  modalRef.value?.closeModal()
-  selectedFile.value = null
-  uploadProgress.value = 0
-  isUploading.value = false
 }
 
 // Expose the open method to parent
@@ -253,36 +249,36 @@ defineExpose({ openModal })
       </div>
       
       <div class="search-actions">
-        <button 
-          class="connect-button primary" 
+        <Button 
+          variant="primary"
+          size="large"
+          icon="pi pi-paperclip"
+          :loading="fileSearchLoading || isUploading"
           @click="connectFileSearch"
           :disabled="fileSearchLoading || isUploading || !selectedFile"
         >
-          <span v-if="fileSearchLoading || isUploading" class="loading-spinner"></span>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-          </svg>
           {{ 
             isUploading ? 'Uploading...' : 
             fileSearchLoading ? 'Connecting...' : 
             !selectedFile ? 'Select a file to connect' : 'Upload & Connect' 
           }}
-        </button>
+        </Button>
       </div>
 
       <!-- File Search Results -->
       <div v-if="fileSearchResults.length > 0" class="search-results">
         <div class="file-connected-header">
           <h3>Connected Files</h3>
-          <button 
-            class="delete-button" 
+          <Button 
             @click="deleteAllFileSearchEntry()"
             title="Delete all file search entries"
-          >
-            <span v-if="fileSearchAllDeleteLoading" class="loading-spinner"></span>
-            <i class="pi pi-trash" v-else></i>
-          </button>
+            icon="pi pi-trash"
+            iconOnly
+            variant="error-outline"
+            size="small"
+            :loading="fileSearchAllDeleteLoading"
+            :disabled="fileSearchAllDeleteLoading"
+          />
         </div>
         <div class="file-list">
           <div v-for="file in fileSearchResults" :key="file.id" class="file-item">
@@ -298,15 +294,17 @@ defineExpose({ openModal })
                 <a v-if="file.url" target="_blank" :href="file.url" download>Download</a>
               </div>
             </div>
-            <button 
+            <Button 
               v-if="file.id"
-              class="delete-button" 
+              iconOnly
+              variant="error-outline"
+              size="small"
+              icon="pi pi-trash"
               @click="deleteFileSearchEntry(file.id, file.file_name)"
               title="Delete this file search entry"
-            >
-              <span v-if="fileSearchDeleteLoading && fileSearchSelectedId == file.id" class="loading-spinner"></span>
-              <i class="pi pi-trash" v-else></i>
-            </button>
+              :loading="fileSearchDeleteLoading && fileSearchSelectedId == file.id"
+              :disabled="fileSearchDeleteLoading && fileSearchSelectedId == file.id"
+            />
           </div>
         </div>
       </div>
@@ -334,50 +332,6 @@ defineExpose({ openModal })
 .search-actions {
   display: flex;
   justify-content: center;
-}
-
-.connect-button {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  min-width: 200px;
-  justify-content: center;
-}
-
-.connect-button:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 163, 255, 0.3);
-}
-
-.connect-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.loading-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid transparent;
-  border-top: 2px solid currentColor;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .search-results {
@@ -411,10 +365,6 @@ defineExpose({ openModal })
 .file-item:hover {
   border-color: rgba(0, 163, 255, 0.3);
   background: rgba(0, 163, 255, 0.05);
-}
-
-.file-item:hover .delete-button {
-  opacity: 1;
 }
 
 .file-icon {
@@ -593,32 +543,6 @@ defineExpose({ openModal })
   font-weight: 400;
   color: var(--color-error);
   font-size: 0.75rem;
-}
-
-/* Delete button styles */
-.delete-button {
-  background: transparent;
-  border: none;
-  padding: var(--space-2);
-  color: var(--color-text-danger);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: all var(--transition-normal);
-  opacity: 0.7;
-}
-
-.delete-button:hover {
-  color: var(--color-error);
-  background: var(--color-bg-secondary);
-}
-
-.delete-button:active {
-  transform: scale(0.95);
-}
-
-.delete-button:focus {
-  outline: none;
-  box-shadow: none;
 }
 
 /* Mobile styles */

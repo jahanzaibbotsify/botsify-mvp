@@ -83,7 +83,7 @@ export const useAuthStore = defineStore('auth', () => {
       billing: 'monthly',
       features: [
         '5 AI Agents',
-        '$25/month/Additional Agent',
+        '$25/month for an additional agent',
         'Unlimited Users',
         'Integrate MCP',
         'Integrate Documents & Web Search',
@@ -341,7 +341,6 @@ export const useAuthStore = defineStore('auth', () => {
           setAuthData(authUser.access_token, authUser)
           return res.data;
         }).catch(error => {
-          console.log(error)
           setError(error?.response?.data?.error);
           return error.response;
         }).finally(() => {
@@ -398,8 +397,7 @@ export const useAuthStore = defineStore('auth', () => {
   const logout = async () => {
     setLoading(true)
     try {
-      await axiosInstance.post('v1/logout').then(response => {
-        console.log(response)
+      await axiosInstance.post('v1/logout').then(() => {
         removeAuthData();
         selectedAgent.value = null
         localStorage.removeItem('auth_remember')

@@ -4,6 +4,9 @@ import {useRouter} from 'vue-router'
 import {axiosInstance} from "@/utils/axiosInstance.ts"
 import {useBotStore} from "@/stores/botStore.ts";
 import UserMenu from "@/components/auth/UserMenu.vue";
+import Button from '@/components/ui/Button.vue';
+import Input from '@/components/ui/Input.vue';
+import { createResource } from "@/utils/caching.ts"
 
 const router = useRouter()
 
@@ -39,6 +42,17 @@ const listAgentsResponse = ref({
   limit_reached: true
 })
 
+// Create cached resource for agents
+const agentsResource = createResource(async (page: number = 1, query: string = '', tab: 'my' | 'shared') => {
+  const response = await axiosInstance.get('v1/list-agents', {
+    params: {
+      page: page,
+      query: query.trim() || undefined,
+      tab: tab
+    }
+  })
+  return response.data
+})
 
 /**
  * Fetch agents from API
@@ -55,17 +69,15 @@ const getAgents = async (page: number = 1, append: boolean = false): Promise<voi
   agentsError.value = null
 
   try {
-    const response = await axiosInstance.get('v1/list-agents', {
-      params: {
-        page: page,
-        query: searchQuery.value.trim() || undefined,
-        tab: activeTab.value === 'my-agents' ? 'my' : 'shared'
-      }
-    })
+    const responseData = await agentsResource.load(
+      page, 
+      searchQuery.value, 
+      activeTab.value === 'my-agents' ? 'my' : 'shared'
+    )
 
-    if (response.data && response.data.bots) {
-      const botsData = response.data.bots
-      listAgentsResponse.value = response.data;
+    if (responseData && responseData.bots) {
+      const botsData = responseData.bots
+      listAgentsResponse.value = responseData;
       // Update pagination info
       currentPage.value = botsData.current_page || page
       totalPages.value = botsData.last_page || 1
@@ -84,14 +96,14 @@ const getAgents = async (page: number = 1, append: boolean = false): Promise<voi
       }
     }
 
-    if (response.data && response.data.sharedBots) {
+    if (responseData && responseData.sharedBots) {
       // Add avatar to shared bots
-      sharedAgentsData.value = response.data.sharedBots
+      sharedAgentsData.value = responseData.sharedBots
     }
 
     // Store bot_users data
-    if (response.data && response.data.bot_users) {
-      botUsers.value = response.data.bot_users
+    if (responseData && responseData.bot_users) {
+      botUsers.value = responseData.bot_users
     }
 
   } catch (error: any) {
@@ -143,11 +155,11 @@ const performSearch = () => {
   }
 
   searchTimeout = setTimeout(() => {
-    if (activeTab.value === 'my-agents') {
+    // if (activeTab.value === 'my-agents') {
       currentPage.value = 1
       hasMoreAgents.value = false
       getAgents(1, false)
-    }
+    // }
   }, 500) // 500ms debounce
 }
 
@@ -186,14 +198,6 @@ const editAgentName = (agent: any) => {
 
   // Add keyboard event listener
   document.addEventListener('keydown', handleModalKeydown)
-
-  // Focus the input after modal opens
-  nextTick(() => {
-    if (agentNameInput.value) {
-      agentNameInput.value.focus()
-      agentNameInput.value.select()
-    }
-  })
 }
 
 /**
@@ -210,12 +214,8 @@ const cloneAgent = async (agent: any) => {
       // Show the message from API response
       const message = response.data.message || 'Agent cloned successfully!'
       window.$toast?.success(message)
-
-      // Log the cloned bot details
-      if (response.data.bot) {
-        console.log('Cloned bot details:', response.data.bot)
-      }
-
+      
+      agentsResource.invalidate();
       // Refresh the agents list to show the new cloned agent
       await getAgents(1, false)
     } else {
@@ -249,7 +249,10 @@ const deleteAgent = (agent: any) => {
         if (totalAgents.value > 0) {
           totalAgents.value--
         }
-        getAgents()
+        
+        // Invalidate cache after deletion
+        agentsResource.invalidate()
+        // No need to call getAgents() - we already updated local state
       } else {
         window.$toast?.error(response.data?.message || 'Failed to delete agent. Please try again.')
       }
@@ -294,7 +297,7 @@ const exportData = (agent: any) => {
   activeMenuId.value = null
 
   window.$confirm({
-    text: 'Please Confirm\nYour Agent Data will be exported and then will be sent you via email.',
+    text: 'Please confirm, your agent data will be exported and then will be sent you via email.',
     cancelButtonText: 'No',
     confirmButtonText: 'Yes'
   }, async () => {
@@ -390,6 +393,8 @@ const saveAgent = async () => {
         // Show success message
         window.$toast?.success('Agent name updated successfully!')
 
+        // Invalidate cache after update
+        agentsResource.invalidate()
         closeAgentModal()
       } else {
         window.$toast?.error(response.data?.message || 'Failed to update agent name. Please try again.')
@@ -406,6 +411,8 @@ const saveAgent = async () => {
           apikey: responseData.bot_api_key
         })
 
+        // Invalidate cache after creation
+        agentsResource.invalidate()
         // Refresh the agents list to show the new agent
         await getAgents(1, false)
 
@@ -435,17 +442,14 @@ const loadMoreAgents = async () => {
   isLoadingMore.value = true
 
   try {
-    const response = await axiosInstance.get('v1/list-agents', {
-      params: {
-        page: nextPage,
-        query: searchQuery.value.trim() || undefined,
-        client: true,
-        tab: activeTab.value === 'my-agents' ? 'my' : 'shared'
-      }
-    })
+    const responseData = await agentsResource.load(
+      nextPage, 
+      searchQuery.value, 
+      activeTab.value === 'my-agents' ? 'my' : 'shared'
+    )
 
-    if (response.data && response.data.bots && response.data.bots.data) {
-      const botsData = response.data.bots
+    if (responseData && responseData.bots && responseData.bots.data) {
+      const botsData = responseData.bots
 
       // Update pagination info
       currentPage.value = botsData.current_page || nextPage
@@ -459,8 +463,8 @@ const loadMoreAgents = async () => {
     }
 
     // Update bot_users if available
-    if (response.data && response.data.bot_users) {
-      botUsers.value = {...botUsers.value, ...response.data.bot_users}
+    if (responseData && responseData.bot_users) {
+      botUsers.value = {...botUsers.value, ...responseData.bot_users}
     }
 
   } catch (error: any) {
@@ -554,10 +558,6 @@ onUnmounted(() => {
       </div>
       
       <div class="hero-content">
-        <div class="hero-badge">
-          <i class="pi pi-users"></i>
-          <span>AI Agent Selection</span>
-        </div>
         <h1 class="hero-title">Choose Your AI Agent</h1>
         <p class="hero-subtitle">
           Select from our curated collection of specialized AI agents, each designed for specific tasks and industries
@@ -599,7 +599,7 @@ onUnmounted(() => {
                 v-model="searchQuery"
                 type="text"
                 class="search-input"
-                placeholder="Search agents by name, capability, or use case..."
+                placeholder="Search agents by name"
             />
             <button v-if="searchQuery" @click="searchQuery = ''" class="clear-search">
               <i class="pi pi-times"></i>
@@ -637,15 +637,14 @@ onUnmounted(() => {
                 class="create-agent-tooltip"
                 :class="{ 'disabled-tooltip': listAgentsResponse?.limit_reached }"
               >
-                <button 
+                <Button 
                   @click="createAgent" 
-                  class="create-agent-btn"
-                  :class="{ 'disabled': listAgentsResponse?.limit_reached }"
                   :disabled="listAgentsResponse?.limit_reached"
+                  icon="pi pi-plus"
+                  variant="primary"
                 >
-                  <i class="pi pi-plus"></i>
-                  <span>Create Agent</span>
-                </button>
+                  Create Agent
+                </Button>
                 <div v-if="listAgentsResponse?.limit_reached" class="tooltip">
                   Agent Limit Reached — Upgrade your plan to create more agents
                 </div>
@@ -656,8 +655,10 @@ onUnmounted(() => {
 
         <!-- Loading State -->
         <div v-if="isLoadingAgents" class="loading-state">
-          <div class="loading-spinner-large"></div>
-          <p>Loading agents...</p>
+          <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Loading agents...</p>
+          </div>
         </div>
 
         <!-- No Results State -->
@@ -824,12 +825,11 @@ onUnmounted(() => {
 
       <div class="modal-body">
         <div class="form-group">
-          <label for="agentName" class="form-label">Agent Name</label>
-          <input
+          <Input
+              label="Agent Name"
               id="agentName"
               v-model="agentNameValue"
               type="text"
-              class="form-input"
               :placeholder="modalMode === 'create' ? 'Enter a name for your new agent' : 'Enter a descriptive name for your agent'"
               @keyup.enter="saveAgent"
               @keyup.escape="closeAgentModal"
@@ -845,19 +845,18 @@ onUnmounted(() => {
       </div>
 
       <div class="modal-footer">
-        <button @click="closeAgentModal" class="btn cancel-btn" type="button">
+        <Button @click="closeAgentModal" variant="secondary" class="w-full">
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
             @click="saveAgent"
-            class="btn save-btn"
-            type="button"
+            class="w-full"
             :disabled="!agentNameValue.trim() || agentNameValue.trim().length < 2 || isSavingAgent"
+            variant="primary"
+            :loading="isSavingAgent"
         >
-          <span v-if="isSavingAgent" class="loading-spinner"></span>
-          <i v-else class="pi pi-check"></i>
-          <span>{{ isSavingAgent ? 'Saving...' : (modalMode === 'create' ? 'Create Agent' : 'Save Changes') }}</span>
-        </button>
+          {{ isSavingAgent ? 'Saving...' : (modalMode === 'create' ? 'Create Agent' : 'Save Changes') }}
+        </Button>
       </div>
     </div>
   </div>
@@ -965,21 +964,6 @@ onUnmounted(() => {
   margin: 0 auto;
 }
 
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 8px 20px;
-  border-radius: 50px;
-  color: #fff;
-  font-weight: 500;
-  font-size: 0.9rem;
-  margin-bottom: 1.5rem;
-  background: linear-gradient(45deg, #feda75, #d21efa, #d62976, #962fbf, #4f5bd5);
-  background-size: 600% 600%;
-  animation: gradientShift 6s ease infinite;
-}
-
 .hero-title {
   font-size: 3rem;
   font-weight: 700;
@@ -1033,39 +1017,6 @@ onUnmounted(() => {
   flex-direction: column;
   gap: var(--space-2);
   align-items: flex-end;
-}
-
-.create-agent-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  box-shadow: 0 2px 4px rgba(0, 163, 255, 0.2);
-}
-
-.create-agent-btn:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 163, 255, 0.3);
-}
-
-.create-agent-btn:disabled,
-.create-agent-btn.disabled {
-  background: var(--color-bg-hover);
-  color: var(--color-text-tertiary);
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-  border: 1px solid var(--color-border);
-  pointer-events: none; /* allow tooltip wrapper to receive hover */
 }
 
 /* Limit Status Badge */
@@ -1252,30 +1203,6 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-/* Loading State */
-.loading-state {
-  text-align: center;
-  padding: var(--space-8);
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-}
-
-.loading-spinner-large {
-  width: 48px;
-  height: 48px;
-  border: 3px solid var(--color-border);
-  border-radius: 50%;
-  border-top-color: var(--color-primary);
-  animation: spin 0.6s linear infinite;
-  margin: 0 auto var(--space-4);
-}
-
-.loading-state p {
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-  margin: 0;
-}
 
 /* Load More Section */
 .load-more-section {
@@ -1868,22 +1795,6 @@ onUnmounted(() => {
   cursor: not-allowed;
   transform: none;
 }
-
-.loading-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* Bottom CTA */
 .bottom-cta {
   background: white;
@@ -2345,11 +2256,6 @@ onUnmounted(() => {
 
   .create-agent-wrapper {
     width: 100%;
-  }
-
-  .create-agent-btn {
-    width: 100%;
-    justify-content: center;
   }
 
   .search-input {

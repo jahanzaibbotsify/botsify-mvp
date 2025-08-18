@@ -35,16 +35,12 @@ export class BotsifyApiService {
         timeout: 60000 // 60 seconds timeout for deployment
       });
 
-      console.log('Deploy AI Agent response:', response.data);
-
       return {
         success: true,
         message: 'AI Agent deployed successfully',
         data: response.data
       };
     } catch (error: any) {
-      console.error('Error deploying AI Agent:', error);
-
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to deploy AI Agent',
@@ -58,8 +54,6 @@ export class BotsifyApiService {
    */
   async saveMCPConfiguration(botId: string, configuration: MCPConfigurationFile): Promise<BotsifyResponse> {
     try {
-      console.log('Saving MCP configuration for bot:', botId);
-      
       const response = await axiosInstance.post(`/bots/${botId}/mcp-configuration`, {
         botId,
         configuration,
@@ -68,16 +62,12 @@ export class BotsifyApiService {
         timeout: 30000 // 30 seconds timeout
       });
 
-      console.log('Save MCP configuration response:', response.data);
-
       return {
         success: true,
         message: 'MCP configuration saved successfully',
         data: response.data
       };
     } catch (error: any) {
-      console.error('Error saving MCP configuration:', error);
-
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to save MCP configuration',
@@ -91,13 +81,9 @@ export class BotsifyApiService {
    */
   async getMCPConfiguration(botId: string): Promise<BotsifyResponse> {
     try {
-      console.log('Getting MCP configuration for bot:', botId);
-      
       const response = await axiosInstance.get(`/bots/${botId}/mcp-configuration`, {
         timeout: 30000 // 30 seconds timeout
       });
-
-      console.log('Get MCP configuration response:', response.data);
 
       return {
         success: true,
@@ -105,8 +91,6 @@ export class BotsifyApiService {
         data: response.data
       };
     } catch (error: any) {
-      console.error('Error getting MCP configuration:', error);
-
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to get MCP configuration',
@@ -120,13 +104,9 @@ export class BotsifyApiService {
    */
   async deleteMCPConfiguration(botId: string): Promise<BotsifyResponse> {
     try {
-      console.log('Deleting MCP configuration for bot:', botId);
-      
       const response = await axiosInstance.delete(`/bots/${botId}/mcp-configuration`, {
         timeout: 30000 // 30 seconds timeout
       });
-
-      console.log('Delete MCP configuration response:', response.data);
 
       return {
         success: true,
@@ -134,8 +114,6 @@ export class BotsifyApiService {
         data: response.data
       };
     } catch (error: any) {
-      console.error('Error deleting MCP configuration:', error);
-
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to delete MCP configuration',
@@ -232,8 +210,6 @@ export class BotsifyApiService {
     }
 
     try {
-      console.log('🔍 Validating MCP connection for server:', serverName);
-
       // For built-in servers, we have predefined validation endpoints
       let validationEndpoint = this.getMCPValidationEndpoint(serverId, connectionUrl);
 
@@ -244,8 +220,6 @@ export class BotsifyApiService {
         }
         throw new Error('No validation endpoint available for this server');
       }
-
-      console.log('🌐 Pinging MCP server endpoint:', validationEndpoint);
 
       // Prepare headers with authentication
       const headers: Record<string, string> = {};
@@ -268,18 +242,12 @@ export class BotsifyApiService {
         headers['Authorization'] = this.getAuthHeader(serverId, apiKey.trim());
       }
 
-      console.log('🌐 Final validation URL:', finalValidationUrl);
-      console.log('🔑 Headers:', headers);
-
       // For other servers, use GET method
       const response = await axiosInstance.get(finalValidationUrl, {
         headers,
         timeout: 10000, // 10 seconds timeout for real server ping
         validateStatus: (status: any) => status < 500 // Accept all responses except server errors
       });
-
-      console.log('✅ MCP server responded with status:', response.status);
-      console.log('📄 Response data:', response.data);
 
       // Check if the response indicates a successful connection
       if (response.status === 200) {
@@ -343,7 +311,6 @@ export class BotsifyApiService {
         // Generic network error - might be CORS related
         if (serverId === 'weather') {
           // For weather APIs, fall back to format validation due to CORS restrictions
-          console.log('🌤️ Weather API CORS issue detected, falling back to format validation');
           return await this.validateSpecialMCPServer('weather', apiKey);
         }
         return {
@@ -373,7 +340,6 @@ export class BotsifyApiService {
 
       // Special fallback for weather APIs - if any other error occurs, try format validation
       if (serverId === 'weather' && apiKey) {
-        console.log('🌤️ Weather API validation failed, falling back to format validation');
         return await this.validateSpecialMCPServer('weather', apiKey);
       }
 
@@ -390,8 +356,7 @@ export class BotsifyApiService {
    */
   async validateShopifyConnection(serverName: string, apiKey?: string, connectionUrl?: string, authMethod?: string): Promise<BotsifyResponse> {
     try {
-      console.log('🛒 Validating Shopify connection through backend:', serverName);
-
+      console.log(serverName, "serverName")
       // Extract domain from connection URL
       let domain = '';
       if (connectionUrl) {
@@ -422,8 +387,6 @@ export class BotsifyApiService {
       }, {
         timeout: 30000 // 30 seconds timeout
       });
-
-      console.log('✅ Backend Shopify validation response:', response.data);
 
       if (response.data.success) {
         return {
@@ -532,7 +495,6 @@ export class BotsifyApiService {
     switch (serverId) {
       case 'postgres':
         // For PostgreSQL, we simulate validation since we can't directly test DB connections in browser
-        console.log('🐘 PostgreSQL validation - simulating connection test');
         return {
           success: true,
           message: 'PostgreSQL connection validated (connection details will be tested during actual usage)',
@@ -541,7 +503,6 @@ export class BotsifyApiService {
 
       case 'filesystem':
         // Filesystem access is local - always valid but access depends on permissions
-        console.log('💾 Filesystem validation - local access confirmed');
         return {
           success: true,
           message: 'Filesystem access validated (local file system operations available)',
@@ -550,7 +511,6 @@ export class BotsifyApiService {
 
       case 'email':
         // SMTP validation would require actual SMTP connection, simulate for now
-        console.log('📧 Email/SMTP validation - simulating connection test');
         return {
           success: true,
           message: 'Email/SMTP configuration validated (SMTP connection will be tested during actual usage)',
@@ -559,7 +519,6 @@ export class BotsifyApiService {
 
       case 'weather':
         // Weather API validation with fallback for CORS issues
-        console.log('🌤️ Weather API validation - providing guidance for API key format');
 
         if (!apiKey || !apiKey.trim()) {
           return {
@@ -630,13 +589,9 @@ export class BotsifyApiService {
    */
   async sendMCPConfigurationJSON(mcpPayload: any): Promise<BotsifyResponse> {
     try {
-      console.log('MCP payload structure:', mcpPayload);
-      
       const response = await axiosInstance.post('/mcp/configuration', mcpPayload, {
         timeout: 30000 // 30 seconds timeout
       });
-
-      console.log('MCP configuration JSON sent successfully:', response.data);
 
       return {
         success: true,
@@ -670,7 +625,6 @@ export class BotsifyApiService {
           }
       );
 
-      console.log('File search files retrieved successfully:', response.data);
       return {
         success: true,
         message: 'File search files retrieved successfully',
@@ -700,7 +654,6 @@ export class BotsifyApiService {
         formData
       );
 
-      console.log('File uploaded for search successfully:', response.data);
       return {
         success: true,
         message: 'File uploaded for search successfully',
@@ -720,13 +673,10 @@ export class BotsifyApiService {
    */
   async deleteFileSearch(id: string): Promise<BotsifyResponse> {
     try {
-      console.log('Deleting file from search:', id);
-      
       const response = await axiosInstance.delete(
         `/file-search/${id}?apikey=${useBotStore().apiKey}`
       );
 
-      console.log('File deleted from search successfully:', response.data);
       return {
         success: true,
         message: 'File deleted from search successfully',
@@ -746,8 +696,6 @@ export class BotsifyApiService {
    */
   async deleteAllFileSearch(ids: string[]): Promise<BotsifyResponse> {
     try {
-      console.log('Deleting file from search:', ids);
-      
       const response = await axiosInstance.delete(
         `/file-search`,
         { 
@@ -758,7 +706,6 @@ export class BotsifyApiService {
         }
       );
 
-      console.log('File deleted from search successfully:', response.data);
       return {
         success: true,
         message: 'File deleted from search successfully',
@@ -778,7 +725,6 @@ export class BotsifyApiService {
    */
   async getWebSearch(): Promise<BotsifyResponse> {
     try {
-      console.log('Getting web search URLs for bot assistant:', useBotStore().apiKey);
       // const response = await axios.get(
       //   `${BOTSIFY_BASE_URL}/web-search/${botAssistantId}`,
       //   { headers: this.getBotsifyHeaders() }
@@ -788,7 +734,6 @@ export class BotsifyApiService {
         `/web-search?apikey=${useBotStore().apiKey}`
       );
 
-      console.log('Web search URLs retrieved successfully:', response.data);
       return {
         success: true,
         message: 'Web search URLs retrieved successfully',
@@ -818,7 +763,6 @@ export class BotsifyApiService {
         }
       );
 
-      console.log('Web URL added successfully:', response.data);
       return {
         success: true,
         message: 'Web URL added successfully',
@@ -838,8 +782,6 @@ export class BotsifyApiService {
    */
   async deleteAllWebSearch(ids: string[]): Promise<BotsifyResponse> {
     try {
-     console.log("passed ids:", ids);
-     
       const response = await axiosInstance.delete(
         `/web-search`, 
         { 
@@ -849,7 +791,6 @@ export class BotsifyApiService {
           },
       });
 
-      console.log('Web URL deleted successfully:', response.data);
       return {
         success: true,
         message: 'All Web URLs deleted successfully',
@@ -869,8 +810,6 @@ export class BotsifyApiService {
    */
   async uploadFileNew(file: File): Promise<BotsifyResponse> {
     try {
-      console.log('Uploading file using TemplatesController endpoint:', file.name, file.type, file.size);
-
       // Validate file type (images, videos, and documents)
       const supportedTypes = [
         // Images
@@ -921,7 +860,6 @@ export class BotsifyApiService {
         formData
       );
 
-      console.log('File uploaded successfully using TemplatesController:', response.data);
       return {
         success: true,
         message: 'File uploaded successfully',
@@ -941,8 +879,6 @@ export class BotsifyApiService {
    */
   async uploadMultipleFilesNew(files: File[]): Promise<BotsifyResponse> {
     try {
-      console.log('Uploading multiple files using new endpoint:', files.length);
-
       const uploadResults: any[] = [];
       const errors: string[] = [];
 
@@ -1055,7 +991,6 @@ export class BotsifyApiService {
       });
       
       if (response.data.status === 'success') {
-        console.log('AI Prompt version deleted: ', response.data);
         return {
           success: true,
           message: response.data.message,
@@ -1080,7 +1015,6 @@ export class BotsifyApiService {
   async manageBilling() {
     try {
       const {apiKey, user} = useBotStore();
-      console.log(user, apiKey)
       if(!user?.id){
         return {
           success: false,

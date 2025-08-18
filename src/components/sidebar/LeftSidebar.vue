@@ -10,6 +10,8 @@ import CalendlyModal from '@/components/modal/CalendlyModal.vue';
 import { botsifyApi } from '@/services/botsifyApi'
 import BillingModal from '@/components/modal/BillingModal.vue';
 import { getWebUrl } from '@/utils';
+import { BillingData } from '@/types';
+import { showZen } from '@/utils/zendesk';
 
 
 const chatStore = useChatStore();
@@ -130,11 +132,13 @@ const navLinks = computed(() => {
       url: 'https://botsify.zendesk.com/hc/en-us',
       icon: 'pi pi-book'
     },
-    {
-      name: 'Book a Meeting',
-      action: 'bookMeeting',
-      icon: 'pi pi-calendar'
-    },
+  ...(!roleStore.isLiveChatAgent
+    ? [{
+        name: 'Book a Meeting',
+        action: 'bookMeeting',
+        icon: 'pi pi-calendar'
+      }]
+    : []),
     {
       name: 'Support',
       action: 'showZen',
@@ -177,7 +181,6 @@ const navigateToPage = (pageId: string) => {
   if (roleStore.isLiveChatAgent) {
     // Live chat agents can only access conversation page
     if (pageId.startsWith('agent/') || pageId === 'users' || pageId === 'agent') {
-      console.log('🔄 Live chat agent redirected to conversation page');
       router.push('/conversation');
       return;
     }
@@ -194,20 +197,10 @@ const closeDropdown = () => {
   showDropdown.value = false;
 };
 
-const showZen = () => {
-  window.showZen()
-  closeDropdown();
-}
-
 // Function to open the BookMeeting modal
 const openBookMeetingModal = () => {
   bookMeetingModalRef.value?.openModal()
   closeDropdown();
-  if (bookMeetingModalRef.value) {
-    console.log('📦 bookMeetingModalRef exists')
-  } else {
-    console.warn('❌ bookMeetingModalRef is null')
-  }
 };
 
 const handleCalendly = () => {
@@ -223,56 +216,20 @@ const closeBillingModal = () => {
 }
 
 const billingLoading = ref(false)
-
-interface BillingData {
-  charges: {
-    object: string
-    data: any[]
-    has_more: boolean
-    url: string
-  }
-  stripe_subscription: {
-    id: number
-    user_id: number
-    name: string
-    stripe_id: string
-    stripe_plan: string
-    quantity: number
-    status: string
-    trial_ends_at: string | null
-    ends_at: string | null
-    next_charge_date: string | null
-    created_at: string
-    updated_at: string
-    paddle_cancel_url: string | null
-    paddle_update_url: string | null
-    paddle_checkout_id: string | null
-    subscription_plan_id: string | null
-    whitelabel_client: number
-  }
-}
-
 const billingData = ref<BillingData | null>(null)
 
 const handleManageBilling = async () => {
   billingLoading.value = true
   try {
-    console.log('Calling manageBilling API...')
     const res = await botsifyApi.manageBilling()
-    console.log('manageBilling API response:', res)
-    console.log('Response type:', typeof res)
-    console.log('Response keys:', res ? Object.keys(res) : 'null')
     
     if (res && res.charges && res.stripe_subscription) {
-      console.log('Found charges and subscription, opening modal with data')
       // Store the billing data and show modal
       billingData.value = res
       showBillingModal.value = true
     } else if(res && res.url) {
-      console.log('Found URL, opening external link:', res.url)
       window.open(res.url, '_blank')
     } else {
-      console.log('No billing data found, opening modal with empty data')
       // If no billing data, open the billing modal with empty data
       billingData.value = null
       showBillingModal.value = true
@@ -297,6 +254,7 @@ const openExternalLink = (url: string) => {
 const handleItemClick = (item: any) => {
   if (item.action === 'showZen') {
     showZen();
+    closeDropdown();
   } else if (item.action === 'bookMeeting') {
     openBookMeetingModal();
   } else if (item.url) {
@@ -338,7 +296,6 @@ const openPartnerPortal = () => {
       <div class="header-content">
         <div class="app-title-container">
           <!-- Whitelabel or Botsify Logo with link -->
-          <a :href="whitelabelStore.isWhitelabelClient && whitelabelStore.whitelabelData?.domain ? `https://${whitelabelStore.whitelabelData.domain}` : 'https://botsify.com'" target="_blank" class="logo-link">
             <img
               v-if="whitelabelStore.isWhitelabelClient && whitelabelStore.whitelabelData?.logo"
               :src="whitelabelStore.whitelabelData.logo"
@@ -351,7 +308,6 @@ const openPartnerPortal = () => {
               alt="Botsify"
               class="logo-icon"
             />
-          </a>
         </div>
 
         <div class="sidebar-actions">
@@ -430,6 +386,13 @@ const openPartnerPortal = () => {
               <template v-else>Manage Billing</template>
             </span>
             <span class="pricing-star">★</span>
+          </div>
+        </button>
+    </div>
+    <div v-else-if="roleStore.isLiveChatAgent" class="sidebar-pricing">
+        <button class="pricing-button" @click="navigateToPage('select-agent')">
+          <div class="button-content">
+            <span class="pricing-text">Manage Agents</span>
           </div>
         </button>
     </div>
@@ -579,17 +542,6 @@ const openPartnerPortal = () => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-}
-
-.logo-link {
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-  transition: all var(--transition-normal);
-}
-
-.logo-link:hover {
-  opacity: 0.9;
 }
 
 .logo-icon {
