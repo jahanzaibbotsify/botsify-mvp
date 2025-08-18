@@ -304,7 +304,7 @@ defineExpose({ openModal, closeModal, openModalWithData });
 <template>
   <PublishModalLayout
     ref="modalRef"
-    :title="isEditMode ? 'Edit sms template' : 'SMS template'"
+    :title="isEditMode ? 'Edit SMS template' : 'SMS template'"
     icon="/bots/sms.png"
     :tabs="tabs"
     max-width="1000px"
