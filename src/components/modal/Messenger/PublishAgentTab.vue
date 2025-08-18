@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
-import { useBotStore } from "@/stores/botStore";
 import Button from "@/components/ui/Button.vue";
 import { APP_URL } from "@/utils/config";
 import type { FacebookPage, FacebookPageForTemplate } from "@/types";
@@ -26,8 +25,6 @@ const emit = defineEmits<{
 }>();
 
 const publishStore = usePublishStore();
-const botStore = useBotStore();
-
 
 // Computed properties to sync with store state
 const storePages = computed(() => publishStore.facebookPages.data);
@@ -350,8 +347,14 @@ const openAuthPopup = (url: string, action: string) => {
           
           <div class="page-actions">
             <div class="action-buttons">
+              <span 
+                v-if="!!page.botName && !page.is_bot_page"
+                class="connected-text"
+              >
+                Connected to {{ page.botName }}
+              </span>
               <Button 
-                v-if="!page.is_bot_page"
+                v-else-if="!page.is_bot_page"
                 variant="primary"
                 size="small"
                 :loading="connectId == page.id"
@@ -362,7 +365,7 @@ const openAuthPopup = (url: string, action: string) => {
                 Connect
               </Button>
               
-              <div v-else-if="page.botName === botStore.botName" class="connected-actions">
+              <div v-else-if="page.is_bot_page" class="connected-actions">
                 <Button 
                   variant="success"
                   size="small"
@@ -386,12 +389,6 @@ const openAuthPopup = (url: string, action: string) => {
                 </Button>
               </div>
               
-              <span 
-                v-else
-                class="connected-text"
-              >
-                Connected to {{ page.botName }}
-              </span>
             </div>
             
             <Button 
