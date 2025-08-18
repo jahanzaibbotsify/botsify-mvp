@@ -138,6 +138,11 @@ const handleLogout = async () => {
   background-color: var(--color-bg-hover);
 }
 
+.user-button:focus,
+.user-button:focus-visible {
+  outline: none;
+}
+
 .avatar-image {
   width: 100%;
   height: 100%;

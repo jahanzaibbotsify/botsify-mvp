@@ -137,7 +137,7 @@ const searchIcon = computed(() => {
 
 .required-mark {
   color: var(--color-error);
-  margin-left: var(--space-1);
+  /* margin-left: var(--space-1); */
 }
 
 .input-container {

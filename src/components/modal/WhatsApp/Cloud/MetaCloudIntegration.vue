@@ -131,6 +131,8 @@ const completeIntegration = async () => {
     
     if (result.success) {
       window.$toast?.success('Meta Cloud integration completed successfully!');
+      publishStore.whatsappConfig.invalidate();
+      publishStore.publishStatus.invalidate();
       props.onComplete();
     } else {
       window.$toast?.error('Failed to save Meta Cloud settings');
