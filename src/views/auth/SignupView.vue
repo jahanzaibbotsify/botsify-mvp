@@ -261,7 +261,7 @@ const clearFieldError = (field: string) => {
               :disabled="authStore.isLoading"
               v-model="form.phone_number"
               mode="international"
-              class="form-input-phone"
+              class="form-input form-input-tel"
               :dropdownOptions="{
                 showFlags: true,
                 showDialCodeInSelection: true,
@@ -512,15 +512,9 @@ const clearFieldError = (field: string) => {
   transition: all var(--transition-normal);
 }
 
-.form-input-phone {
-  width: 100%;
-  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-5) + var(--space-1));
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background-color: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-  transition: all var(--transition-normal);
+.form-input-tel{
+  max-height: 44px;
+  padding-left: calc(var(--space-5) + var(--space-1));
 }
 
 .form-input:focus {
