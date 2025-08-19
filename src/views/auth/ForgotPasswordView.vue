@@ -107,7 +107,7 @@ const goBack = () => {
         <!-- Submit Button -->
         <Button
           type="submit"
-          class="submit-button primary"
+          class="w-full"
           :disabled="!isFormValid || isLoading"
           :loading="isLoading"
           icon="pi pi-send"
