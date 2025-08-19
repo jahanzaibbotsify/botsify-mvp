@@ -287,7 +287,7 @@ const addServer = async (allowedTools: string[]) => {
 
   if (props?.server && props.server?.id === 'google-sheet') {
     if (description.value?.trim()) {
-      description.value += ' This is the Google Sheet URL you must use for all task entries and modifications. Always add or update tasks only in this sheet';
+      description.value += ' This is the Google Sheet URL you must use for all task entries and modifications. Always add or update tasks only in this sheet, and make sure to append new records at the end of the sheet.';
     }
   }
 
