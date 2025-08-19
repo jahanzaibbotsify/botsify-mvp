@@ -439,7 +439,7 @@ const toggleAllTools = (event: Event) => {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #18181b;
+  background: var(--color-primary);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -449,9 +449,5 @@ const toggleAllTools = (event: Event) => {
   font-weight: 500;
   cursor: pointer;
   transition: background 0.2s;
-}
-
-.add-btn:hover {
-  background: #222226;
 }
 </style>

@@ -68,6 +68,13 @@ const checkAndPreFillConnectedServer = () => {
     authType.value = connectedServer.setting?.auth_method || props.server?.authMethod || 'none';
     serverUrl.value = connectedServer.setting?.server_url || '';
 
+    if (props?.server && props.server?.id === 'google-sheet' && description.value?.trim()) {
+      const match = description.value.match(/https:\/\/docs\.google\.com\/spreadsheets\/[^\s]+/);
+      if (match) {
+        description.value = match[0];
+      }
+    }
+
     /**
      * For custom servers, also pre-fill URL and label
      */
@@ -277,6 +284,13 @@ const addServer = async (allowedTools: string[]) => {
   } else {
     url = props.server ? props.server.server_url : serverUrl.value;
   }
+
+  if (props?.server && props.server?.id === 'google-sheet') {
+    if (description.value?.trim()) {
+      description.value += ' This is the Google Sheet URL you must use for all task entries and modifications. Always add or update tasks only in this sheet';
+    }
+  }
+
   const mcpPayload = {
     settings: {
       apikey: apiKey.value,
@@ -401,7 +415,7 @@ onMounted(() => {
           </div>
         </div>
         <div class="pt-20">
-          <input type="text" v-model="description" id="description" placeholder="Description (optional)">
+          <input type="text" v-model="description" id="description" :placeholder="server?.id === 'google-sheet' ? 'Google Sheet URL' : 'Description (optional)'">
         </div>
         <div class="auth-select-group pt-20" v-if="isCustom">
           <label class="auth-label" for="authType">
@@ -425,7 +439,6 @@ onMounted(() => {
           </span>
           </div>
         </div>
-        -->
         <div class="pt-20" v-if="server && server.id === 'google-sheet'">
           <input type="file" v-on:change="handleFileChange">
           <div class="header-container pt-5" style="font-size: 11px; text-align: justify; margin: auto;">Hint: Upload
@@ -649,7 +662,7 @@ input {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #18181b;
+  background: var(--color-primary);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -659,10 +672,6 @@ input {
   font-weight: 500;
   cursor: pointer;
   transition: background 0.2s;
-}
-
-.connect-btn:hover {
-  background: #222226;
 }
 
 .icon-left {
