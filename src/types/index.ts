@@ -25,6 +25,7 @@ export interface PromptVersion {
   name: string;
   content: string;
   updatedAt: Date;
+  createdAt: Date;
   version: number;
   isActive: boolean;
 }

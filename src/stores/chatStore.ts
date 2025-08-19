@@ -73,6 +73,7 @@ export const useChatStore = defineStore('chat', () => {
         name: ver.name || 'version-1',
         content: prompt,
         updatedAt: new Date(ver.updated_at || Date.now()),
+        createdAt: new Date(ver.created_at || Date.now()),
         version: Date.now(),
         isActive: ver.is_active || false
       };
@@ -313,6 +314,7 @@ export const useChatStore = defineStore('chat', () => {
       name: createAiPromptVersionName(),
       content,
       updatedAt: new Date(),
+      createdAt: new Date(),
       version: Date.now(),
       isActive
     };

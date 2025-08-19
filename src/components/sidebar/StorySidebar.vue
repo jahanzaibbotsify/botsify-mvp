@@ -65,7 +65,8 @@ watch(() => parsedStoryContent.value.length, () => {
 
 const sortedVersions = computed(() => {
   if (!story.value?.versions) return [];
-  return [...story.value.versions].sort((a, b) => b.version - a.version);
+  // return [...story.value.versions].sort((a, b) => b.version - a.version);
+  return story.value.versions;
 });
 
 const formattedLastUpdate = computed(() => {
