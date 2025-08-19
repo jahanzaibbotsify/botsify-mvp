@@ -30,7 +30,6 @@ const isLoadingMore = ref(false)
 const agentsError = ref<string | null>(null)
 const agentsData = ref<object[]>([])
 const sharedAgentsData = ref<object[]>([])
-const botUsers = ref<Record<string, number>>({})
 
 // Pagination state
 const currentPage = ref(1)
@@ -99,11 +98,6 @@ const getAgents = async (page: number = 1, append: boolean = false): Promise<voi
     if (responseData && responseData.sharedBots) {
       // Add avatar to shared bots
       sharedAgentsData.value = responseData.sharedBots
-    }
-
-    // Store bot_users data
-    if (responseData && responseData.bot_users) {
-      botUsers.value = responseData.bot_users
     }
 
   } catch (error: any) {
@@ -462,11 +456,6 @@ const loadMoreAgents = async () => {
       agentsData.value = [...agentsData.value, ...botsData.data]
     }
 
-    // Update bot_users if available
-    if (responseData && responseData.bot_users) {
-      botUsers.value = {...botUsers.value, ...responseData.bot_users}
-    }
-
   } catch (error: any) {
     console.error('Failed to load more agents:', error)
     window.$toast?.error('Failed to load more agents. Please try again.')
@@ -785,7 +774,7 @@ onUnmounted(() => {
                     <span class="badge-text">{{ ch.label }}</span>
                   </span>
                 </div>
-                  <p class="agent-users">{{ botUsers[agent.id] !== undefined ? botUsers[agent.id] : 0 }} users</p>
+                  <p class="agent-users">{{ agent.users_count }} users</p>
                 </div>
                 
                 <!-- Status Badge - Moved to bottom -->
