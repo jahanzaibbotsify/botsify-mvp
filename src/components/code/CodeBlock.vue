@@ -100,7 +100,6 @@ const copyCode = () => {
 }
 
 code {
-  font-family: 'SF Mono', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   font-size: 0.875rem;
   padding: var(--space-3);
   display: block;

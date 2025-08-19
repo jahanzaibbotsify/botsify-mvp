@@ -241,7 +241,6 @@ onUnmounted(() => {
   border: none;
   background: transparent;
   padding: var(--space-3);
-  font-family: inherit;
   font-size: 14px;
   color: var(--color-text-primary);
   resize: vertical;

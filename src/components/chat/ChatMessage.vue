@@ -186,7 +186,6 @@ onMounted(() => {
 
 .content {
   margin-bottom: 0;
-  font-family: "Inter", system-ui, sans-serif;
   font-weight: 300;
 }
 

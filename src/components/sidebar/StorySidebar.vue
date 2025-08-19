@@ -65,7 +65,8 @@ watch(() => parsedStoryContent.value.length, () => {
 
 const sortedVersions = computed(() => {
   if (!story.value?.versions) return [];
-  return [...story.value.versions].sort((a, b) => b.version - a.version);
+  // return [...story.value.versions].sort((a, b) => b.version - a.version);
+  return story.value.versions;
 });
 
 const formattedLastUpdate = computed(() => {
@@ -536,7 +537,6 @@ defineExpose({
   border: none;
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
-  font-family: var(--font-mono);
   font-size: 0.875rem;
   line-height: 1.5;
   resize: none;
@@ -849,7 +849,6 @@ defineExpose({
   background-color: var(--color-bg-tertiary);
   padding: 0.125rem 0.25rem;
   border-radius: var(--radius-sm);
-  font-family: var(--font-mono);
   font-size: 0.875rem;
 }
 

@@ -194,7 +194,6 @@ defineExpose({ openModal, closeModal });
 
 .json-code {
   margin: 0;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 14px;
   line-height: 1.5;
   color: var(--color-text-primary);

@@ -349,7 +349,7 @@ onMounted(async () => {
       <div class="verification-footer">
         <button @click="goBack" type="button" class="back-link">
           <i class="pi pi-arrow-left"></i>
-          <span>Back to Sign Up</span>
+          <span>Back to Sign up</span>
         </button>
         <button @click="goToLogin" type="button" class="login-link">
           <i class="pi pi-sign-in"></i>

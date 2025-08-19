@@ -1991,7 +1991,6 @@ onUnmounted(() => {
 }
 
 .modal-title {
-  font-family: var(--font-heading);
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--color-heading);
@@ -2032,7 +2031,6 @@ onUnmounted(() => {
 .form-label {
   display: block;
   margin-bottom: var(--space-3);
-  font-family: var(--font-subheading);
   font-weight: 500;
   color: var(--color-text-primary);
   font-size: 0.875rem;
@@ -2045,7 +2043,6 @@ onUnmounted(() => {
   border: 2px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: 1rem;
-  font-family: inherit;
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
   transition: all var(--transition-normal);
@@ -2070,7 +2067,6 @@ onUnmounted(() => {
   font-size: 0.75rem;
   color: var(--color-text-tertiary);
   margin-top: var(--space-2);
-  font-family: var(--font-subheading);
   transition: color var(--transition-normal);
 }
 
@@ -2098,7 +2094,6 @@ onUnmounted(() => {
   align-items: center;
   gap: var(--space-2);
   border: none;
-  font-family: var(--font-subheading);
   line-height: 1.4;
   min-width: 80px;
   justify-content: center;

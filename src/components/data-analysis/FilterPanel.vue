@@ -225,7 +225,6 @@ const toggleCollapse = () => {
   border-radius: var(--radius-md);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
-  font-family: inherit;
   font-size: 0.875rem;
   transition: border-color var(--transition-normal);
 }

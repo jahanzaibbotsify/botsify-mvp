@@ -12,7 +12,7 @@ export const formatTime = (timestamp: string) => {
   return moment.utc(timestamp).fromNow(); // e.g. "2 hours ago"
 };
 
-export const formatDate = (timestamp: string) => {
+export const formatDate = (timestamp: string | Date) => {
   // Format to a fixed date in UTC, ignoring time
   return moment.utc(timestamp).format('MMM DD YYYY'); // e.g. "2025-08-13"
 };

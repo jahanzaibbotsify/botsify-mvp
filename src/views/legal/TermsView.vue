@@ -325,7 +325,6 @@ onMounted(() => {
 }
 
 .agreement-notice h3 {
-  font-family: var(--font-subheading);
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--color-error);
@@ -354,7 +353,6 @@ onMounted(() => {
 }
 
 .terms-section h2 {
-  font-family: var(--font-heading);
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--color-heading);
@@ -364,7 +362,6 @@ onMounted(() => {
 }
 
 .terms-section h3 {
-  font-family: var(--font-subheading);
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--color-text-primary);

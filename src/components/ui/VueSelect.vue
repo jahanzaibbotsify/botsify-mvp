@@ -129,7 +129,6 @@ const handleChange = (value: any) => {
 }
 
 .vue-select-container:deep(.vue3-select-component) {
-  font-family: inherit;
   font-size: inherit;
   line-height: 1.5;
 }

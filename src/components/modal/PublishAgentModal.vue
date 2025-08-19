@@ -6,6 +6,7 @@ import { ref, defineAsyncComponent, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 import { botsifyApi } from "@/services/botsifyApi";
 import { useChatStore } from "@/stores/chatStore";
+import { formatDate } from "@/utils";
 
 // Change from async to direct import for WhatsAppModal
 const WhatsAppModal = defineAsyncComponent({
@@ -150,7 +151,6 @@ const handleDeploy = async () => {
   
   // Set deploying state
   isDeploying.value = true;
-  
   try {
     const result = await botsifyApi.deployAiAgent(
       chatStore.activeAiPromptVersion?.version_id ?? parseInt(chatStore.activeAiPromptVersion?.id ?? '0'),
@@ -200,15 +200,18 @@ defineExpose({ openModal, closeModal });
           <p>Are you sure you want to deploy changes?</p>
           <small>This will deploy your AI Agent to connected platforms</small>
         </div>
-        <Button 
-          variant="success" 
-          @click="handleDeploy" 
-          icon="pi pi-play"
-          :disabled="isDeploying"
-          :loading="isDeploying"
-        >
-          {{ isDeploying ? 'Deploying...' : 'Deploy agent' }}
-        </Button>
+        <div class="confirmation-actions">
+          <Button 
+            variant="success" 
+            @click="handleDeploy" 
+            icon="pi pi-play"
+            :disabled="isDeploying"
+            :loading="isDeploying"
+          >
+            {{ isDeploying ? 'Deploying...' : 'Deploy agent' }}
+          </Button>
+          <p v-if="chatStore.activeAiPromptVersion?.createdAt">Deployed: {{ formatDate(chatStore.activeAiPromptVersion.createdAt) }}</p>
+        </div>
       </div>
     </div>
     
@@ -365,6 +368,18 @@ defineExpose({ openModal, closeModal });
   font-size: 15px;
   font-weight: 500;
   line-height: 1.4;
+}
+
+.confirmation-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+}
+
+.confirmation-actions p{
+  font-size: 0.65rem;
+  font-weight: 400;
 }
 
 .agents-section {

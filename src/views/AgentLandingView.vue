@@ -573,7 +573,6 @@ onUnmounted(() => {
   font-size: 3.8rem;
   line-height: 1.2;
   color: #384348;
-  font-family: 'Yrsa', serif;
   margin-bottom: var(--space-3);
 }
 
@@ -583,7 +582,6 @@ onUnmounted(() => {
 }
 
 .hero-subtitle {
-    font-family: 'Lexend', sans-serif;
     color: #2e66f4;
     font-size: 1.15rem;
     margin-bottom: var(--space-6);

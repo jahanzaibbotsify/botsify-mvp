@@ -307,7 +307,6 @@ defineExpose({ openModal, closeModal });
 .code-block code {
   color: var(--color-text-primary, #111827);
   font-size: 13px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   line-height: 1.5;
   white-space: pre;
 }
@@ -360,7 +359,6 @@ defineExpose({ openModal, closeModal });
 }
 
 .color-value {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 14px;
   color: var(--color-text-secondary, #6b7280);
   background: var(--color-bg-secondary, #f9fafb);

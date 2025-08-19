@@ -5,6 +5,7 @@ import ToolsList from "./ToolsList.vue";
 import {botsifyApi} from "@/services/botsifyApi.ts";
 import {useMCPStore} from "@/stores/mcpStore.ts";
 import {useBotStore} from "@/stores/botStore.ts";
+import { Button } from '@/components/ui';
 
 const props = defineProps({
   server: {
@@ -525,22 +526,10 @@ onMounted(() => {
           {{ error }}
         </div>
         <div class="button-row">
-          <button class="back-btn" @click="handleBack">
-          <span class="icon-left">
-            <i class="pi pi-arrow-left"></i>
-          </span>
-            Back
-          </button>
-          <button :disabled="isConnecting" class="connect-btn" @click="checkConnection">
-          <span class="icon-left">
-            <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path
-                d="M13 2v8h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path
-                d="M21 12c0 4.418-3.582 8-8 8s-8-3.582-8-8 3.582-8 8-8" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </span>
-            {{ isConnecting ? 'Connecting....' : 'Connect' }}
-          </button>
+          <Button variant="secondary" icon="pi pi-arrow-left" @click="handleBack">Back</Button>
+          <Button :disabled="isConnecting" :loading="isConnecting" icon="pi pi-moon" @click="checkConnection">
+            Connect
+          </Button>
         </div>
       </div>
     </div>
@@ -657,29 +646,6 @@ input {
   max-width: 500px;
   width: 100%;
 }
-
-.connect-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 0 24px;
-  height: 40px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.icon-left {
-  display: flex;
-  align-items: center;
-  margin-right: 2px;
-}
-
 .auth-select-group {
   margin: 0 auto;
   max-width: 300px;

@@ -166,7 +166,6 @@ const handleBlur = (event: FocusEvent) => {
   border: none;
   outline: none;
   color: var(--color-text-primary);
-  font-family: inherit;
   font-size: inherit;
   line-height: 1.5;
   resize: vertical;

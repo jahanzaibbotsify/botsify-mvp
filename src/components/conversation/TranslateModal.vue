@@ -120,7 +120,6 @@ const handleSelect = async () => {
   gap: var(--space-3);
 }
 .form-select {
-  font-family: inherit;
   font-size: 0.95rem;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);

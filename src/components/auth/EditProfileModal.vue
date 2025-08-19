@@ -213,7 +213,6 @@ const handleSubmit = async () => {
 
 .form-input {
   width: 100%;
-  font-family: inherit;
   font-size: 0.875rem;
   padding: var(--space-3);
   border-radius: var(--radius-md);

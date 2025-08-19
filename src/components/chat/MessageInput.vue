@@ -459,7 +459,6 @@ const hideLoading = () => {
   line-height: 1.5;
   font-size: 16px;
   color: var(--color-text-primary);
-  font-family: var(--font-family);
   width: 100%;
 }
 
