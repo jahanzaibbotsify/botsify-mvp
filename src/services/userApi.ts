@@ -131,7 +131,7 @@ class UserApiService {
       }
 
       const response = await axiosInstance.post('v1/delete-user-attributes', payload)
-      return { success: true, data: response.data }
+      return { success: true, data: response.data, message: 'Attribute deleted successfully!' }
     } catch (error: any) {
       console.error('Error deleting user attribute:', error)
       return {

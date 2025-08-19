@@ -121,20 +121,11 @@ const deleteAttribute = (id: number) => {
 
     try {
       const response = await userApi.deleteUserAttribute(userFbId, id)
-
       if (response.success && response.data) {
-        const deleteData = response.data
+        localAttributes.value = localAttributes.value.filter(attr => attr.id !== id)
+        emit('update', localAttributes.value)
 
-        if (deleteData.success) {
-          localAttributes.value = localAttributes.value.filter(attr => attr.id !== id)
-          emit('update', localAttributes.value)
-
-          window.$toast.success(
-            `Attribute deleted successfully! Deleted: ${deleteData.deleted_count || 1} attribute(s)`
-          )
-        } else {
-          throw new Error(deleteData.message || 'Delete failed')
-        }
+        window.$toast.success(`Attribute deleted successfully!`)
       } else {
         throw new Error(response.message || 'Delete failed')
       }

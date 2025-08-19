@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import UserFilters from '@/components/user/Filters.vue'
 import UserTable from '@/components/user/Table.vue'
-import ImportPanel from '@/components/user/ImportPanel.vue'
-import { ActionType, User } from '@/types/user'
+import { ActionType } from '@/types/user'
 import { useUserStore } from '@/stores/userStore'
 import { useRoleStore } from '@/stores/roleStore'
 
@@ -14,34 +13,6 @@ const router = useRouter()
 // Use the user store
 const userStore = useUserStore()
 const roleStore = useRoleStore()
-
-// Local state
-const showImportPanel = ref<boolean>(false)
-
-// Methods
-const handleImportActions = (action: 'toggle' | 'close' | 'import', data?: User[]): void => {
-  switch (action) {
-    case 'toggle':
-      showImportPanel.value = !showImportPanel.value
-      break
-    case 'close':
-      showImportPanel.value = false
-      break
-    case 'import':
-      if (data) {
-        // Convert User[] to ExtendedUser[] and add to store
-        const extendedUsers = data.map(user => ({
-          ...user,
-          selected: false,
-          status: 'Active' as const,
-          hasConversation: false
-        }))
-        userStore.users.push(...extendedUsers)
-        showImportPanel.value = false
-      }
-      break
-  }
-}
 
 // Watch for action changes
 watch(() => userStore.selectedAction, (newAction) => {
@@ -85,11 +56,6 @@ watch(() => userStore.selectedAction, (newAction) => {
   }
 })
 
-// Listen for import panel events
-const handleImportEvent = () => {
-  showImportPanel.value = true
-}
-
 // Helper function to get action text
 const getActionText = (action: ActionType): string => {
   const actionMap: Record<ActionType, string> = {
@@ -113,14 +79,6 @@ onMounted(() => {
   }
   
   userStore.fetchUsers()
-  
-  // Listen for import panel events
-  window.addEventListener('show-import-panel', handleImportEvent)
-})
-
-// Clean up event listener
-onUnmounted(() => {
-  window.removeEventListener('show-import-panel', handleImportEvent)
 })
 </script>
 
@@ -135,13 +93,6 @@ onUnmounted(() => {
     <div class="user-content"> 
       <!-- Filters and Controls -->
       <UserFilters />
-
-      <!-- Import Panel -->
-      <ImportPanel 
-        v-if="showImportPanel"
-        @close="() => handleImportActions('close')"
-        @import="(users: User[]) => handleImportActions('import', users)"
-      />
 
       <!-- Users Table -->
       <UserTable />

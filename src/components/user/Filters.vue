@@ -3,6 +3,7 @@ import { ActionType, SegmentType } from '@/types/user'
 import { useUserStore } from '@/stores/userStore'
 import { Input, VueSelect, DateRange, Button } from '@/components/ui'
 import { ref } from 'vue'
+import ImportModal from './ImportModal.vue'
 
 const userStore = useUserStore()
 // Computed to determine if we should show mobile layout
@@ -10,6 +11,9 @@ const dateRangeValue = ref({
   start: new Date().toISOString().split('T')[0],
   end: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0]
 });
+
+// Local state for import modal
+const showImportModal = ref(false)
 
 // Filter options configuration - removed status filter since it's not needed
 const segmentOptions = [
@@ -68,9 +72,22 @@ const handleDateRangeChange = ({ start, end }: { start: string; end: string }) =
 
 // Handle import button click
 const handleImport = () => {
-  // This will be handled by the parent component
-  // We can emit a simple event or use a global event
-  window.dispatchEvent(new CustomEvent('show-import-panel'))
+  showImportModal.value = true
+}
+
+// Handle import modal close
+const handleImportClose = () => {
+  showImportModal.value = false
+}
+
+// Handle successful import
+const handleImportSuccess = () => {
+  // Close the modal
+  showImportModal.value = false
+  
+  // Clear cache and refresh user list with fresh data
+  userStore.clearAllCache()
+  userStore.fetchUsers(true) // Force refresh
 }
 </script>
 
@@ -111,10 +128,17 @@ const handleImport = () => {
           :multiple="false"
         />
         <Button variant="primary" @click="handleImport">
-          Import Users
+          Import users
         </Button>
       </div>
     </div>
+
+    <!-- Import Modal -->
+    <ImportModal 
+      :is-open="showImportModal"
+      @close="handleImportClose"
+      @import-success="handleImportSuccess"
+    />
   </div>
 </template>
 

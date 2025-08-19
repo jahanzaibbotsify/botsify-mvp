@@ -1,20 +1,40 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import FileUpload from '@/components/ui/FileUpload.vue'
-import { User } from '@/types/user'
+import { ref, watch, nextTick } from 'vue'
+import FileUpload from '../ui/FileUpload.vue'
 import { userApi } from '@/services/userApi'
-import Button from '../ui/Button.vue';
+import Button from '../ui/Button.vue'
+import ModalLayout from '../ui/ModalLayout.vue'
 
+interface Props {
+  isOpen: boolean
+}
+
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
   close: []
-  import: [users: User[]]
+  importSuccess: []
 }>()
 
+const modalRef = ref<InstanceType<typeof ModalLayout> | null>(null)
 const isImporting = ref<boolean>(false)
 const importFile = ref<File | null>(null)
 const importStatus = ref<string>('')
 
+// Watch for isOpen changes to control modal
+watch(() => props.isOpen, async (newValue) => {
+  if (newValue) {
+    // Wait for the next tick to ensure modalRef is available
+    await nextTick()
+    if (modalRef.value) {
+      modalRef.value.openModal()
+      // Reset import status when modal opens
+      importStatus.value = ''
+      importFile.value = null
+      isImporting.value = false
+    }
+  }
+})
 
 const handleImport = async () => {
   if (!importFile.value) return
@@ -32,8 +52,8 @@ const handleImport = async () => {
         // Reset state
         importFile.value = null
         
-        // Emit import event to refresh user list
-        emit('import', [])
+        // Emit success event to parent - let parent handle modal closing
+        emit('importSuccess')
     } else {
       throw new Error(response.message || 'Import failed')
     }
@@ -56,15 +76,20 @@ const downloadSampleCSV = () => {
   document.body.removeChild(a);
 };
 
+const handleClose = () => {
+  // Just emit close event - let parent handle modal closing
+  emit('close')
+}
 </script>
 
 <template>
-  <div class="import-panel">
-    <div class="import-header">
-      <h3>Import Users</h3>
-      <button class="close-btn" @click="emit('close')">✕</button>
-    </div>
-    
+  <ModalLayout 
+    v-if="isOpen"
+    ref="modalRef"
+    title="Import users"
+    max-width="600px"
+    @close="handleClose"
+  >
     <div class="import-content">
       <div class="upload-section">
         <label class="upload-label">Upload File (CSV or TXT)</label>
@@ -80,152 +105,86 @@ const downloadSampleCSV = () => {
         </div>
       </div>
 
-      <!-- Progress Bar -->
+      <!-- Progress Section -->
       <div v-if="isImporting" class="progress-section">
         <p class="progress-text">{{ importStatus }}</p>
       </div>
 
-      
       <div class="import-info">
         <p class="info-text">
           <strong>Note:</strong> Supported formats: .csv<br>
           <strong>Sample Files:</strong>&nbsp;
-          <button class="sample-link" @click="downloadSampleCSV">CSV</button> | 
+          <button class="sample-link" @click="downloadSampleCSV">CSV</button>
         </p>
         <p class="info-text">
           <strong>Format:</strong> name,phone
         </p>
       </div>
 
-      <div class="import-actions">
+      <div class="agent-action-buttons">
         <Button 
           :loading="isImporting"
           :disabled="!importFile || isImporting"
           @click="handleImport"
         >
-          Import Users
+          Import users
         </Button>
       </div>
     </div>
-  </div>
+  </ModalLayout>
 </template>
 
 <style scoped>
-.import-panel {
-  background-color: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  margin-bottom: 20px;
-  animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.import-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--color-border);
-  background-color: white;
-  border-radius: 8px 8px 0 0;
-}
-
-.import-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  color: #666;
-  padding: 4px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.close-btn:hover {
-  background-color: var(--color-bg-secondary);
-}
-
 .import-content {
-  padding: 20px;
+  padding: 0;
 }
 
 .upload-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
 }
 
 .selected-file {
-  margin-top: 0.5rem;
+  margin-top: var(--space-2);
   font-size: 0.875rem;
-  color: #444;
-  background: #f6f6f6;
-  padding: 6px 12px;
-  border-radius: 6px;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-tertiary);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
   display: inline-block;
 }
 
 .upload-label {
   display: block;
   font-weight: 500;
-  color: #666;
-  margin-bottom: 8px;
-  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
+  font-size: 0.875rem;
 }
 
 .progress-section {
-  margin-bottom: 16px;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 8px;
-  background-color: var(--color-bg-tertiary);
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-
-.progress-fill {
-  height: 100%;
-  background-color: var(--color-primary);
-  transition: width 0.3s ease;
-  border-radius: 4px;
+  margin-bottom: var(--space-4);
 }
 
 .progress-text {
   margin: 0;
-  font-size: 13px;
+  font-size: 0.875rem;
   color: var(--color-text-secondary);
   text-align: center;
 }
 
 .import-info {
-  border: 1px solid var(--color-border-secondary);
-  border-radius: 6px;
-  padding: 12px;
-  margin-bottom: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-bottom: var(--space-4);
+  background: var(--color-bg-tertiary);
 }
 
 .info-text {
-  margin: 0 0 8px 0;
-  font-size: 13px;
+  margin: 0 0 var(--space-2) 0;
+  font-size: 0.875rem;
   line-height: 1.4;
+  color: var(--color-text-secondary);
 }
 
 .info-text:last-child {
@@ -238,7 +197,7 @@ const downloadSampleCSV = () => {
   color: var(--color-primary);
   text-decoration: underline;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 0.875rem;
   padding: 0;
 }
 
@@ -246,8 +205,9 @@ const downloadSampleCSV = () => {
   color: var(--color-primary-hover);
 }
 
-.import-actions {
+.agent-action-buttons {
   display: flex;
-  gap: 12px;
+  gap: var(--space-3);
 }
+
 </style>
