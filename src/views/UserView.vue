@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import UserFilters from '@/components/user/Filters.vue'
 import UserTable from '@/components/user/Table.vue'
