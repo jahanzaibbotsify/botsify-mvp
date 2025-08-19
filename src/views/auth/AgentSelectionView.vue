@@ -725,10 +725,10 @@ onUnmounted(() => {
                     <i class="pi pi-clipboard"></i>
                     <span>Copy Payload</span>
                   </button>
-                  <button @click="exportData(agent)" class="menu-item">
-                    <i class="pi pi-download"></i>
-                    <span>Export Data</span>
-                  </button>
+<!--                  <button @click="exportData(agent)" class="menu-item">-->
+<!--                    <i class="pi pi-download"></i>-->
+<!--                    <span>Export Data</span>-->
+<!--                  </button>-->
                 </div>
               </div>
 
@@ -751,7 +751,7 @@ onUnmounted(() => {
                 <div v-if="hasAnyPublish(agent.publish_status)" class="published-badges">
                   <span class="published-badge" v-for="ch in getPublishedChannels(agent)" :key="ch.key">
                     <i :class="ch.icon"></i>
-                    <span class="badge-text">{{ ch.label }}</span>
+<!--                    <span class="badge-text">{{ ch.label }}</span>-->
                   </span>
                 </div>
                   <p class="agent-users">{{ agent.users_count }} users</p>
@@ -1527,7 +1527,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
+  padding: 6px 6px;
   border-radius: var(--radius-full);
   background: rgba(16, 185, 129, 0.12);
   color: #059669;
