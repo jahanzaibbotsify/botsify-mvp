@@ -74,7 +74,8 @@ export const useMCPStore = defineStore('mcp', () => {
       externalData: {
         link: "https://developers.hubspot.com/docs/guides/api/overview",
         label: 'Get api key'
-      }
+      },
+      comingSoon: true
     },
     {
       id: 'zoho',

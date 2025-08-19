@@ -69,6 +69,13 @@ const checkAndPreFillConnectedServer = () => {
     authType.value = connectedServer.setting?.auth_method || props.server?.authMethod || 'none';
     serverUrl.value = connectedServer.setting?.server_url || '';
 
+    if (props?.server && props.server?.id === 'google-sheet' && description.value?.trim()) {
+      const match = description.value.match(/https:\/\/docs\.google\.com\/spreadsheets\/[^\s]+/);
+      if (match) {
+        description.value = match[0];
+      }
+    }
+
     /**
      * For custom servers, also pre-fill URL and label
      */
@@ -278,6 +285,13 @@ const addServer = async (allowedTools: string[]) => {
   } else {
     url = props.server ? props.server.server_url : serverUrl.value;
   }
+
+  if (props?.server && props.server?.id === 'google-sheet') {
+    if (description.value?.trim()) {
+      description.value += ' This is the Google Sheet URL you must use for all task entries and modifications. Always add or update tasks only in this sheet, and make sure to append new records at the end of the sheet.';
+    }
+  }
+
   const mcpPayload = {
     settings: {
       apikey: apiKey.value,
@@ -402,7 +416,7 @@ onMounted(() => {
           </div>
         </div>
         <div class="pt-20">
-          <input type="text" v-model="description" id="description" placeholder="Description (optional)">
+          <input type="text" v-model="description" id="description" :placeholder="server?.id === 'google-sheet' ? 'Google Sheet URL' : 'Description (optional)'">
         </div>
         <div class="auth-select-group pt-20" v-if="isCustom">
           <label class="auth-label" for="authType">
@@ -632,7 +646,6 @@ input {
   max-width: 500px;
   width: 100%;
 }
-
 .auth-select-group {
   margin: 0 auto;
   max-width: 300px;
