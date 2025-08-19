@@ -1,6 +1,7 @@
 import { useWhitelabelStore } from '@/stores/whitelabelStore';
 import moment from 'moment-timezone';
 import { BOTSIFY_WEB_URL } from './config';
+import { ref } from 'vue';
 
 export const currentTime = () => {
   return moment.utc().format('YYYY-MM-DD HH:mm:ss');
@@ -57,3 +58,20 @@ export const getPlatformClass = (platform: string = '') => {
     }
     return BOTSIFY_WEB_URL;
   }
+
+  export const validateImage = (url?: string, fallback = "/images/elementor-placeholder-image.png") => {
+    const result = ref(fallback);
+  
+    if (!url) {
+      result.value = fallback;
+      return result;
+    }
+  
+    const img = new Image();
+    img.onload = () => (result.value = url);
+    img.onerror = () => (result.value = fallback);
+    img.src = url;
+  
+    return result;
+  }
+  

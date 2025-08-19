@@ -7,6 +7,7 @@ import UserMenu from "@/components/auth/UserMenu.vue";
 import Button from '@/components/ui/Button.vue';
 import Input from '@/components/ui/Input.vue';
 import { createResource } from "@/utils/caching.ts"
+import { validateImage } from '@/utils';
 
 const router = useRouter()
 
@@ -510,21 +511,6 @@ const getPublishedChannels = (agent: any) => {
   ]
   return channels.filter(c => c.active)
 }
-const validateImage = (url?: string, fallback = "/icons/img.png") => {
-  const result = ref(fallback);
-
-  if (!url) {
-    result.value = fallback;
-    return result;
-  }
-
-  const img = new Image();
-  img.onload = () => (result.value = url);
-  img.onerror = () => (result.value = fallback);
-  img.src = url;
-
-  return result;
-}
 
 
 onMounted(() => {
@@ -756,7 +742,7 @@ onUnmounted(() => {
               <div class="agent-info-column">
                 <!-- Agent Avatar -->
                 <div class="agent-avatar-section">
-                  <img :src="validateImage(agent.logo).value" :alt="agent.name" class="agent-avatar" @click="selectBot(agent)"
+                  <img :src="validateImage(agent.logo, '/icons/img.png').value" :alt="agent.name" class="agent-avatar" @click="selectBot(agent)"
                        style="cursor:pointer; user-select: none"/>
                 </div>
 

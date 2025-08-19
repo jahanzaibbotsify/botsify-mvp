@@ -2,7 +2,7 @@
 import { computed, onMounted, watch, ref, nextTick } from 'vue';
 import type { Message } from '@/types';
 import { marked } from 'marked';
-import { formatTime } from '@/utils';
+import { formatTime, validateImage } from '@/utils';
 
 // Interface for parsed message content
 interface ParsedMessage {
@@ -91,9 +91,7 @@ const parsedContent = computed(() => {
       }
       const textContent = typeof parsed.text === 'string' ? parsed.text : parsed.text.text;
       if(parsed?.quick_replies && parsed.quick_replies.length > 0) {
-        return `${marked(textContent)} <div class="quick-replies">
-          ${parsed.quick_replies.map((reply: any) => `<button style="font-size: 0.875rem; margin-right: 0.5rem; margin-bottom: 0.5rem;">${reply.title}</button>`).join('')}
-        </div>`;
+        return renderButtonTemplate(textContent, parsed.quick_replies);
       }
 
       return marked(textContent);
@@ -133,7 +131,7 @@ const renderAttachment = (attachment: any): string => {
       return renderTemplate(payload);
     case 'image':
       return `<div class="attachment-image">
-        <img src="${payload.url}" alt="Image" onclick="$emit('image-click', '${payload.url}')" />
+        <img src="${validateImage(payload.url).value}" alt="Image" onclick="$emit('image-click', '${payload.url}')" />
         <div class="button-container">
           ${payload.buttons.map((button: any) => `<button class="button-primary">${button.title}</button>`).join('')}
         </div>
@@ -174,7 +172,7 @@ const renderGenericTemplate = (elements: any[]): string => {
       <div class="generic-template single-element">
         <div class="template-element">
           ${element.image_url ? `<div class="template-image-container">
-            <img src="${element.image_url}" alt="${element.title}" class="template-image" />
+            <img src="${validateImage(element.image_url).value}" alt="${element.title}" class="template-image" />
           </div>` : ''}
           <div class="template-content">
             <h4 class="template-title">${element.title || ''}</h4>
@@ -192,7 +190,7 @@ const renderGenericTemplate = (elements: any[]): string => {
     html += `
       <div class="template-element slide" data-slide="${index}">
         ${element.image_url ? `<div class="template-image-container">
-          <img src="${element.image_url}" alt="${element.title}" class="template-image" />
+          <img src="${validateImage(element.image_url).value}" alt="${element.title}" class="template-image" />
         </div>` : ''}
         <div class="template-content">
           <h4 class="template-title">${element.title || ''}</h4>
