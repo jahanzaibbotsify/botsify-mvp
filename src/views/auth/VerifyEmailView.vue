@@ -245,14 +245,6 @@ onMounted(async () => {
   if (await checkIfUserVerified()) {
     return
   }
-
-  // Send verification email if user hasn't visited before
- const emailValue = email.value
-  const visited = localStorage.getItem(`emailVerificationVisited:${email.value}`) === 'true'
-console.log(visited, emailValue);
-  //if (!visited && emailValue) {
-   // await sendVerificationEmail()
-  //}
 })
 </script>
 
