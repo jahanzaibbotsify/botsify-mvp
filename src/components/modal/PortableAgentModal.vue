@@ -49,7 +49,7 @@ const mcpData = ref({
   //   "deletePageMessage",
   //   "getAllPageMessages"
   ],
-  require_approval: "always"
+  require_approval: "never"
 });
 
 // Computed property to format MCP data as JSON
