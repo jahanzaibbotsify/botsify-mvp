@@ -247,6 +247,7 @@ const deleteAgent = (agent: any) => {
         
         // Invalidate cache after deletion
         agentsResource.invalidate()
+        getAgents(1, false)
         // No need to call getAgents() - we already updated local state
       } else {
         window.$toast?.error(response.data?.message || 'Failed to delete agent. Please try again.')
@@ -323,13 +324,6 @@ const createAgent = () => {
 
   // Add keyboard event listener
   document.addEventListener('keydown', handleModalKeydown)
-
-  // Focus the input after modal opens
-  nextTick(() => {
-    if (agentNameInput.value) {
-      agentNameInput.value.focus()
-    }
-  })
 }
 
 /**

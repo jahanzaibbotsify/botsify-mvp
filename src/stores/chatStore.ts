@@ -314,7 +314,6 @@ export const useChatStore = defineStore('chat', () => {
       name: createAiPromptVersionName(),
       content,
       updatedAt: new Date(),
-      createdAt: new Date(),
       version: Date.now(),
       isActive
     };
@@ -365,9 +364,11 @@ export const useChatStore = defineStore('chat', () => {
     return chat.story;
   }
 
-  function updateActivePromptVersionId(versionId: number) {
+  function updateActivePromptVersionId(versionId: number, date: Date = new Date()) {
     if (activeAiPromptVersion.value) {
       activeAiPromptVersion.value.version_id = versionId; 
+      activeAiPromptVersion.value.createdAt = date;
+      activeAiPromptVersion.value.updatedAt = date;
     }
   }
 

@@ -163,7 +163,7 @@ const handleDeploy = async () => {
       const currentChat = chatStore.chats[0];
       if (currentChat) {
         chatStore.updateStory(currentChat.id, currentChat.story?.content || '', true);
-        chatStore.updateActivePromptVersionId(result.data.version.id);
+        chatStore.updateActivePromptVersionId(result.data.version.id, result.data.version?.created_at);
       }
       
       // Show success message
