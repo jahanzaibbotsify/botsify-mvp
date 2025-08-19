@@ -171,6 +171,8 @@ const openAuthPopup = (url: string, action: string) => {
     if (event.data.type === 'INSTAGRAM_AUTH_SUCCESS') {
       popup.close();
       window.removeEventListener('message', messageHandler);
+      
+      publishStore.publishStatus.invalidate();
       publishStore.instagramPages.invalidate()
       publishStore.instagramPages.load();
       window.$toast?.success(`Facebook ${action} completed successfully!`);
@@ -190,8 +192,9 @@ const openAuthPopup = (url: string, action: string) => {
         popup.close();
         clearInterval(checkClosed);
         window.removeEventListener('message', messageHandler);
-        publishStore.instagramPages.invalidate()
-      publishStore.instagramPages.load();
+        publishStore.publishStatus.invalidate();
+        publishStore.instagramPages.invalidate();
+        publishStore.instagramPages.load();
         window.$toast?.success(`Instagram ${action} completed successfully!`);
       }
     } catch {
@@ -202,6 +205,7 @@ const openAuthPopup = (url: string, action: string) => {
     if (popup.closed) {
       clearInterval(checkClosed);
       window.removeEventListener('message', messageHandler);
+      publishStore.publishStatus.invalidate();
       publishStore.instagramPages.invalidate()
       publishStore.instagramPages.load();
     }

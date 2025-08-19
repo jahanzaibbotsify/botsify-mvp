@@ -217,6 +217,7 @@ const openAuthPopup = (url: string, action: string) => {
       popup.close();
       window.removeEventListener('message', messageHandler);
       
+      publishStore.publishStatus.invalidate();
       publishStore.facebookPages.invalidate();
       publishStore.facebookPages.load();
       window.$toast?.success(`Facebook ${action} completed successfully!`);
@@ -237,6 +238,7 @@ const openAuthPopup = (url: string, action: string) => {
         clearInterval(checkClosed);
         window.removeEventListener('message', messageHandler);
         
+        publishStore.publishStatus.invalidate();
         publishStore.facebookPages.invalidate();
         publishStore.facebookPages.load();
         window.$toast?.success(`Facebook ${action} completed successfully!`);
@@ -249,6 +251,7 @@ const openAuthPopup = (url: string, action: string) => {
     if (popup.closed) {
       clearInterval(checkClosed);
       window.removeEventListener('message', messageHandler);
+      publishStore.publishStatus.invalidate();
       publishStore.facebookPages.invalidate();
       publishStore.facebookPages.load();
     }
@@ -279,7 +282,7 @@ const openAuthPopup = (url: string, action: string) => {
           <i class="pi pi-facebook"></i>
         </div>
         <h4>No Facebook pages found</h4>
-        <p>Connect your Facebook account to manage your pages and enable Messenger bot functionality.</p>
+        <p>Connect your Facebook account to manage your pages and enable Messenger agent functionality.</p>
         <Button 
           variant="primary"
           :loading="isConnectLoading"
