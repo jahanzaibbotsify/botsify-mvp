@@ -745,10 +745,10 @@ onUnmounted(() => {
                     <i class="pi pi-clipboard"></i>
                     <span>Copy Payload</span>
                   </button>
-                  <button @click="exportData(agent)" class="menu-item">
-                    <i class="pi pi-download"></i>
-                    <span>Export Data</span>
-                  </button>
+<!--                  <button @click="exportData(agent)" class="menu-item">-->
+<!--                    <i class="pi pi-download"></i>-->
+<!--                    <span>Export Data</span>-->
+<!--                  </button>-->
                 </div>
               </div>
 
