@@ -135,7 +135,7 @@ const pageContent = computed(() => {
   flex: 1;
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: start;
   justify-content: center;
   color: white;
   overflow: hidden;
