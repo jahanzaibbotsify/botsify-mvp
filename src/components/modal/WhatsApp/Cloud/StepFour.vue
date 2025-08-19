@@ -98,8 +98,8 @@
               <div class="content-text">
                 <p class="card-text">Copy WhatsApp business account ID and paste below.</p>
                 <div class="form-field">
-                  <label class="field-label">WhatsApp Business Account ID</label>
                   <Input 
+                    label="WhatsApp Business Account ID"
                     type="text"
                     placeholder="1015550000000"
                     v-model="formData.whatsapp_account_id"

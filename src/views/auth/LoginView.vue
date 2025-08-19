@@ -373,8 +373,8 @@ const handlePasswordInput = () => {
 }
 
 .checkbox-custom {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border: 2px solid var(--color-border);
   border-radius: var(--radius-sm);
   background-color: var(--color-bg-primary);

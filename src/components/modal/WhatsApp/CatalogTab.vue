@@ -82,8 +82,10 @@ onMounted(async() => {
     
     <!-- Loading state -->
     <div v-if="publishStore.whatsappCatalog.loading" class="loading-state">
-      <div class="loading-spinner"></div>
-      <p>Loading catalog data...</p>
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p>Loading catalog data...</p>
+      </div>
     </div>
 
     <!-- Main content when not loading -->
@@ -93,7 +95,7 @@ onMounted(async() => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableHeader>Catalog Name</TableHeader>
+              <TableHeader>Catalog name</TableHeader>
               <TableHeader>Status</TableHeader>
               <TableHeader>Actions</TableHeader>
             </TableRow>
@@ -113,7 +115,7 @@ onMounted(async() => {
                 <div class="empty-state">
                   <i class="pi pi-info-circle"></i>
                   <h4>Connect to Meta Business</h4>
-                  <p>To manage your product catalog, you need to connect your Meta Business account and generate an access token.</p>
+                  <p>To manage your product catalog, you need to connect your Meta Business account and generate an access token.</p><br />
                   <Button
                     variant="primary"
                     size="medium"
@@ -182,14 +184,13 @@ onMounted(async() => {
       
       <!-- Settings Section -->
       <div class="settings-section">
-        <h4>Catalog Settings</h4>
+        <h4>Catalog settings</h4>
         <form @submit="handleSaveSettings">
           <div class="form-group">
-            <label for="catalog_access_token">Access Token <span class="required">*</span></label>
             <Input
+              label="Access token"
               id="catalog_access_token"
               v-model="webhookDetails.catalog_access_token"
-              placeholder="Enter your catalog access token"
               required
             />
           </div>
@@ -201,25 +202,12 @@ onMounted(async() => {
               :loading="saving"
               :disabled="saving"
             >
-              Save Settings
+              Save settings
             </Button>
           </div>
         </form>
       </div>
 
-    </div>
-
-    <!-- Action Buttons -->
-    <div class="agent-action-buttons">
-      <Button
-        variant="primary"
-        size="medium"
-        :loading="saving"
-        :disabled="saving"
-        @click="handleSaveSettings"
-      >
-        {{ saving ? 'Saving...' : 'Save Settings' }}
-      </Button>
     </div>
   </div>
 </template>
@@ -252,21 +240,6 @@ onMounted(async() => {
   font-size: 16px;
   font-weight: 600;
   color: var(--color-text-primary);
-}
-
-.form-group {
-  margin-bottom: var(--space-4);
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: var(--space-2);
-  font-weight: 500;
-  color: var(--color-text-primary);
-}
-
-.required {
-  color: var(--color-error);
 }
 
 .form-actions {

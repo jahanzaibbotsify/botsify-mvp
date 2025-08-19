@@ -2,6 +2,7 @@
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
+import Button from '@/components/ui/Button.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -104,15 +105,15 @@ const goBack = () => {
         </div>
 
         <!-- Submit Button -->
-        <button
+        <Button
           type="submit"
-          class="submit-button primary"
+          class="w-full"
           :disabled="!isFormValid || isLoading"
+          :loading="isLoading"
+          icon="pi pi-send"
         >
-          <span v-if="isLoading" class="loading-spinner"></span>
-          <i v-else class="pi pi-send"></i>
-          <span>{{ isLoading ? 'Sending...' : 'Send reset link' }}</span>
-        </button>
+          Send reset link
+        </Button>
       </form>
     </div>
 
@@ -296,51 +297,6 @@ const goBack = () => {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-}
-
-.submit-button {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  background-color: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  min-height: 44px;
-}
-
-.submit-button:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(68, 115, 246, 0.3);
-}
-
-.submit-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.loading-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* Success State */

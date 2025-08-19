@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import type { FormValidation } from '@/types/auth'
 import {axiosInstance} from "@/utils/axiosInstance.ts";
+import Button from '@/components/ui/Button.vue';
 
 const router = useRouter()
 const route = useRoute()
@@ -150,7 +151,7 @@ onMounted(() => {
       <div class="header-icon">
         <i class="pi pi-lock"></i>
       </div>
-      <h2 class="header-title">Reset Your Password</h2>
+      <h2 class="header-title">Reset your password</h2>
       <p class="header-subtitle">
         Enter your new password below. Make sure it's strong and secure.
       </p>
@@ -169,7 +170,7 @@ onMounted(() => {
         <!-- Password Field -->
         <div class="form-group">
           <label for="password" class="form-label">
-            New Password
+            New password
             <span class="required">*</span>
           </label>
           <div class="input-wrapper" :class="{ error: hasFieldError('password') }">
@@ -220,7 +221,7 @@ onMounted(() => {
         <!-- Confirm Password Field -->
         <div class="form-group">
           <label for="confirmPassword" class="form-label">
-            Confirm New Password
+            Confirm new password
             <span class="required">*</span>
           </label>
           <div class="input-wrapper" :class="{ error: hasFieldError('confirmPassword') }">
@@ -252,15 +253,15 @@ onMounted(() => {
         </div>
 
         <!-- Submit Button -->
-        <button
+        <Button
           type="submit"
-          class="submit-button primary"
+          class="w-full"
           :disabled="!isFormValid || isLoading"
+          :loading="isLoading"
+          icon="pi pi-check"
         >
-          <span v-if="isLoading" class="loading-spinner"></span>
-          <i v-else class="pi pi-check"></i>
-          <span>{{ isLoading ? 'Resetting Password...' : 'Reset Password' }}</span>
-        </button>
+          Reset Password
+        </Button>
       </form>
     </div>
 
@@ -489,51 +490,6 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-}
-
-.submit-button {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  background-color: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  min-height: 44px;
-}
-
-.submit-button:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(68, 115, 246, 0.3);
-}
-
-.submit-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.loading-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* Success State */

@@ -311,7 +311,7 @@ defineExpose({
 
         <div v-if="selectedProvider === 'meta'" class="form-group">
           <Input 
-            label="Client secret"
+            label="App secret"
             id="meta-client-secret"
             v-model="formFields.client_secret"
             type="password"
