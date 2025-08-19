@@ -97,7 +97,6 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  font-family: var(--font-family, 'Inter', Arial, sans-serif);
   position: relative;
   overflow: hidden;
 }

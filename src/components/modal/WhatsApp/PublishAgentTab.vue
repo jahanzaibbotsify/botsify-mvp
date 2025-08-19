@@ -409,7 +409,6 @@ defineExpose({
   font-size: 18px;
   cursor: pointer;
   transition: all var(--transition-normal, 0.2s ease);
-  font-family: inherit;
   padding: 25px 16px;
 }
 

@@ -366,7 +366,6 @@ onMounted(() => {
 }
 
 .privacy-section h2 {
-  font-family: var(--font-heading);
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--color-heading);
@@ -376,7 +375,6 @@ onMounted(() => {
 }
 
 .privacy-section h3 {
-  font-family: var(--font-subheading);
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--color-text-primary);

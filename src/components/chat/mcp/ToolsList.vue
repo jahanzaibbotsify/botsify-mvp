@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Button } from '@/components/ui';
 import {ref, computed} from 'vue';
 
 interface ToolInputSchemaProperty {
@@ -143,19 +144,10 @@ const toggleAllTools = (event: Event) => {
       </div>
     </div>
     <div class="button-row">
-      <button class="back-btn" @click="$emit('back')">
-          <span class="icon-left">
-            <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path
-                d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round"/></svg>
-          </span>
-        Back
-      </button>
-      <button class="add-btn" @click="$emit('add', enabledTools)">
-        <i v-if="alreadyConnected" class="pi pi-refresh"></i>
-        <i v-else class="pi pi-plus"></i>
+      <Button variant="secondary" icon="pi pi-arrow-left" @click="$emit('back')">Back</Button>
+      <Button :icon="alreadyConnected ? 'pi pi-refresh' : 'pi pi-plus'" @click="$emit('add', enabledTools)">
         {{ alreadyConnected ? 'Update' : 'Add' }}
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -255,7 +247,6 @@ const toggleAllTools = (event: Event) => {
   flex: 1;
   font-size: 0.875rem;
   color: var(--color-text-primary);
-  font-family: var(--font-family);
 }
 
 .tool-arrow {
@@ -402,7 +393,6 @@ const toggleAllTools = (event: Event) => {
 }
 
 .example-code {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 0.75rem;
   color: var(--color-text-primary);
   background-color: var(--color-bg-tertiary);
@@ -433,25 +423,5 @@ const toggleAllTools = (event: Event) => {
 .tools-items::-webkit-scrollbar-thumb:hover,
 .tool-detail-content::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-tertiary);
-}
-
-.add-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #18181b;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 0 24px;
-  height: 40px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.add-btn:hover {
-  background: #222226;
 }
 </style>

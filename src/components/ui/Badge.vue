@@ -66,7 +66,6 @@ const badgeClasses = computed(() => {
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  font-family: inherit;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.025em;

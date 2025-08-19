@@ -96,7 +96,6 @@ const handleClick = (event: MouseEvent) => {
   gap: var(--space-2);
   border: none;
   border-radius: var(--radius-md);
-  font-family: inherit;
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-normal);

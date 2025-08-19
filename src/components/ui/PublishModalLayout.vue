@@ -270,7 +270,6 @@ defineExpose({
   white-space: nowrap;
   flex-shrink: 0;
   position: relative;
-  font-family: inherit;
   line-height: 1.4;
   min-width: fit-content;
   border-radius: 0;

@@ -508,7 +508,6 @@ onMounted(() => {
 .body-text {
   margin-bottom: 0;
   white-space: break-spaces;
-  font-family: inherit;
   font-size: 14px;
   color: var(--color-text-secondary);
   line-height: 1.5;
@@ -599,7 +598,6 @@ onMounted(() => {
 .slide-title {
   margin: var(--space-1) 0;
   white-space: break-spaces;
-  font-family: inherit;
   font-size: 13px;
   color: var(--color-text-primary);
   line-height: 1.4;

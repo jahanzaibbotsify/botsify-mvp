@@ -210,7 +210,6 @@ h3::after {
   border-radius: var(--radius-md);
   background-color: var(--color-bg-tertiary);
   background-image: linear-gradient(to right, rgba(0, 163, 255, 0.03), transparent 80%);
-  font-family: monospace;
   font-size: 0.875rem;
   resize: vertical;
   transition: all var(--transition-normal);

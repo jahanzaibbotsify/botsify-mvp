@@ -439,7 +439,6 @@ const sendSuggestion = (suggestion: string) => {
   font-weight: 600;
   color: var(--color-text-primary);
   margin-bottom: var(--space-4);
-  font-family: var(--font-family);
   line-height: 1.2;
 }
 
@@ -489,7 +488,6 @@ const sendSuggestion = (suggestion: string) => {
   line-height: 1.5;
   font-size: 16px;
   color: var(--color-text-primary);
-  font-family: var(--font-family);
   width: 100%;
 }
 

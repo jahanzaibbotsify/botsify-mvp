@@ -171,7 +171,7 @@ const handleLogout = async () => {
             <div v-else class="price-paid">
               <div class="price-main">
                 <span class="currency">$</span>
-                <span class="amount">{{ plan.price }}</span>
+                <span class="amount">{{ plan.price.toLocaleString() }}</span>
               </div>
               <span class="price-period">
                 per {{ billingCycle === 'annually' ? 'year' : 'month' }}

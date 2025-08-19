@@ -629,7 +629,6 @@ onMounted(() => {
   background: rgba(0, 0, 0, 0.1);
   padding: 0.125rem 0.25rem;
   border-radius: 4px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 0.875em;
 }
 

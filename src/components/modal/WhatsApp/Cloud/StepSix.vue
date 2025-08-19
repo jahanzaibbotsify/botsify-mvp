@@ -308,7 +308,6 @@ const prevStep = () => {
 
 .url-text,
 .token-text {
-  font-family: 'Courier New', monospace;
   font-size: 14px;
   color: var(--color-text-secondary, #6b7280);
   flex: 1;
