@@ -46,7 +46,6 @@ const parseMessageContent = (content: string): ParsedMessage | null => {
     if (!content || content === 'null' || content.trim() === '') {
       return { text: 'Empty message' };
     }
-    
     // Try to parse as JSON first
     if (content.trim().startsWith('{') || content.trim().startsWith('[')) {
       return JSON.parse(content);
@@ -118,6 +117,10 @@ const renderAttachment = (attachment: any): string => {
   const payload = attachment.payload || attachment;
   
   switch (type) {
+    case 'datepicker':
+      return `<div class="attachment-datepicker">
+        <span>${payload.text}</span>
+      </div>`;
     case 'template':
       return renderTemplate(payload);
     case 'image':
@@ -128,6 +131,7 @@ const renderAttachment = (attachment: any): string => {
       return `<div class="attachment-unknown">
         <span>Download &nbsp;<a href="${payload.url}" target="_blank"><i class="pi pi-download"></i></a></span>
       </div>`;
+
   }
 };
 

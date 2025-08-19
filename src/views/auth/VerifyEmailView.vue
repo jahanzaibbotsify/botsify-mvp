@@ -255,7 +255,7 @@ onMounted(async () => {
       <div class="success-icon">
         <i class="pi pi-check-circle"></i>
       </div>
-      <h2 class="success-title">Email Verified Successfully!</h2>
+      <h2 class="success-title">Email verified successfully!</h2>
       <p class="success-subtitle">
         Your email has been verified.
         <span v-if="authStore.isAuthenticated">Redirecting you to your dashboard...</span>
@@ -275,7 +275,7 @@ onMounted(async () => {
       <div class="loading-icon">
         <i class="pi pi-spin pi-spinner"></i>
       </div>
-      <h2 class="loading-title">Verifying Your Email</h2>
+      <h2 class="loading-title">Verifying your email</h2>
       <p class="loading-subtitle">
         Please wait while we verify your email address...
       </p>

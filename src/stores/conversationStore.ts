@@ -571,7 +571,7 @@ export const useConversationStore = defineStore('conversation', () => {
     // Load messages for this conversation using API
     if (conversation.fbid) {
       // Pass markAsRead=true if conversation had unread messages
-      await fetchUserConversation(conversation.fbid, false, hasUnreadMessages)
+      await fetchUserConversation(conversation.fbid, true, hasUnreadMessages)
       // Start listening to real-time messages for this conversation
       if (isFirebaseConnected.value) {
         listenToConversation(conversation.fbid)
