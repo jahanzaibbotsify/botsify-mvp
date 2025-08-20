@@ -37,8 +37,9 @@
   --gradient-blue-dark: linear-gradient(to center, rgba(0, 163, 255, 0.20) 0%, rgba(18, 18, 18, 0) 50%);
   
   /* Typography */
-  --font-body: ‘Lexend’, sans-serif;
-  --font-heading: ‘Yrsa’, serif;
+  --font-family: 'Lexend', sans-serif;
+  --font-heading: 'Yrsa', serif;
+  
 
   /* Spacing system */
   --space-1: 4px;
@@ -119,7 +120,7 @@ html, body {
 }
 
 body {
-  font-family: var(--font-body);
+  font-family: var(--font-family);
   line-height: 1.5;
   font-weight: 400;
   color: var(--color-text-primary);
