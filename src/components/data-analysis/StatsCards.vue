@@ -204,6 +204,11 @@ const cards = computed(() => [
   color: var(--color-primary);
   border: 2px solid var(--color-primary);
   background-color: transparent;
+  flex: 0 0 64px;
+  min-width: 64px;
+  min-height: 64px;
+  aspect-ratio: 1 / 1;
+  box-sizing: border-box;
 }
 
 .stat-icon i {
