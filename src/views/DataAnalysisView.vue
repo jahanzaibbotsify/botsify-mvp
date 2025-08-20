@@ -158,7 +158,7 @@ const refreshResults = () => {
 const suggestions = [
   "Show total chatbot users, incoming, and outgoing messages for the last 30 days",
   "List top 10 most common messages from users this month",
-  "Compare engagement on web vs mobile platforms for the last 14 days"
+  "Compare engagement across platforms (Web, WhatsApp, Messenger) for the last 14 days."
 ];
 
 /** Append canned suggestion to the prompt */
