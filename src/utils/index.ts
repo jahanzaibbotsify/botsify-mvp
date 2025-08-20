@@ -1,7 +1,6 @@
 import { useWhitelabelStore } from '@/stores/whitelabelStore';
 import moment from 'moment-timezone';
 import { BOTSIFY_WEB_URL } from './config';
-import { ref } from 'vue';
 
 export const currentTime = () => {
   return moment.utc().format('YYYY-MM-DD HH:mm:ss');
@@ -63,19 +62,27 @@ export const getPlatformClass = (platform: string = '') => {
     return BOTSIFY_WEB_URL;
   }
 
-  export const validateImage = (url?: string, fallback = "/images/elementor-placeholder-image.png") => {
-    const result = ref(fallback);
+  export const validateImage = (
+    url?: string,
+    fallback = "/images/elementor-placeholder-image.png",
+    onValidated?: (finalUrl: string) => void
+  ): string => {
+    if (!url || typeof url !== "string") return fallback;
+    const trimmed = url.trim();
+    if (!trimmed) return fallback;
   
-    if (!url) {
-      result.value = fallback;
-      return result;
+    // Quick extension check
+    const allowedExtensions = [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"];
+    if (!allowedExtensions.some((ext) => trimmed.toLowerCase().endsWith(ext))) {
+      return fallback;
     }
   
+    // Async check
     const img = new Image();
-    img.onload = () => (result.value = url);
-    img.onerror = () => (result.value = fallback);
-    img.src = url;
+    img.onload = () => onValidated?.(trimmed);
+    img.onerror = () => onValidated?.(fallback);
+    img.src = trimmed;
   
-    return result;
-  }
+    return fallback; // immediate safe value
+  };
   
