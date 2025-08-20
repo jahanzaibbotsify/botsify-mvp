@@ -89,13 +89,13 @@ const connectFileSearch = async () => {
     if (response.success) {
       response.data.filename = selectedFile.value.name
       fileSearchResults.push(response.data.data)
-
       // Invalidate cache after adding new file
       fileSearchResource.invalidate()
-
+      
       // Add success message to chat
       const successMessage = `✅ File "${selectedFile.value.name}" uploaded and File Search connected successfully!`
       await chatStore.addMessage(props.chatId, successMessage, 'assistant')
+      removeSelectedFile()
     } else {
       console.error('Failed to create File Search:', response.message)
       window.$toast.error('Failed to create File Search: ' + response.message)

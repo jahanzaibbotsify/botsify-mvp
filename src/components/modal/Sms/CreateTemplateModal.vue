@@ -82,8 +82,27 @@ const errors = computed(() => {
       if (!button.url?.trim()) {
         buttonErrors.url = "URL is required for URL buttons";
       } else {
+        // console.log(button.url, "button.url")
+        // try {
+        //   new URL(button.url.trim());
+        // } catch {
+        //   buttonErrors.url = "Please enter a valid URL";
+        // }
+
+        const basicPattern = /^https?:\/\/[a-z0-9.-]+\.[a-z]{2,}(\/.*)?$/i;
+        if (!basicPattern.test(button.url.trim())) {
+          buttonErrors.url = "Please enter a valid URL";
+        }
+
         try {
-          new URL(button.url.trim());
+          const url = new URL(button.url.trim());
+
+          // Only allow http/https
+          if (url.protocol !== "http:" && url.protocol !== "https:") {
+            buttonErrors.url = "Please enter a valid URL";
+          }
+
+          // return true;
         } catch {
           buttonErrors.url = "Please enter a valid URL";
         }
@@ -437,8 +456,8 @@ defineExpose({ openModal, closeModal, openModalWithData });
                         v-model="button.url"
                         type="url"
                         placeholder="https://example.com"
+                        :error="button.url.trim() != '' ? errors.buttons[index]?.url : ''"
                         />
-                        <!-- :error="errors.buttons[index]?.url" -->
                     </div>
 
                     <div v-if="button.type === 'phone_number'" class="form-group">

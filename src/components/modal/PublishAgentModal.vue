@@ -189,7 +189,7 @@ defineExpose({ openModal, closeModal });
   <!-- Main Agent Selection Modal -->
   <ModalLayout
     ref="modalRef"
-    title=""
+    title="Deploy and publish"
     max-width="650px"
     :showCloseButton="true"
   >

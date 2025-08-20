@@ -203,7 +203,7 @@ defineExpose({
         
         <TableBody>
           <!-- Loading skeleton -->
-          <TableRow v-if="publishStore.smsTemplates.loading" v-for="i in 5" :key="`skeleton-${i}`" skeleton>
+          <TableRow v-if="publishStore.smsTemplates.loading" v-for="i in 4" :key="`skeleton-${i}`" skeleton>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="text"></TableCell>
             <TableCell :isLoading="true" skeletonType="badge"></TableCell>

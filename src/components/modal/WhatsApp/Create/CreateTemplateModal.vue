@@ -127,7 +127,11 @@ const isSaveButtonDisabled = computed(() => {
   return store.isNextDisabled() || store.isSaving;
 });
 
-defineExpose({ openModal, closeModal, openModalWithData });
+const resetForm = () => {
+  store.resetForm();
+};
+
+defineExpose({ openModal, closeModal, openModalWithData, resetForm });
 </script>
 
 <template>

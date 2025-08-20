@@ -55,7 +55,7 @@ export async function getBotData() {
       roleStore.setCurrentUser(data.user);
 
       // Whitelabel
-      if (data.user.is_whitelabel_client) {
+      if (data.user.whitelabel) {
         whitelabelStore.setWhitelabelData(data.user);
         if (data.user.whitelabel?.favicon) {
           let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
