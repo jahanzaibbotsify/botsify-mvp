@@ -134,7 +134,7 @@ defineExpose({
               @click="handleBack"
               style="cursor: pointer;"
             />
-          <img v-if="icon" :src="icon" width="28" height="28" alt="logo" class="modal-logo" />
+          <img v-if="icon" :src="icon" width="24" height="24" alt="logo" class="modal-logo" />
           <h2>{{ props.title }}</h2>
         </div>
        
