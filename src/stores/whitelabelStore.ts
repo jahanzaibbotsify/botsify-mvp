@@ -17,9 +17,9 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
   const whitelabelData = ref<WhitelabelData | null>(null)
 
   // Set whitelabel data from API response
-  function setWhitelabelData(data: { is_whitelabel_client: boolean; whitelabel: WhitelabelData }) {
+  function setWhitelabelData(data: { is_whitelabel_client: boolean; whitelabel: WhitelabelData, is_whitelabel: boolean }) {
     isWhitelabelClient.value = data.is_whitelabel_client
-    whitelabelData.value = data.whitelabel
+    whitelabelData.value = data.is_whitelabel ? data.whitelabel : null
 
     // Apply whitelabel colors to CSS custom properties
     if (data.is_whitelabel_client && data.whitelabel) {
