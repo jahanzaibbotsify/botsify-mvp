@@ -44,15 +44,15 @@ export const useChatStore = defineStore('chat', () => {
     return useBotStore().botId;
   };
 
-  function convertStoredVersionsToStoryStructure(aiPromptVersions: object[]) {
+  function convertStoredVersionsToStoryStructure(versions: object[]) {
     let versionId = '';
     let activeVersionId = '';
     let activeVersionContent = '';
     
     // Reset activeAiPromptVersion before processing new data
     activeAiPromptVersion.value = null;
-    
-    const StoredVersions = aiPromptVersions.map((ver: any) => {
+    globalPromptTemplates.value = [];
+    const StoredVersions = versions.map((ver: any) => {
       let prompt;
       if (typeof ver.ai_prompt === 'string') {
         try {
@@ -64,7 +64,7 @@ export const useChatStore = defineStore('chat', () => {
         prompt = ver.ai_prompt;
       }
 
-      versionId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+      versionId = ver.id ? ver.id : Date.now().toString() + Math.random().toString(36).substr(2, 9);
       
       // Create the properly typed PromptVersion object
       const promptVersion: PromptVersion = {
@@ -75,14 +75,22 @@ export const useChatStore = defineStore('chat', () => {
         updatedAt: new Date(ver.updated_at || Date.now()),
         createdAt: new Date(ver.created_at || Date.now()),
         version: Date.now(),
-        isActive: ver.is_active || false
+        isActive: !!ver.is_active
       };
-      
-      if (ver.is_active) {
+
+      if (!!ver.is_active) {
         activeVersionContent = prompt;
         activeVersionId = versionId;
         // Set the properly typed object instead of the raw ver
         activeAiPromptVersion.value = promptVersion;
+        globalPromptTemplates.value.push({
+          id: versionId,
+          name: ver.name || 'version-1',
+          content: prompt,
+          createdAt: new Date(ver.created_at || Date.now()),
+          updatedAt: new Date(ver.updated_at || Date.now()),
+          isDefault: !!ver.is_active
+        });
       }
       return promptVersion;
     });
@@ -95,14 +103,15 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   // Load data from localStorage on initialization
-  function loadFromStorage(userChats: string, aiPromptVersions: object[]) {
+  function loadFromStorage(userChats: string, versions: object[]) {
     try {
       // Reset activeAiPromptVersion when loading new agent data
       activeAiPromptVersion.value = null;
       
       const storedChats = userChats;
-      const storedTemplates = convertStoredVersionsToStoryStructure(aiPromptVersions);
+      const storedTemplates = convertStoredVersionsToStoryStructure(versions);
       const storedActiveChat = localStorage.getItem('botsify_active_chat');    
+
       if (storedChats && storedChats.length > 4 && storedChats !== 'null' && storedChats !== 'undefined') {
       try {
           const parsedChats = JSON.parse(storedChats);
@@ -140,7 +149,7 @@ export const useChatStore = defineStore('chat', () => {
       }
       if (storedActiveChat && chats.value.some(c => c.id === storedActiveChat)) {
         activeChat.value = storedActiveChat;
-      } else if (storedActiveChat) {
+      } else if (storedTemplates) {
         console.warn('⚠️ Stored active chat ID not found in loaded chats:', storedActiveChat);
       }
     } catch (error) {
