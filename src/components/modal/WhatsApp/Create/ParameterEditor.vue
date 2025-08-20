@@ -665,6 +665,15 @@ defineExpose({
 }
 
 
+.loader-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-primary);
+  border-top-color: transparent;
+  border-radius: 50%;
+}
+
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .parameter-editor {

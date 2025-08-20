@@ -1795,6 +1795,14 @@ onMounted(async () => {
   cursor: not-allowed;
 }
 
+.loader-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-primary);
+  border-top-color: transparent;
+  border-radius: 50%;
+}
+
 
 
 
