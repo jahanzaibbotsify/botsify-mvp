@@ -67,25 +67,25 @@ const onDateChange = (value: { start: string; end: string }) => {
 const cards = computed(() => [
   {
     key: 'total_users',
-    label: 'Chatbot users',
+    label: 'Total Users',
     value: stats.value.total_users,
     icon: 'pi pi-users'
   },
   {
     key: 'incoming_messages',
-    label: 'Incoming messages',
+    label: 'Total Incoming Messages',
     value: stats.value.incoming_messages,
     icon: 'pi pi-inbox'
   },
   {
     key: 'outgoing_messages',
-    label: 'Outgoing messages',
+    label: 'Total Outgoing Messages',
     value: stats.value.outgoing_messages,
     icon: 'pi pi-send'
   },
   {
     key: 'hours_saved',
-    label: 'Customer hours saved',
+    label: 'Total Hours Save (estimated)',
     value: stats.value.hours_saved,
     icon: 'pi pi-clock'
   }
