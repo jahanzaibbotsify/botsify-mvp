@@ -98,7 +98,7 @@ export const useDataAnalysisStore = defineStore('dataAnalysis', () => {
     const firstRow = data[0]
     return Object.keys(firstRow).map(key => ({
       key,
-      label: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1'),
+      label: key.replace(/_/g, ' ').toUpperCase(),
       type: inferColumnType(firstRow[key]),
       sortable: true,
       filterable: true
