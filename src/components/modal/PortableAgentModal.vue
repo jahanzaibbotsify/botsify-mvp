@@ -92,7 +92,7 @@ defineExpose({ openModal, closeModal });
 <template>
   <PublishModalLayout
     ref="modalRef"
-    title="Portable Agent"
+    title="Agent as MCP"
     :tabs="tabs"
     icon="/bots/portable-agent-icon.svg"
     max-width="1200px"
@@ -103,7 +103,6 @@ defineExpose({ openModal, closeModal });
     <template #default="{ activeTab }">
       <!-- Publish Tab -->
       <div v-if="activeTab === 'publish'" class="tab-panel">
-        <h3>Agent as an MCP</h3>
         <!-- <p class="subtitle">MCP server information</p> -->
         
         <div class="form-section">

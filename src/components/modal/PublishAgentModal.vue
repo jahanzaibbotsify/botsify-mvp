@@ -104,7 +104,7 @@ const publishStatus = computed(() => publishStore.publishStatus.data);
 const agents = computed(() => {
   const statusData = publishStatus.value?.data?.data;
   return [
-    { icon: 'portable-agent-icon.svg', label: 'Portable agent', status: 'inactive' },
+    { icon: 'portable-agent-icon.svg', label: 'Agent as MCP', status: 'inactive' },
     { icon: 'website.png', label: 'Website', status: 'inactive' },
     { icon: 'whatsapp.png', label: 'WhatsApp', status: statusData?.whatsapp ? 'active' : 'inactive' },
     { icon: 'messenger.png', label: 'Messenger', status: statusData?.facebook ? 'active' : 'inactive' },
@@ -133,7 +133,7 @@ const handleAgentClick = (agentLabel: string) => {
     messengerModalRef.value?.openModal();
   } else if (agentLabel === 'Instagram'){
     instagramModalRef.value?.openModal();
-  } else if (agentLabel === 'Portable agent'){
+  } else if (agentLabel === 'Agent as MCP'){
     portableAgentModalRef.value?.openModal();
   }
   modalRef.value?.closeModal();
