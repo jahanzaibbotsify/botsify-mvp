@@ -94,7 +94,7 @@ defineExpose({ openModal, closeModal });
     ref="modalRef"
     title="Agent as MCP"
     :tabs="tabs"
-    icon="/bots/portable-agent-icon.svg"
+    icon="/bots/mcp.png"
     max-width="1200px"
     default-tab="publish"
     @back="handleBack"

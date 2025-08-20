@@ -104,7 +104,7 @@ const publishStatus = computed(() => publishStore.publishStatus.data);
 const agents = computed(() => {
   const statusData = publishStatus.value?.data?.data;
   return [
-    { icon: 'portable-agent-icon.svg', label: 'Agent as MCP', status: 'inactive' },
+    { icon: 'mcp.png', label: 'Agent as MCP', status: 'inactive' },
     { icon: 'website.png', label: 'Website', status: 'inactive' },
     { icon: 'whatsapp.png', label: 'WhatsApp', status: statusData?.whatsapp ? 'active' : 'inactive' },
     { icon: 'messenger.png', label: 'Messenger', status: statusData?.facebook ? 'active' : 'inactive' },
