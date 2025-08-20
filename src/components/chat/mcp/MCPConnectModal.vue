@@ -25,6 +25,7 @@ const emit = defineEmits(['close', 'connect', 'quit']);
 
 const mcpStore = useMCPStore();
 const description = ref('');
+const googleSheetUrl = ref('');
 const serverUrl = ref('');
 const serverLabel = ref('');
 const apiKey = ref('')
@@ -69,11 +70,8 @@ const checkAndPreFillConnectedServer = () => {
     authType.value = connectedServer.setting?.auth_method || props.server?.authMethod || 'none';
     serverUrl.value = connectedServer.setting?.server_url || '';
 
-    if (props?.server && props.server?.id === 'google-sheet' && description.value?.trim()) {
-      const match = description.value.match(/https:\/\/docs\.google\.com\/spreadsheets\/[^\s]+/);
-      if (match) {
-        description.value = match[0];
-      }
+    if (props?.server && props.server?.id === 'google-sheet' && connectedServer.setting?.google_sheet_url) {
+      googleSheetUrl.value = connectedServer.setting?.google_sheet_url
     }
 
     /**
@@ -286,12 +284,6 @@ const addServer = async (allowedTools: string[]) => {
     url = props.server ? props.server.server_url : serverUrl.value;
   }
 
-  if (props?.server && props.server?.id === 'google-sheet') {
-    if (description.value?.trim()) {
-      description.value += ' This is the Google Sheet URL you must use for all task entries and modifications. Always add or update tasks only in this sheet, and make sure to append new records at the end of the sheet.';
-    }
-  }
-
   const mcpPayload = {
     settings: {
       apikey: apiKey.value,
@@ -304,6 +296,7 @@ const addServer = async (allowedTools: string[]) => {
       require_approval: "never",
       is_custom: props.isCustom,
       auth_method: authType.value,
+      ...(googleSheetUrl.value ? {google_sheet_url: googleSheetUrl.value} : {})
     },
     apikey: useBotStore().apiKey
   };
@@ -415,8 +408,11 @@ onMounted(() => {
             <input type="text" v-model="serverLabel" id="label" placeholder="Server Label e.g my_mcp_server">
           </div>
         </div>
+        <div class="pt-20" v-if="server?.id === 'google-sheet'">
+          <input type="text" v-model="googleSheetUrl" id="google-sheet-url" placeholder="Google Sheet URL">
+        </div>
         <div class="pt-20">
-          <input type="text" v-model="description" id="description" :placeholder="server?.id === 'google-sheet' ? 'Google Sheet URL' : 'Description (optional)'">
+          <input type="text" v-model="description" id="description" placeholder="Description (optional)">
         </div>
         <div class="auth-select-group pt-20" v-if="isCustom">
           <label class="auth-label" for="authType">
