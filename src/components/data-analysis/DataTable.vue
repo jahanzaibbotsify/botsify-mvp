@@ -152,11 +152,6 @@ const getEmptyStateMessage = () => {
 
 <style scoped>
 .table-section {
-  flex: 4;
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
   overflow: hidden;
 }
 
@@ -233,7 +228,6 @@ const getEmptyStateMessage = () => {
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .table-section {
-    padding: var(--space-3);
     margin: var(--space-2);
   }
   
@@ -252,20 +246,6 @@ const getEmptyStateMessage = () => {
   .empty-subtext {
     font-size: 0.8rem;
     max-width: 250px;
-  }
-}
-
-/* Tablet responsiveness */
-@media (max-width: 1024px) and (min-width: 769px) {
-  .table-section {
-    padding: var(--space-4);
-  }
-}
-
-/* Large screens */
-@media (min-width: 1280px) {
-  .table-section {
-    padding: var(--space-5);
   }
 }
 </style>

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import {ref, computed} from 'vue'
 import { useDataAnalysisStore } from '@/stores/dataAnalysisStore'
 import DataTable from '@/components/data-analysis/DataTable.vue'
 import ComingSoon from '@/components/data-analysis/ComingSoon.vue'
 import DataAnalysisFilters from '@/components/data-analysis/DataAnalysisFilters.vue'
+import StatsCards from '@/components/data-analysis/StatsCards.vue'
 import {axiosInstance} from "@/utils/axiosInstance";
 import {getCurrentApiKey} from "@/utils/apiKeyUtils";
 
@@ -157,9 +158,7 @@ const refreshResults = () => {
 const suggestions = [
   "Show total chatbot users, incoming, and outgoing messages for the last 30 days",
   "List top 10 most common messages from users this month",
-  "Compare engagement on web vs mobile platforms for the last 14 days",
-  "Show daily new user registrations over the last 2 weeks",
-  "List top 5 agents with the highest conversation resolution rate this month"
+  "Compare engagement on web vs mobile platforms for the last 14 days"
 ];
 
 /** Append canned suggestion to the prompt */
@@ -170,34 +169,15 @@ const sendSuggestion = (suggestion: string) => {
     prompt.value = suggestion
   }
 }
+
+// Stats are now loaded by `StatsCards` itself
 </script>
 
 <template>
   <div class="data-analysis-view">
     <div class="page-header">
       <div class="header-content">
-        <p>Use AI to analyze your Botsify data with intelligent filters and natural language queries.</p>
-      </div>
-
-      <div v-if="hasResults" class="header-actions">
-        <button class="action-btn" @click="refreshResults" :disabled="dataAnalysisStore.loading">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <polyline points="1 20 1 14 7 14"></polyline>
-            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-          </svg>
-          Refresh
-        </button>
-
-        <button class="action-btn secondary" @click="clearResults">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          </svg>
-          Clear
-        </button>
+        <p>Analytics</p>
       </div>
     </div>
 
@@ -206,6 +186,10 @@ const sendSuggestion = (suggestion: string) => {
       <div class="main-content">
         <!-- Input Section -->
         <div class="input-section">
+          <!-- Stats Section -->
+          <div class="stats-section">
+            <StatsCards />
+          </div>
           <div class="centered-heading">
             <h1>What would you like to analyze?</h1>
             <p>Use natural language to query your Botsify data. Apply filters to refine your analysis.</p>
@@ -301,12 +285,13 @@ const sendSuggestion = (suggestion: string) => {
           </div>
 
           <!-- Table Preview -->
-          <DataTable
-              v-else-if="isTablePreview && tableData.length > 0"
-              :data="tableData"
-              :columns="tableColumns"
-              :loading="dataAnalysisStore.loading"
-          />
+          <div v-else-if="isTablePreview && tableData.length > 0" class="table-wrapper">
+            <DataTable
+                :data="tableData"
+                :columns="tableColumns"
+                :loading="dataAnalysisStore.loading"
+            />
+          </div>
 
           <!-- Unsupported Preview Type -->
           <ComingSoon
@@ -402,7 +387,9 @@ const sendSuggestion = (suggestion: string) => {
 }
 
 .filters-section {
-  margin-bottom: var(--space-4);
+  margin: 0 auto var(--space-4);
+  max-width: 900px;
+  width: 100%;
 }
 
 .main-content {
@@ -426,6 +413,12 @@ const sendSuggestion = (suggestion: string) => {
 .input-section > * {
   width: 100%;
   max-width: 900px;
+}
+
+.stats-section {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto var(--space-5);
 }
 
 .centered-heading {
@@ -596,6 +589,20 @@ const sendSuggestion = (suggestion: string) => {
   margin-bottom: var(--space-4);
 }
 
+/* Constrain inner table to match message box width */
+.results-section :deep(.table-section) {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Wrapper for extra safety */
+.table-wrapper {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+}
+
 .error-message {
   display: flex;
   gap: var(--space-3);
@@ -700,8 +707,8 @@ const sendSuggestion = (suggestion: string) => {
 .loading-spinner-large {
   width: 60px;
   height: 60px;
-  border: 6px solid rgba(255, 255, 255, 0.3);
-  border-top: 6px solid white;
+  border: 6px solid rgba(18, 17, 17, 0.3);
+  border-top: 6px solid #222020;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -756,6 +763,32 @@ const sendSuggestion = (suggestion: string) => {
   .input-section > * {
     max-width: 100%;
   }
+
+  .stats-section {
+    max-width: 100%;
+  }
+
+  /* Match filters width to message box on mobile */
+  .filters-section {
+    max-width: 100%;
+  }
+  /* Match table width to message box on mobile */
+  .results-section :deep(.table-section) {
+    max-width: 100%;
+  }
+  .table-wrapper {
+    max-width: 100%;
+  }
+}
+
+/* Tablet and small laptop range: 768px–1023px */
+@media (max-width: 1023px) and (min-width: 768px) {
+  /* Ensure datatable matches message box width and is centered */
+  .results-section :deep(.table-section) {
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+  }
 }
 
 /* Medium desktop responsiveness */
@@ -783,6 +816,22 @@ const sendSuggestion = (suggestion: string) => {
   }
 
   .input-section > * {
+    max-width: 760px;
+  }
+
+  .stats-section {
+    max-width: 760px;
+  }
+
+  /* Match filters width to message box at this breakpoint */
+  .filters-section {
+    max-width: 760px;
+  }
+  /* Match table width to message box at this breakpoint */
+  .results-section :deep(.table-section) {
+    max-width: 760px;
+  }
+  .table-wrapper {
     max-width: 760px;
   }
 

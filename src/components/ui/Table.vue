@@ -42,11 +42,11 @@ defineEmits<{
 
 <style scoped>
 .table-container {
-  background-color: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   position: relative;
 }
 
@@ -54,7 +54,7 @@ defineEmits<{
   overflow-x: auto;
   max-height: 50vh;
   overflow-y: auto;
-  background-color: white;
+  background-color: var(--color-bg-secondary);
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 #f1f5f9;
 }
@@ -86,8 +86,8 @@ defineEmits<{
 }
 
 .data-table th {
-  background-color: #f8fafc;
-  color: #374151;
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
   padding: 16px 12px;
   text-align: left;
   font-weight: 600;
@@ -97,7 +97,7 @@ defineEmits<{
   position: sticky;
   top: 0;
   white-space: nowrap;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid var(--color-border);
 }
 
 .data-table th.sortable {
@@ -133,16 +133,16 @@ defineEmits<{
 
 .data-table td {
   padding: 16px 12px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--color-border);
   font-size: 13px;
-  background-color: white;
+  background-color: var(--color-bg-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .data-table tr:hover td {
-  background-color: #f9fafb;
+  background-color: var(--color-bg-hover);
 }
 
 .data-table tr.clickable {
@@ -151,7 +151,7 @@ defineEmits<{
 }
 
 .data-table tr.clickable:hover {
-  background-color: #f9fafb !important;
+  background-color: var(--color-bg-hover) !important;
 }
 
 

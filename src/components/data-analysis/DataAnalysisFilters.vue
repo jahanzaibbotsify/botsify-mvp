@@ -233,8 +233,10 @@ const handleBooleanChange = (event: Event): void => {
 .controls-section {
   background-color: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 24px;
   margin-bottom: 20px;
+  width: 100%;
+  box-shadow: var(--shadow-sm);
 }
 
 /* Desktop Layout */
@@ -245,7 +247,6 @@ const handleBooleanChange = (event: Event): void => {
   gap: 16px;
   flex-wrap: nowrap;
   padding: 12px;
-  border-bottom: 1px solid var(--color-border);
 }
 
 .search-controls {
@@ -293,7 +294,7 @@ const handleBooleanChange = (event: Event): void => {
 
 .filter-dropdown,
 .segment-dropdown {
-  min-width: 130px;
+  min-width: 150px;
   flex-shrink: 0;
 }
 
@@ -304,18 +305,23 @@ const handleBooleanChange = (event: Event): void => {
 }
 
 .date-range {
-  min-width: 160px;
-  flex-shrink: 0;
+  width: 250px;
+  min-width: 250px;
+  max-width: 250px;
+  flex: 0 0 250px;
 }
 
 .date-range :deep(.vue3-date-time-picker) {
   height: 44px;
+  width: 100%;
 }
 
 .date-range :deep(.vue3-date-time-picker input) {
   height: 44px;
   padding: 12px 16px;
   font-size: 13px;
+  width: 100%;
+  white-space: nowrap;
 }
 
 .numeric-filter,
@@ -349,6 +355,7 @@ const handleBooleanChange = (event: Event): void => {
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .export-btn {
@@ -381,12 +388,14 @@ const handleBooleanChange = (event: Event): void => {
 /* Responsive Design */
 @media (max-width: 1024px) {
   .desktop-controls {
-    gap: 12px;
+    gap: 10px;
     padding: 10px;
+    flex-wrap: nowrap;
   }
   
   .search-controls {
     gap: 8px;
+    flex-wrap: nowrap;
   }
   
   .filter-dropdown,
@@ -396,6 +405,9 @@ const handleBooleanChange = (event: Event): void => {
   
   .date-range {
     min-width: 140px;
+    width: auto;
+    max-width: none;
+    flex: 0 1 auto;
   }
   
   .numeric-filter,
@@ -407,32 +419,63 @@ const handleBooleanChange = (event: Event): void => {
 /* Medium desktop responsiveness */
 @media (max-width: 1280px) and (min-width: 769px) {
   .desktop-controls {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 10px 12px;
   }
 
   .search-controls {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 10px;
   }
 
   .filter-dropdown,
   .segment-dropdown,
-  .date-range,
   .numeric-filter,
   .boolean-filter {
     min-width: 160px;
   }
 
+  .date-range {
+    width: 250px;
+    min-width: 250px;
+    max-width: 250px;
+    flex: 0 0 250px;
+  }
+
   .action-controls {
-    width: 100%;
-    justify-content: flex-start;
+    width: auto;
+    justify-content: flex-end;
   }
 }
 
 @media (max-width: 768px) {
   .desktop-controls {
-    display: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .search-controls {
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 1 1 100%;
+  }
+
+  .search-box,
+  .filter-dropdown,
+  .segment-dropdown,
+  .date-range,
+  .numeric-filter,
+  .boolean-filter {
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+
+  .action-controls {
+    width: 100%;
+    justify-content: flex-end;
+    margin-left: 0;
   }
 }
 </style>
