@@ -569,7 +569,7 @@ export class PublishApiService {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.delete(`/v1/template/${id}`, {
-        params: {
+        data: {
           apikey: apiKey
         },
         timeout: 30000 // 30 seconds timeout
@@ -758,7 +758,7 @@ export class PublishApiService {
     try {
       const {apiKey} = useBotStore();
       const response = await axiosInstance.delete(`/v1/bot/comment-optin/delete/${id}`, {
-        params: {
+        data: {
           apikey: apiKey
         },
         timeout: 30000 // 30 seconds timeout

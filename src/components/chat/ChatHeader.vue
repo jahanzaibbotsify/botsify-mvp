@@ -10,7 +10,7 @@
         </div>
         <div v-if="showBotNameDropdown" class="dropdown-content">
           <button class="dropdown-item" @click="navigateToManageAgents">
-            <i class="pi pi-cog" style="font-size: 18px;"></i>
+            <i class="pi pi-cog" style="font-size: 17px;"></i>
             <span>Manage Agents</span>
           </button>
         </div>
@@ -51,15 +51,15 @@
         </button>
         <div v-if="showDropdown" class="dropdown-content">
           <button class="dropdown-item" @click="toggleTheme">
-            <i :class="themeStore.theme === 'light' ? 'pi pi-moon' : 'pi pi-sun'" style="font-size: 18px;"></i>
+            <i :class="themeStore.theme === 'light' ? 'pi pi-moon' : 'pi pi-sun'" style="font-size: 17px;"></i>
             <span>{{ themeStore.theme === 'light' ? 'Night Theme' : 'Light Theme' }}</span>
           </button>
           <button class="dropdown-item" @click="handleAIPrompt" v-if="props.hasPromptContent">
-            <i class="pi pi-bolt" style="font-size: 18px;"></i>
+            <i class="pi pi-bolt" style="font-size: 17px;"></i>
             <span>AI Prompt</span>
           </button>
           <button :disabled="chatStore.chats[0].messages.length < 2"  class="btn dropdown-item" @click="handleReset('reset')">
-            <i class="pi pi-replay" style="font-size: 18px;"></i>
+            <i class="pi pi-replay" style="font-size: 17px;"></i>
             <span>Clear Conversation</span>
           </button>
         </div>
@@ -318,7 +318,7 @@ onBeforeUnmount(() => {
   border: none;
   color: var(--color-text-primary);
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: 0.90rem;
   font-weight: 500;
   transition: background-color var(--transition-fast);
 }

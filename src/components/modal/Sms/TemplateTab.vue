@@ -103,6 +103,7 @@ const handleCloneTemplate = async (id: number) => {
       try {
         const result = await publishApi.cloneSmsTemplate(id);
         if (result.success) {
+          publishStore.smsTemplates.invalidate();
           loadTemplates(1)
           window.$toast.success('SMS template cloned successfully!');
         } else {

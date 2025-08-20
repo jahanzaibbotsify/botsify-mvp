@@ -214,10 +214,11 @@ const handleLogout = async () => {
             </div>
             <ul class="features-list">
               <li v-for="feature in plan.features" :key="feature" class="feature-item">
-                <div class="feature-check">
+                <div v-if="feature.includes('🔥')" class="feature-fire">🔥</div>
+                <div class="feature-check" v-else>
                   <i class="pi pi-check"></i>
                 </div>
-                <span>{{ feature }}</span>
+                <span>{{ feature.includes('🔥') ? feature.replace('🔥', '') : feature }}</span>
               </li>
             </ul>
           </div>
@@ -683,6 +684,12 @@ const handleLogout = async () => {
   line-height: 1.5;
 }
 
+.feature-fire{
+  font-size: 18px;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+}
 .feature-check {
   width: 20px;
   height: 20px;

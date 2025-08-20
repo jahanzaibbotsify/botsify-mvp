@@ -391,8 +391,8 @@ defineExpose({ openModal, closeModal, openModalWithData });
                   v-for="(button, index) in form.buttons"
                   :key="index"
                   class="button-item"
-                  :class="{ 'has-error': errors.buttons[index] && Object.values(errors.buttons[index]).some(error => error) }"
-                >
+                  :class="{ 'has-error': errors.buttons[index] && Object.values(errors.buttons[index]).some(error => error) && !button.isEditing }"
+                  >
                   <div class="button-header">
                     <div class="button-info">
                       <span class="button-type-badge">{{ button.type.replace('_', ' ').toUpperCase() }}</span>
@@ -426,8 +426,8 @@ defineExpose({ openModal, closeModal, openModalWithData });
                         label="Button title"
                         v-model="button.title"
                         placeholder="Enter button title"
-                        :error="errors.buttons[index]?.title"
-                      />
+                        />
+                        <!-- :error="errors.buttons[index]?.title" -->
                     </div>
 
                     <!-- Button Type Specific Fields -->
@@ -437,8 +437,8 @@ defineExpose({ openModal, closeModal, openModalWithData });
                         v-model="button.url"
                         type="url"
                         placeholder="https://example.com"
-                        :error="errors.buttons[index]?.url"
-                      />
+                        />
+                        <!-- :error="errors.buttons[index]?.url" -->
                     </div>
 
                     <div v-if="button.type === 'phone_number'" class="form-group">
@@ -447,8 +447,8 @@ defineExpose({ openModal, closeModal, openModalWithData });
                         v-model="button.payload"
                         type="tel"
                         placeholder="+1234567890"
-                        :error="errors.buttons[index]?.payload"
-                      />
+                        />
+                        <!-- :error="errors.buttons[index]?.payload" -->
                     </div>
 
                     <div v-if="button.type === 'postback' && (!isEditMode || button.isNew)" class="form-group">
@@ -457,8 +457,8 @@ defineExpose({ openModal, closeModal, openModalWithData });
                         v-model="button.response"
                         placeholder="Enter response text"
                         :rows="2"
-                        :error="errors.buttons[index]?.response"
-                      />
+                        />
+                        <!-- :error="errors.buttons[index]?.response" -->
                     </div>
 
                     <div class="action-buttons">
