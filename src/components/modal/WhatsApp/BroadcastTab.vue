@@ -61,10 +61,10 @@ const csvData = ref<{ headers: string[], data: any[] }>({ headers: [], data: [] 
 
 
 const fileUploadError = computed(() => {
-  if (broadcastForm.value.userSegment === 'file' && !broadcastForm.value.uploadedFile) {
+  if (broadcastForm.value.userSegment === 'upload' && !broadcastForm.value.uploadedFile && uploadedUsers.value.length === 0) {
     return 'File upload is required for upload user broadcast';
   }
-  if (broadcastForm.value.userSegment === 'file' && uploadedUsers.value.length === 0) {
+  if (broadcastForm.value.userSegment === 'upload' && uploadedUsers.value.length === 0 && csvError.value) {
     return 'No valid users found in uploaded file';
   }
   return undefined;
@@ -751,6 +751,7 @@ const validateTemplateSelection = (): boolean => {
     validationErrors.value.template = 'Please select a template';
     return false;
   }
+  validationErrors.value.template = '';
   return true;
 };
 
@@ -772,6 +773,7 @@ const validatePhoneNumber = (): boolean => {
       return false;
     }
   }
+  validationErrors.value.phoneNumber = '';
   return true;
 };
 
@@ -1006,7 +1008,109 @@ const updateStoreFromTemplateData = () => {
   store.template = completeTemplate;
   store.block.text = templateData.value.body_text || '';
   store.block.attachment_link = templateData.value.attachment_link || '';
+
+  // Clear any errors that have been resolved due to this update
+  clearResolvedErrors();
 };
+
+// Clear resolved validation errors as fields become valid
+const clearResolvedErrors = () => {
+  // Template selection
+  if (selectedTemplate.value) {
+    validationErrors.value.template = '';
+  }
+
+  // User segment
+  if (broadcastForm.value.userSegment) {
+    validationErrors.value.userSegment = '';
+  }
+
+  // Phone number (only for single user)
+  if (broadcastForm.value.userSegment === 'single') {
+    const phone = (broadcastForm.value.phoneNumber || '').replace(/\s/g, '');
+    if (/^\+?[1-9]\d{1,14}$/.test(phone)) {
+      validationErrors.value.phoneNumber = '';
+    }
+  } else {
+    validationErrors.value.phoneNumber = '';
+  }
+
+  // File upload (only for upload segment)
+  if (broadcastForm.value.userSegment !== 'upload') {
+    validationErrors.value.uploadedFile = '';
+  } else if (
+    !!broadcastForm.value.uploadedFile ||
+    (Array.isArray(csvData.value.data) && csvData.value.data.length > 0) ||
+    (Array.isArray(uploadedUsers.value) && uploadedUsers.value.length > 0)
+  ) {
+    validationErrors.value.uploadedFile = '';
+  }
+
+  // Template variables - body
+  if (templateData.value.variables.body && templateData.value.variables.body.length > 0) {
+    templateData.value.variables.body.forEach((variable: any, index: number) => {
+      if (variable && typeof variable.value === 'string' && variable.value.trim() !== '') {
+        validationErrors.value.variables[`body_${index}`] = '';
+      }
+    });
+  }
+
+  // Template variables - header
+  if (
+    templateData.value.variables.header &&
+    typeof templateData.value.variables.header.value === 'string' &&
+    templateData.value.variables.header.value.trim() !== ''
+  ) {
+    validationErrors.value.variables.header = '';
+  }
+
+  // Media header
+  if (!showMediaHeader.value || (templateData.value.attachment_link && templateData.value.attachment_link !== '')) {
+    validationErrors.value.mediaHeader = '';
+  }
+
+  // Generic slides validations
+  if (templateData.value.type === 'generic' && Array.isArray(templateData.value.slides)) {
+    templateData.value.slides.forEach((slide: any, slideIndex: number) => {
+      if (slide?.variables?.body && slide.variables.body.length > 0) {
+        slide.variables.body.forEach((variable: any, varIndex: number) => {
+          if (variable && typeof variable.value === 'string' && variable.value.trim() !== '') {
+            validationErrors.value.variables[`slide_${slideIndex}_body_${varIndex}`] = '';
+          }
+        });
+      }
+
+      if (slide?.variables?.button && typeof slide.variables.button.value === 'string' && slide.variables.button.value.trim() !== '') {
+        validationErrors.value.variables[`slide_${slideIndex}_button`] = '';
+      }
+
+      if (slide?.attachment_link) {
+        validationErrors.value.variables[`slide_${slideIndex}_attachment`] = '';
+      }
+    });
+  }
+};
+
+// Additional reactive listeners to clear errors when inputs change
+watch(() => broadcastForm.value.phoneNumber, () => {
+  clearResolvedErrors();
+});
+
+watch(selectedTemplate, () => {
+  clearResolvedErrors();
+});
+
+watch(() => broadcastForm.value.uploadedFile, () => {
+  clearResolvedErrors();
+});
+
+watch(uploadedUsers, () => {
+  clearResolvedErrors();
+});
+
+watch(csvError, () => {
+  clearResolvedErrors();
+});
 
 // Add this method to the script section
 const handleSendBroadcast = async () => {
@@ -1015,7 +1119,7 @@ const handleSendBroadcast = async () => {
     // Check if there are any validation errors and show them
     if (hasValidationErrors()) {
       // Show error message to user
-      window.$toast?.error('Please fix the validation errors before sending the broadcast');
+      // window.$toast?.error('Please fix the validation errors before sending the broadcast');
       
       // Scroll to the first error field
       nextTick(() => {
@@ -1056,16 +1160,16 @@ const handleSendBroadcast = async () => {
         });
         
         if (result.success) {
-          window.$toast?.success('Broadcast scheduled successfully!');
+          window.$toast?.success('Broadcast send successfully!');
           
           // Reset broadcast tab values after successful broadcast
           resetBroadcastForm();
         } else {
-          window.$toast?.error(result.error || 'Failed to schedule broadcast');
+          window.$toast?.error(result.error || 'Failed to send broadcast');
         }
       } catch (error) {
         console.error('Failed to send broadcast:', error);
-        window.$toast?.error('Failed to schedule broadcast');
+        window.$toast?.error('Failed to send broadcast');
       } finally {
         // Reset loading state
         isBroadcastSending.value = false;
@@ -1091,6 +1195,8 @@ watch(() => broadcastForm.value.userSegment, (newSegment) => {
   if (newSegment === '-1') {
     publishStore.whatsappSegmentUsers.load();
   }
+  // Clear any segment-related errors immediately on change
+  clearResolvedErrors();
 });
 
 
@@ -1211,8 +1317,8 @@ onMounted(async () => {
         
         <!-- Phone Number (Single user only) -->
         <div v-if="showPhoneNumber" class="form-group">
-          <label for="broadcast-phone">Phone number</label>
           <Input
+            label="Phone number"
             id="broadcast-phone"
             v-model="broadcastForm.phoneNumber"
             type="tel"

@@ -44,7 +44,7 @@ defineEmits<{
 .table-container {
   background-color: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
-  border-radius: 24px;
+  border-radius: 8px;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
   position: relative;

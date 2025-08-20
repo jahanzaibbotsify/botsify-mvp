@@ -333,15 +333,11 @@ const openAuthPopup = (url: string, action: string) => {
           <div class="page-main">
             <div class="page-avatar">
               <img 
-                v-if="page.profile_picture_url" 
-                :src="page.profile_picture_url" 
+                :src="'https://graph.facebook.com/' + page.id + '/picture?type=large'" 
                 :alt="page.name"
                 class="avatar-image"
                 @error="(event) => { const target = event.target as HTMLImageElement; if (target) target.style.display = 'none'; }"
               />
-              <div v-else class="avatar-fallback">
-                {{ getInitials(page.name) }}
-              </div>
             </div>
             
             <div class="page-content">
