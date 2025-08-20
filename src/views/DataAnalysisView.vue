@@ -179,7 +179,7 @@ const sendSuggestion = (suggestion: string) => {
   <div class="data-analysis-view">
     <div class="page-header">
       <div class="header-content">
-        <p>Use AI to analyze your Botsify data with intelligent filters and natural language queries.</p>
+        <p>Analytics</p>
       </div>
     </div>
 
