@@ -43,7 +43,8 @@ export function useChatManagement(chatId: string) {
 
   const hasPromptContent = computed(() => {
     try {
-      return latestPromptContent.value.trim().length > 0;
+      console.log('chatStore.activeAiPromptVersion', chatStore.activeAiPromptVersion);
+      return chatStore.activeAiPromptVersion && chatStore.activeAiPromptVersion.version;
     } catch (error) {
       console.error('Error checking prompt content:', error);
       return false;

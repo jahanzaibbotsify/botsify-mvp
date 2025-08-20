@@ -1032,7 +1032,6 @@ Use the above connected services information to understand what tools and data s
   // Function to clear message history for a specific chat
   async function clearChatMessages() {
     try {
-
       const response = await botsifyApi.clearAgentConversion({apikey: getCurrentApiKey()});
       
       if (!response.success) {
@@ -1043,7 +1042,8 @@ Use the above connected services information to understand what tools and data s
 
       window.$toast.success(`${response.message}`);
       chats.value[0].messages = [];
-
+      chats.value[0].lastMessage = '';
+      activeAiPromptVersion.value = null;
        
       return true;
       } catch (error) {
