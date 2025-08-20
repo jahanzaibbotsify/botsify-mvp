@@ -192,6 +192,7 @@ onMounted(() => {
               @click="togglePasswordVisibility('password')"
               class="password-toggle"
               :disabled="isLoading"
+              tabindex="-1"
             >
               <i :class="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
             </button>
@@ -243,6 +244,7 @@ onMounted(() => {
               @click="togglePasswordVisibility('confirmPassword')"
               class="password-toggle"
               :disabled="isLoading"
+              tabindex="-1"
             >
               <i :class="showConfirmPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
             </button>
