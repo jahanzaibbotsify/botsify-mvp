@@ -22,12 +22,11 @@ const isRemoveLoading = ref(false);
 const storePages = computed(() => publishStore.instagramPages.data);
 const storePagesLoaded = computed(() => publishStore.instagramPages.valid);
 const storeIsLoadingPages = computed(() => publishStore.instagramPages.loading);
-
 // Computed pages data from store
 const pages = computed(() => {
-  const pagesData = storePages.value?.data?.pagesData?.data || [];
+  const pagesData = storePages.value?.data?.pagesData || [];
   const currentPageId = storePages.value?.data.pageId;
-
+  console.log(pagesData, "pagesData")
   if (!Array.isArray(pagesData) || pagesData.length === 0) {
     return [];
   }
