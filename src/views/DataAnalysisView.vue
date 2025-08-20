@@ -178,27 +178,6 @@ const sendSuggestion = (suggestion: string) => {
       <div class="header-content">
         <p>Use AI to analyze your Botsify data with intelligent filters and natural language queries.</p>
       </div>
-
-      <div v-if="hasResults" class="header-actions">
-        <button class="action-btn" @click="refreshResults" :disabled="dataAnalysisStore.loading">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <polyline points="1 20 1 14 7 14"></polyline>
-            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-          </svg>
-          Refresh
-        </button>
-
-        <button class="action-btn secondary" @click="clearResults">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          </svg>
-          Clear
-        </button>
-      </div>
     </div>
 
     <div class="analysis-content mt-5">
@@ -301,12 +280,13 @@ const sendSuggestion = (suggestion: string) => {
           </div>
 
           <!-- Table Preview -->
-          <DataTable
-              v-else-if="isTablePreview && tableData.length > 0"
-              :data="tableData"
-              :columns="tableColumns"
-              :loading="dataAnalysisStore.loading"
-          />
+          <div v-else-if="isTablePreview && tableData.length > 0" class="table-wrapper">
+            <DataTable
+                :data="tableData"
+                :columns="tableColumns"
+                :loading="dataAnalysisStore.loading"
+            />
+          </div>
 
           <!-- Unsupported Preview Type -->
           <ComingSoon
@@ -402,7 +382,9 @@ const sendSuggestion = (suggestion: string) => {
 }
 
 .filters-section {
-  margin-bottom: var(--space-4);
+  margin: 0 auto var(--space-4);
+  max-width: 900px;
+  width: 100%;
 }
 
 .main-content {
@@ -596,6 +578,20 @@ const sendSuggestion = (suggestion: string) => {
   margin-bottom: var(--space-4);
 }
 
+/* Constrain inner table to match message box width */
+.results-section :deep(.table-section) {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Wrapper for extra safety */
+.table-wrapper {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+}
+
 .error-message {
   display: flex;
   gap: var(--space-3);
@@ -756,6 +752,28 @@ const sendSuggestion = (suggestion: string) => {
   .input-section > * {
     max-width: 100%;
   }
+
+  /* Match filters width to message box on mobile */
+  .filters-section {
+    max-width: 100%;
+  }
+  /* Match table width to message box on mobile */
+  .results-section :deep(.table-section) {
+    max-width: 100%;
+  }
+  .table-wrapper {
+    max-width: 100%;
+  }
+}
+
+/* Tablet and small laptop range: 768px–1023px */
+@media (max-width: 1023px) and (min-width: 768px) {
+  /* Ensure datatable matches message box width and is centered */
+  .results-section :deep(.table-section) {
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+  }
 }
 
 /* Medium desktop responsiveness */
@@ -783,6 +801,18 @@ const sendSuggestion = (suggestion: string) => {
   }
 
   .input-section > * {
+    max-width: 760px;
+  }
+
+  /* Match filters width to message box at this breakpoint */
+  .filters-section {
+    max-width: 760px;
+  }
+  /* Match table width to message box at this breakpoint */
+  .results-section :deep(.table-section) {
+    max-width: 760px;
+  }
+  .table-wrapper {
     max-width: 760px;
   }
 
