@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref, computed, onMounted, onUnmounted, nextTick, watch} from 'vue'
+import {ref, computed, onMounted, onUnmounted, watch} from 'vue'
 import {useRouter} from 'vue-router'
 import {axiosInstance} from "@/utils/axiosInstance.ts"
 import {useBotStore} from "@/stores/botStore.ts";
@@ -289,28 +289,28 @@ const copyPayload = async (agent: any) => {
  * Export agent data
  * @param agent - Agent to export data for
  */
-const exportData = (agent: any) => {
-  activeMenuId.value = null
+// const exportData = (agent: any) => {
+//   activeMenuId.value = null
 
-  window.$confirm({
-    text: 'Please confirm, your agent data will be exported and then will be sent you via email.',
-    cancelButtonText: 'No',
-    confirmButtonText: 'Yes'
-  }, async () => {
-    try {
-      const response = await axiosInstance.get(`v1/agent-export/${agent.token}`)
+//   window.$confirm({
+//     text: 'Please confirm, your agent data will be exported and then will be sent you via email.',
+//     cancelButtonText: 'No',
+//     confirmButtonText: 'Yes'
+//   }, async () => {
+//     try {
+//       const response = await axiosInstance.get(`v1/agent-export/${agent.token}`)
 
-      if (response.data && response.data.status === 'success') {
-        window.$toast?.success('Bot data export initiated! Check your email for the export.')
-      } else {
-        window.$toast?.error(response.data?.message || 'Failed to export bot data. Please try again.')
-      }
-    } catch (error: any) {
-      console.error('Failed to export bot data:', error)
-      window.$toast?.error(error?.response?.data?.message || 'Failed to export bot data. Please try again.')
-    }
-  })
-}
+//       if (response.data && response.data.status === 'success') {
+//         window.$toast?.success('Bot data export initiated! Check your email for the export.')
+//       } else {
+//         window.$toast?.error(response.data?.message || 'Failed to export bot data. Please try again.')
+//       }
+//     } catch (error: any) {
+//       console.error('Failed to export bot data:', error)
+//       window.$toast?.error(error?.response?.data?.message || 'Failed to export bot data. Please try again.')
+//     }
+//   })
+// }
 
 /**
  * Create new agent
