@@ -130,7 +130,7 @@ interface InvoiceData {
           }
           
           body {
-              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              font-family: ‘Lexend’, sans-serif;
               line-height: 1.5;
               color: #333;
               background: white;
