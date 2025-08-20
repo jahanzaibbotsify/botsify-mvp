@@ -184,14 +184,14 @@ const removeFbPagePermissions = async () => {
 };
 
 // Get initials from page name
-const getInitials = (name: string) => {
-  return name
-    .split(' ')
-    .map(word => word.charAt(0))
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-};
+// const getInitials = (name: string) => {
+//   return name
+//     .split(' ')
+//     .map(word => word.charAt(0))
+//     .join('')
+//     .toUpperCase()
+//     .slice(0, 2);
+// };
 
 // Utility function to handle popup windows for authentication
 const openAuthPopup = (url: string, action: string) => {
