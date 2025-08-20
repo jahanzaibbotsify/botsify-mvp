@@ -2,7 +2,7 @@
 import { computed, onMounted, watch, ref, nextTick } from 'vue';
 import type { Message } from '@/types';
 import { marked } from 'marked';
-import { formatTime, validateImage } from '@/utils';
+import { formatTime } from '@/utils';
 
 // Interface for parsed message content
 interface ParsedMessage {
@@ -93,8 +93,7 @@ const parsedContent = computed(() => {
       if(parsed?.quick_replies && parsed.quick_replies.length > 0) {
         return renderButtonTemplate(textContent, parsed.quick_replies);
       }
-
-      return marked(textContent);
+      return marked(textContent.replace(/</g, "&lt;").replace(/>/g, "&gt;"));
     }
 
     
@@ -130,12 +129,22 @@ const renderAttachment = (attachment: any): string => {
     case 'template':
       return renderTemplate(payload);
     case 'image':
-      return `<div class="attachment-image">
-        <img src="${validateImage(payload.url).value}" alt="Image" onclick="$emit('image-click', '${payload.url}')" />
-        <div class="button-container">
-          ${payload.buttons.map((button: any) => `<button class="button-primary">${button.title}</button>`).join('')}
+      return `
+        <div class="attachment-image">
+          <img src="${payload.url}" alt="Image" data-url="${payload.url}" class="clickable-image" onerror="this.onerror=null;this.src='/images/elementor-placeholder-image.png'" />
+          ${payload.buttons && payload.buttons.length > 0
+            ? `<div class="button-container">
+                ${payload.buttons
+                  .map(
+                    (button: any) =>
+                      `<button class="button-primary" data-url="${button.url || ''}">${button.title}</button>`
+                  )
+                  .join('')}
+              </div>`
+            : ''}
         </div>
-      </div>`;
+      `;
+
     default:
       return `<div class="attachment-unknown">
         <span>Download &nbsp;<a href="${payload.url}" target="_blank"><i class="pi pi-download"></i></a></span>
@@ -172,7 +181,7 @@ const renderGenericTemplate = (elements: any[]): string => {
       <div class="generic-template single-element">
         <div class="template-element">
           ${element.image_url ? `<div class="template-image-container">
-            <img src="${validateImage(element.image_url).value}" alt="${element.title}" class="template-image" />
+            <img src="${element.image_url}" alt="${element.title}" class="template-image" onerror="this.onerror=null;this.src='/images/elementor-placeholder-image.png'" />
           </div>` : ''}
           <div class="template-content">
             <h4 class="template-title">${element.title || ''}</h4>
@@ -190,7 +199,7 @@ const renderGenericTemplate = (elements: any[]): string => {
     html += `
       <div class="template-element slide" data-slide="${index}">
         ${element.image_url ? `<div class="template-image-container">
-          <img src="${validateImage(element.image_url).value}" alt="${element.title}" class="template-image" />
+          <img src="${element.image_url}" alt="${element.title}" class="template-image" onerror="this.onerror=null;this.src='/images/elementor-placeholder-image.png'" />
         </div>` : ''}
         <div class="template-content">
           <h4 class="template-title">${element.title || ''}</h4>

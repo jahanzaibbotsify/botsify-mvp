@@ -671,10 +671,13 @@ export const useConversationStore = defineStore('conversation', () => {
             conversations.value[index] || conversations.value[index - 1] || null;
   
           selectedConversation.value = nextConversation;
-  
+          console.log(nextConversation, "nextConversation")
           // Clear messages if nothing is selected
           if (!nextConversation) {
             messages.value = [];
+          } 
+          if(nextConversation?.fbid){
+            fetchUserConversation(nextConversation.fbid, true, false)
           }
         }
   
