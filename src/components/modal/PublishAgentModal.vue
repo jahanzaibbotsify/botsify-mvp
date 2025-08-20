@@ -6,7 +6,7 @@ import { ref, defineAsyncComponent, computed } from "vue";
 import { usePublishStore } from "@/stores/publishStore";
 import { botsifyApi } from "@/services/botsifyApi";
 import { useChatStore } from "@/stores/chatStore";
-import { formatDate } from "@/utils";
+import { formatDateTime } from "@/utils";
 
 // Change from async to direct import for WhatsAppModal
 const WhatsAppModal = defineAsyncComponent({
@@ -210,7 +210,7 @@ defineExpose({ openModal, closeModal });
           >
             {{ isDeploying ? 'Deploying...' : 'Deploy agent' }}
           </Button>
-          <p v-if="chatStore.activeAiPromptVersion?.createdAt">Deployed: {{ formatDate(chatStore.activeAiPromptVersion.createdAt) }}</p>
+          <p v-if="chatStore.activeAiPromptVersion?.createdAt">Deployed: {{ formatDateTime(chatStore.activeAiPromptVersion.createdAt) }}</p>
         </div>
       </div>
     </div>
