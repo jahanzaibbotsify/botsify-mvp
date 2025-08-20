@@ -1,6 +1,7 @@
 import { useWhitelabelStore } from '@/stores/whitelabelStore';
 import moment from 'moment-timezone';
 import { BOTSIFY_WEB_URL } from './config';
+import { ref } from 'vue';
 
 export const currentTime = () => {
   return moment.utc().format('YYYY-MM-DD HH:mm:ss');
@@ -62,29 +63,19 @@ export const getPlatformClass = (platform: string = '') => {
     return BOTSIFY_WEB_URL;
   }
 
-  export const validateImage = (url?: string, fallback = "/images/elementor-placeholder-image.png"): string => {
-    if (!url || typeof url !== 'string') return fallback;
-    const trimmed = url.trim();
-    return trimmed.length > 0 ? trimmed : fallback;
-  }
-
-  // Async variant that actually checks if the image loads successfully.
-  // Returns a Promise that resolves to the original url if load succeeds, otherwise to the fallback.
-  const __imageProbeCache = new Map<string, Promise<string>>();
-  export const validateImageLoad = (url?: string, fallback = "/images/elementor-placeholder-image.png"): Promise<string> => {
-    if (!url || typeof url !== 'string' || url.trim().length === 0) {
-      return Promise.resolve(fallback);
+  export const validateImage = (url?: string, fallback = "/images/elementor-placeholder-image.png") => {
+    const result = ref(fallback);
+  
+    if (!url) {
+      result.value = fallback;
+      return result;
     }
-    const key = `${url}|${fallback}`;
-    const cached = __imageProbeCache.get(key);
-    if (cached) return cached;
-    const probe = new Promise<string>((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve(url);
-      img.onerror = () => resolve(fallback);
-      img.src = url;
-    });
-    __imageProbeCache.set(key, probe);
-    return probe;
+  
+    const img = new Image();
+    img.onload = () => (result.value = url);
+    img.onerror = () => (result.value = fallback);
+    img.src = url;
+  
+    return result;
   }
   
