@@ -1864,12 +1864,12 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  color: var(--color-warning);
+  color: var(--color-error);
   font-size: 0.875rem;
 }
 
 .no-users i {
-  color: var(--color-warning);
+  color: var(--color-error);
 }
 
 

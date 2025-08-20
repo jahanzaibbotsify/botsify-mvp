@@ -505,6 +505,18 @@ watch(() => broadcastForm.value.uploadedFile, (newFile) => {
 
 
 
+.no-users {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-warning);
+  font-size: 0.875rem;
+}
+
+.no-users i {
+  color: var(--color-error);
+}
+
 @media (max-width: 640px) {
   .main-content{
     display: block;
