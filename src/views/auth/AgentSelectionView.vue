@@ -754,7 +754,7 @@ onUnmounted(() => {
 <!--                    <span class="badge-text">{{ ch.label }}</span>-->
                   </span>
                 </div>
-                  <p class="agent-users">{{ agent.users_count }} users</p>
+                  <p class="agent-users" v-if="activeTab === 'my-agents'">{{ agent.users_count }} users</p>
                 </div>
                 
                 <!-- Status Badge - Moved to bottom -->
