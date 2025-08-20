@@ -527,7 +527,7 @@ onMounted(() => {
         </div>
         <div class="button-row">
           <Button variant="secondary" icon="pi pi-arrow-left" @click="handleBack">Back</Button>
-          <Button :disabled="isConnecting" :loading="isConnecting" icon="pi pi-moon" @click="checkConnection">
+          <Button :disabled="isConnecting" :loading="isConnecting" icon="pi pi-link" @click="checkConnection">
             Connect
           </Button>
         </div>
