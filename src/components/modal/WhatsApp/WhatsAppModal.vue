@@ -104,7 +104,6 @@ const handleTemplateOpenCreateModal = (clonedData?: any) => {
     // Open create template modal with cloned data
     createTemplateModalRef.value?.openModalWithData(clonedData);
   } else {
-    createTemplateModalRef.value?.resetForm();
     // Open create template modal normally
     openCreateTemplateModal();
   }

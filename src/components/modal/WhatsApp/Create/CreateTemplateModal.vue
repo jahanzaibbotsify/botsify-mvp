@@ -47,6 +47,8 @@ const openModal = () => {
 
 const openModalWithData = (templateData: any) => {
   modalRef.value?.openModal();
+  // Ensure fresh state and step 1 before cloning data
+  store.resetForm();
   
   if (templateData && templateData.template && templateData.block) {
     // Store the original cloned data to restore after initialization
@@ -101,11 +103,15 @@ const openModalWithData = (templateData: any) => {
 };
 
 const closeModal = () => {
+  // Always reset so next open starts fresh on step 1
+  store.resetForm();
   modalRef.value?.closeModal();
   emit('modal-closed');
 };
 
 const handleModalClose = () => {
+  // Reset when modal is closed via header/overlay as well
+  store.resetForm();
   emit('modal-closed');
 };
 
@@ -127,11 +133,8 @@ const isSaveButtonDisabled = computed(() => {
   return store.isNextDisabled() || store.isSaving;
 });
 
-const resetForm = () => {
-  store.resetForm();
-};
 
-defineExpose({ openModal, closeModal, openModalWithData, resetForm });
+defineExpose({ openModal, closeModal, openModalWithData });
 </script>
 
 <template>

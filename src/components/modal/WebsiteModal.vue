@@ -131,7 +131,7 @@ defineExpose({ openModal, closeModal });
         <div class="code-block">
           <div class="code-header">
             <span class="code-title">HTML code</span>
-            <Button size="small" variant="secondary" @click="copyToClipboard(installCode)">
+            <Button size="small" @click="copyToClipboard(installCode)">
               Copy
             </Button>
           </div>
@@ -166,7 +166,7 @@ defineExpose({ openModal, closeModal });
         <div v-if="generatedInlineCode" class="code-block">
           <div class="code-header">
             <span class="code-title">Generated code</span>
-            <Button size="small" variant="secondary" @click="copyToClipboard(generatedInlineCode)">
+            <Button size="small" @click="copyToClipboard(generatedInlineCode)">
               Copy
             </Button>
           </div>
