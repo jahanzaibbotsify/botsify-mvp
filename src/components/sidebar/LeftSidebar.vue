@@ -373,7 +373,7 @@ const openPartnerPortal = () => {
               <template v-if="billingLoading">Processing...</template>
               <template v-else>Manage Billing</template>
             </span>
-            <span class="pricing-star">★</span>
+            <i class="pi pi-external-link"></i>
           </div>
         </button>
     </div>
