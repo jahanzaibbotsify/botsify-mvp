@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import {onMounted, ref, computed} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
-import {axiosInstance} from "@/utils/axiosInstance";
-import {useAuthStore} from "@/stores/authStore";
-import {useBotStore} from "@/stores/botStore";
+import {axiosInstance} from "../../utils/axiosInstance";
+import {useAuthStore} from "../../stores/authStore";
+import {useBotStore} from "../../stores/botStore";
 
 const route = useRoute()
 const router = useRouter()
@@ -15,8 +15,10 @@ const isSuccess = ref<boolean | null>(null)
 const message = ref('')
 
 const token = computed(() => (route.query.token as string) || '')
-const apikey = computed(() => (route.query.apikey as string) || '')
 
+/**
+ * Fetch current authenticated user.
+ */
 const fetchCurrentUser = async () => {
   try {
     const res = await axiosInstance.get('v1/user-with-subscription')
@@ -30,6 +32,21 @@ const fetchCurrentUser = async () => {
   }
 }
 
+/**
+ * Create agent.
+ */
+const createAgent = async () => {
+  try {
+    const res = await axiosInstance.post('v1/create-bot', {bot_name: 'Echo'})
+    if (res.data?.bot_api_key) {
+      botStore.setApiKey(res.data.bot_api_key)
+      await router.push(`/agent/${res.data.bot_api_key}`)
+    }
+  } catch (error) {
+    await router.push('/')
+  }
+}
+
 onMounted(async () => {
   if (!token.value) {
     isProcessing.value = false
@@ -39,28 +56,13 @@ onMounted(async () => {
   }
 
   localStorage.setItem('accessToken', JSON.stringify(token.value))
-  /**
-   * If apikey is present, set it for the current session
-   */
-  if (apikey.value) {
-    botStore.setApiKey(apikey.value)
-  }
 
   const ok = await fetchCurrentUser()
   isProcessing.value = false
   if (ok) {
     isSuccess.value = true
-    message.value = 'Authentication successful! Redirecting you back to your platform...'
-    /**
-     * Redirect after short delay
-     */
-    setTimeout(() => {
-      if (apikey.value) {
-        router.replace(`/agent/${apikey.value}`)
-      } else {
-        router.replace('/')
-      }
-    }, 1500)
+    message.value = 'Authentication successful! Redirecting you shortly...'
+    await createAgent();
   } else {
     isSuccess.value = false
     message.value = 'Authentication failed. Please try logging in again.'
