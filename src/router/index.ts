@@ -54,6 +54,12 @@ const routes: RouteRecordRaw[] = [
   },
   // Standalone Routes (without AuthLayout)
   {
+    path: '/auth/callback',
+    name: 'auth-callback',
+    component: () => import('@/views/auth/AuthCallbackView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/choose-plan',
     name: 'choose-plan',
     component: () => import('../views/auth/PricingView.vue'),
