@@ -1,0 +1,463 @@
+# Botsify MVP - Vue 3 Chat Application
+
+## Project Overview
+This is a modern chat application built with Vue 3, TypeScript, and Vite. It features real-time chat, MCP (Model Context Protocol) integration, OpenAI API integration, markdown support, image cropping, and responsive design.
+
+## Tech Stack
+- **Frontend**: Vue 3 with Composition API
+- **Language**: TypeScript
+- **Build Tool**: Vite
+- **State Management**: Pinia
+- **Routing**: Vue Router
+- **Styling**: CSS with modern design patterns
+- **AI Integration**: OpenAI API
+- **MCP Integration**: Custom MCP server management
+- **Markdown**: Marked + Highlight.js
+- **Date Handling**: Day.js
+- **Image Processing**: Vue Advanced Cropper
+- **HTTP Client**: Axios
+- **Icons**: primevue
+
+## Project Structure
+```
+src/
+├── assets/          # Static assets (images, fonts, etc.)
+├── components/      # Reusable Vue components
+│   └── chat/       # Chat-specific components
+├── layouts/         # Layout components
+├── router/          # Vue Router configuration
+├── services/        # API services and external integrations
+├── stores/          # Pinia stores (state management)
+├── types/           # TypeScript type definitions
+├── utils/           # Utility functions
+└── views/           # Page components
+```
+
+## Coding Standards
+
+### Vue 3 + Composition API
+- Use Composition API with `<script setup>` syntax
+- Prefer `ref()` and `reactive()` for state management
+- Use `computed()` for derived state
+- Implement proper TypeScript typing for all components
+- Use `defineProps()` and `defineEmits()` for component communication
+
+### TypeScript
+- Enable strict TypeScript checking
+- Define interfaces for all data structures
+- Use proper typing for API responses
+- Avoid `any` type - use `unknown` or proper types instead
+- Use utility types like `Partial<T>`, `Pick<T>`, `Omit<T>` when appropriate
+
+### Component Structure
+```vue
+<template>
+  <!-- Template content -->
+</template>
+
+<script setup lang="ts">
+// Imports
+import { ref, computed, onMounted } from 'vue'
+import type { ComponentProps } from '@/types'
+
+// Props and emits
+interface Props {
+  // Define props
+}
+const props = defineProps<Props>()
+const emit = defineEmits<{
+  // Define emits
+}>()
+
+// Reactive state
+const state = ref()
+
+// Computed properties
+const computedValue = computed(() => {
+  // Computation logic
+})
+
+// Methods
+const handleAction = () => {
+  // Method logic
+}
+
+// Lifecycle
+onMounted(() => {
+  // Mount logic
+})
+</script>
+
+<style scoped>
+/* Component styles */
+</style>
+```
+
+### State Management (Pinia)
+- Use Pinia stores for global state
+- Keep stores focused and single-purpose
+- Use proper TypeScript typing for store state
+- Implement actions for async operations
+- Use getters for computed state
+
+### API Integration
+- Use Axios for HTTP requests
+- Implement proper error handling
+- Use TypeScript interfaces for API responses
+- Handle loading states appropriately
+- Implement retry logic for failed requests
+
+### MCP Integration
+- Follow the established MCP server management patterns
+- Use the MCP store for server connections
+- Implement proper authentication handling
+- Generate appropriate system prompts for connected servers
+- Handle connection states and errors gracefully
+
+### UI Design System & Styling
+
+#### Design System Colors
+Always use the defined CSS custom properties for colors:
+- **Primary Colors**: `var(--color-primary)` (#00A3FF), `var(--color-primary-hover)` (#33B5FF), `var(--color-primary-active)` (#0082CC)
+- **Background Colors**: `var(--color-bg-primary)`, `var(--color-bg-secondary)`, `var(--color-bg-tertiary)`, `var(--color-bg-hover)`, `var(--color-bg-active)`
+- **Text Colors**: `var(--color-text-primary)`, `var(--color-text-secondary)`, `var(--color-text-tertiary)`, `var(--color-text-danger)`
+- **Semantic Colors**: `var(--color-secondary)` (success), `var(--color-accent)` (purple), `var(--color-error)` (red), `var(--color-warning)` (yellow)
+- **Border Color**: `var(--color-border)`
+
+#### Typography
+- **Font Family**: Use `var(--font-family)` (system fonts)
+- **Headings**: 
+  - `h1`: 1.875rem, font-weight: 600, margin-bottom: var(--space-4)
+  - `h2`: 1.5rem, font-weight: 600, margin-bottom: var(--space-3)
+  - `h3`: 1.25rem, font-weight: 600, margin-bottom: var(--space-2)
+- **Body Text**: 0.875rem for regular text, 1rem for mobile inputs
+- **Line Height**: 1.5 for body text, 1.2 for headings
+
+#### Spacing System
+Use the defined spacing variables:
+- `var(--space-1)`: 4px
+- `var(--space-2)`: 8px
+- `var(--space-3)`: 12px
+- `var(--space-4)`: 16px
+- `var(--space-5)`: 24px
+- `var(--space-6)`: 32px
+- `var(--space-7)`: 48px
+- `var(--space-8)`: 64px
+
+#### Button Consistency
+Always use these button patterns:
+
+**Primary Button**:
+```css
+button.primary {
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color var(--transition-normal);
+}
+```
+
+**Secondary Button**:
+```css
+button {
+  background-color: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: border-color var(--transition-normal), background-color var(--transition-normal);
+}
+```
+
+**Icon Button**:
+```css
+.icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--radius-full);
+  background-color: transparent;
+}
+```
+
+#### Form Elements Consistency
+**Input/Textarea**:
+```css
+input, textarea {
+  font-family: inherit;
+  font-size: 0.875rem;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  transition: border-color var(--transition-normal);
+}
+```
+
+#### Border Radius System
+- `var(--radius-sm)`: 4px (small elements)
+- `var(--radius-md)`: 8px (buttons, inputs, cards)
+- `var(--radius-lg)`: 12px (larger components)
+- `var(--radius-full)`: 9999px (circular elements)
+
+#### Shadow System
+- `var(--shadow-sm)`: 0 1px 2px rgba(0, 0, 0, 0.05)
+- `var(--shadow-md)`: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)
+- `var(--shadow-lg)`: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)
+
+#### Transitions
+- `var(--transition-fast)`: 0.15s ease
+- `var(--transition-normal)`: 0.2s ease
+- `var(--transition-slow)`: 0.3s ease-in-out
+
+#### Responsive Design
+- **Mobile**: max-width: 767px
+- **Tablet**: 768px
+- **Laptop**: 1024px
+- **Desktop**: 1280px
+- **Mobile Touch Targets**: Minimum 44px height/width for buttons
+
+#### Styling Best Practices
+- Use scoped styles when possible
+- Follow BEM methodology for CSS classes
+- Use CSS custom properties for theming
+- Implement responsive design patterns
+- Use modern CSS features (Grid, Flexbox, etc.)
+- **IMPORTANT**: If styling is repeated across components, create reusable classes in `style.css`
+- Always use the design system variables instead of hardcoded values
+- Maintain dark theme compatibility using `[data-theme="dark"]` selectors
+- Use the scrollbar styles: `.scrollbar` class for custom scrollbars
+- Implement proper focus states with `var(--color-primary)` outline
+- Use the fade and slide animations for transitions: `.fade-enter-active`, `.slide-right-enter-active`
+
+### Error Handling
+- Implement proper error boundaries
+- Use try-catch blocks for async operations
+- Provide user-friendly error messages
+- Log errors appropriately for debugging
+- Handle network failures gracefully
+
+### Performance
+- Use `v-memo` for expensive computations
+- Implement proper lazy loading
+- Use `shallowRef()` for large objects
+- Optimize component re-renders
+- Use virtual scrolling for large lists
+
+### Security
+- Never expose API keys in client-side code
+- Validate all user inputs
+- Sanitize markdown content
+- Implement proper authentication flows
+- Use HTTPS for all API calls
+
+### Testing
+- Write unit tests for utility functions
+- Test component behavior with user interactions
+- Mock external dependencies
+- Test error scenarios
+- Maintain good test coverage
+
+### Git Workflow
+- Use descriptive commit messages
+- Follow conventional commit format
+- Create feature branches for new development
+- Review code before merging
+- Keep commits atomic and focused
+
+## Environment Variables
+- `VITE_OPENAI_API_KEY`: OpenAI API key for chat functionality
+- Store sensitive data in `.env.local` (not committed to git)
+- Use `import.meta.env` to access environment variables
+
+## Common Patterns
+
+### API Service Pattern
+```typescript
+// services/api.ts
+import axios from 'axios'
+import type { ApiResponse } from '@/types'
+
+export const apiService = {
+  async get<T>(url: string): Promise<ApiResponse<T>> {
+    try {
+      const response = await axios.get(url)
+      return { data: response.data, error: null }
+    } catch (error) {
+      return { data: null, error: error as Error }
+    }
+  }
+}
+```
+
+### Store Pattern
+```typescript
+// stores/exampleStore.ts
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+
+export const useExampleStore = defineStore('example', () => {
+  const state = ref()
+  
+  const getter = computed(() => {
+    // Computed logic
+  })
+  
+  const action = async () => {
+    // Async action
+  }
+  
+  return { state, getter, action }
+})
+```
+
+### Component Communication
+- Use props for parent-to-child communication
+- Use emits for child-to-parent communication
+- Use Pinia stores for cross-component state
+- Use provide/inject for deep component trees
+
+### Reusable UI Components & Patterns
+
+#### When to Add Classes to style.css
+Add reusable classes to `style.css` when:
+- **Repeated Patterns**: Same styling appears in 3+ components
+- **Common Elements**: Buttons, cards, modals, form groups
+- **Layout Patterns**: Grid layouts, flex containers, spacing utilities
+- **Interactive States**: Hover, focus, active states that are reused
+- **Responsive Patterns**: Media query breakpoints that are common
+
+#### Common Reusable Classes to Add
+```css
+/* Card component */
+.card {
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+}
+
+/* Modal overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+}
+
+/* Form group */
+.form-group {
+  margin-bottom: var(--space-4);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+/* Status indicators */
+.status-success {
+  color: var(--color-success);
+}
+
+.status-error {
+  color: var(--color-error);
+}
+
+.status-warning {
+  color: var(--color-warning);
+}
+
+/* Loading states */
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Utility classes */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.mb-1 { margin-bottom: var(--space-1); }
+.mb-2 { margin-bottom: var(--space-2); }
+.mb-3 { margin-bottom: var(--space-3); }
+.mb-4 { margin-bottom: var(--space-4); }
+
+.mt-1 { margin-top: var(--space-1); }
+.mt-2 { margin-top: var(--space-2); }
+.mt-3 { margin-top: var(--space-3); }
+.mt-4 { margin-top: var(--space-4); }
+
+.p-1 { padding: var(--space-1); }
+.p-2 { padding: var(--space-2); }
+.p-3 { padding: var(--space-3); }
+.p-4 { padding: var(--space-4); }
+```
+
+#### Component-Specific Styling Rules
+- **Buttons**: Always use the predefined button classes or create new ones in `style.css`
+- **Headers**: Use semantic `h1`, `h2`, `h3` tags with consistent styling
+- **Forms**: Use the form element patterns defined in `style.css`
+- **Cards**: Create reusable card classes for consistent layouts
+- **Modals**: Use the modal overlay pattern for consistent modal behavior
+- **Lists**: Use consistent list styling with proper spacing
+- **Navigation**: Maintain consistent navigation styling across the app
+
+## File Naming Conventions
+- Components: PascalCase (e.g., `ChatMessage.vue`)
+- Stores: camelCase with 'Store' suffix (e.g., `chatStore.ts`)
+- Services: camelCase (e.g., `apiService.ts`)
+- Types: PascalCase (e.g., `ChatMessage.ts`)
+- Utilities: camelCase (e.g., `dateUtils.ts`)
+
+## Dependencies
+- Keep dependencies up to date
+- Use exact versions for critical dependencies
+- Document any workarounds for dependency issues
+- Prefer official packages over community alternatives
+
+## Documentation
+- Document complex business logic
+- Add JSDoc comments for public functions
+- Keep README.md updated
+- Document API changes
+- Maintain changelog for releases
+
+## Accessibility
+- Use semantic HTML elements
+- Implement proper ARIA labels
+- Ensure keyboard navigation works
+- Maintain color contrast ratios
+- Test with screen readers
+
+## Browser Support
+- Target modern browsers (ES2020+)
+- Use polyfills when necessary
+- Test on multiple browsers
+- Implement graceful degradation
+
+## Performance Monitoring
+- Monitor bundle size
+- Track Core Web Vitals
+- Monitor API response times
+- Implement error tracking
+- Use performance budgets
+
+Remember: This is a chat application with AI integration, so prioritize real-time responsiveness, user experience, and reliable AI interactions. 

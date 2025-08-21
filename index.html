@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#00A3FF" />
+  <title>Botsify Agent</title>
+  <meta name="title" content="Botsify Agent" />
+  <meta name="description" content="Botsify Agent helps you automate conversations and support with AI-powered chatbots." />
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&family=Yrsa:ital,wght@0,300..700;1,300..700&display=swap" rel="stylesheet">
+  
+  <style>
+    @-webkit-keyframes loader {
+      0% {
+        -webkit-transform: scale(0);
+        transform: scale(0);
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+
+    @keyframes loader {
+      0% {
+        -webkit-transform: scale(0);
+        transform: scale(0);
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+
+    .loader {
+      display: inline-block;
+      width: 3rem;
+      height: 3rem;
+      vertical-align: text-bottom;
+      background-color: #2e66f4f5;
+      border-radius: 50%;
+      opacity: 0;
+      -webkit-animation: spinner-grow .75s linear infinite;
+      animation: spinner-grow .75s linear infinite;
+      margin: auto;
+    }
+  </style>
+</head>
+
+<body>
+  
+  <div id="app"></div>
+  <div id="google_translate_element" style="display: none;"></div>
+  <script type="module" src="/src/main.ts"></script>
+
+  <script type="text/javascript">
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement({ pageLanguage: 'en' }, 'google_translate_element');
+    }
+  </script>
+  <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+</body>
+
+</html>
