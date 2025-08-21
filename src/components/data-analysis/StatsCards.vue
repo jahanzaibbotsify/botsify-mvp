@@ -42,7 +42,7 @@ const fetchStats = async () => {
         dateRange: JSON.stringify({ startDate, endDate })
       }
     });
-    const data: StatsResponse = response?.data?.data || {}
+    const data: StatsResponse = response?.data || {}
     stats.value = {
       hours_saved: Number(data.hours_saved) || 0,
       incoming_messages: Number(data.incoming_messages) || 0,

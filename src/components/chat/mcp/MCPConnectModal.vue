@@ -26,6 +26,7 @@ const emit = defineEmits(['close', 'connect', 'quit']);
 const mcpStore = useMCPStore();
 const description = ref('');
 const googleSheetUrl = ref('');
+const googleSheetName = ref('');
 const serverUrl = ref('');
 const serverLabel = ref('');
 const apiKey = ref('')
@@ -73,6 +74,9 @@ const checkAndPreFillConnectedServer = () => {
     if (props?.server && props.server?.id === 'google-sheet' && connectedServer.setting?.google_sheet_url) {
       googleSheetUrl.value = connectedServer.setting?.google_sheet_url
     }
+    if (props?.server && props.server?.id === 'google-sheet' && connectedServer.setting?.google_sheet_name) {
+      googleSheetName.value = connectedServer.setting?.google_sheet_name
+    }                                                      
 
     /**
      * For custom servers, also pre-fill URL and label
@@ -296,7 +300,8 @@ const addServer = async (allowedTools: string[]) => {
       require_approval: "never",
       is_custom: props.isCustom,
       auth_method: authType.value,
-      ...(googleSheetUrl.value ? {google_sheet_url: googleSheetUrl.value} : {})
+      ...(googleSheetUrl.value ? {google_sheet_url: googleSheetUrl.value} : {}),
+      ...(googleSheetName.value ? {google_sheet_name: googleSheetName.value} : {})
     },
     apikey: useBotStore().apiKey
   };
@@ -408,9 +413,7 @@ onMounted(() => {
             <input type="text" v-model="serverLabel" id="label" placeholder="Server Label e.g my_mcp_server">
           </div>
         </div>
-        <div class="pt-20" v-if="server?.id === 'google-sheet'">
-          <input type="text" v-model="googleSheetUrl" id="google-sheet-url" placeholder="Google Sheet URL">
-        </div>
+        
         <div class="pt-20">
           <input type="text" v-model="description" id="description" placeholder="Description (optional)">
         </div>
@@ -442,6 +445,7 @@ onMounted(() => {
             Google Service Account Key. We’ll handle token generation.
           </div>
         </div>
+        
         <div class="pt-20" v-if="authType !== 'none' && authType !== 'custom_headers'">
           <div class="access-token-input">
           <span class="input-icon input-icon-left">
@@ -521,6 +525,12 @@ onMounted(() => {
         <div v-if="error" class="error-message">
           {{ error }}
         </div>
+        <div class="pt-20" v-if="server?.id === 'google-sheet'">
+          <input type="text" v-model="googleSheetUrl" id="google-sheet-url" placeholder="Google Sheet URL">
+        </div>
+        <div class="pt-20" v-if="server?.id === 'google-sheet'">
+          <input type="text" v-model="googleSheetName" id="google-sheet-name" placeholder="Sheet Name">
+        </div>
         <div class="button-row">
           <Button variant="secondary" icon="pi pi-arrow-left" @click="handleBack">Back</Button>
           <Button :disabled="isConnecting" :loading="isConnecting" icon="pi pi-bolt" @click="checkConnection">
@@ -557,7 +567,7 @@ onMounted(() => {
 
 .server-title {
   font-size: 18px;
-  font-weight: 500;
+  font-weight: 400;
   margin-top: 12px;
 }
 
