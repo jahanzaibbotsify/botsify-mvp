@@ -167,7 +167,7 @@ router.beforeEach(async (to, from, next) => {
     const requiresAuth = to.meta?.requiresAuth;
 
     // Check if user is authenticated
-    if (authStore.isAuthenticated && (user.email_verified || user.is_appsumo || user.is_bot_admin || user.subs)) {
+    if (authStore.isAuthenticated && (user.email_verified || user.is_appsumo || user.is_bot_admin || user.subs || user.source === 'botsify_landing')) {
       // Authenticated users trying to access auth pages should be redirected
       if (to.path.startsWith('/auth/') || to.path === '/unauthenticated') {
         // If user has subscription, redirect to agent selection
@@ -175,7 +175,7 @@ router.beforeEach(async (to, from, next) => {
           return next({ path: '/' });
         }
         // If user is verified but no subscription, redirect to plan selection
-        if (user.email_verified && !user.subs && !user.is_appsumo && !user.is_bot_admin) {
+        if (user.email_verified && !user.subs && !user.is_appsumo && !user.is_bot_admin && user.source !== 'botsify_landing') {
           // Avoid redirect loop if already on choose-plan
           if (to.path !== '/choose-plan') {
             return next({ path: '/choose-plan' });
@@ -183,7 +183,7 @@ router.beforeEach(async (to, from, next) => {
           return next();
         }
         // If user is not verified, redirect to email verification
-        if (!user.email_verified && !user.is_appsumo && !user.is_bot_admin) {
+        if (!user.email_verified && !user.is_appsumo && !user.is_bot_admin && user.source !== 'botsify_landing') {
           // Avoid redirect loop if already on verify-email
           if (!to.path.startsWith('/auth/verify-email')) {
             return next({ path: `/auth/verify-email?email=${encodeURIComponent(user.email || '')}` });
@@ -208,7 +208,7 @@ router.beforeEach(async (to, from, next) => {
       }
 
       // Check email verification and subscription status
-      if (!user.email_verified && !user.subs && !user.is_appsumo && !user.is_bot_admin) {
+      if (!user.email_verified && !user.subs && !user.is_appsumo && !user.is_bot_admin && user.source !== 'botsify_landing') {
         if (!to.path.startsWith('/auth/verify-email')) {
           return next({ path: `/auth/verify-email?email=${encodeURIComponent(user.email || '')}` });
         }
@@ -222,7 +222,7 @@ router.beforeEach(async (to, from, next) => {
 
       // If email is verified but no subscription, redirect to plan selection
       // Only redirect if we're not already going to choose-plan to prevent infinite loops
-      if (user.email_verified && !user.subs && !user.is_appsumo && !user.is_bot_admin && !to.path.startsWith('/subscription/')) {
+      if (user.email_verified && !user.subs && !user.is_appsumo && !user.is_bot_admin && user.source !== 'botsify_landing' && !to.path.startsWith('/subscription/')) {
         if (to.path !== '/choose-plan') {
           return next({ path: '/choose-plan' });
         }
