@@ -82,7 +82,7 @@ export async function getBotData() {
 
      // Chat
      // if (!chatStore.chats.length) {
-       chatStore.loadFromStorage(data.bot.chat_flow, data.versions);
+       chatStore.loadFromStorage(data.bot.chat_flow, data.bot.bot_flow, data.versions);
      // }
 
      // Sync the active version with the loaded data to ensure consistency

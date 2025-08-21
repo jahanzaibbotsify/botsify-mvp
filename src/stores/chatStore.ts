@@ -44,7 +44,7 @@ export const useChatStore = defineStore('chat', () => {
     return useBotStore().botId;
   };
 
-  function convertStoredVersionsToStoryStructure(versions: object[]) {
+  function convertStoredVersionsToStoryStructure(versions: object[], bot_flow: string) {
     let versionId = '';
     let activeVersionId = '';
     let activeVersionContent = '';
@@ -73,7 +73,7 @@ export const useChatStore = defineStore('chat', () => {
         name: ver.name || 'version-1',
         content: prompt,
         updatedAt: new Date(ver.updated_at || Date.now()),
-        createdAt: new Date(ver.created_at || Date.now()),
+        ...(bot_flow !== null ? { createdAt: new Date(ver.created_at || Date.now()) } : {}),
         version: Date.now(),
         isActive: !!ver.is_active
       };
@@ -103,13 +103,13 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   // Load data from localStorage on initialization
-  function loadFromStorage(userChats: string, versions: object[]) {
+  function loadFromStorage(userChats: string, bot_flow: string, versions: object[]) {
     try {
       // Reset activeAiPromptVersion when loading new agent data
       activeAiPromptVersion.value = null;
       
       const storedChats = userChats;
-      const storedTemplates = convertStoredVersionsToStoryStructure(versions);
+      const storedTemplates = convertStoredVersionsToStoryStructure(versions, bot_flow);
       const storedActiveChat = localStorage.getItem('botsify_active_chat');    
 
       if (storedChats && storedChats.length > 4 && storedChats !== 'null' && storedChats !== 'undefined') {
