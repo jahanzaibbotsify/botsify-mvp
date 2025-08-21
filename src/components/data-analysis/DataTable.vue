@@ -96,6 +96,7 @@ const getEmptyStateMessage = () => {
                 :sortable="column.sortable"
                 :sort="getSortIcon(column.key)"
                 @click="column.sortable && handleSort(column.key)"
+                width="120px !important"
             >
               {{ column.label.toUpperCase() }}
             </TableHeader>
