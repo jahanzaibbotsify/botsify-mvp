@@ -3,6 +3,12 @@ export interface User {
   name: string;
   avatar?: string;
   email: string;
+  source?: string;
+  is_appsumo?: boolean;
+  is_bot_admin?: boolean;
+  email_verified?: boolean;
+  subscription?: number;
+  plan?: string;
   subs?: {
     id: string;
     status: string;
