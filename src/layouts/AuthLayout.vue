@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useWhitelabel } from '@/composables/useWhitelabel'
+import WhitelabelLogo from '@/components/ui/WhitelabelLogo.vue'
 
 const route = useRoute()
+const { companyName } = useWhitelabel()
 
 // Determine if brand panel should be shown
 const showBrandPanel = computed(() => {
@@ -59,11 +62,7 @@ const pageContent = computed(() => {
         <!-- Logo Section -->
         <div class="logo-section">
           <div class="logo-container">
-                    <img 
-          src="/logo.png" 
-          alt="Botsify" 
-          class="logo-image"
-        />
+            <WhitelabelLogo size="large" />
           </div>
         </div>
 
@@ -94,7 +93,7 @@ const pageContent = computed(() => {
 
         <!-- Footer -->
         <div class="brand-footer">
-          <p>&copy; 2025 Botsify. All rights reserved.</p>
+          <p>&copy; 2025 {{ companyName }}. All rights reserved.</p>
           <div class="footer-links">
             <a href="https://botsify.com/terms-and-conditions" class="footer-link" target="_blank">Terms & conditions</a>
             <span class="footer-separator">•</span>

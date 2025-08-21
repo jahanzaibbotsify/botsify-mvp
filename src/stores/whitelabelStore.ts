@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { BOTSIFY_WEB_URL } from '@/utils/config'
+import { whitelabelService } from '@/services/whitelabelService'
+import type { WhitelabelConfig, WhitelabelPackage } from '@/types/whitelabel'
 
 interface WhitelabelData {
   company_name: string
@@ -57,14 +59,48 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
     return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
   }
 
-  // Computed properties
-  const companyName = computed(() => whitelabelData.value?.company_name || 'Botsify')
-  const primaryColor = computed(() => whitelabelData.value?.primary_color || '#00A3FF')
-  const secondaryColor = computed(() => whitelabelData.value?.secondary_color || '#10B981')
-  const logo = computed(() => whitelabelData.value?.logo || null)
-  const favicon = computed(() => whitelabelData.value?.favicon || null)
-  const maskUrl = computed(() => whitelabelData.value?.mask_url || '')
-  const isWhitelabel = computed(() => whitelabelData.value !== null)
+  // Computed properties - now using the service
+  const companyName = computed(() => {
+    const config = whitelabelService.getConfig()
+    return config?.company_name || whitelabelData.value?.company_name || 'Botsify'
+  })
+  
+  const primaryColor = computed(() => {
+    const config = whitelabelService.getConfig()
+    return config?.primary_color || whitelabelData.value?.primary_color || '#00A3FF'
+  })
+  
+  const secondaryColor = computed(() => {
+    const config = whitelabelService.getConfig()
+    return config?.secondary_color || whitelabelData.value?.secondary_color || '#10B981'
+  })
+  
+  const logo = computed(() => {
+    const config = whitelabelService.getConfig()
+    return config?.logo || whitelabelData.value?.logo || null
+  })
+  
+  const favicon = computed(() => {
+    const config = whitelabelService.getConfig()
+    return config?.favicon || whitelabelData.value?.favicon || null
+  })
+  
+  const maskUrl = computed(() => {
+    const config = whitelabelService.getConfig()
+    return config?.mask_url || whitelabelData.value?.mask_url || ''
+  })
+  
+  const isWhitelabel = computed(() => {
+    return whitelabelService.isConfigured() || whitelabelData.value !== null
+  })
+
+  // New packages functionality
+  const packages = computed(() => whitelabelService.getPackages())
+  const hasPackages = computed(() => whitelabelService.hasPackages())
+  
+  // Registration control
+  const isRegistrationAllowed = computed(() => whitelabelService.isRegistrationAllowed())
+  
   const partnerPortalUrl = computed(() => `${BOTSIFY_WEB_URL}/partner`)
 
   return {
@@ -80,6 +116,11 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
     logo,
     favicon,
     maskUrl,
-    partnerPortalUrl
+    partnerPortalUrl,
+    // New packages functionality
+    packages,
+    hasPackages,
+    // Registration control
+    isRegistrationAllowed
   }
 }) 

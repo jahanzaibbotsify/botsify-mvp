@@ -1,34 +1,81 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
 import { useRouter } from 'vue-router'
+import { useWhitelabel } from '@/composables/useWhitelabel'
+import { whitelabelService } from '@/services/whitelabelService'
 import type { PricingPlan } from '@/types/auth'
+import type { WhitelabelPackage } from '@/types/whitelabel'
 import {axiosInstance} from "@/utils/axiosInstance.ts";
 
 const authStore = useAuthStore()
 const router = useRouter()
+const { isConfigured, packages: whitelabelPackages, hasPackages, companyName, getLogoUrl } = useWhitelabel()
 
 const selectedPlanId = ref<string | null>(null)
 const billingCycle = ref<'monthly' | 'annually'>('annually')
 const isLoggingOut = ref(false);
 const loading = ref(false);
 
-// Show all plans with dynamic pricing
+// Convert whitelabel packages to pricing plan format
+const convertWhitelabelPackageToPlan = (pkg: WhitelabelPackage): PricingPlan => {
+  const isFree = pkg.package_type === 'free' || parseFloat(pkg.price) === 0
+  const isTrial = pkg.is_trial === 1
+  
+  return {
+    id: pkg.id.toString(),
+    name: pkg.name,
+    description: `${pkg.total_bots} AI Agents, ${pkg.total_users} Users`,
+    price: parseFloat(pkg.price) || 0,
+    currency: pkg.currency,
+    billing: pkg.type,
+    features: [
+      `${pkg.total_bots} AI Agents`,
+      `${pkg.total_users} Users`,
+      pkg.is_trial ? `${pkg.trial_days} Day Trial` : 'No Trial',
+      'All Platforms Supported',
+      'Priority Support'
+    ],
+    excludedFeatures: [],
+    limits: {
+      conversations: pkg.total_users === 'unlimited' ? 'unlimited' : parseInt(pkg.total_users),
+      agents: parseInt(pkg.total_bots),
+      customBranding: true,
+      apiAccess: true,
+      prioritySupport: true,
+      advancedAnalytics: true
+    },
+    isContactSales: false,
+    isPopular: pkg.subscribers_count > 0,
+    prices: {
+      monthly: pkg.stripe_price_id,
+      annually: pkg.stripe_price_id
+    }
+  }
+}
+
+// Show all plans with dynamic pricing - use whitelabel packages if available
 const allPlans = computed(() => {
-  return authStore.pricingPlans.map(plan => {
-    if (billingCycle.value === 'annually' && plan.discount?.yearlyPrice) {
+  if (isConfigured.value && hasPackages.value) {
+    // Use whitelabel packages
+    return whitelabelPackages.value.map(pkg => convertWhitelabelPackageToPlan(pkg))
+  } else {
+    // Use default Botsify plans
+    return authStore.pricingPlans.map(plan => {
+      if (billingCycle.value === 'annually' && plan.discount?.yearlyPrice) {
+        return {
+          ...plan,
+          price: Math.round(plan.discount.yearlyPrice),
+          billing: 'yearly' as const,
+          showAnnualDiscount: true
+        }
+      }
       return {
         ...plan,
-        price: Math.round(plan.discount.yearlyPrice),
-        billing: 'yearly' as const,
-        showAnnualDiscount: true
+        showAnnualDiscount: false
       }
-    }
-    return {
-      ...plan,
-      showAnnualDiscount: false
-    }
-  })
+    })
+  }
 })
 
 /**
@@ -38,14 +85,32 @@ const allPlans = computed(() => {
 const handlePlanSelect = async (plan: PricingPlan) => {
   selectedPlanId.value = plan.id;
   loading.value = true;
-  const priceId = plan.prices ? plan.prices[billingCycle.value] : null
-
-  const response = await axiosInstance.get(`v1/stripe/checkout-session/${priceId}`);
-
-  if (response.data.redirect) {
-    window.open(response.data.redirect);
+  
+  try {
+    if (isConfigured.value && hasPackages.value) {
+      // For whitelabel packages, use the stripe price ID directly
+      const priceId = plan.prices ? plan.prices[billingCycle.value] : null
+      if (priceId) {
+        const response = await axiosInstance.get(`v1/stripe/checkout-session/${priceId}`);
+        if (response.data.redirect) {
+          window.open(response.data.redirect);
+        }
+      }
+    } else {
+      // For default Botsify plans
+      const priceId = plan.prices ? plan.prices[billingCycle.value] : null
+      if (priceId) {
+        const response = await axiosInstance.get(`v1/stripe/checkout-session/${priceId}`);
+        if (response.data.redirect) {
+          window.open(response.data.redirect);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Plan selection failed:', error)
+  } finally {
+    loading.value = false
   }
-  loading.value = false
 }
 
 const bookDemo = () => {
@@ -66,6 +131,14 @@ const handleLogout = async () => {
     isLoggingOut.value = false;
   }
 };
+
+// Initialize whitelabel packages if needed
+onMounted(async () => {
+  if (isConfigured.value && !hasPackages.value) {
+    // Fetch packages if not already loaded
+    await whitelabelService.fetchPackages()
+  }
+})
 </script>
 
 <template>
@@ -76,7 +149,9 @@ const handleLogout = async () => {
       <div class="hero-header">
         <div class="header-container">
           <div class="header-left">
-            <img src="/images/logos/botsify-logo.webp" alt="Botsify" class="header-logo">
+            <img :src="isConfigured ? getLogoUrl() || '/images/logos/botsify-logo.webp' : '/images/logos/botsify-logo.webp'" 
+                 :alt="companyName" 
+                 class="header-logo">
           </div>
           <div class="header-right">
             <button @click="handleLogout" class="logout-button" :disabled="isLoggingOut">
@@ -92,11 +167,14 @@ const handleLogout = async () => {
       <div class="hero-content">
         <div class="hero-badge">
           <i class="pi pi-sparkle"></i>
-          <span>Choose Your Plan</span>
+          <span>{{ isConfigured ? `${companyName} Plans` : 'Choose Your Plan' }}</span>
         </div>
-        <h1 class="hero-title">Scale Your AI Experience</h1>
+        <h1 class="hero-title">{{ isConfigured ? `${companyName} AI Solutions` : 'Scale Your AI Experience' }}</h1>
         <p class="hero-subtitle">
-          From free exploration to enterprise-grade solutions, find the perfect plan for your AI journey
+          {{ isConfigured 
+            ? `Choose the perfect plan for your AI journey with ${companyName}` 
+            : 'From free exploration to enterprise-grade solutions, find the perfect plan for your AI journey' 
+          }}
         </p>
       </div>
     </div>
@@ -109,8 +187,8 @@ const handleLogout = async () => {
       </div>
     </div>
 
-    <!-- Billing Toggle -->
-    <div class="billing-toggle-section">
+    <!-- Billing Toggle - Only show for default plans -->
+    <div v-if="!isConfigured || !hasPackages" class="billing-toggle-section">
       <div class="billing-toggle-container">
         <div class="billing-toggle">
           <button
@@ -144,13 +222,13 @@ const handleLogout = async () => {
             free: plan.price === 0,
             enterprise: plan.id === 'enterprise',
             selected: selectedPlanId === plan.id,
-            loading: authStore.isLoading && selectedPlanId === plan.id
+            loading: loading && selectedPlanId === plan.id
           }"
           :style="{ '--card-delay': index * 0.1 + 's' }"
         >
           <!-- Popular Badge -->
           <div v-if="plan.isPopular" class="plan-badge">
-            <span>Most Popular</span>
+            <span>{{ isConfigured ? 'Most Popular' : 'Most Popular' }}</span>
           </div>
 
           <!-- Plan Header -->
@@ -158,6 +236,7 @@ const handleLogout = async () => {
             <h3 class="plan-title">{{ plan.name }}</h3>
             <p class="plan-subtitle">{{ plan.description }}</p>
           </div>
+          
           <!-- Plan Pricing -->
           <div class="plan-pricing">
             <div v-if="plan.isContactSales" class="price-contact">
@@ -178,13 +257,15 @@ const handleLogout = async () => {
               </span>
             </div>
             
-            <div v-if="billingCycle === 'annually' && plan.discount?.yearlyPrice && !plan.isContactSales" class="price-discount">
+            <!-- Show annual discount only for default plans -->
+            <div v-if="!isConfigured && billingCycle === 'annually' && plan.discount?.yearlyPrice && !plan.isContactSales" class="price-discount">
               <span class="annual-savings">(Billed Annually & save 2 months)</span>
               <span class="discount-badge">17% OFF</span>
             </div>
           </div>
-           <!-- Action Button (Moved to top) -->
-           <div class="plan-action">
+          
+          <!-- Action Button -->
+          <div class="plan-action">
             <button
               class="plan-button"
               :disabled="loading"
@@ -214,11 +295,10 @@ const handleLogout = async () => {
             </div>
             <ul class="features-list">
               <li v-for="feature in plan.features" :key="feature" class="feature-item">
-                <div v-if="feature.includes('🔥')" class="feature-fire">🔥</div>
-                <div class="feature-check" v-else>
+                <div class="feature-check">
                   <i class="pi pi-check"></i>
                 </div>
-                <span>{{ feature.includes('🔥') ? feature.replace('🔥', '') : feature }}</span>
+                <span>{{ feature }}</span>
               </li>
             </ul>
           </div>

@@ -2,12 +2,14 @@
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
+import { useWhitelabel } from '@/composables/useWhitelabel'
 import type { LoginCredentials, FormValidation } from '@/types/auth'
 import {handlePostAuthRedirect} from "@/utils/authFlow.ts";
 import Button from '@/components/ui/Button.vue';
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { isRegistrationAllowed } = useWhitelabel()
 
 // Form state
 const form = reactive<LoginCredentials>({
@@ -210,10 +212,8 @@ const handlePasswordInput = () => {
       </Button>
     </form>
 
-
-
-    <!-- Sign Up Link -->
-    <div class="auth-footer">
+    <!-- Sign Up Link - Only show if registration is allowed -->
+    <div v-if="isRegistrationAllowed" class="auth-footer">
       <p class="footer-text">
         Don't have an account?
         <router-link to="/auth/signup" class="auth-link">
@@ -221,8 +221,6 @@ const handlePasswordInput = () => {
         </router-link>
       </p>
     </div>
-
-
   </div>
 </template>
 
