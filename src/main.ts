@@ -35,7 +35,19 @@ const initializeWhitelabel = async () => {
       whitelabelService.applyConfiguration()
       
       // Also fetch packages if whitelabel is configured
-      await whitelabelService.fetchPackages()
+      // Get user ID from localStorage if available
+      const userStr = localStorage.getItem('user')
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr)
+          const userId = user.id || user.user_id
+          if (userId) {
+            await whitelabelService.fetchPackages(userId)
+          }
+        } catch (e) {
+          console.warn('Failed to parse user from localStorage:', e)
+        }
+      }
     }
   } catch (error) {
     console.warn('Whitelabel initialization failed:', error)

@@ -1,6 +1,6 @@
 import { axiosInstance } from './axiosInstance';
 import { useRoleStore } from '@/stores/roleStore';
-import { useWhitelabelStore } from '@/stores/whitelabelStore';
+import { useWhitelabel } from '@/composables/useWhitelabel';
 import { useBotStore } from '@/stores/botStore';
 import { useChatStore } from '@/stores/chatStore';
 import { useConversationStore } from '@/stores/conversationStore';
@@ -46,7 +46,7 @@ export async function getBotData() {
     const data = response.data.data;
 
     const roleStore = useRoleStore();
-    const whitelabelStore = useWhitelabelStore();
+    const { initialize } = useWhitelabel();
     const botStore = useBotStore();
     const conversationStore = useConversationStore();
     
@@ -54,9 +54,12 @@ export async function getBotData() {
     if (data.user) {
       roleStore.setCurrentUser(data.user);
 
-      // Whitelabel
+      // Whitelabel - initialize if user has whitelabel data
       if (data.user.is_whitelabel || data.user.is_whitelabel_client) {
-        whitelabelStore.setWhitelabelData(data.user);
+        // Initialize whitelabel configuration
+        await initialize();
+        
+        // Handle favicon if available
         if (data.user.whitelabel?.favicon) {
           let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
           if (!link) {

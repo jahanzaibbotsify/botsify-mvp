@@ -114,7 +114,7 @@
         <div class="sub-modal-body">
           <div v-if="!changingPlan">
             <!-- Whitelabel Client Plans -->
-            <div v-if="whitelabelStore.isWhitelabelClient">
+            <div v-if="isConfigured">
               <div v-for="(planName, planId) in availableWhitelabelPlans" :key="planId">
                 <button 
                   v-show="currentPlanId !== planId" 
@@ -303,7 +303,7 @@
   
   <script setup lang="ts">
   import { ref, computed, onMounted, watch } from 'vue'
-  import { useWhitelabelStore } from '@/stores/whitelabelStore'
+  import { useWhitelabel } from '@/composables/useWhitelabel'
   import { botsifyApi } from '@/services/botsifyApi'
   import { STRIPE_API_KEY } from '@/utils/config'
   
@@ -486,10 +486,10 @@
     return planName || ''
   })
 
-  const whitelabelStore = useWhitelabelStore()
+  const { isConfigured } = useWhitelabel()
 
   const availableWhitelabelPlans = computed(() => {
-    if (whitelabelStore.isWhitelabelClient) {
+    if (isConfigured.value) {
       return {
         'Personal-Plan': 'Personal Plan - $49/Month',
         'Personal-Plan-Annual': 'Personal Plan - $490/Year',
@@ -501,7 +501,7 @@
   })
 
   const canDowngrade = computed(() => {
-    if (whitelabelStore.isWhitelabelClient) {
+    if (isConfigured.value) {
       return false // Whitelabel clients cannot downgrade
     }
     return true

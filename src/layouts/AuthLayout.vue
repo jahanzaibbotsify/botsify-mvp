@@ -5,7 +5,7 @@ import { useWhitelabel } from '@/composables/useWhitelabel'
 import WhitelabelLogo from '@/components/ui/WhitelabelLogo.vue'
 
 const route = useRoute()
-const { companyName } = useWhitelabel()
+const { companyName, primaryColor, secondaryColor } = useWhitelabel()
 
 // Determine if brand panel should be shown
 const showBrandPanel = computed(() => {
@@ -52,12 +52,18 @@ const pageContent = computed(() => {
       }
   }
 })
+
+// Computed styles for whitelabel colors
+const brandPanelStyle = computed(() => ({
+  '--whitelabel-primary': primaryColor.value,
+  '--whitelabel-secondary': secondaryColor.value
+}))
 </script>
 
 <template>
   <div class="auth-layout" :class="{ 'no-brand-panel': !showBrandPanel }">
     <!-- Left Panel - Branding & Content -->
-    <div v-if="showBrandPanel" class="auth-brand-panel">
+    <div v-if="showBrandPanel" class="auth-brand-panel" :style="brandPanelStyle">
       <div class="auth-brand-content">
         <!-- Logo Section -->
         <div class="logo-section">
@@ -94,11 +100,6 @@ const pageContent = computed(() => {
         <!-- Footer -->
         <div class="brand-footer">
           <p>&copy; 2025 {{ companyName }}. All rights reserved.</p>
-          <div class="footer-links">
-            <a href="https://botsify.com/terms-and-conditions" class="footer-link" target="_blank">Terms & conditions</a>
-            <span class="footer-separator">•</span>
-            <a href="https://botsify.com/privacy-policy" class="footer-link" target="_blank">Privacy policy</a>
-          </div>
         </div>
       </div>
     </div>
@@ -146,11 +147,11 @@ const pageContent = computed(() => {
   inset: 0;
   background: conic-gradient(
     from 180deg,
-    #ff0080,
-    #7928ca,
+    var(--whitelabel-primary),
+    var(--whitelabel-secondary),
     #2afadf,
-    #7928ca,
-    #ff0080
+    var(--whitelabel-secondary),
+    var(--whitelabel-primary)
   );
   filter: blur(60px);
   opacity: 0.6;
@@ -246,7 +247,7 @@ const pageContent = computed(() => {
 .main-subtitle {
   font-size: 1.125rem;
   font-weight: 500;
-  color: #2e66f4;
+  color: var(--whitelabel-primary);
   margin-bottom: var(--space-3);
 }
 
@@ -296,32 +297,7 @@ const pageContent = computed(() => {
 .brand-footer p {
   font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.7);
-  margin: 0 0 var(--space-2) 0;
-}
-
-.footer-links {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
-
-.footer-link {
-  color: rgba(255, 255, 255, 0.6);
-  text-decoration: none;
-  font-size: 0.75rem;
-  transition: color var(--transition-normal);
-}
-
-.footer-link:hover {
-  color: rgba(255, 255, 255, 0.9);
-  text-decoration: underline;
-}
-
-.footer-separator {
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 0.75rem;
+  margin: 0;
 }
 
 /* Right Form Panel */
@@ -354,7 +330,7 @@ const pageContent = computed(() => {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
+  background: linear-gradient(90deg, transparent, var(--whitelabel-primary), transparent);
 }
 
 /* Responsive Design */
@@ -513,7 +489,7 @@ const pageContent = computed(() => {
 /* High contrast mode */
 @media (prefers-contrast: high) {
   .auth-brand-panel {
-    background: var(--color-primary);
+    background: var(--whitelabel-primary);
   }
   
   .auth-brand-panel::before {

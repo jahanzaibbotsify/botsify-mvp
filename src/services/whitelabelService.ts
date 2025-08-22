@@ -42,12 +42,27 @@ class WhitelabelService {
   /**
    * Fetch whitelabel packages from API
    */
-  async fetchPackages(): Promise<{ data: WhitelabelPackage[] | null; error: string | null }> {
+  async fetchPackages(userId?: string): Promise<{ data: WhitelabelPackage[] | null; error: string | null }> {
     try {
-      const response = await axiosInstance.get('v1/whitelabel/packages')
+      let url = 'v1/whitelabel-packages'
+      if (userId) {
+        url += `/${userId}`
+      }
       
-      if (response.data?.status === 'success' && response.data.packages) {
-        this.packages = response.data.packages
+      const response = await axiosInstance.get(url)
+      
+      // Handle both array and nested object responses
+      let packagesData = null
+      if (response.data?.packages) {
+        // If packages are nested under a 'packages' key
+        packagesData = Array.isArray(response.data.packages) ? response.data.packages : [response.data.packages]
+      } else if (Array.isArray(response.data)) {
+        // If response is directly an array
+        packagesData = response.data
+      }
+      
+      if (packagesData && packagesData.length > 0) {
+        this.packages = packagesData
         return { data: this.packages, error: null }
       }
       

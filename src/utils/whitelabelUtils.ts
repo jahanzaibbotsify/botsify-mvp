@@ -1,4 +1,5 @@
 import { whitelabelService } from '@/services/whitelabelService'
+import { BOTSIFY_WEB_URL } from './config'
 
 /**
  * Get the current whitelabel logo URL
@@ -36,6 +37,18 @@ export function getWhitelabelPrimaryColor(): string {
 export function getWhitelabelSecondaryColor(): string {
   const config = whitelabelService.getConfig()
   return config?.secondary_color || '#10B981'
+}
+
+/**
+ * Get the web URL based on whitelabel configuration
+ * Returns whitelabel mask URL if configured, otherwise default Botsify URL
+ */
+export function getWebUrl(): string {
+  const config = whitelabelService.getConfig()
+  if (config?.mask_url) {
+    return config.mask_url
+  }
+  return BOTSIFY_WEB_URL
 }
 
 /**

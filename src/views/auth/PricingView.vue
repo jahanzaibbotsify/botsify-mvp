@@ -6,11 +6,11 @@ import { useWhitelabel } from '@/composables/useWhitelabel'
 import { whitelabelService } from '@/services/whitelabelService'
 import type { PricingPlan } from '@/types/auth'
 import type { WhitelabelPackage } from '@/types/whitelabel'
-import {axiosInstance} from "@/utils/axiosInstance.ts";
+import { axiosInstance } from "@/utils/axiosInstance.ts"
 
 const authStore = useAuthStore()
 const router = useRouter()
-const { isConfigured, packages: whitelabelPackages, hasPackages, companyName, getLogoUrl } = useWhitelabel()
+const { isConfigured, packages: whitelabelPackages, hasPackages, companyName, getLogoUrl, primaryColor, secondaryColor } = useWhitelabel()
 
 const selectedPlanId = ref<string | null>(null)
 const billingCycle = ref<'monthly' | 'annually'>('annually')
@@ -19,15 +19,20 @@ const loading = ref(false);
 
 // Convert whitelabel packages to pricing plan format
 const convertWhitelabelPackageToPlan = (pkg: WhitelabelPackage): PricingPlan => {
-  const isFree = pkg.package_type === 'free' || parseFloat(pkg.price) === 0
-  const isTrial = pkg.is_trial === 1
+  // Handle currency - it can be a string or an object
+  let currencyCode = 'USD'
+  if (typeof pkg.currency === 'string') {
+    currencyCode = pkg.currency
+  } else if (pkg.currency && typeof pkg.currency === 'object' && 'code' in pkg.currency) {
+    currencyCode = (pkg.currency as any).code
+  }
   
   return {
     id: pkg.id.toString(),
     name: pkg.name,
     description: `${pkg.total_bots} AI Agents, ${pkg.total_users} Users`,
     price: parseFloat(pkg.price) || 0,
-    currency: pkg.currency,
+    currency: currencyCode,
     billing: pkg.type,
     features: [
       `${pkg.total_bots} AI Agents`,
@@ -46,7 +51,7 @@ const convertWhitelabelPackageToPlan = (pkg: WhitelabelPackage): PricingPlan => 
       advancedAnalytics: true
     },
     isContactSales: false,
-    isPopular: pkg.subscribers_count > 0,
+    isPopular: false,
     prices: {
       monthly: pkg.stripe_price_id,
       annually: pkg.stripe_price_id
@@ -56,11 +61,15 @@ const convertWhitelabelPackageToPlan = (pkg: WhitelabelPackage): PricingPlan => 
 
 // Show all plans with dynamic pricing - use whitelabel packages if available
 const allPlans = computed(() => {
-  if (isConfigured.value && hasPackages.value) {
+  console.log('allPlans computed - isConfigured:', isConfigured.value, 'whitelabelPackages:', whitelabelPackages.value, 'hasPackages:', hasPackages.value)
+  
+  if (isConfigured.value && whitelabelPackages.value && whitelabelPackages.value.length > 0) {
     // Use whitelabel packages
+    console.log('Using whitelabel packages:', whitelabelPackages.value)
     return whitelabelPackages.value.map(pkg => convertWhitelabelPackageToPlan(pkg))
   } else {
     // Use default Botsify plans
+    console.log('Using default Botsify plans')
     return authStore.pricingPlans.map(plan => {
       if (billingCycle.value === 'annually' && plan.discount?.yearlyPrice) {
         return {
@@ -87,23 +96,11 @@ const handlePlanSelect = async (plan: PricingPlan) => {
   loading.value = true;
   
   try {
-    if (isConfigured.value && hasPackages.value) {
-      // For whitelabel packages, use the stripe price ID directly
-      const priceId = plan.prices ? plan.prices[billingCycle.value] : null
-      if (priceId) {
-        const response = await axiosInstance.get(`v1/stripe/checkout-session/${priceId}`);
-        if (response.data.redirect) {
-          window.open(response.data.redirect);
-        }
-      }
-    } else {
-      // For default Botsify plans
-      const priceId = plan.prices ? plan.prices[billingCycle.value] : null
-      if (priceId) {
-        const response = await axiosInstance.get(`v1/stripe/checkout-session/${priceId}`);
-        if (response.data.redirect) {
-          window.open(response.data.redirect);
-        }
+    const priceId = plan.prices ? plan.prices[billingCycle.value] : null
+    if (priceId) {
+      const response = await axiosInstance.get(`v1/stripe/checkout-session/${priceId}`);
+      if (response.data.redirect) {
+        window.open(response.data.redirect);
       }
     }
   } catch (error) {
@@ -132,26 +129,47 @@ const handleLogout = async () => {
   }
 };
 
+// Computed styles for whitelabel colors
+const brandPanelStyle = computed(() => ({
+  '--whitelabel-primary': primaryColor.value,
+  '--whitelabel-secondary': secondaryColor.value
+}))
+
 // Initialize whitelabel packages if needed
 onMounted(async () => {
+  console.log('PricingView mounted - isConfigured:', isConfigured.value, 'hasPackages:', hasPackages.value)
+  
   if (isConfigured.value && !hasPackages.value) {
     // Fetch packages if not already loaded
-    await whitelabelService.fetchPackages()
+    const userId = authStore.user?.id || authStore.user?.user_id
+    console.log('Fetching packages for userId:', userId)
+    
+    if (userId) {
+      try {
+        await whitelabelService.fetchPackages(userId)
+        console.log('Packages fetched successfully')
+        console.log('Updated packages:', whitelabelService.getPackages())
+      } catch (error) {
+        console.error('Failed to fetch packages:', error)
+      }
+    }
   }
 })
 </script>
 
 <template>
-  <div class="pricing-view">
+  <div class="pricing-view" :style="brandPanelStyle">
     <!-- Hero Section -->
     <div class="hero-section">
       <!-- Header moved inside hero section -->
       <div class="hero-header">
         <div class="header-container">
           <div class="header-left">
-            <img :src="isConfigured ? getLogoUrl() || '/images/logos/botsify-logo.webp' : '/images/logos/botsify-logo.webp'" 
-                 :alt="companyName" 
-                 class="header-logo">
+            <img 
+              :src="isConfigured ? getLogoUrl() || '/images/logos/botsify-logo.webp' : '/images/logos/botsify-logo.webp'" 
+              :alt="companyName" 
+              class="header-logo"
+            >
           </div>
           <div class="header-right">
             <button @click="handleLogout" class="logout-button" :disabled="isLoggingOut">
@@ -318,6 +336,68 @@ onMounted(async () => {
   overflow-x: hidden;
 }
 
+/* Whitelabel color variables */
+.pricing-view[style*="--whitelabel-primary"] {
+  --whitelabel-primary: var(--whitelabel-primary, #6D3ADB);
+  --whitelabel-secondary: var(--whitelabel-secondary, #10B981);
+}
+
+/* Update hero section background with whitelabel colors when available */
+.pricing-view[style*="--whitelabel-primary"] .hero-section::before {
+  background: conic-gradient(
+    from 180deg,
+    var(--whitelabel-primary),
+    var(--whitelabel-secondary),
+    var(--whitelabel-primary),
+    var(--whitelabel-secondary),
+    var(--whitelabel-primary)
+  );
+}
+
+/* Update hero badge with whitelabel colors when available */
+.pricing-view[style*="--whitelabel-primary"] .hero-badge {
+  background: linear-gradient(45deg, var(--whitelabel-primary), var(--whitelabel-secondary));
+  background-size: 600% 600%;
+  animation: gradientShift 6s ease infinite;
+}
+
+/* Update plan button colors with whitelabel colors when available */
+.pricing-view[style*="--whitelabel-primary"] .plan-button {
+  background: var(--whitelabel-primary);
+}
+
+.pricing-view[style*="--whitelabel-primary"] .plan-button:hover:not(:disabled) {
+  background: var(--whitelabel-secondary);
+}
+
+/* Update plan badge colors with whitelabel colors when available */
+.pricing-view[style*="--whitelabel-primary"] .plan-badge {
+  background: var(--whitelabel-primary);
+}
+
+/* Update billing toggle active state with whitelabel colors when available */
+.pricing-view[style*="--whitelabel-primary"] .billing-btn.active {
+  background: var(--whitelabel-primary);
+}
+
+/* Update contact support button with whitelabel colors when available */
+.pricing-view[style*="--whitelabel-primary"] .contact-support-btn {
+  background: var(--whitelabel-primary);
+}
+
+.pricing-view[style*="--whitelabel-primary"] .contact-support-btn:hover {
+  background: var(--whitelabel-secondary);
+}
+
+/* Update error alert with whitelabel colors when available */
+.pricing-view[style*="--whitelabel-primary"] .error-alert {
+  border-color: var(--whitelabel-primary);
+}
+
+.pricing-view[style*="--whitelabel-primary"] .error-content {
+  color: var(--whitelabel-primary);
+}
+
 /* Header Section */
 /* Removed standalone header-section background; header now sits inside hero */
 
@@ -445,6 +525,18 @@ onMounted(async () => {
   margin: 0 auto;
 }
 
+/* Hero section max-width for large screens */
+@media (min-width: 1400px) {
+  .hero-section {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  
+  .hero-content {
+    max-width: 700px;
+  }
+}
+
 .hero-badge {
   display: inline-flex;
   align-items: center;
@@ -483,6 +575,9 @@ onMounted(async () => {
   padding: var(--space-4);
   margin: var(--space-6) var(--space-6) 0;
   text-align: center;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .error-content {
@@ -497,6 +592,8 @@ onMounted(async () => {
 /* Billing Toggle */
 .billing-toggle-section {
   padding: var(--space-6) var(--space-6) 0;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .billing-toggle-container {
@@ -557,6 +654,7 @@ onMounted(async () => {
   padding: var(--space-8) var(--space-6);
   max-width: 1400px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .pricing-grid {
@@ -564,6 +662,32 @@ onMounted(async () => {
   grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   gap: var(--space-6);
   align-items: stretch;
+  max-width: 100%;
+}
+
+/* Responsive grid adjustments */
+@media (min-width: 1200px) {
+  .pricing-grid {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .pricing-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 900px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 767px) {
+  .pricing-grid {
+    grid-template-columns: 1fr;
+    max-width: 500px;
+    margin: 0 auto;
+  }
 }
 
 /* Plan Cards */
@@ -581,6 +705,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   min-height: 500px;
+  max-width: 100%;
 }
 
 @keyframes slideUp {
@@ -991,5 +1116,14 @@ onMounted(async () => {
   100% {
     background-position: 0% 50%;
   }
+}
+
+/* Update hero title and subtitle with whitelabel colors when available */
+.pricing-view[style*="--whitelabel-primary"] .hero-title {
+  color: var(--whitelabel-primary);
+}
+
+.pricing-view[style*="--whitelabel-primary"] .hero-subtitle {
+  color: var(--whitelabel-secondary);
 }
 </style> 

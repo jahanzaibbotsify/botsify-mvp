@@ -52,11 +52,11 @@ export function useWhitelabel() {
   /**
    * Fetch whitelabel packages
    */
-  const fetchPackages = async (): Promise<void> => {
+  const fetchPackages = async (userId?: string): Promise<void> => {
     if (!isConfigured.value) return
 
     try {
-      await whitelabelService.fetchPackages()
+      await whitelabelService.fetchPackages(userId)
     } catch (err: any) {
       console.warn('Failed to fetch whitelabel packages:', err.message)
     }

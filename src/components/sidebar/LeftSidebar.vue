@@ -3,12 +3,12 @@ import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useRoleStore } from '@/stores/roleStore';
-import { useWhitelabelStore } from '@/stores/whitelabelStore';
+import { useWhitelabel } from '@/composables/useWhitelabel';
 import BookMeetingModal from '@/components/modal/BookMeetingModal.vue';
 import CalendlyModal from '@/components/modal/CalendlyModal.vue';
 import { botsifyApi } from '@/services/botsifyApi'
 import BillingModal from '@/components/modal/BillingModal.vue';
-import { getWebUrl } from '@/utils';
+import { getWebUrl } from '@/utils/whitelabelUtils';
 import { BillingData } from '@/types';
 import { showZen } from '@/utils/zendesk';
 import { useBotStore } from '@/stores/botStore';
@@ -19,7 +19,7 @@ const botStore = useBotStore();
 const roleStore = useRoleStore();
 const router = useRouter();
 const route = useRoute();
-const whitelabelStore = useWhitelabelStore();
+const { isConfigured, companyName, logo } = useWhitelabel();
 // const { width } = useWindowSize();
 
 const emit = defineEmits(['select-button']);
@@ -94,14 +94,9 @@ const navigationButtons = computed(() => {
 const navLinks = computed(() => {
   // @ts-ignore
   const baseUrl = getWebUrl();
-  if (whitelabelStore.isWhitelabelClient) {
-    // For whitelabel clients, show only Legacy Platform and Support
+  if (isConfigured.value) {
+    // For whitelabel clients, show only Support
     return [
-      // {
-      //   name: 'Legacy Platform',
-      //   url: `${baseUrl}/bot`,
-      //   icon: 'pi pi-check-circle'
-      // },
       {
         name: 'Support',
         action: 'showZen',
@@ -112,11 +107,6 @@ const navLinks = computed(() => {
 
   // For regular Botsify clients, show all links
   return [
-    // {
-    //   name: 'Legacy Platform',
-    //   url: `${baseUrl}/bot`,
-    //   icon: 'pi pi-history'
-    // },
     {
       name: 'Tutorials',
       url: 'https://www.youtube.com/@Botsify',
@@ -279,10 +269,8 @@ onUnmounted(() => {
 });
 
 const openPartnerPortal = () => {
-  if (whitelabelStore.isWhitelabel && !whitelabelStore.isWhitelabelClient) {
-    window.open(whitelabelStore.partnerPortalUrl, '_blank');
-    closeDropdown();
-  }
+  // Partner portal functionality not available in current whitelabel setup
+  closeDropdown();
 };
 </script>
 
@@ -293,9 +281,9 @@ const openPartnerPortal = () => {
         <div class="app-title-container">
           <!-- Whitelabel or Botsify Logo with link -->
             <img
-              v-if="whitelabelStore.isWhitelabelClient && whitelabelStore.whitelabelData?.logo"
-              :src="whitelabelStore.whitelabelData.logo"
-              :alt="whitelabelStore.whitelabelData.company_name || 'Logo'"
+              v-if="isConfigured && logo"
+              :src="logo"
+              :alt="companyName || 'Logo'"
               class="logo-icon"
             />
             <img
@@ -357,7 +345,7 @@ const openPartnerPortal = () => {
     <div v-if="roleStore.canManageBillingWithSubscription" class="sidebar-pricing">
         <!-- Partner Portal Button for Whitelabel Users -->
         <button 
-          v-if="whitelabelStore.isWhitelabel && !whitelabelStore.isWhitelabelClient" 
+          v-if="isConfigured" 
           class="partner-portal-button" 
           @click="openPartnerPortal"
         >
