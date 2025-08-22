@@ -12,8 +12,8 @@ export function useWhitelabel() {
   const companyName = computed(() => config.value?.company_name || 'Botsify')
   const logo = computed(() => config.value?.logo || null)
   const favicon = computed(() => config.value?.favicon || null)
-  const primaryColor = computed(() => config.value?.primary_color || '#6D3ADB')
-  const secondaryColor = computed(() => config.value?.secondary_color || '#10B981')
+  const primaryColor = computed(() => config.value?.primary_color)
+  const secondaryColor = computed(() => config.value?.secondary_color)
   
   // Packages
   const packages = computed(() => whitelabelService.getPackages())
@@ -21,6 +21,9 @@ export function useWhitelabel() {
   
   // Registration control
   const isRegistrationAllowed = computed(() => whitelabelService.isRegistrationAllowed())
+
+  // Portal control
+  const isPortalEnabled = computed(() => whitelabelService.isPortalEnabled())
 
   /**
    * Initialize whitelabel configuration
@@ -96,6 +99,9 @@ export function useWhitelabel() {
     
     // Registration control
     isRegistrationAllowed: readonly(isRegistrationAllowed),
+    
+    // Portal control
+    isPortalEnabled: readonly(isPortalEnabled),
     
     // Methods
     initialize,

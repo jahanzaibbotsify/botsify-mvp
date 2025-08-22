@@ -914,8 +914,6 @@ onUnmounted(() => {
     from 180deg,
     var(--whitelabel-primary),
     var(--whitelabel-secondary),
-    var(--whitelabel-primary),
-    var(--whitelabel-secondary),
     var(--whitelabel-primary)
   );
 }

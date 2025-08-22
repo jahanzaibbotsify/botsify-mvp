@@ -146,16 +146,25 @@ const brandPanelStyle = computed(() => ({
   position: absolute;
   inset: 0;
   background: conic-gradient(
-    from 180deg,
-    var(--whitelabel-primary),
-    var(--whitelabel-secondary),
-    #2afadf,
-    var(--whitelabel-secondary),
-    var(--whitelabel-primary)
+      from 180deg,
+      #ff0080,
+      #7928ca,
+      #2afadf,
+      #7928ca,
+      #ff0080
   );
   filter: blur(60px);
   opacity: 0.6;
   z-index: 0;
+}
+
+.auth-brand-panel[style*="--whitelabel-primary"]::before {
+  background: conic-gradient(
+    from 180deg,
+    var(--whitelabel-primary),
+    var(--whitelabel-secondary),
+    var(--whitelabel-primary)
+  );
 }
 
 .auth-brand-panel::after {

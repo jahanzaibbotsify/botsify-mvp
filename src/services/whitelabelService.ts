@@ -102,6 +102,13 @@ class WhitelabelService {
   }
 
   /**
+   * Check if portal button should be enabled
+   */
+  isPortalEnabled(): boolean {
+    return this.config?.is_whitelabel === 1
+  }
+
+  /**
    * Check if registration is allowed
    */
   isRegistrationAllowed(): boolean {
@@ -130,7 +137,10 @@ class WhitelabelService {
     }
 
     // Apply colors to CSS custom properties
-    this.applyColors(this.config.primary_color, this.config.secondary_color)
+    if (this.config.primary_color && this.config.secondary_color) {
+      this.applyColors(this.config.primary_color, this.config.secondary_color)
+    }
+    
   }
 
   /**

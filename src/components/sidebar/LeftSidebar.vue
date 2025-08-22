@@ -19,7 +19,7 @@ const botStore = useBotStore();
 const roleStore = useRoleStore();
 const router = useRouter();
 const route = useRoute();
-const { isConfigured, companyName, logo } = useWhitelabel();
+const { isConfigured, companyName, logo, isPortalEnabled } = useWhitelabel();
 // const { width } = useWindowSize();
 
 const emit = defineEmits(['select-button']);
@@ -345,7 +345,7 @@ const openPartnerPortal = () => {
     <div v-if="roleStore.canManageBillingWithSubscription" class="sidebar-pricing">
         <!-- Partner Portal Button for Whitelabel Users -->
         <button 
-          v-if="isConfigured" 
+          v-if="isPortalEnabled" 
           class="partner-portal-button" 
           @click="openPartnerPortal"
         >

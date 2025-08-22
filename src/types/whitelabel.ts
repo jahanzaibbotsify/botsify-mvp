@@ -37,4 +37,5 @@ export interface WhitelabelConfig {
   stripe_account_id: string
   facebook: string | null
   show_whitelabel_register: boolean
+  is_whitelabel: number
 }
