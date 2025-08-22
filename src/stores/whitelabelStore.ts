@@ -19,8 +19,15 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
   // Set whitelabel data from API response
   function setWhitelabelData(data: { is_whitelabel_client: boolean; whitelabel: WhitelabelData, is_whitelabel: boolean }) {
     isWhitelabelClient.value = data.is_whitelabel_client
-    whitelabelData.value = data.is_whitelabel ? data.whitelabel : null
-
+    whitelabelData.value = data.is_whitelabel ? {
+      company_name: data.whitelabel?.company_name,
+      primary_color: data.whitelabel?.primary_color,
+      secondary_color: data.whitelabel?.secondary_color,
+      logo: data.whitelabel?.logo,
+      favicon: data.whitelabel?.favicon,
+      domain: data.whitelabel?.domain,
+      mask_url: data.whitelabel?.mask_url
+    } : null
     // Apply whitelabel colors to CSS custom properties
     if (data.is_whitelabel_client && data.whitelabel) {
       applyWhitelabelColors(data.whitelabel)
