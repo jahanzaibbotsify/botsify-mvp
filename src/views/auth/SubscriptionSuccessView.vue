@@ -60,7 +60,7 @@ onMounted(() => {
       attempts++
       const success = await getUpdatedUser(attempts)
       if (!success && attempts < maxAttempts) {
-        setTimeout(tryGetUser, 3000)
+        setTimeout(tryGetUser, 5000)
       }
     }
   }

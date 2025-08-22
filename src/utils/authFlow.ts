@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/stores/authStore'
 import { getCurrentApiKey } from './apiKeyUtils'
+import { User } from '@/types'
 
 export interface AuthFlowResult {
   shouldRedirect: boolean
@@ -56,7 +57,7 @@ export function checkAuthFlow(): AuthFlowResult {
  * @param user The user object
  * @returns boolean indicating if user has subscription
  */
-function checkUserSubscription(user: any): boolean {
+function checkUserSubscription(user: User): boolean {
   // Check various subscription indicators
   if (user.subs && user.subs.status === 'active') {
     return true
@@ -89,17 +90,16 @@ function checkUserSubscription(user: any): boolean {
  */
 export function handlePostAuthRedirect(): string {
   const authStore = useAuthStore();
-  const user = authStore.user as any
-  
+  const user = authStore.user as User
   if (!authStore.isAuthenticated || !user) {
     return '/auth/login'
   }
 
-  if (user.is_appsumo || user.is_bot_admin || user.subs) {
+  if (user.is_appsumo || user.is_bot_admin || user.subs || user.source === 'botsify_landing') {
     return '/select-agent';
   }
 
-  if (!user.email_verified && !user.subs && !user.is_appsumo && !user.is_bot_admin) {
+  if (!user.email_verified && !user.subs && !user.is_appsumo && !user.is_bot_admin && user.source !== 'botsify_landing') {
     return `/auth/verify-email?email=${encodeURIComponent(user.email || '')}`
   }
 

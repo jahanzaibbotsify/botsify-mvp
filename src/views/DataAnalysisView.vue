@@ -115,7 +115,7 @@ const handleFilterChange = async (updatedFilters: Record<string, any>) => {
     if (response.data) {
       responseData.value = {
         ...responseData.value,
-        data: Array.isArray(response.data) ? response.data : [response.data],
+        data: currentApiPath.value.includes('usersList') ? response.data.data : Array.isArray(response.data) ? response.data : [response.data],
         filtersData: updatedFilters
       };
       
@@ -192,7 +192,7 @@ const sendSuggestion = (suggestion: string) => {
           </div>
           <div class="centered-heading">
             <h1>What would you like to analyze?</h1>
-            <p>Use natural language to query your Botsify data. Apply filters to refine your analysis.</p>
+            <p>Use natural language to query your Botsify data.</p>
           </div>
 
           <div class="input-area">
@@ -208,16 +208,12 @@ const sendSuggestion = (suggestion: string) => {
               <div class="left-actions"></div>
               <button
                   class="send-button"
+                  :class="{ loading: dataAnalysisStore.loading }"
                   @click="handleAnalyze"
                   :disabled="!prompt.trim() || dataAnalysisStore.loading"
               >
-                <svg v-if="!dataAnalysisStore.loading" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                     stroke-linejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13"></line>
-                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                </svg>
-                <div v-else class="loading-spinner"></div>
+                <i v-if="!dataAnalysisStore.loading" class="pi pi-send"></i>
+                <div v-else class="send-spinner"></div>
               </button>
             </div>
           </div>
@@ -541,11 +537,19 @@ const sendSuggestion = (suggestion: string) => {
   background-color: var(--color-bg-tertiary);
 }
 
-.loading-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top: 2px solid white;
+.send-button.loading,
+.send-button.loading:disabled {
+  background-color: var(--color-primary);
+  color: #ffffff;
+}
+
+.send-spinner {
+  width: 18px;
+  height: 18px;
+  aspect-ratio: 1 / 1;
+  display: inline-block;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #ffffff;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -707,10 +711,15 @@ const sendSuggestion = (suggestion: string) => {
 .loading-spinner-large {
   width: 60px;
   height: 60px;
-  border: 6px solid rgba(18, 17, 17, 0.3);
-  border-top: 6px solid #222020;
+  border: 6px solid var(--color-border);
+  border-top: 6px solid var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+
+[data-theme="dark"] .loading-spinner-large {
+  border-color: rgba(255, 255, 255, 0.2);
+  border-top-color: var(--color-primary);
 }
 
 /* No Data State - exact copy from ChatView */
