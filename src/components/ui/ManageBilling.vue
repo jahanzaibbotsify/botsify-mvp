@@ -7,7 +7,7 @@ import BillingModal from '@/components/modal/BillingModal.vue';
 
 defineProps<{
   iconPosition?: 'left' | 'right'
-  class?: string
+  customClass?: string
   size?: 'small' | 'medium' | 'large'
 }>()
 
@@ -52,7 +52,7 @@ const handleManageBilling = async () => {
 </script>
 
 <template>
-    <Button @click="handleManageBilling" :loading="billingLoading" :disabled="billingLoading" icon="pi pi-external-link" :iconPosition="iconPosition" :class="class" :size="size">
+    <Button @click="handleManageBilling" :loading="billingLoading" :disabled="billingLoading" icon="pi pi-external-link" :iconPosition="iconPosition" :class="customClass" :size="size">
         Manage Billing
     </Button>
     <BillingModal 

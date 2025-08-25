@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useRoleStore } from '@/stores/roleStore';
@@ -241,7 +241,7 @@ const openPartnerPortal = () => {
           Partner Portal
         </Button>
 
-        <ManageBilling v-else class="sidebar-button" iconPosition="right" />
+        <ManageBilling v-else customClass="sidebar-button" iconPosition="right" />
     </div>
     <div v-else-if="roleStore.isLiveChatAgent" class="sidebar-pricing">
         <Button class="sidebar-button" @click="navigateToPage('select-agent')" icon="pi pi-cog" iconPosition="right">

@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
 import ModalLayout from '@/components/ui/ModalLayout.vue'
 import { Button, Input } from '@/components/ui'
