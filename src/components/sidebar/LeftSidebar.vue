@@ -3,12 +3,13 @@ import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useRoleStore } from '@/stores/roleStore';
-import { useWhitelabel } from '@/composables/useWhitelabel';
+import { storeToRefs } from 'pinia'
+import { useWhitelabelStore } from '@/stores/whitelabelStore'
 import BookMeetingModal from '@/components/modal/BookMeetingModal.vue';
 import CalendlyModal from '@/components/modal/CalendlyModal.vue';
 import { botsifyApi } from '@/services/botsifyApi'
 import BillingModal from '@/components/modal/BillingModal.vue';
-import { getWebUrl } from '@/utils/whitelabelUtils';
+import { getWebUrl } from '@/utils';
 import { BillingData } from '@/types';
 import { showZen } from '@/utils/zendesk';
 import { useBotStore } from '@/stores/botStore';
@@ -19,7 +20,8 @@ const botStore = useBotStore();
 const roleStore = useRoleStore();
 const router = useRouter();
 const route = useRoute();
-const { isConfigured, companyName, logo, isPortalEnabled } = useWhitelabel();
+const whitelabelStore = useWhitelabelStore()
+const { isConfigured, companyName, logo, isPortalEnabled } = storeToRefs(whitelabelStore)
 // const { width } = useWindowSize();
 
 const emit = defineEmits(['select-button']);

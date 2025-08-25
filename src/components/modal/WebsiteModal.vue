@@ -3,7 +3,7 @@ import {Button, Input, PublishModalLayout} from "@/components/ui";
 import { ref } from "vue";
 import { useBotStore } from "@/stores/botStore";
 import { usePublishStore } from "@/stores/publishStore";
-import { getWebUrl } from "@/utils/whitelabelUtils";
+import { getWebUrl } from "@/utils";
 import { publishApi } from "@/services/publishApi";
 
 // Define tabs first

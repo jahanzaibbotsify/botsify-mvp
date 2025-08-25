@@ -1,5 +1,6 @@
 import moment from 'moment-timezone';
 import { BOTSIFY_WEB_URL } from './config';
+import { whitelabelService } from '@/services/whitelabelService'
 
 export const currentTime = () => {
   return moment.utc().format('YYYY-MM-DD HH:mm:ss');
@@ -76,4 +77,12 @@ export const getPlatformClass = (platform: string = '') => {
   
     return fallback; // immediate safe value
   };
+  
+  export const getWebUrl = (): string => {
+    const config = whitelabelService.getConfig()
+    if (config?.mask_url) {
+      return config.mask_url
+    }
+    return BOTSIFY_WEB_URL
+  }
   

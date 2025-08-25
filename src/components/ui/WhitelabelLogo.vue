@@ -9,7 +9,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useWhitelabel } from '@/composables/useWhitelabel'
+import { useWhitelabelStore } from '@/stores/whitelabelStore'
+import { storeToRefs } from 'pinia'
 
 interface Props {
   size?: 'small' | 'medium' | 'large'
@@ -21,7 +22,9 @@ const props = withDefaults(defineProps<Props>(), {
   fallbackSrc: '/logo.png'
 })
 
-const { companyName, getLogoUrl } = useWhitelabel()
+const whitelabelStore = useWhitelabelStore()
+const { companyName } = storeToRefs(whitelabelStore)
+const { getLogoUrl } = whitelabelStore
 
 const logoUrl = computed(() => {
   return getLogoUrl() || props.fallbackSrc

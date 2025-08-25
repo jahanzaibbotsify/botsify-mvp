@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { useWhitelabel } from '@/composables/useWhitelabel'
+import { storeToRefs } from 'pinia'
+import { useWhitelabelStore } from '@/stores/whitelabelStore'
 import WhitelabelLogo from '@/components/ui/WhitelabelLogo.vue'
 
 const route = useRoute()
-const { companyName, primaryColor, secondaryColor } = useWhitelabel()
+const whitelabelStore = useWhitelabelStore()
+const { companyName, primaryColor, secondaryColor } = storeToRefs(whitelabelStore)
 
 // Determine if brand panel should be shown
 const showBrandPanel = computed(() => {

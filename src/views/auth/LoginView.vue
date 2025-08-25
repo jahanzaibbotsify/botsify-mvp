@@ -2,14 +2,16 @@
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
-import { useWhitelabel } from '@/composables/useWhitelabel'
+import { storeToRefs } from 'pinia'
+import { useWhitelabelStore } from '@/stores/whitelabelStore'
 import type { LoginCredentials, FormValidation } from '@/types/auth'
 import {handlePostAuthRedirect} from "@/utils/authFlow.ts";
 import Button from '@/components/ui/Button.vue';
 
 const router = useRouter()
 const authStore = useAuthStore()
-const { isRegistrationAllowed } = useWhitelabel()
+const whitelabelStore = useWhitelabelStore()
+const { isRegistrationAllowed } = storeToRefs(whitelabelStore)
 
 // Form state
 const form = reactive<LoginCredentials>({

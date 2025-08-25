@@ -1,6 +1,6 @@
 import { axiosInstance } from './axiosInstance';
 import { useRoleStore } from '@/stores/roleStore';
-import { useWhitelabel } from '@/composables/useWhitelabel';
+import { useWhitelabelStore } from '@/stores/whitelabelStore';
 import { useBotStore } from '@/stores/botStore';
 import { useChatStore } from '@/stores/chatStore';
 import { useConversationStore } from '@/stores/conversationStore';
@@ -46,7 +46,7 @@ export async function getBotData() {
     const data = response.data.data;
 
     const roleStore = useRoleStore();
-    const { initialize } = useWhitelabel();
+    const { initialize } = useWhitelabelStore();
     const botStore = useBotStore();
     const conversationStore = useConversationStore();
     

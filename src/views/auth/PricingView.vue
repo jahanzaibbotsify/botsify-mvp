@@ -2,15 +2,17 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
 import { useRouter } from 'vue-router'
-import { useWhitelabel } from '@/composables/useWhitelabel'
-import { whitelabelService } from '@/services/whitelabelService'
+import { storeToRefs } from 'pinia'
+import { useWhitelabelStore } from '@/stores/whitelabelStore'
 import type { PricingPlan } from '@/types/auth'
 import type { WhitelabelPackage } from '@/types/whitelabel'
 import { axiosInstance } from "@/utils/axiosInstance.ts"
 
 const authStore = useAuthStore()
 const router = useRouter()
-const { isConfigured, packages: whitelabelPackages, hasPackages, companyName, getLogoUrl, primaryColor, secondaryColor } = useWhitelabel()
+const whitelabelStore = useWhitelabelStore()
+const { isConfigured, packages: whitelabelPackages, hasPackages, shouldShowWhitelabelPlans, companyName, primaryColor, secondaryColor } = storeToRefs(whitelabelStore)
+const { getLogoUrl } = whitelabelStore
 
 const selectedPlanId = ref<string | null>(null)
 const billingCycle = ref<'monthly' | 'annually'>('annually')
@@ -63,7 +65,7 @@ const convertWhitelabelPackageToPlan = (pkg: WhitelabelPackage): PricingPlan => 
 const allPlans = computed(() => {
   console.log('allPlans computed - isConfigured:', isConfigured.value, 'whitelabelPackages:', whitelabelPackages.value, 'hasPackages:', hasPackages.value)
   
-  if (isConfigured.value && whitelabelPackages.value && whitelabelPackages.value.length > 0) {
+  if (shouldShowWhitelabelPlans.value && whitelabelPackages.value && whitelabelPackages.value.length > 0) {
     // Use whitelabel packages
     console.log('Using whitelabel packages:', whitelabelPackages.value)
     return whitelabelPackages.value.map(pkg => convertWhitelabelPackageToPlan(pkg))
@@ -139,16 +141,13 @@ const brandPanelStyle = computed(() => ({
 onMounted(async () => {
   console.log('PricingView mounted - isConfigured:', isConfigured.value, 'hasPackages:', hasPackages.value)
   
-  if (isConfigured.value && !hasPackages.value) {
-    // Fetch packages if not already loaded
+  // Always attempt to fetch packages for logged-in users if not already available
+  if (!hasPackages.value) {
     const userId = authStore.user?.id || authStore.user?.user_id
     console.log('Fetching packages for userId:', userId)
-    
     if (userId) {
       try {
-        await whitelabelService.fetchPackages(userId)
-        console.log('Packages fetched successfully')
-        console.log('Updated packages:', whitelabelService.getPackages())
+        await whitelabelStore.fetchPackages(userId)
       } catch (error) {
         console.error('Failed to fetch packages:', error)
       }

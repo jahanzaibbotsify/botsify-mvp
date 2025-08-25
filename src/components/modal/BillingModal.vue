@@ -303,7 +303,8 @@
   
   <script setup lang="ts">
   import { ref, computed, onMounted, watch } from 'vue'
-  import { useWhitelabel } from '@/composables/useWhitelabel'
+  import { useWhitelabelStore } from '@/stores/whitelabelStore'
+  import { storeToRefs } from 'pinia'
   import { botsifyApi } from '@/services/botsifyApi'
   import { STRIPE_API_KEY } from '@/utils/config'
   
@@ -486,7 +487,8 @@
     return planName || ''
   })
 
-  const { isConfigured } = useWhitelabel()
+  const whitelabelStore = useWhitelabelStore()
+  const { isConfigured } = storeToRefs(whitelabelStore)
 
   const availableWhitelabelPlans = computed(() => {
     if (isConfigured.value) {

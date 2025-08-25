@@ -8,11 +8,13 @@ import Button from '@/components/ui/Button.vue';
 import Input from '@/components/ui/Input.vue';
 import { createResource } from "@/utils/caching.ts"
 import { validateImage } from '@/utils';
-import { useWhitelabel } from '@/composables/useWhitelabel'
+import { storeToRefs } from 'pinia'
+import { useWhitelabelStore } from '@/stores/whitelabelStore'
 import WhitelabelLogo from '@/components/ui/WhitelabelLogo.vue'
 
 const router = useRouter()
-const { isConfigured, companyName, primaryColor, secondaryColor } = useWhitelabel()
+const whitelabelStore = useWhitelabelStore()
+const { isConfigured, companyName, primaryColor, secondaryColor } = storeToRefs(whitelabelStore)
 
 // Computed styles for whitelabel colors
 const brandPanelStyle = computed(() => ({
