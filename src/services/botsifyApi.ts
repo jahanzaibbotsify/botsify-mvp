@@ -2,6 +2,7 @@ import { axiosInstance, uploadInstance } from '@/utils/axiosInstance';
 import type { MCPConfigurationFile } from '../types/mcp';
 import { APP_URL } from '../utils/config';
 import { useBotStore } from '@/stores/botStore';
+import { useWhitelabelStore } from '@/stores/whitelabelStore';
 
 export interface BotsifyResponse {
   success: boolean;
@@ -1102,7 +1103,7 @@ export class BotsifyApiService {
     };
   }): Promise<BotsifyResponse> {
     try {
-      const response = await axiosInstance.post('/v1/billing/update-payment-method', payload);
+      const response = await axiosInstance.post('/v1/change/card', payload);
       if (response.data.status === 'success') {
         return {
           success: true,
@@ -1128,7 +1129,10 @@ export class BotsifyApiService {
 
   async cancelSubscription(payload: { reason: string }): Promise<BotsifyResponse> {
     try {
-      const response = await axiosInstance.post('/v1/billing/cancel-subscription', payload);
+      const {isConfigured, config} = useWhitelabelStore();
+      let url = '/v1/cancel-client-plan'
+      if(!isConfigured || config?.is_whitelabel === 1) url = '/v1/cancel-plan'
+      const response = await axiosInstance.post(url, payload);
       if (response.data.status === 'success') {
         return {
           success: true,

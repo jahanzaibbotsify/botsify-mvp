@@ -1,5 +1,5 @@
 import { axiosInstance } from '@/utils/axiosInstance'
-import type { WhitelabelPackage, WhitelabelPackagesResponse, WhitelabelConfig } from '@/types/whitelabel'
+import type { WhitelabelPackage, WhitelabelConfig } from '@/types/whitelabel'
 
 export interface WhitelabelResponse {
   data: WhitelabelConfig | null

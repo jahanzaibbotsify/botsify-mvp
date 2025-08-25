@@ -102,32 +102,70 @@ export interface ExtendedChat extends Chat {
 }
 
 
+export interface StripeCharge {
+  id: string
+  amount: number
+  currency: string
+  created: number
+  description: string
+  status: string
+  receipt_url: string
+  payment_method_details: {
+    card: {
+      brand: string
+      last4: string
+      exp_month: number
+      exp_year: number
+    }
+  }
+}
+
+export interface StripeSubscription {
+  id: number
+  user_id: number
+  name: string
+  stripe_id: string
+  stripe_plan: string
+  quantity: number
+  status: string
+  trial_ends_at: string | null
+  ends_at: string | null
+  next_charge_date: string | null
+  created_at: string
+  updated_at: string
+  paddle_cancel_url: string | null
+  paddle_update_url: string | null
+  paddle_checkout_id: string | null
+  subscription_plan_id: string | null
+  whitelabel_client: number
+  // Stripe-specific fields
+  items?: {
+    data: Array<{
+      plan: {
+        name: string
+        amount?: number
+        amount_decimal?: string
+      }
+    }>
+  }
+  plan?: {
+    name: string
+    amount?: number
+    amount_decimal?: string
+    interval?: string
+    interval_count?: number
+  }
+}
+
 export interface BillingData {
-  charges: {
+  charges?: {
     object: string
-    data: any[]
+    data: StripeCharge[]
     has_more: boolean
     url: string
-  }
-  stripe_subscription: {
-    id: number
-    user_id: number
-    name: string
-    stripe_id: string
-    stripe_plan: string
-    quantity: number
-    status: string
-    trial_ends_at: string | null
-    ends_at: string | null
-    next_charge_date: string | null
-    created_at: string
-    updated_at: string
-    paddle_cancel_url: string | null
-    paddle_update_url: string | null
-    paddle_checkout_id: string | null
-    subscription_plan_id: string | null
-    whitelabel_client: number
-  }
+  } | StripeCharge[]
+  stripe_subscription?: StripeSubscription
+  subscription?: StripeSubscription
 }
 
 // Export conversation types

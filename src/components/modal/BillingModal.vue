@@ -1,384 +1,175 @@
 <template>
-    <div v-if="show" class="billing-modal-overlay" @click="handleOverlayClick">
-      <div class="billing-modal" @click.stop>
-        <!-- Modal Header -->
-        <div class="modal-header">
-          <div class="header-content">
-            <h2>Billing & Subscription</h2>
-            <p>Manage your subscription and view billing history</p>
-          </div>
-          <button class="close-button" @click="closeModal">
-            <i class="pi pi-times"></i>
-          </button>
-        </div>
-  
-        <!-- Modal Content -->
-        <div class="modal-content">
-          <!-- Current Subscription Info -->
-          <div class="subscription-section">
-            <h3>Current Subscription</h3>
-            <div class="subscription-card">
-              <div class="subscription-header">
-                <div class="plan-info">
-                  <h4>{{ getActualPlanName }}</h4>
-                  <p class="plan-description">{{ getPlanDescription(getActualPlanName) }}</p>
-                </div>
-                <div class="plan-price">
-                  <span class="price-amount">${{ getPlanPrice(getActualPlanName) }}</span>
-                  <span class="price-period">{{ getBillingPeriod(getActualPlanName) }}</span>
-                </div>
-              </div>
-              
-              <div class="subscription-details">
-                <div class="detail-item">
-                  <span class="label">Status:</span>
-                  <span class="value status" :class="subscriptionData?.status">{{ subscriptionData?.status || 'Unknown' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="label">Created:</span>
-                  <span class="value">{{ formatDate(subscriptionData?.created_at) }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="label">Last Updated:</span>
-                  <span class="value">{{ formatDate(subscriptionData?.updated_at) }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="label">Quantity:</span>
-                  <span class="value">{{ subscriptionData?.quantity || 1 }}</span>
-                </div>
-              </div>
-  
-              <div class="subscription-actions">
-                <button class="action-btn secondary" @click="openChangePlanModal">Change Plan</button>
-                <button class="action-btn secondary" @click="openChangePaymentModal">Update Payment</button>
-                <button class="action-btn danger" @click="openCancellationModal">Cancel Subscription</button>
-              </div>
+  <ModalLayout
+    ref="modalRef"
+    title="Billing & Subscription"
+    max-width="900px"
+    @close="closeModal"
+  >
+    <div class="billing-content">
+      <!-- Current Subscription Info -->
+      <div class="subscription-section">
+        <h3>Current Subscription</h3>
+        <div class="subscription-card">
+          <div class="subscription-header">
+            <div class="plan-info">
+              <h4>{{ getActualPlanName }}</h4>
+              <p class="plan-description">{{ getPlanDescription(getActualPlanName) }}</p>
             </div>
-          </div>
-  
-          <!-- Charges History -->
-          <div class="charges-section">
-            <div class="section-header">
-              <h3>Payment History</h3>
-              <button class="download-all-btn" @click="downloadAllChargesHandler">
-                <i class="pi pi-download"></i>
-                Download All
-              </button>
-            </div>
-            
-            <div class="charges-table">
-              <div class="table-header">
-                <div class="header-cell">Date</div>
-                <div class="header-cell">Description</div>
-                <div class="header-cell">Amount</div>
-                <div class="header-cell">Status</div>
-                <div class="header-cell">Actions</div>
-              </div>
-              
-              <div v-if="chargesData.length === 0" class="empty-state">
-                <i class="pi pi-credit-card"></i>
-                <p>No charges found</p>
-                <span>Your payment history will appear here</span>
-              </div>
-              
-              <div v-else class="table-body">
-                <div v-for="charge in chargesData" :key="charge.id" class="table-row">
-                  <div class="cell">{{ formatDate(charge.created) }}</div>
-                  <div class="cell">{{ charge.description || 'Subscription payment' }}</div>
-                  <div class="cell">${{ (charge.amount / 100).toFixed(2) }}</div>
-                  <div class="cell">
-                    <span class="status-badge" :class="charge.status">{{ charge.status }}</span>
-                  </div>
-                  <div class="cell">
-                    <button class="download-btn" @click="downloadChargeReceipt(charge.receipt_url)" title="Download Receipt">
-                      <i class="pi pi-download"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Change Plan Modal -->
-    <div v-if="showChangePlanModal" class="modal-overlay" @click="closeChangePlanModal">
-      <div class="sub-modal-content" @click.stop>
-        <div class="sub-modal-header">
-          <h3>Change Your Plan</h3>
-          <button class="close-button" @click="closeChangePlanModal">
-            <i class="pi pi-times"></i>
-          </button>
-        </div>
-        <div class="sub-modal-body">
-          <div v-if="!changingPlan">
-            <!-- Whitelabel Client Plans -->
-            <div v-if="isConfigured">
-              <div v-for="(planName, planId) in availableWhitelabelPlans" :key="planId">
-                <button 
-                  v-show="currentPlanId !== planId" 
-                  class="plan-option-btn" 
-                  @click="selectPlan(planId)"
-                >
-                  {{ planName }}
-                </button>
-              </div>
-            </div>
-            
-            <!-- Regular Client Plans -->
-            <div v-else>
-              <!-- Personal Plan Monthly to Annual -->
-              <button 
-                v-show="currentPlanId === 'Personal Plan'" 
-                class="plan-option-btn" 
-                @click="selectPlan('Personal-Plan-Annual')"
-              >
-                Personal Plan - $490/Year
-              </button>
-              
-              <!-- Personal Plan Annual to Monthly -->
-              <button 
-                v-show="currentPlanId === 'Personal-Plan-Annual'" 
-                class="plan-option-btn" 
-                @click="selectPlan('Personal-Plan')"
-              >
-                Personal Plan - $49/Month
-              </button>
-              
-              <!-- Upgrade to Professional Monthly -->
-              <button 
-                v-show="currentPlanId !== 'Professional Plan'" 
-                class="plan-option-btn" 
-                @click="selectPlan('Professional-Plan')"
-              >
-                Professional Plan - $149/Month
-              </button>
-              
-              <!-- Upgrade to Professional Annual -->
-              <button 
-                v-show="currentPlanId !== 'Professional-Plan-Annual'" 
-                class="plan-option-btn" 
-                @click="selectPlan('Professional-Plan-Annual')"
-              >
-                Professional Plan - $1490/Year
-              </button>
-              
-              <!-- Downgrade Contact Message -->
-              <div v-if="!canDowngrade" class="downgrade-message">
-                <p>If you want to downgrade your plan, please contact us</p>
-                <a 
-                  class="contact-btn" 
-                  :href="getContactEmail()"
-                  target="_blank"
-                >
-                  Contact Us
-                </a>
-              </div>
+            <div class="plan-price">
+              <span class="price-amount">${{ getPlanPrice(getActualPlanName) }}</span>
+              <span class="price-period">{{ getBillingPeriod(getActualPlanName) }}</span>
+              <!-- Debug info -->
+              <small style="display: block; font-size: 0.75rem; opacity: 0.7; margin-top: var(--space-1);">
+                Plan: {{ getActualPlanName }} | Config: {{ isConfigured ? 'Yes' : 'No' }} | Init: {{ isInitialized ? 'Yes' : 'No' }} | Packages: {{ whitelabelStore.packages?.length || 0 }}
+              </small>
             </div>
           </div>
           
-          <div v-else class="loading-state">
-            <div class="spinner"></div>
-            <p>Processing...</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Change Payment Method Modal -->
-    <div v-if="showChangePaymentModal" class="modal-overlay" @click="closeChangePaymentModal">
-      <div class="sub-modal-content" @click.stop>
-        <div class="sub-modal-header">
-          <h3>Update Payment Method</h3>
-          <button class="close-button" @click="closeChangePaymentModal">
-            <i class="pi pi-times"></i>
-          </button>
-        </div>
-        <div class="sub-modal-body">
-          <form @submit.prevent="updatePaymentMethod">
-            <div class="form-group">
-              <label for="cardNumber">Card Number</label>
-              <input 
-                type="text" 
-                id="cardNumber" 
-                v-model="paymentForm.cardNumber" 
-                placeholder="1234 5678 9012 3456"
-                maxlength="19"
-                @input="formatCardNumber"
-                @blur="validateCardNumber"
-                required
-              />
+          <div class="subscription-details">
+                         <div class="detail-item">
+               <span class="label">Status:</span>
+               <Badge 
+                 :variant="getStatusVariant(subscriptionData?.status)" 
+                 size="small"
+                 class="status-badge"
+               >
+                 {{ subscriptionData?.status || 'Unknown' }}
+               </Badge>
+             </div>
+            <div class="detail-item">
+              <span class="label">Created:</span>
+              <span class="value">{{ formatDate(subscriptionData?.created_at) }}</span>
             </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="expiry">Expiry Date</label>
-                <input 
-                  type="text" 
-                  id="expiry" 
-                  v-model="paymentForm.expiry" 
-                  placeholder="MM/YY"
-                  maxlength="5"
-                  @input="formatExpiry"
-                  @blur="validateExpiry"
-                  required
-                />
-              </div>
-              <div class="form-group">
-                <label for="cvv">CVV</label>
-                <input 
-                  type="text" 
-                  id="cvv" 
-                  v-model="paymentForm.cvv" 
-                  placeholder="123"
-                  maxlength="4"
-                  @input="formatCVV"
-                  @blur="validateCVV"
-                  required
-                />
-              </div>
+            <div class="detail-item">
+              <span class="label">Last Updated:</span>
+              <span class="value">{{ formatDate(subscriptionData?.updated_at) }}</span>
             </div>
-            <div class="form-group">
-              <label for="cardName">Name on Card</label>
-              <input 
-                type="text" 
-                id="cardName" 
-                v-model="paymentForm.cardName" 
-                placeholder="John Doe"
-                required
-              />
-            </div>
-            <div class="form-actions">
-              <button type="button" class="btn-secondary" @click="closeChangePaymentModal">Cancel</button>
-              <button type="submit" class="btn-primary" :disabled="updatingPayment">
-                <span v-if="updatingPayment">Updating...</span>
-                <span v-else>Update Payment Method</span>
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- Cancellation Modal -->
-    <div v-if="showCancellationModal" class="modal-overlay" @click="closeCancellationModal">
-      <div class="sub-modal-content" @click.stop>
-        <div class="sub-modal-header">
-          <h3>Cancel Subscription</h3>
-          <button class="close-button" @click="closeCancellationModal">
-            <i class="pi pi-times"></i>
-          </button>
-        </div>
-        <div class="sub-modal-body">
-          <div class="cancellation-reasons">
-            <h4>Why are you cancelling?</h4>
-            <div class="reasons-list">
-              <label v-for="reason in cancellationReasons" :key="reason.key" class="reason-item">
-                <input 
-                  type="radio" 
-                  :value="reason.key" 
-                  v-model="selectedCancellationReason"
-                  name="cancellationReason"
-                />
-                <span>{{ reason.label }}</span>
-              </label>
+            <div class="detail-item">
+              <span class="label">Quantity:</span>
+              <span class="value">{{ subscriptionData?.quantity || 1 }}</span>
             </div>
           </div>
-          <div class="cancellation-actions">
-            <button type="button" class="btn-secondary" @click="closeCancellationModal">Keep Subscription</button>
-            <button 
-              type="button" 
-              class="btn-danger" 
-              @click="confirmCancellation"
-              :disabled="!selectedCancellationReason || cancelling"
+
+          <div class="subscription-actions">
+            <Button 
+              v-if="hasAvailablePlanChanges" 
+              variant="secondary"
+              @click="openChangePlanModal"
             >
-              <span v-if="cancelling">Cancelling...</span>
-              <span v-else>Cancel Subscription</span>
-            </button>
+              Change Plan
+            </Button>
+            <div v-else-if="isConfigured" class="no-plan-changes-info">
+              <small style="color: var(--color-text-secondary); font-style: italic;">
+                Plan changes are managed by your administrator
+              </small>
+            </div>
+            <Button variant="secondary" @click="openChangePaymentModal">Update Payment</Button>
+            <Button variant="error" @click="openCancellationModal">Cancel Subscription</Button>
           </div>
         </div>
       </div>
+
+      <!-- Charges History -->
+      <div class="charges-section">
+        <div class="section-header">
+          <h3>Payment History</h3>
+          <Button @click="downloadAllChargesHandler" icon="pi pi-download">
+            Download All
+          </Button>
+        </div>
+        
+        <Table v-if="chargesData.length > 0">
+          <TableHeader>
+            <TableRow>
+              <TableCell width='1fr'>Date</TableCell>
+              <TableCell width='2fr'>Description</TableCell>
+              <TableCell width='1fr'>Amount</TableCell>
+              <TableCell width='1fr'>Status</TableCell>
+              <TableCell width='1fr'>Action</TableCell>
+            </TableRow>
+          </TableHeader>
+          
+          <TableRow v-for="charge in chargesData" :key="charge.id">
+            <TableCell>{{ formatDate(charge.created) }}</TableCell>
+            <TableCell>{{ charge.description || 'Subscription payment' }}</TableCell>
+            <TableCell align="right">${{ (charge.amount / 100).toFixed(2) }}</TableCell>
+                         <TableCell align="center">
+               <Badge 
+                 :variant="getStatusVariant(charge.status)" 
+                 size="small"
+               >
+                 {{ charge.status }}
+               </Badge>
+             </TableCell>
+            <TableCell align="center">
+              <Button 
+                variant="secondary" 
+                size="small" 
+                icon="pi pi-download" 
+                icon-only
+                @click="downloadChargeReceipt(charge.receipt_url)" 
+                title="Download Receipt"
+              />
+            </TableCell>
+          </TableRow>
+        </Table>
+        
+        <div v-else class="empty-state">
+          <i class="pi pi-credit-card"></i>
+          <p>No charges found</p>
+          <span>Your payment history will appear here</span>
+        </div>
+      </div>
     </div>
+  </ModalLayout>
+
+         <!-- Change Plan Modal -->
+     <ChangePlanModal
+       ref="changePlanModalRef"
+       :is-configured="isConfigured"
+       :available-whitelabel-plans="availableWhitelabelPlans"
+       :current-plan-id="currentPlanId"
+       :can-downgrade="canDowngrade"
+       @close="closeChangePlanModal"
+       @plan-changed="handlePlanChanged"
+     />
+
+         <!-- Change Payment Method Modal -->
+     <ChangePaymentModal
+       ref="changePaymentModalRef"
+       :current-plan-name="getActualPlanName"
+       @close="closeChangePaymentModal"
+       @payment-updated="handlePaymentUpdated"
+     />
+
+         <!-- Cancellation Modal -->
+     <CancellationModal
+       ref="cancellationModalRef"
+       @close="closeCancellationModal"
+       @subscription-cancelled="handleSubscriptionCancelled"
+     />
   </template>
   
   <script setup lang="ts">
   import { ref, computed, onMounted, watch } from 'vue'
   import { useWhitelabelStore } from '@/stores/whitelabelStore'
   import { storeToRefs } from 'pinia'
-  import { botsifyApi } from '@/services/botsifyApi'
-  import { STRIPE_API_KEY } from '@/utils/config'
+  import Button from '@/components/ui/Button.vue'
+  import ModalLayout from '@/components/ui/ModalLayout.vue'
+  import Table from '@/components/ui/Table.vue'
+  import TableHeader from '@/components/ui/TableHeader.vue'
+  import TableRow from '@/components/ui/TableRow.vue'
+  import TableCell from '@/components/ui/TableCell.vue'
+  import Badge from '@/components/ui/Badge.vue'
+  import ChangePlanModal from './ChangePlanModal.vue'
+  import ChangePaymentModal from './ChangePaymentModal.vue'
+  import CancellationModal from './CancellationModal.vue'
+  import type { StripeCharge, StripeSubscription, BillingData } from '@/types'
   
-  // Declare Stripe as a global variable
-  declare global {
-    interface Window {
-      Stripe: any
-    }
-  }
-  
-  interface StripeCharge {
-    id: string
-    amount: number
-    currency: string
-    created: number
-    description: string
-    status: string
-    receipt_url: string
-    payment_method_details: {
-      card: {
-        brand: string
-        last4: string
-        exp_month: number
-        exp_year: number
-      }
-    }
-  }
-  
-  interface StripeSubscription {
-    id: number
-    user_id: number
-    name: string
-    stripe_id: string
-    stripe_plan: string
-    quantity: number
-    status: string
-    trial_ends_at: string | null
-    ends_at: string | null
-    next_charge_date: string | null
-    created_at: string
-    updated_at: string
-    paddle_cancel_url: string | null
-    paddle_update_url: string | null
-    paddle_checkout_id: string | null
-    subscription_plan_id: string | null
-    whitelabel_client: number
-    // Stripe-specific fields
-    items?: {
-      data: Array<{
-        plan: {
-          name: string
-        }
-      }>
-    }
-    plan?: {
-      name: string
-    }
-  }
-  
-  interface BillingData {
-    charges?: {
-      object: string
-      data: StripeCharge[]
-      has_more: boolean
-      url: string
-    } | StripeCharge[]
-    stripe_subscription?: StripeSubscription
-    subscription?: StripeSubscription
-  }
   
   interface Props {
-    show: boolean
-    billingData?: BillingData | null
-  }
+  billingData?: BillingData | null
+}
   
   interface Emits {
     (e: 'close'): void
@@ -387,6 +178,12 @@
   const props = defineProps<Props>()
   const emit = defineEmits<Emits>()
   
+  // Modal refs
+  const modalRef = ref<InstanceType<typeof ModalLayout> | null>(null)
+  const changePlanModalRef = ref<InstanceType<typeof ChangePlanModal> | null>(null)
+  const changePaymentModalRef = ref<InstanceType<typeof ChangePaymentModal> | null>(null)
+  const cancellationModalRef = ref<InstanceType<typeof CancellationModal> | null>(null)
+
   // Computed properties
   const chargesData = computed((): StripeCharge[] => {
     if (!props.billingData) {
@@ -419,6 +216,7 @@
       subscription = props.billingData.subscription
     }
     
+    console.log('Computed subscriptionData:', subscription)
     return subscription
   })
 
@@ -427,6 +225,7 @@
     if (!subscriptionData.value) return 'Unknown Plan'
     
     console.log('Getting actual plan name from subscriptionData:', subscriptionData.value)
+    console.log('Whitelabel state - isConfigured:', isConfigured.value, 'isInitialized:', isInitialized.value)
     
     // Check if this is a Stripe subscription object with items
     if (subscriptionData.value.items && Array.isArray(subscriptionData.value.items.data)) {
@@ -447,39 +246,19 @@
     // Fallback to stripe_plan if available
     if (subscriptionData.value.stripe_plan) {
       console.log('Found plan name in stripe_plan:', subscriptionData.value.stripe_plan)
-      return subscriptionData.value.stripe_plan
+      return String(subscriptionData.value.stripe_plan)
     }
     
     console.log('No plan name found, returning Unknown Plan')
     return 'Unknown Plan'
   })
   
-  // Modal states
-  const showChangePlanModal = ref(false)
-  const showChangePaymentModal = ref(false)
-  const showCancellationModal = ref(false)
+  // Modal states - remove these since we're using refs now
+  // const showChangePlanModal = ref(false)
+  // const showChangePaymentModal = ref(false)
+  // const showCancellationModal = ref(false)
   
-  // Form states
-  const changingPlan = ref(false)
-  const updatingPayment = ref(false)
-  const cancelling = ref(false)
   
-  // Form data
-  const paymentForm = ref({
-    cardNumber: '',
-    expiry: '',
-    cvv: '',
-    cardName: ''
-  })
-  
-  const selectedCancellationReason = ref('')
-  
-  const cancellationReasons = ref([
-    { key: 'difficult_to_use', label: 'Difficult to use' },
-    { key: 'expensive', label: 'Do you think it\'s expensive?' },
-    { key: 'dont_need', label: 'Don\'t need it' },
-    { key: 'not_achieving_goal', label: 'Not able to achieve your goal?' }
-  ])
   
   const currentPlanId = computed(() => {
     const planName = getActualPlanName.value
@@ -488,18 +267,69 @@
   })
 
   const whitelabelStore = useWhitelabelStore()
-  const { isConfigured } = storeToRefs(whitelabelStore)
+const { isConfigured, isInitialized } = storeToRefs(whitelabelStore)
 
   const availableWhitelabelPlans = computed(() => {
+    console.log('Computing availableWhitelabelPlans - isConfigured:', isConfigured.value, 'isInitialized:', isInitialized.value)
+    
     if (isConfigured.value) {
-      return {
-        'Personal-Plan': 'Personal Plan - $49/Month',
-        'Personal-Plan-Annual': 'Personal Plan - $490/Year',
-        'Professional-Plan': 'Professional Plan - $149/Month',
-        'Professional-Plan-Annual': 'Professional Plan - $1490/Year'
+      // For whitelabel clients, show available packages from the store
+      const packages = whitelabelStore.packages
+      const currentPlanName = getActualPlanName.value
+      
+      console.log('Available whitelabel packages:', packages)
+      console.log('Current plan name:', currentPlanName)
+      
+      if (packages && packages.length > 0) {
+        // Create a map of available plans (excluding current plan)
+        const availablePlans: Record<string, string> = {}
+        
+        packages.forEach(pkg => {
+          if (pkg.name !== currentPlanName) {
+            const price = parseFloat(pkg.price) || 0
+            const billingType = pkg.type || 'month'
+            availablePlans[pkg.name] = `${pkg.name} - $${price}/${billingType}`
+          }
+        })
+        
+        console.log('Available whitelabel plans result:', availablePlans)
+        return availablePlans
+      } else {
+        console.log('No whitelabel packages available')
+        return {}
       }
     }
+    console.log('Not configured for whitelabel')
     return {}
+  })
+
+  // Check if there are any available plans to change to (excluding current plan)
+  const hasAvailablePlanChanges = computed(() => {
+    console.log('Computing hasAvailablePlanChanges - isConfigured:', isConfigured.value, 'isInitialized:', isInitialized.value)
+    
+    if (!isConfigured.value) {
+      // For non-whitelabel clients, always show plan changes
+      console.log('Not configured for whitelabel, showing plan changes')
+      return true
+    }
+    
+    // For whitelabel clients, check if there are packages available
+    const packages = whitelabelStore.packages
+    console.log('Checking available plan changes - packages:', packages)
+    
+    if (!packages || packages.length === 0) {
+      console.log('No whitelabel packages available')
+      return false
+    }
+    
+    // Check if there are packages other than the current one
+    const currentPlanName = getActualPlanName.value
+    const hasOtherPackages = packages.some(pkg => pkg.name !== currentPlanName)
+    
+    console.log('Current plan:', currentPlanName, 'Has other packages:', hasOtherPackages)
+    console.log('Available packages:', packages.map(pkg => pkg.name))
+    
+    return hasOtherPackages
   })
 
   const canDowngrade = computed(() => {
@@ -509,13 +339,35 @@
     return true
   })
 
-  const getContactEmail = () => {
-    return 'mailto:support@botsify.ai'
-  }
+
+   
+   // Helper function to get Badge variant based on status
+   const getStatusVariant = (status: string | undefined): 'success' | 'warning' | 'error' | 'info' | 'secondary' => {
+     if (!status) return 'secondary'
+     
+     const statusLower = status.toLowerCase()
+     
+     if (statusLower === 'succeeded' || statusLower === 'active' || statusLower === 'completed') {
+       return 'success'
+     } else if (statusLower === 'pending' || statusLower === 'incomplete' || statusLower === 'processing') {
+       return 'warning'
+     } else if (statusLower === 'failed' || statusLower === 'canceled' || statusLower === 'cancelled') {
+       return 'error'
+     } else if (statusLower === 'trialing' || statusLower === 'past_due') {
+       return 'info'
+     }
+     
+     return 'secondary'
+   }
   
   // Helper functions
   const getPlanDescription = (planName: string | undefined) => {
     if (!planName) return 'Professional plan with advanced features'
+    
+    // For whitelabel clients, use the plan name from Stripe
+    if (isConfigured.value) {
+      return `${planName} plan with advanced features`
+    }
     
     if (planName.includes('Professional')) {
       return 'Professional service for scalable businesses with AI agents and advanced features'
@@ -530,6 +382,18 @@
   
   const getPlanPrice = (planName: string | undefined) => {
     if (!planName) return 149
+    
+    console.log('Getting plan price for:', planName, 'isConfigured:', isConfigured.value, 'isInitialized:', isInitialized.value)
+    console.log('Subscription data plan:', subscriptionData.value?.plan)
+    
+    // For whitelabel clients, get price from Stripe data
+    if (isConfigured.value && subscriptionData.value?.plan?.amount) {
+      const price = (subscriptionData.value.plan.amount / 100)
+      console.log('Whitelabel price from Stripe:', price)
+      return price
+    }
+    
+    console.log('Not using whitelabel pricing, falling back to default')
     
     // Handle Stripe plan names
     if (planName === 'Personal Plan') {
@@ -557,6 +421,28 @@
   const getBillingPeriod = (planName: string | undefined) => {
     if (!planName) return '/month'
     
+    console.log('Getting billing period for:', planName, 'isConfigured:', isConfigured.value, 'isInitialized:', isInitialized.value)
+    console.log('Subscription data plan interval:', subscriptionData.value?.plan?.interval)
+    
+    // For whitelabel clients, get billing period from Stripe data
+    if (isConfigured.value && subscriptionData.value?.plan?.interval) {
+      const interval = subscriptionData.value.plan.interval
+      const intervalCount = subscriptionData.value.plan.interval_count || 1
+      console.log('Whitelabel interval from Stripe:', interval, 'count:', intervalCount)
+      
+      if (interval === 'year') {
+        return '/year'
+      } else if (interval === 'month' && intervalCount > 1) {
+        return `/${intervalCount} months`
+      } else if (interval === 'week') {
+        return '/week'
+      } else if (interval === 'day') {
+        return '/day'
+      }
+    }
+    
+    console.log('Not using whitelabel billing period, falling back to default')
+    
     // Handle Stripe plan names
     if (planName === 'Personal-Plan-Annual' || planName === 'Professional-Plan-Annual') {
       return '/year'
@@ -572,10 +458,6 @@
   
   const closeModal = () => {
     emit('close')
-  }
-  
-  const handleOverlayClick = () => {
-    closeModal()
   }
   
   const formatDate = (dateString: string | number | undefined) => {
@@ -642,48 +524,34 @@
     window.URL.revokeObjectURL(url)
   }
   
-  // Load Stripe script
-  const loadStripeScript = (): Promise<void> => {
-    if (typeof window.Stripe !== 'undefined') {
-      return Promise.resolve()
-    }
-    
-    return new Promise<void>((resolve, reject) => {
-      const script = document.createElement('script')
-      script.src = 'https://js.stripe.com/v2'
-      script.onload = () => {
-        // Wait a bit for Stripe to initialize
-        setTimeout(() => {
-          if (typeof window.Stripe !== 'undefined') {
-            resolve()
-          } else {
-            reject(new Error('Stripe failed to initialize'))
-          }
-        }, 100)
-      }
-      script.onerror = () => reject(new Error('Failed to load Stripe'))
-      document.head.appendChild(script)
-    })
-  }
+  
 
   // Modal methods
   const openChangePlanModal = () => {
-    showChangePlanModal.value = true
+    changePlanModalRef.value?.openModal()
   }
   
   const closeChangePlanModal = () => {
-    showChangePlanModal.value = false
+    changePlanModalRef.value?.closeModal()
   }
   
-  const openChangePaymentModal = async () => {
-    try {
-      // Load Stripe script if not already loaded
-      await loadStripeScript()
-      showChangePaymentModal.value = true
-    } catch (error) {
-      console.error('Failed to load Stripe:', error)
-      window.$toast?.error('Failed to load payment system. Please try again.')
-    }
+  const handlePlanChanged = () => {
+    // Emit event to refresh billing data
+    emit('close')
+  }
+  
+  const handlePaymentUpdated = () => {
+    // Emit event to refresh billing data
+    emit('close')
+  }
+  
+  const handleSubscriptionCancelled = () => {
+    // Emit event to refresh billing data
+    emit('close')
+  }
+  
+  const openChangePaymentModal = () => {
+    changePaymentModalRef.value?.openModal()
   }
   
   // Check if Stripe is available
@@ -692,236 +560,16 @@
   // })
   
   const closeChangePaymentModal = () => {
-    showChangePaymentModal.value = false
-    // Reset form
-    paymentForm.value = {
-      cardNumber: '',
-      expiry: '',
-      cvv: '',
-      cardName: ''
-    }
-  }
-  
-  // Form formatting functions
-  const formatCardNumber = (event: Event) => {
-    const target = event.target as HTMLInputElement
-    let value = target.value.replace(/\s/g, '').replace(/\D/g, '')
-    
-    // Limit to 16 digits
-    value = value.slice(0, 16)
-    
-    // Add spaces every 4 digits
-    value = value.replace(/(\d{4})(?=\d)/g, '$1 ')
-    
-    paymentForm.value.cardNumber = value
-  }
-  
-  const formatExpiry = (event: Event) => {
-    const target = event.target as HTMLInputElement
-    let value = target.value.replace(/\D/g, '')
-    
-    // Limit to 4 digits
-    value = value.slice(0, 4)
-    
-    // Add slash after 2 digits
-    if (value.length >= 2) {
-      value = value.slice(0, 2) + '/' + value.slice(2)
-    }
-    
-    paymentForm.value.expiry = value
-  }
-  
-  const formatCVV = (event: Event) => {
-    const target = event.target as HTMLInputElement
-    let value = target.value.replace(/\D/g, '')
-    
-    // Limit to 4 digits (some cards have 4-digit CVV)
-    value = value.slice(0, 4)
-    
-    paymentForm.value.cvv = value
-  }
-  
-  // Validation functions
-  const validateCardNumber = () => {
-    const cardNumber = paymentForm.value.cardNumber.replace(/\s/g, '')
-    if (cardNumber.length < 13 || cardNumber.length > 19) {
-      window.$toast?.error('Card number must be between 13 and 19 digits')
-    }
-  }
-  
-  const validateExpiry = () => {
-    const expiry = paymentForm.value.expiry
-    if (expiry && !/^\d{2}\/\d{2}$/.test(expiry)) {
-      window.$toast?.error('Please use MM/YY format for expiry date')
-    }
-  }
-  
-  const validateCVV = () => {
-    const cvv = paymentForm.value.cvv
-    if (cvv && (cvv.length < 3 || cvv.length > 4)) {
-      window.$toast?.error('CVV must be 3 or 4 digits')
-    }
+    changePaymentModalRef.value?.closeModal()
   }
   
   const openCancellationModal = () => {
-    showCancellationModal.value = true
+    cancellationModalRef.value?.openModal()
   }
   
   const closeCancellationModal = () => {
-    showCancellationModal.value = false
-    selectedCancellationReason.value = ''
+    cancellationModalRef.value?.closeModal()
   }
-  
-  // Plan selection
-  const selectPlan = async (planId: string) => {
-    if (planId === currentPlanId.value) return
-    
-    changingPlan.value = true
-    try {
-      // First check payment like in the original billing.vue
-      const paymentCheck = await botsifyApi.checkPayment()
-      if (!paymentCheck.success) {
-        window.$toast?.error('Payment check failed. Please try again later.')
-        return
-      }
-      
-      // Call API to change plan using botsifyApi
-      const response = await botsifyApi.changePlan({
-        plan: planId,
-        reason: 'User requested plan change'
-      })
-      
-      if (response.success) {
-        window.$toast?.success('Plan changed successfully!')
-        closeChangePlanModal()
-        // Emit event to refresh billing data
-        emit('close')
-      } else {
-        window.$toast?.error(response.message || 'Failed to change plan')
-      }
-    } catch (error) {
-      console.error('Error changing plan:', error)
-      window.$toast?.error('Failed to change plan. Please try again.')
-    } finally {
-      changingPlan.value = false
-    }
-  }
-  
-  // Update payment method
-  const updatePaymentMethod = async () => {
-    if (paymentForm.value.cardNumber === "" || paymentForm.value.cardName === "" || paymentForm.value.expiry === "" || paymentForm.value.cvv === "") {
-      window.$toast?.error('Please fill all card details')
-      return
-    }
-    
-    // Check if Stripe is loaded
-    if (typeof window.Stripe === 'undefined') {
-      window.$toast?.error('Stripe is not loaded. Please refresh the page and try again.')
-      return
-    }
-    
-    updatingPayment.value = true
-    try {
-      // Generate Stripe token like in the original billing.vue
-      window.Stripe.setPublishableKey(STRIPE_API_KEY)
-      
-      // Parse expiry date (MM/YY format)
-      const expiry = paymentForm.value.expiry.split('/')
-      if (expiry.length !== 2) {
-        window.$toast?.error('Invalid expiry date format. Please use MM/YY format.')
-        updatingPayment.value = false
-        return
-      }
-      
-      const ccData = {
-        number: paymentForm.value.cardNumber.replace(/\s/g, ''),
-        name: paymentForm.value.cardName,
-        cvc: paymentForm.value.cvv,
-        exp_month: parseInt(expiry[0]),
-        exp_year: 2000 + parseInt(expiry[1]) // Convert YY to YYYY
-      }
-      
-      // Validate card data
-      if (isNaN(ccData.exp_month) || isNaN(ccData.exp_year) || ccData.exp_month < 1 || ccData.exp_month > 12) {
-        window.$toast?.error('Invalid expiry date. Please use MM/YY format.')
-        updatingPayment.value = false
-        return
-      }
-      
-      // Create Stripe token
-      window.Stripe.card.createToken(ccData, async (status: string, response: any) => {
-        console.log('Stripe token response:', status, response)
-        if (response.error) {
-          updatingPayment.value = false
-          window.$toast?.error(response.error.message || 'Card validation failed')
-        } else {
-          const token = response.id
-          
-          // Send token to API using botsifyApi
-          try {
-            const apiResponse = await botsifyApi.updatePaymentMethod({
-              token: token,
-              plan: getActualPlanName.value,
-              coupon: '', // No coupon for payment method update
-              card: ccData
-            })
-            
-            if (apiResponse.success) {
-              window.$toast?.success('Payment method updated successfully!')
-              closeChangePaymentModal()
-              // Emit event to refresh billing data
-              emit('close')
-            } else {
-              window.$toast?.error(apiResponse.message || 'Failed to update payment method')
-            }
-          } catch (error) {
-            console.error('Error updating payment method:', error)
-            window.$toast?.error('Failed to update payment method. Please try again.')
-          } finally {
-            updatingPayment.value = false
-          }
-        }
-      })
-    } catch (error) {
-      console.error('Error creating Stripe token:', error)
-      window.$toast?.error('Failed to process card details. Please try again.')
-      updatingPayment.value = false
-    }
-  }
-  
-  // Confirm cancellation
-  const confirmCancellation = async () => {
-    if (!selectedCancellationReason.value) return
-    
-    cancelling.value = true
-    try {
-      // Call API to cancel subscription using botsifyApi
-      const response = await botsifyApi.cancelSubscription({
-        reason: selectedCancellationReason.value
-      })
-      
-      if (response.success) {
-        window.$toast?.success('Subscription cancelled successfully!')
-        closeCancellationModal()
-        // Emit event to refresh billing data
-        emit('close')
-      } else {
-        window.$toast?.error(response.message || 'Failed to cancel subscription')
-      }
-    } catch (error) {
-      console.error('Error cancelling subscription:', error)
-      window.$toast?.error('Failed to cancel subscription. Please try again.')
-    } finally {
-      cancelling.value = false
-    }
-  }
-  
-  onMounted(() => {
-    // Load billing data when modal opens
-    if (props.show && props.billingData) {
-      // Billing data loaded
-    }
-  })
   
   // Watch for changes in billingData prop
   watch(() => props.billingData, (newData) => {
@@ -929,79 +577,44 @@
       // Billing data updated
     }
   }, { immediate: true })
-  </script>
+  
+  // Initialize whitelabel store when component mounts
+  onMounted(async () => {
+    // Initialize whitelabel store if needed
+    if (!isInitialized.value) {
+      try {
+        await whitelabelStore.initialize()
+        console.log('Whitelabel store initialized:', {
+          isConfigured: isConfigured.value,
+          config: whitelabelStore.config
+        })
+      } catch (error) {
+        console.error('Failed to initialize whitelabel store:', error)
+      }
+    }
+    
+    // Fetch packages if we're configured and don't have packages yet
+    if (isConfigured.value && (!whitelabelStore.packages || whitelabelStore.packages.length === 0)) {
+      try {
+        console.log('Fetching whitelabel packages...')
+        await whitelabelStore.fetchPackages()
+        console.log('Packages fetched:', whitelabelStore.packages)
+      } catch (error) {
+        console.error('Failed to fetch whitelabel packages:', error)
+      }
+    }
+  })
+
+  // Expose methods to parent component
+  defineExpose({ 
+    openModal: () => modalRef.value?.openModal(),
+    closeModal: () => modalRef.value?.closeModal()
+  })
+</script>
   
   <style scoped>
-  .billing-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    backdrop-filter: blur(4px);
-  }
-  
-  .billing-modal {
-    background: var(--color-bg-primary);
-    border-radius: var(--radius-lg);
-    width: 90%;
-    max-width: 900px;
-    max-height: 90vh;
-    overflow: hidden;
-    box-shadow: var(--shadow-lg);
-    border: 1px solid var(--color-border);
-  }
-  
-  .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--space-6);
-    border-bottom: 1px solid var(--color-border);
-    background: var(--color-bg-secondary);
-  }
-  
-  .header-content h2 {
-    margin: 0 0 var(--space-1) 0;
-    color: var(--color-text-primary);
-    font-size: 1.5rem;
-    font-weight: 600;
-  }
-  
-  .header-content p {
-    margin: 0;
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
-  }
-  
-  .close-button {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-full);
-    background: transparent;
-    border: 1px solid var(--color-border);
-    color: var(--color-text-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all var(--transition-normal);
-  }
-  
-  .close-button:hover {
-    background: var(--color-bg-hover);
-    color: var(--color-text-primary);
-  }
-  
-  .modal-content {
-    padding: var(--space-6);
-    max-height: calc(90vh - 120px);
-    overflow-y: auto;
+  .billing-content {
+    padding: var(--space-4);
   }
   
   .subscription-section,
@@ -1089,44 +702,12 @@
     font-weight: 500;
   }
   
-  .status.active {
-    color: var(--color-success);
-  }
+  
   
   .subscription-actions {
     display: flex;
     gap: var(--space-3);
     flex-wrap: wrap;
-  }
-  
-  .action-btn {
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-md);
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--transition-normal);
-    border: 1px solid var(--color-border);
-  }
-  
-  .action-btn.secondary {
-    background: var(--color-bg-tertiary);
-    color: var(--color-text-primary);
-  }
-  
-  .action-btn.secondary:hover {
-    background: var(--color-bg-hover);
-  }
-  
-  .action-btn.danger {
-    background: transparent;
-    color: var(--color-error);
-    border-color: var(--color-error);
-  }
-  
-  .action-btn.danger:hover {
-    background: var(--color-error);
-    color: white;
   }
   
   .section-header {
@@ -1136,140 +717,10 @@
     margin-bottom: var(--space-4);
   }
   
-  .download-all-btn {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
-    background: var(--color-primary);
-    color: white;
-    border: none;
-    border-radius: var(--radius-md);
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--transition-normal);
+  .status-badge{
+    width: max-content;
   }
-  
-  .download-all-btn:hover {
-    background: var(--color-primary-hover);
-  }
-  
-  .charges-table {
-    background: var(--color-bg-secondary);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-  }
-  
-  .table-header {
-    display: grid;
-    grid-template-columns: 1fr 2fr 1fr 1fr auto;
-    gap: var(--space-4);
-    padding: var(--space-4);
-    background: var(--color-bg-tertiary);
-    border-bottom: 1px solid var(--color-border);
-  }
-  
-  .header-cell {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  
-  .table-body {
-    max-height: 300px;
-    overflow-y: auto;
-  }
-  
-  .table-row {
-    display: grid;
-    grid-template-columns: 1fr 2fr 1fr 1fr auto;
-    gap: var(--space-4);
-    padding: var(--space-4);
-    border-bottom: 1px solid var(--color-border);
-    transition: background-color var(--transition-normal);
-  }
-  
-  .cell:nth-child(2) {
-    word-break: break-word;
-    min-width: 0;
-  }
-  
-  .table-row:hover {
-    background: var(--color-bg-hover);
-  }
-  
-  .table-row:last-child {
-    border-bottom: none;
-  }
-  
-  .cell {
-    font-size: 0.875rem;
-    color: var(--color-text-primary);
-    display: flex;
-    align-items: center;
-  }
-  
-  .status-badge {
-    padding: var(--space-1) var(--space-2);
-    border-radius: var(--radius-sm);
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  
-  .status-badge.succeeded {
-    background: rgba(34, 197, 94, 0.1);
-    color: var(--color-success);
-  }
-  
-  .status-badge.pending {
-    background: rgba(251, 191, 36, 0.1);
-    color: var(--color-warning);
-  }
-  
-  .status-badge.failed {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--color-error);
-  }
-  
-  .status-badge.active {
-    background: rgba(34, 197, 94, 0.1);
-    color: var(--color-success);
-  }
-  
-  .status-badge.canceled {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--color-error);
-  }
-  
-  .status-badge.incomplete {
-    background: rgba(251, 191, 36, 0.1);
-    color: var(--color-warning);
-  }
-  
-  .download-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-md);
-    background: transparent;
-    border: 1px solid var(--color-border);
-    color: var(--color-text-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all var(--transition-normal);
-  }
-  
-  .download-btn:hover {
-    background: var(--color-bg-hover);
-    color: var(--color-text-primary);
-  }
+
   
   .empty-state {
     text-align: center;
@@ -1296,19 +747,6 @@
   
   /* Responsive Design */
   @media (max-width: 768px) {
-    .billing-modal {
-      width: 95%;
-      margin: var(--space-4);
-    }
-  
-    .modal-header {
-      padding: var(--space-4);
-    }
-  
-    .modal-content {
-      padding: var(--space-4);
-    }
-  
     .subscription-header {
       flex-direction: column;
       gap: var(--space-3);
@@ -1322,289 +760,12 @@
     .subscription-details {
       grid-template-columns: 1fr;
     }
-  
-    .table-header,
-    .table-row {
-      grid-template-columns: 1fr;
-      gap: var(--space-2);
-    }
-  
-    .header-cell,
-    .cell {
-      padding: var(--space-2) 0;
-    }
-    
-    .cell:nth-child(2) {
-      word-break: normal;
-    }
-  }
-  
-  /* Modal Overlay Styles */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1001;
-    backdrop-filter: blur(4px);
-  }
-  
-  .sub-modal-content {
-    background: var(--color-bg-primary);
-    border-radius: var(--radius-lg);
-    width: 90%;
-    max-width: 600px;
-    max-height: 90vh;
-    overflow: hidden;
-    box-shadow: var(--shadow-lg);
-    border: 1px solid var(--color-border);
-  }
-  
-  .sub-modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--space-4);
-    border-bottom: 1px solid var(--color-border);
-    background: var(--color-bg-secondary);
-  }
-  
-  .sub-modal-header h3 {
-    margin: 0;
-    color: var(--color-text-primary);
-    font-size: 1.25rem;
-    font-weight: 600;
-  }
-  
-  .sub-modal-body {
-    padding: var(--space-4);
-    max-height: calc(90vh - 80px);
-    overflow-y: auto;
-  }
-  
-  /* Plan Selection Styles */
-  .plan-option-btn {
-    width: 100%;
-    padding: var(--space-2) var(--space-4);
-    background: var(--color-bg-tertiary);
-    color: var(--color-text-primary);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--transition-normal);
-    text-align: left;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--space-2);
-  }
 
-  .plan-option-btn:hover:not(:disabled) {
-    background: var(--color-bg-hover);
-    border-color: var(--color-primary);
   }
+  
 
-  .plan-option-btn:disabled {
-    background: var(--color-bg-tertiary);
-    color: var(--color-text-secondary);
-    cursor: not-allowed;
-  }
-
-  .downgrade-message {
-    margin-top: var(--space-4);
-    padding: var(--space-3);
-    background: rgba(251, 191, 36, 0.1);
-    border: 1px solid var(--color-warning);
-    border-radius: var(--radius-md);
-    color: var(--color-warning);
-    font-size: 0.875rem;
-    font-weight: 500;
-    text-align: center;
-  }
-
-  .contact-btn {
-    color: var(--color-primary);
-    text-decoration: none;
-    font-weight: 600;
-  }
-
-  .contact-btn:hover {
-    text-decoration: underline;
-  }
-
-  .loading-state {
-    text-align: center;
-    padding: var(--space-6);
-  }
-
-  .spinner {
-    border: 4px solid rgba(255, 255, 255, 0.3);
-    border-top: 4px solid var(--color-primary);
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    margin: 0 auto var(--space-3);
-  }
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
   
-  /* Payment Form Styles */
-  .form-group {
-    margin-bottom: var(--space-4);
-  }
   
-  .form-group label {
-    display: block;
-    margin-bottom: var(--space-2);
-    font-weight: 500;
-    color: var(--color-text-primary);
-  }
   
-  .form-group input {
-    width: 100%;
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-bg-tertiary);
-    color: var(--color-text-primary);
-    font-size: 0.875rem;
-    transition: border-color var(--transition-normal);
-  }
   
-  .form-group input:focus {
-    outline: none;
-    border-color: var(--color-primary);
-  }
-  
-  .form-group input.error {
-    border-color: var(--color-error);
-  }
-  
-  .form-group input.valid {
-    border-color: var(--color-success);
-  }
-  
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-3);
-  }
-  
-  .form-actions {
-    display: flex;
-    gap: var(--space-3);
-    justify-content: flex-end;
-    margin-top: var(--space-4);
-  }
-  
-  .btn-primary,
-  .btn-secondary,
-  .btn-danger {
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-md);
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--transition-normal);
-    border: 1px solid transparent;
-  }
-  
-  .btn-primary {
-    background: var(--color-primary);
-    color: white;
-  }
-  
-  .btn-primary:hover:not(:disabled) {
-    background: var(--color-primary-hover);
-  }
-  
-  .btn-secondary {
-    background: var(--color-bg-tertiary);
-    color: var(--color-text-primary);
-    border-color: var(--color-border);
-  }
-  
-  .btn-secondary:hover {
-    background: var(--color-bg-hover);
-  }
-  
-  .btn-danger {
-    background: var(--color-error);
-    color: white;
-  }
-  
-  .btn-danger:hover:not(:disabled) {
-    background: #dc2626;
-  }
-  
-  .btn-primary:disabled,
-  .btn-danger:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-  
-  /* Cancellation Modal Styles */
-  .cancellation-reasons h4 {
-    margin: 0 0 var(--space-3) 0;
-    color: var(--color-text-primary);
-    font-size: 1.125rem;
-    font-weight: 600;
-  }
-  
-  .reasons-list {
-    margin-bottom: var(--space-4);
-  }
-  
-  .reason-item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) 0;
-    cursor: pointer;
-    color: var(--color-text-primary);
-  }
-  
-  .reason-item input[type="radio"] {
-    margin: 0;
-  }
-  
-  .cancellation-actions {
-    display: flex;
-    gap: var(--space-3);
-    justify-content: flex-end;
-  }
-  
-  /* Mobile Responsiveness for Modals */
-  @media (max-width: 768px) {
-    .sub-modal-content {
-      width: 95%;
-      margin: var(--space-4);
-    }
-    
-    .form-row {
-      grid-template-columns: 1fr;
-    }
-    
-    .form-actions,
-    .cancellation-actions {
-      flex-direction: column;
-    }
-    
-    .btn-primary,
-    .btn-secondary,
-    .btn-danger {
-      width: 100%;
-    }
-  }
   </style>

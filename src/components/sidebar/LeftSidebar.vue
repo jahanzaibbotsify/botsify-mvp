@@ -10,7 +10,7 @@ import CalendlyModal from '@/components/modal/CalendlyModal.vue';
 import { botsifyApi } from '@/services/botsifyApi'
 import BillingModal from '@/components/modal/BillingModal.vue';
 import { getWebUrl } from '@/utils';
-import { BillingData } from '@/types';
+import type { BillingData } from '@/types';
 import { showZen } from '@/utils/zendesk';
 import { useBotStore } from '@/stores/botStore';
 
@@ -39,7 +39,6 @@ const showDropdown = ref(false);
 const bookMeetingModalRef = ref<InstanceType<typeof BookMeetingModal> | null>(null)
 const calendlyModalRef = ref<InstanceType<typeof CalendlyModal> | null>(null)
 const billingModalRef = ref<InstanceType<typeof BillingModal> | null>(null)
-const showBillingModal = ref(false)
 
 // Close dropdown when clicking outside
 const dropdownRef = ref<HTMLElement | null>(null);
@@ -199,7 +198,7 @@ const handleCalendly = () => {
 }
 
 const closeBillingModal = () => {
-  showBillingModal.value = false
+  billingModalRef.value?.closeModal()
   billingData.value = null
 }
 
@@ -214,19 +213,19 @@ const handleManageBilling = async () => {
     if (res && res.charges && res.stripe_subscription) {
       // Store the billing data and show modal
       billingData.value = res
-      showBillingModal.value = true
+      billingModalRef.value?.openModal()
     } else if(res && res.url) {
       window.open(res.url, '_blank')
     } else {
       // If no billing data, open the billing modal with empty data
       billingData.value = null
-      showBillingModal.value = true
+      billingModalRef.value?.openModal()
     }
   } catch (e) {
     console.error('Error fetching billing portal:', e)
     // If API call fails, open the billing modal with empty data
     billingData.value = null
-    showBillingModal.value = true
+    billingModalRef.value?.openModal()
   } finally {
     billingLoading.value = false
   }
@@ -385,7 +384,6 @@ const openPartnerPortal = () => {
     <CalendlyModal ref="calendlyModalRef"></CalendlyModal>
     <BillingModal 
       ref="billingModalRef" 
-      :show="showBillingModal" 
       :billing-data="billingData"
       @close="closeBillingModal"
     ></BillingModal>
