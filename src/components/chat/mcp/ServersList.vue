@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {useMCPStore} from "@/stores/mcpStore.ts";
 import {botsifyApi} from "@/services/botsifyApi.ts";
-import {computed} from "vue";
+import {computed, onMounted} from "vue";
 
 const emit = defineEmits(['selectServer', 'addNewServer']);
 
@@ -23,6 +23,11 @@ const disconnectMCP = async (server: any) => {
     console.error('Failed to disconnect from MCP server:', response.message);
   }
 };
+
+// Initialize MCP store when component is mounted
+onMounted(async () => {
+  await mcpStore.setIntialize();
+});
 </script>
 <template>
   <section>
