@@ -713,7 +713,7 @@ onUnmounted(() => {
                     <i class="pi pi-pencil"></i>
                     <span>Edit Name</span>
                   </button>
-                  <button @click="cloneAgent(agent)" class="menu-item">
+                  <button @click="cloneAgent(agent)" v-if="!listAgentsResponse?.limit_reached" class="menu-item">
                     <i class="pi pi-copy"></i>
                     <span>Clone</span>
                   </button>
@@ -723,7 +723,7 @@ onUnmounted(() => {
                   </button>
                   <button @click="copyPayload(agent)" class="menu-item">
                     <i class="pi pi-clipboard"></i>
-                    <span>Copy Payload</span>
+                    <span>Copy API Key</span>
                   </button>
 <!--                  <button @click="exportData(agent)" class="menu-item">-->
 <!--                    <i class="pi pi-download"></i>-->

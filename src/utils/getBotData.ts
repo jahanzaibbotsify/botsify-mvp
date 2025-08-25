@@ -52,6 +52,7 @@ export async function getBotData() {
     
     // User + Role
     if (data.user) {
+      whitelabelStore.resetWhitelabel();
       roleStore.setCurrentUser(data.user);
 
       // Whitelabel

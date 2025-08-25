@@ -25,12 +25,9 @@
             :multiple="false"
           />
         </div>
-        <button class="translate-button" @click="openTranslateModal">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.01-4.65.83-6.67l2.16-2.16c-.56-.56-1.47-.56-2.03 0L9.5 5.5c-.56.56-.56 1.47 0 2.03l.03.03c-2.02 1.18-4.73.91-6.67-.83l-.03-.03c-.56-.56-1.47-.56-2.03 0L.5 5.5c-.56.56-.56 1.47 0 2.03l2.16 2.16c1.74 1.94 2.01 4.65.83 6.67l-.03.03c-.56-.56-.56 1.47 0 2.03l2.16 2.16c.56.56 1.47.56 2.03 0l2.16-2.16c.56-.56.56-1.47 0-2.03l-.03-.03z"/>
-          </svg>
+        <Button variant="secondary" @click="openTranslateModal">
           G Translate
-        </button>
+        </Button>
       </template>
     </div>
     <TranslateModal ref="translateModalRef" @select-language="handleLanguageSelect" />
@@ -42,6 +39,7 @@ import { ref, watch, computed } from 'vue'
 import { useConversationStore } from '@/stores/conversationStore'
 import TranslateModal from './TranslateModal.vue'
 import VueSelect from "vue3-select-component"
+import { Button } from '../ui'
 
 const conversationStore = useConversationStore()
 const userName = computed(() => conversationStore.selectedConversation?.title)
@@ -128,25 +126,6 @@ const handleLanguageSelect = (lang: string) => {
   background-color: rgba(239, 68, 68, 0.1) !important;
 }
 
-
-.translate-button {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background-color: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-}
-
-.translate-button:hover {
-  background-color: var(--color-bg-hover);
-}
 
 /* Skeleton Styles */
 .user-name-skeleton {

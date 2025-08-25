@@ -203,7 +203,7 @@ const toggleStorySidebar = () => {
   width: 100%;
   padding: 0;
   background-color: var(--color-bg-primary);
-  padding-top: calc(40vh - 120px);
+  padding-top: calc(30vh - 150px);
 }
 
 .centered-message-input > * {

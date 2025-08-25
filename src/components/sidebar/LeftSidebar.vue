@@ -109,7 +109,6 @@ const navLinks = computed(() => {
       }
     ];
   }
-
   // For regular Botsify clients, show all links
   return [
     // {
@@ -143,7 +142,12 @@ const navLinks = computed(() => {
       name: 'Support',
       action: 'showZen',
       icon: 'pi pi-question-circle'
-    }
+    },
+    ...(roleStore.canManageBillingWithSubscription && whitelabelStore.isWhitelabel && !whitelabelStore.isWhitelabelClient ? [{
+      name: 'Manage Billing',
+      action: 'manageBilling',
+      icon: 'pi pi-credit-card'
+    }] : [])
   ];
 });
 
@@ -255,6 +259,8 @@ const handleItemClick = (item: any) => {
     openBookMeetingModal();
   } else if (item.url) {
     openExternalLink(item.url);
+  } else if (item.action === 'manageBilling') {
+    handleManageBilling();
   }
 };
 

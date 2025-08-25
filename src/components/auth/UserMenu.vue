@@ -238,8 +238,8 @@ const handleLogout = async () => {
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4) var(--space-2) var(--space-4);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  background: var(--color-bg-secondary);
-  box-shadow: var(--shadow-sm);
+  /* background: var(--color-bg-secondary); */
+  /* box-shadow: var(--shadow-sm); */
 }
 
 .avatar-ring {
