@@ -4,6 +4,7 @@ import { ConfigurationTask, ConfigurationResponse, ConfigurationResponseData, Ap
 import { useBotStore } from './botStore';
 import { BOTSIFY_BASE_URL, getInitialToken } from '@/utils/config';
 import { handleApiError } from '@/utils/errorHandler';
+import {useAuthStore} from "@/stores/authStore.ts";
 
 
 export const useOpenAIStore = defineStore('openai', () => {
@@ -24,7 +25,8 @@ export const useOpenAIStore = defineStore('openai', () => {
     server_url: "https://mcp.botsify.com/mcp",
     server_description: `The server is designed to work seamlessly with Botsify's infrastructure, supporting easy integration, rapid deployment, and centralized configuration management for all Botsify-powered chatbots and virtual agents.`,
     headers: {
-      Authorization: `Bearer ${getCurrentApiKey()}`
+      Authorization: `Bearer ${useAuthStore().accessToken}`,
+      'X-BOT-API-KEY': getCurrentApiKey()
     },
     allowed_tools: [
       "updateBotSettings",
