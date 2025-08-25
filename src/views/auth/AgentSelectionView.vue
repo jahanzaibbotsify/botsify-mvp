@@ -3,11 +3,14 @@ import {ref, computed, onMounted, onUnmounted, watch} from 'vue'
 import {useRouter} from 'vue-router'
 import {axiosInstance} from "@/utils/axiosInstance.ts"
 import {useBotStore} from "@/stores/botStore.ts";
-import UserMenu from "@/components/auth/UserMenu.vue";
+import UserMenu from "@/components/ui/UserMenu.vue";
 import Button from '@/components/ui/Button.vue';
 import Input from '@/components/ui/Input.vue';
+import ModalLayout from '@/components/ui/ModalLayout.vue';
 import { createResource } from "@/utils/caching.ts"
 import { validateImage } from '@/utils';
+import Dropdown from '@/components/ui/Dropdown.vue';
+import DropdownItem from '@/components/ui/DropdownItem.vue';
 
 const router = useRouter()
 
@@ -15,15 +18,16 @@ const router = useRouter()
 const searchQuery = ref('')
 const selectedAgentId = ref<string | null>(null)
 const activeTab = ref<'my-agents' | 'shared-agents'>('my-agents')
-const activeMenuId = ref<string | null>(null)
 
 // Agent modal state (for both create and edit)
-const showAgentModal = ref(false)
 const modalMode = ref<'create' | 'edit'>('edit')
 const editingAgent = ref<any | null>(null)
 const agentNameValue = ref('')
 const agentNameInput = ref<HTMLInputElement | null>(null)
 const isSavingAgent = ref(false)
+
+// Modal ref for controlling the modal
+const agentModalRef = ref<InstanceType<typeof ModalLayout> | null>(null)
 
 // API state
 const isLoadingAgents = ref(false)
@@ -172,13 +176,7 @@ watch(activeTab, () => {
   }
 })
 
-/**
- * Toggle agent menu dropdown
- * @param agentId - Agent ID to toggle menu for
- */
-const toggleAgentMenu = (agentId: string) => {
-  activeMenuId.value = activeMenuId.value === agentId ? null : agentId
-}
+
 
 /**
  * Edit agent name
@@ -188,11 +186,7 @@ const editAgentName = (agent: any) => {
   modalMode.value = 'edit'
   editingAgent.value = agent
   agentNameValue.value = agent.name || 'Unnamed Agent'
-  showAgentModal.value = true
-  activeMenuId.value = null
-
-  // Add keyboard event listener
-  document.addEventListener('keydown', handleModalKeydown)
+  agentModalRef.value?.openModal()
 }
 
 /**
@@ -200,8 +194,6 @@ const editAgentName = (agent: any) => {
  * @param agent - Agent to clone
  */
 const cloneAgent = async (agent: any) => {
-  activeMenuId.value = null
-
   try {
     const response = await axiosInstance.get(`v1/clone-agent/${agent.id}`)
 
@@ -227,8 +219,6 @@ const cloneAgent = async (agent: any) => {
  * @param agent - Agent to delete
  */
 const deleteAgent = (agent: any) => {
-  activeMenuId.value = null
-
   window.$confirm({
     text: `Are you sure you want to delete "${agent.name || 'Unnamed Agent'}"?`,
   }, async () => {
@@ -264,11 +254,10 @@ const deleteAgent = (agent: any) => {
  * @param agent - Agent to copy payload for
  */
 const copyPayload = async (agent: any) => {
-  activeMenuId.value = null
   try {
     await navigator.clipboard.writeText(agent.id.toString())
     window.$toast?.success('Payload copied to clipboard!')
-  } catch (error: any) {
+  } catch (error) {
     try {
       const textArea = document.createElement('textarea')
       textArea.value = agent.id.toString()
@@ -286,66 +275,23 @@ const copyPayload = async (agent: any) => {
 }
 
 /**
- * Export agent data
- * @param agent - Agent to export data for
- */
-// const exportData = (agent: any) => {
-//   activeMenuId.value = null
-
-//   window.$confirm({
-//     text: 'Please confirm, your agent data will be exported and then will be sent you via email.',
-//     cancelButtonText: 'No',
-//     confirmButtonText: 'Yes'
-//   }, async () => {
-//     try {
-//       const response = await axiosInstance.get(`v1/agent-export/${agent.token}`)
-
-//       if (response.data && response.data.status === 'success') {
-//         window.$toast?.success('Bot data export initiated! Check your email for the export.')
-//       } else {
-//         window.$toast?.error(response.data?.message || 'Failed to export bot data. Please try again.')
-//       }
-//     } catch (error: any) {
-//       console.error('Failed to export bot data:', error)
-//       window.$toast?.error(error?.response?.data?.message || 'Failed to export bot data. Please try again.')
-//     }
-//   })
-// }
-
-/**
  * Create new agent
  */
 const createAgent = () => {
   modalMode.value = 'create'
   editingAgent.value = null
   agentNameValue.value = ''
-  showAgentModal.value = true
-  activeMenuId.value = null
-
-  // Add keyboard event listener
-  document.addEventListener('keydown', handleModalKeydown)
+  agentModalRef.value?.openModal()
 }
 
 /**
  * Close agent modal
  */
 const closeAgentModal = () => {
-  showAgentModal.value = false
+  // Reset local state
   editingAgent.value = null
   agentNameValue.value = ''
   modalMode.value = 'edit'
-  // Remove keyboard event listener
-  document.removeEventListener('keydown', handleModalKeydown)
-}
-
-/**
- * Handle keyboard events in modal
- * @param event - Keyboard event
- */
-const handleModalKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Escape') {
-    closeAgentModal()
-  }
 }
 
 /**
@@ -459,16 +405,7 @@ const loadMoreAgents = async () => {
   }
 }
 
-/**
- * Handle clicks outside dropdown to close it
- * @param event - Click event
- */
-const handleClickOutside = (event: Event) => {
-  const target = event.target as HTMLElement
-  if (!target.closest('.agent-menu')) {
-    activeMenuId.value = null
-  }
-}
+
 
 /**
  * Select bot and redirect
@@ -510,16 +447,9 @@ const getPublishedChannels = (agent: any) => {
 onMounted(() => {
   // Fetch agents on component mount
   getAgents()
-
-  // Add click outside listener
-  document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
-  // Clean up event listeners
-  document.removeEventListener('click', handleClickOutside)
-  document.removeEventListener('keydown', handleModalKeydown)
-
   // Clean up search timeout
   if (searchTimeout) {
     clearTimeout(searchTimeout)
@@ -578,18 +508,12 @@ onUnmounted(() => {
 
         <!-- Right: Search Bar -->
         <div class="search-wrapper">
-          <div class="search-input-container">
-            <i class="pi pi-search search-icon"></i>
-            <input
-                v-model="searchQuery"
-                type="text"
-                class="search-input"
-                placeholder="Search agents by name"
-            />
-            <button v-if="searchQuery" @click="searchQuery = ''" class="clear-search">
-              <i class="pi pi-times"></i>
-            </button>
-          </div>
+          <Input
+            v-model="searchQuery"
+            placeholder="Search agents by name"
+            searchable
+            class="search-input"
+          />
         </div>
       </div>
     </div>
@@ -661,24 +585,22 @@ onUnmounted(() => {
           <p v-else-if="activeTab === 'shared-agents'">There are no shared agents available at the moment.</p>
           <p v-else>Get started by adding your first agent</p>
 
-          <button v-if="searchQuery" @click="searchQuery = ''" class="reset-filters-btn">
-            <i class="pi pi-refresh"></i>
-            <span>Reset Search</span>
-          </button>
+          <Button v-if="searchQuery" @click="searchQuery = ''" icon="pi pi-refresh" variant="secondary">
+            Reset Search
+          </Button>
           <div 
             v-else-if="!isLoadingAgents && activeTab === 'my-agents'"
             class="create-agent-tooltip"
             :class="{ 'disabled-tooltip': listAgentsResponse?.limit_reached }"
           >
-            <button 
+            <Button 
               @click="createAgent" 
-              class="add-agent-btn"
-              :class="{ 'disabled': listAgentsResponse?.limit_reached }"
               :disabled="listAgentsResponse?.limit_reached"
+              icon="pi pi-plus"
+              variant="primary"
             >
-              <i class="pi pi-plus"></i>
-              <span>Create Agent</span>
-            </button>
+              Create Agent
+            </Button>
             <div v-if="listAgentsResponse?.limit_reached" class="tooltip">
               Agent Limit Reached — Upgrade your plan to create more agents
             </div>
@@ -703,33 +625,41 @@ onUnmounted(() => {
             <div class="agent-selection-card-content">
               <!-- Agent Menu (Top Right Corner) -->
               <div class="agent-menu" v-if="activeTab === 'my-agents'">
-                <button @click="toggleAgentMenu(agent.id)" class="menu-trigger">
-                  <i class="pi pi-ellipsis-v"></i>
-                </button>
+                                 <Dropdown position="bottom-left" :use-portal="true">
+                  <template #trigger>
+                    <button class="menu-trigger">
+                      <i class="pi pi-ellipsis-v"></i>
+                    </button>
+                  </template>
 
-                <div v-if="activeMenuId === agent.id" class="menu-dropdown" @click.stop>
-                  <!-- My Agents Menu -->
-                  <button @click="editAgentName(agent)" class="menu-item">
-                    <i class="pi pi-pencil"></i>
-                    <span>Edit Name</span>
-                  </button>
-                  <button @click="cloneAgent(agent)" v-if="!listAgentsResponse?.limit_reached" class="menu-item">
-                    <i class="pi pi-copy"></i>
-                    <span>Clone</span>
-                  </button>
-                  <button @click="deleteAgent(agent)" class="menu-item delete">
-                    <i class="pi pi-trash"></i>
-                    <span>Delete</span>
-                  </button>
-                  <button @click="copyPayload(agent)" class="menu-item">
-                    <i class="pi pi-clipboard"></i>
-                    <span>Copy API Key</span>
-                  </button>
-<!--                  <button @click="exportData(agent)" class="menu-item">-->
-<!--                    <i class="pi pi-download"></i>-->
-<!--                    <span>Export Data</span>-->
-<!--                  </button>-->
-                </div>
+                  <template #content>
+                    <!-- My Agents Menu -->
+                    <DropdownItem @click="editAgentName(agent)">
+                      <template #icon>
+                        <i class="pi pi-pencil"></i>
+                      </template>
+                      <span>Edit Name</span>
+                    </DropdownItem>
+                    <DropdownItem @click="cloneAgent(agent)" v-if="!listAgentsResponse?.limit_reached">
+                      <template #icon>
+                        <i class="pi pi-copy"></i>
+                      </template>
+                      <span>Clone</span>
+                    </DropdownItem>
+                    <DropdownItem @click="deleteAgent(agent)" variant="danger">
+                      <template #icon>
+                        <i class="pi pi-trash"></i>
+                      </template>
+                      <span>Delete</span>
+                    </DropdownItem>
+                    <DropdownItem @click="copyPayload(agent)">
+                      <template #icon>
+                        <i class="pi pi-clipboard"></i>
+                      </template>
+                      <span>Copy API Key</span>
+                    </DropdownItem>
+                  </template>
+                </Dropdown>
               </div>
 
               <!-- Agent Info Column -->
@@ -794,55 +724,45 @@ onUnmounted(() => {
   </div>
 
   <!-- Agent Modal (Create/Edit) -->
-  <div v-if="showAgentModal" class="modal-overlay" @click="closeAgentModal">
-    <div class="modal-content edit-modal" @click.stop role="dialog" aria-modal="true"
-         :aria-labelledby="modalMode === 'create' ? 'create-modal-title' : 'edit-modal-title'">
-      <div class="modal-header">
-        <h3 :id="modalMode === 'create' ? 'create-modal-title' : 'edit-modal-title'" class="modal-title">
-          {{ modalMode === 'create' ? 'Create New Agent' : 'Edit Agent Name' }}
-        </h3>
-        <button @click="closeAgentModal" class="modal-close" aria-label="Close modal">
-          <i class="pi pi-times"></i>
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <div class="form-group">
-          <Input
-              label="Agent Name"
-              id="agentName"
-              v-model="agentNameValue"
-              type="text"
-              :placeholder="modalMode === 'create' ? 'Enter a name for your new agent' : 'Enter a descriptive name for your agent'"
-              @keyup.enter="saveAgent"
-              @keyup.escape="closeAgentModal"
-              maxlength="50"
-              autocomplete="off"
-              spellcheck="false"
-              ref="agentNameInput"
-          />
-          <div class="char-count" :class="{ 'text-warning': agentNameValue.length > 40 }">
-            {{ agentNameValue.length }}/50
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <Button @click="closeAgentModal" variant="secondary" class="w-full">
-          Cancel
-        </Button>
-        <Button
-            @click="saveAgent"
-            class="w-full"
-            :disabled="!agentNameValue.trim() || agentNameValue.trim().length < 2 || isSavingAgent"
-            variant="primary"
-            :loading="isSavingAgent"
-        >
-          {{ modalMode === 'create' ? 'Create Agent' : 'Save Changes' }}
-        </Button>
+  <ModalLayout
+    ref="agentModalRef"
+    :title="modalMode === 'create' ? 'Create New Agent' : 'Edit Agent Name'"
+    max-width="480px"
+    @close="closeAgentModal"
+  >
+    <div class="form-group">
+      <Input
+        label="Agent Name"
+        id="agentName"
+        v-model="agentNameValue"
+        type="text"
+        :placeholder="modalMode === 'create' ? 'Enter a name for your new agent' : 'Enter a descriptive name for your agent'"
+        @keyup.enter="saveAgent"
+        maxlength="50"
+        autocomplete="off"
+        spellcheck="false"
+        ref="agentNameInput"
+      />
+      <div class="char-count" :class="{ 'text-warning': agentNameValue.length > 40 }">
+        {{ agentNameValue.length }}/50
       </div>
     </div>
-  </div>
+
+    <div class="agent-action-buttons">
+      <Button @click="closeAgentModal" variant="secondary" class="w-full">
+        Cancel
+      </Button>
+      <Button
+        @click="saveAgent"
+        class="w-full"
+        :disabled="!agentNameValue.trim() || agentNameValue.trim().length < 2 || isSavingAgent"
+        variant="primary"
+        :loading="isSavingAgent"
+      >
+        {{ modalMode === 'create' ? 'Create Agent' : 'Save Changes' }}
+      </Button>
+    </div>
+  </ModalLayout>
 </template>
 
 <style scoped>
@@ -1077,52 +997,8 @@ onUnmounted(() => {
   min-width: 280px;
 }
 
-.search-input-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.search-icon {
-  position: absolute;
-  left: var(--space-3);
-  color: var(--color-text-tertiary);
-  font-size: 0.875rem;
-  z-index: 1;
-}
-
 .search-input {
   width: 100%;
-  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-6) + var(--space-1));
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background-color: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-  transition: all var(--transition-normal);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(68, 115, 246, 0.1);
-  background-color: var(--color-bg-primary);
-}
-
-.clear-search {
-  position: absolute;
-  right: var(--space-3);
-  background: none;
-  border: none;
-  color: var(--color-text-tertiary);
-  cursor: pointer;
-  padding: var(--space-1);
-  border-radius: var(--radius-sm);
-  transition: color var(--transition-normal);
-}
-
-.clear-search:hover {
-  color: var(--color-text-secondary);
 }
 
 
@@ -1245,56 +1121,6 @@ onUnmounted(() => {
 .no-results p {
   color: var(--color-text-secondary);
   margin-bottom: var(--space-4);
-}
-
-.reset-filters-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-}
-
-.reset-filters-btn:hover {
-  background: var(--color-primary-hover);
-  transform: translateY(-2px);
-}
-
-.add-agent-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-}
-
-.add-agent-btn:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-  transform: translateY(-2px);
-}
-
-.add-agent-btn:disabled,
-.add-agent-btn.disabled {
-  background: var(--color-bg-hover);
-  color: var(--color-text-tertiary);
-  cursor: not-allowed;
-  transform: none;
-  border: 1px solid var(--color-border);
-  pointer-events: none; /* allow tooltip wrapper to receive hover */
 }
 
 /* No Results Limit Info */
@@ -1575,51 +1401,6 @@ onUnmounted(() => {
   color: var(--color-text-primary);
 }
 
-.menu-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background: white;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  z-index: 10;
-  min-width: 160px;
-  margin-top: var(--space-1);
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  background: transparent;
-  border: none;
-  text-align: left;
-  font-size: 0.875rem;
-  color: var(--color-text-primary);
-  cursor: pointer;
-  transition: background var(--transition-normal);
-}
-
-.menu-item:hover {
-  background: var(--color-bg-hover);
-}
-
-.menu-item.delete {
-  color: var(--color-error);
-}
-
-.menu-item.delete:hover {
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.menu-item i {
-  width: 16px;
-  font-size: 0.875rem;
-}
-
 /* Agent Body */
 .agent-body {
   padding: var(--space-5);
@@ -1797,263 +1578,9 @@ onUnmounted(() => {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
-}
-
-.modal-content {
-  background: white;
-  border-radius: var(--radius-lg);
-  max-width: 600px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: var(--space-6);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.modal-agent-info {
-  display: flex;
-  gap: var(--space-4);
-  align-items: center;
-}
-
-.modal-avatar {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.modal-agent-info h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  margin-bottom: var(--space-1);
-}
-
-.modal-agent-info p {
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  color: var(--color-text-tertiary);
-  cursor: pointer;
-  padding: var(--space-1);
-  border-radius: var(--radius-sm);
-  transition: color var(--transition-normal);
-}
-
-.close-btn:hover {
-  color: var(--color-text-primary);
-}
-
-.modal-body {
-  padding: var(--space-6);
-}
-
-.capabilities-section,
-.tags-section,
-.template-section {
-  margin-bottom: var(--space-6);
-}
-
-.capabilities-section h3,
-.tags-section h3,
-.template-section h3 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  margin-bottom: var(--space-3);
-}
-
-.capabilities-full {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.capabilities-full li {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-}
-
-.capabilities-full i {
-  color: var(--color-success);
-  font-size: 0.8rem;
-  width: 16px;
-}
-
-.tags-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.template-preview {
-  background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-  font-style: italic;
-  color: var(--color-text-secondary);
-  line-height: 1.5;
-}
-
-.modal-footer {
-  display: flex;
-  gap: var(--space-3);
-  padding: var(--space-6);
-  border-top: 1px solid var(--color-border);
-}
-
-.cancel-btn {
-  flex: 1;
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  transition: all var(--transition-normal);
-}
-
-.cancel-btn:hover {
-  background: var(--color-bg-hover);
-}
-
-/* Edit Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.3s ease-out;
-  padding: var(--space-4);
-}
-
-.edit-modal {
-  background: white;
-  border-radius: var(--radius-lg);
-  width: 100%;
-  max-width: 480px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-6) var(--space-6) var(--space-4);
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.modal-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--color-heading);
-  margin: 0;
-  line-height: 1.2;
-}
-
-.modal-close {
-  background: transparent;
-  border: none;
-  padding: var(--space-2);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  border-radius: var(--radius-full);
-  transition: all var(--transition-normal);
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;
-}
-
-.modal-close:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--color-error);
-  transform: scale(1.1);
-}
-
-.modal-body {
-  padding: var(--space-6);
-}
-
+/* Form Group */
 .form-group {
   margin-bottom: 0;
-}
-
-.form-label {
-  display: block;
-  margin-bottom: var(--space-3);
-  font-weight: 500;
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-  line-height: 1.4;
-}
-
-.form-input {
-  width: 100%;
-  padding: var(--space-3) var(--space-4);
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 1rem;
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  transition: all var(--transition-normal);
-  box-sizing: border-box;
-  line-height: 1.5;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(46, 102, 244, 0.12);
-  background: white;
-}
-
-.form-input::placeholder {
-  color: var(--color-text-tertiary);
-  font-size: 0.9rem;
 }
 
 .char-count {
@@ -2069,85 +1596,9 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-6) var(--space-6);
-  background: var(--color-bg-primary);
-}
-
-.btn {
-  padding: var(--space-3) var(--space-5);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  border: none;
-  line-height: 1.4;
-  min-width: 80px;
-  justify-content: center;
-}
-
-.cancel-btn {
-  background: transparent;
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-border);
-  transition: all var(--transition-normal);
-}
-
-.cancel-btn:hover {
-  background: var(--color-bg-secondary);
-  color: var(--color-text-primary);
-  border-color: var(--color-text-tertiary);
-  transform: translateY(-1px);
-}
-
-.save-btn {
-  background: var(--color-primary);
-  color: white;
-  border: 1px solid var(--color-primary);
-  box-shadow: 0 2px 4px rgba(46, 102, 244, 0.2);
-}
-
-.save-btn:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-  border-color: var(--color-primary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(46, 102, 244, 0.3);
-}
-
-.save-btn:disabled {
-  background: var(--color-bg-hover);
-  color: var(--color-text-tertiary);
-  border-color: var(--color-border);
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+/* Utility Classes */
+.w-full {
+  width: 100%;
 }
 
 /* Mobile Responsive */
@@ -2230,38 +1681,7 @@ onUnmounted(() => {
     gap: var(--space-4);
   }
 
-  .modal-content {
-    margin: var(--space-3);
-    max-height: calc(100vh - 24px);
-    max-width: calc(100vw - 24px);
-  }
 
-  .edit-modal {
-    max-width: calc(100vw - 24px);
-  }
-
-  .modal-header {
-    padding: var(--space-4) var(--space-4) var(--space-3);
-  }
-
-  .modal-body {
-    padding: var(--space-4);
-  }
-
-  .modal-footer {
-    padding: var(--space-3) var(--space-4) var(--space-4);
-    gap: var(--space-2);
-  }
-
-  .btn {
-    padding: var(--space-3) var(--space-4);
-    font-size: 0.875rem;
-  }
-
-  .form-input {
-    font-size: 1rem; /* Better for mobile input */
-    padding: var(--space-3);
-  }
 }
 
 @media (max-width: 480px) {
@@ -2312,34 +1732,7 @@ onUnmounted(() => {
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .modal-content {
-  background: var(--color-bg-secondary);
-  border-color: var(--color-border);
-}
 
-[data-theme="dark"] .edit-modal {
-  background: var(--color-bg-secondary);
-  border-color: var(--color-border);
-}
-
-[data-theme="dark"] .modal-header {
-  background: linear-gradient(135deg, var(--color-bg-tertiary) 0%, var(--color-bg-secondary) 100%);
-  border-bottom-color: var(--color-border);
-}
-
-[data-theme="dark"] .modal-footer {
-  background: var(--color-bg-secondary);
-}
-
-[data-theme="dark"] .form-input {
-  background: var(--color-bg-tertiary);
-  border-color: var(--color-border);
-}
-
-[data-theme="dark"] .form-input:focus {
-  background: var(--color-bg-primary);
-  border-color: var(--color-primary);
-}
 
 [data-theme="dark"] .no-results {
   background: var(--color-bg-tertiary);
