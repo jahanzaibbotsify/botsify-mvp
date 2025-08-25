@@ -570,6 +570,7 @@ code {
   border-radius: var(--radius-full) !important;
   box-shadow: var(--shadow-sm);
   width: 100%;
+  min-height: 35px !important;
 }
 
 @keyframes spin {

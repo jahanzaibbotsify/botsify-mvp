@@ -5,6 +5,7 @@ import {useRouter} from "vue-router";
 import { Button, ManageBilling, Dropdown, DropdownItem } from '.';
 import { useRoleStore } from '@/stores/roleStore';
 import EditProfileModal from '@/components/modal/EditProfileModal.vue';
+import Badge from './Badge.vue';
 
 const authStore = useAuthStore();
 const isLoggingOut = ref(false);
@@ -72,7 +73,7 @@ const openEditProfile = () => {
           <div class="user-details">
             <p class="user-name">{{ currentUser?.name }}</p>
             <p class="user-email">{{ currentUser?.email }}</p>
-            <span v-if="currentUser?.subs?.stripe_plan" class="plan-badge plan-badge-enhanced">{{ currentUser.subs.stripe_plan }}</span>
+            <Badge v-if="currentUser?.subs?.stripe_plan" variant="secondary" size="small">{{ currentUser.subs.stripe_plan }}</Badge>
           </div>
         </div>
         <div class="dropdown-divider"></div>
@@ -181,14 +182,6 @@ const openEditProfile = () => {
   width: 320px;
 }
 
-.plan-badge {
-  font-size: 0.75rem;
-  padding: var(--space-1) var(--space-2);
-  background-color: var(--color-bg-tertiary);
-  border-radius: var(--radius-full);
-  text-transform: capitalize;
-}
-
 .avatar-initial {
   font-size: 1.1rem;
   font-weight: 600;
@@ -241,18 +234,5 @@ const openEditProfile = () => {
   display: flex;
   flex-direction: column;
   gap: 2px;
-}
-
-.plan-badge-enhanced {
-  margin-top: 2px;
-  background: var(--color-bg-tertiary);
-  font-size: 0.78rem;
-  font-weight: 500;
-  border-radius: var(--radius-full);
-  padding: 2px 10px;
-  display: inline-block;
-  letter-spacing: 0.5px;
-  box-shadow: 0 1px 4px rgba(0,163,255,0.08);
-  width: fit-content;
 }
 </style>

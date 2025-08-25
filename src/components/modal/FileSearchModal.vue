@@ -207,11 +207,7 @@ defineExpose({ openModal })
           
           <div v-if="!selectedFile" class="upload-placeholder">
             <label for="file-search-upload" class="upload-label">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
+              <i class="pi pi-upload"></i>
               <span>Choose a file to upload</span>
               <small>File selection is required to connect</small>
             </label>
@@ -273,12 +269,13 @@ defineExpose({ openModal })
             @click="deleteAllFileSearchEntry()"
             title="Delete all file search entries"
             icon="pi pi-trash"
-            iconOnly
             variant="error-outline"
             size="small"
             :loading="fileSearchAllDeleteLoading"
             :disabled="fileSearchAllDeleteLoading"
-          />
+          >
+            Delete All
+          </Button>
         </div>
         <div class="file-list">
           <div v-for="file in fileSearchResults" :key="file.id" class="file-item">
