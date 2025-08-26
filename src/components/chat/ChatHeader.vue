@@ -251,10 +251,4 @@ function navigateToManageAgents() {
   position: relative;
   display: inline-block;
 }
-
-.action-buttons {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
 </style> 
