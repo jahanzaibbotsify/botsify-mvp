@@ -150,30 +150,61 @@ export const useMCPStore = defineStore('mcp', () => {
   const initialized = ref(false);
   const connectedMCPs = ref(0);
 
-  const setIntialize = async () => {
-    if (initialized.value) return;
-    initialized.value = true;
-    const response = await botsifyApi.getAllConnectedMCPs();
-    connectedServers.value = response.data;
-    connectedServers.value.forEach((connectedServer: any) => {
-      if (connectedServer.setting.is_custom) {
-        servers.value.push({
-          id: connectedServer.id,
-          name: connectedServer.setting.server_label,
-          description: connectedServer.setting.server_description,
-          allowed_tools: connectedServer.setting.allowed_tools,
-          server_url: connectedServer.setting.server_url,
-          icon: 'custom.svg',
-          isCustom: connectedServer.setting.is_custom,
-          connectionId: connectedServer.id,
-        })
-      } else {
-        const serverIndex = servers.value.findIndex(s => s.id === connectedServer.setting.server_label);
-        if (serverIndex !== -1) {
-          servers.value[serverIndex].connectionId = connectedServer.id;
-        }
+  /**
+   * Reset the MCP store when switching agents
+   */
+  const resetStore = () => {
+    connectedServers.value = [];
+    initialized.value = false;
+    connectedMCPs.value = 0;
+    
+    // Reset connectionId for all servers
+    servers.value.forEach(server => {
+      if (server.connectionId) {
+        server.connectionId = undefined;
       }
-    })
+    });
+    
+    // Remove custom servers that were added
+    servers.value = servers.value.filter(server => !server.isCustom);
+  };
+
+  const setIntialize = async () => {
+    // Always allow re-initialization after reset
+    if (initialized.value && connectedServers.value.length > 0) return;
+    
+    initialized.value = true;
+    try {
+      const response = await botsifyApi.getAllConnectedMCPs();
+      connectedServers.value = response.data || [];
+      
+      // Update connectedMCPs count
+      connectedMCPs.value = connectedServers.value.length;
+      
+      connectedServers.value.forEach((connectedServer: any) => {
+        if (connectedServer.setting.is_custom) {
+          servers.value.push({
+            id: connectedServer.id,
+            name: connectedServer.setting.server_label,
+            description: connectedServer.setting.server_description,
+            allowed_tools: connectedServer.setting.allowed_tools,
+            server_url: connectedServer.setting.server_url,
+            icon: 'custom.svg',
+            isCustom: connectedServer.setting.is_custom,
+            connectionId: connectedServer.id,
+          })
+        } else {
+          const serverIndex = servers.value.findIndex(s => s.id === connectedServer.setting.server_label);
+          if (serverIndex !== -1) {
+            servers.value[serverIndex].connectionId = connectedServer.id;
+          }
+        }
+      })
+    } catch (error) {
+      console.error('Failed to initialize MCP store:', error);
+      // Reset initialization flag on error to allow retry
+      initialized.value = false;
+    }
   }
 
   /**
@@ -362,6 +393,7 @@ Remember: You have access to ${connectedServers.value.length} MCP server${connec
     connectedServers,
     getCombinedSystemPrompt,
     generateDefaultSystemPrompt,
-    removeServer
+    removeServer,
+    resetStore
   };
 }); 

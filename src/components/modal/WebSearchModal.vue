@@ -87,6 +87,7 @@ const connectWebSearch = async () => {
       // Add success message to chat
       const successMessage = `✅ Web Search connected successfully for: ${webSearchUrl.value}`
       await chatStore.addMessage(props.chatId, successMessage, 'assistant')
+      webSearchUrl.value = ''
     } else {
       window.$toast.error('Failed to create Web Search: ' + response.message)
     }
@@ -206,13 +207,14 @@ defineExpose({ openModal })
           <Button 
             variant="error-outline"
             icon="pi pi-trash"
-            iconOnly
             size="small"
             @click="deleteWebSearchAllEntry()"
             title="Delete all web search entries"
             :loading="webSearchDeleteAllLoading"
             :disabled="webSearchDeleteAllLoading"
-          />
+          >
+            Delete All
+          </Button>
         </div>
         <template v-for="webSearchResult of webSearchResults">
           <div class="website-info">

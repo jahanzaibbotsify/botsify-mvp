@@ -74,8 +74,7 @@ const verifyEmailWithToken = async (token: string) => {
 
       // Redirect authenticated users to next route, prevent infinite loops
       if (authStore.isAuthenticated) {
-        const { handlePostAuthRedirect } = await import('@/utils/authFlow')
-        const redirectPath = handlePostAuthRedirect()
+        const redirectPath = authStore.getPostAuthRedirect()
         const currentPath = router.currentRoute.value.path
         // Only redirect if next route is different from current route and not a verify-email route
         if (
@@ -170,8 +169,7 @@ const checkIfUserVerified = async () => {
     
     // Redirect authenticated users, prevent infinite loops
     if (authStore.isAuthenticated) {
-      const { handlePostAuthRedirect } = await import('@/utils/authFlow')
-      const redirectPath = handlePostAuthRedirect()
+      const redirectPath = authStore.getPostAuthRedirect()
       const currentPath = router.currentRoute.value.path
       // Only redirect if next route is different from current route and not a verify-email route
       if (
@@ -202,8 +200,7 @@ const checkIfUserVerified = async () => {
       
       // Redirect authenticated users, prevent infinite loops
       if (authStore.isAuthenticated) {
-        const { handlePostAuthRedirect } = await import('@/utils/authFlow')
-        const redirectPath = handlePostAuthRedirect()
+        const redirectPath = authStore.getPostAuthRedirect()
         const currentPath = router.currentRoute.value.path
         // Only redirect if next route is different from current route and not a verify-email route
         if (

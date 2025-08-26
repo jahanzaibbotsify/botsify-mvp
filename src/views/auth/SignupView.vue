@@ -154,8 +154,7 @@ const handleSubmit = async () => {
       })
     } else {
       // Use the new authentication flow for redirect
-      const { handlePostAuthRedirect } = await import('@/utils/authFlow')
-      const redirectPath = handlePostAuthRedirect()
+      const redirectPath = authStore.getPostAuthRedirect()
       router.push(redirectPath)
     }
   } catch (error: any) {

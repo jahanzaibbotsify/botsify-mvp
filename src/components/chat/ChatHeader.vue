@@ -1,27 +1,26 @@
 <template>
   <div class="chat-header">
     <div class="chat-header-left">
-      <!-- <h2>{{ title }}</h2> -->
-      <!-- Dropdown Menu Trigger -->
-      <div class="bot-name-dropdown dropdown dropdown-container" id="botNameDropdown" ref="dropdownRef">
-        <div class="" title="More actions" @click.stop="toggleBotNameDropdown">
-          {{botStore.botName}} 
-          <i class="pi pi-plus" style="font-size: 14px; font-weight: 500; margin-left: 3px;"></i>
-        </div>
-        <div v-if="showBotNameDropdown" class="dropdown-content">
-          <button class="dropdown-item" @click="navigateToManageAgents">
-            <i class="pi pi-cog" style="font-size: 17px;"></i>
+      <!-- Bot Name Dropdown -->
+      <Dropdown position="bottom-left" class="bot-name-dropdown">
+        <template #trigger>
+          <div class="bot-name-trigger" title="More actions">
+            {{botStore.botName}} 
+            <i class="pi pi-plus" style="font-size: 14px; font-weight: 500; margin-left: 3px;"></i>
+          </div>
+        </template>
+        <template #content>
+          <DropdownItem @click="navigateToManageAgents">
+            <template #icon>
+              <i class="pi pi-cog" style="font-size: 17px;"></i>
+            </template>
             <span>Manage Agents</span>
-          </button>
-        </div>
-      </div>
-      <!-- <div @click="handleReset('new')">
-         <button class="btn icon-button" :disabled="chatStore.chats[0].messages.length < 2" title="New Chat">
-          <i class="pi pi-plus" style="font-size: 15px; "></i>
-        </button>
-      </div> -->
+          </DropdownItem>
+        </template>
+      </Dropdown>
     </div>
-    <div class="action-buttons" >  
+    
+    <div class="action-buttons">  
       <!-- Deploy/Test AI Buttons -->
       <div class="action-buttons">
         <Button 
@@ -44,28 +43,41 @@
         </Button>
       </div>
 
-      <!-- Dropdown Menu Trigger -->
-      <div class="dropdown dropdown-container" id="moreActionsDropdown" ref="dropdownRef">
-        <button class="icon-button" title="More actions">
-          <i class="pi pi-ellipsis-v"></i>
-        </button>
-        <div v-if="showDropdown" class="dropdown-content">
-          <button class="dropdown-item" @click="toggleTheme">
-            <i :class="themeStore.theme === 'light' ? 'pi pi-moon' : 'pi pi-sun'" style="font-size: 17px;"></i>
+      <!-- More Actions Dropdown -->
+      <Dropdown position="bottom-right" class="more-actions-dropdown">
+        <template #trigger>
+          <button class="icon-button" title="More actions">
+            <i class="pi pi-ellipsis-v"></i>
+          </button>
+        </template>
+        <template #content>
+          <DropdownItem @click="toggleTheme">
+            <template #icon>
+              <i :class="themeStore.theme === 'light' ? 'pi pi-moon' : 'pi pi-sun'" style="font-size: 17px;"></i>
+            </template>
             <span>{{ themeStore.theme === 'light' ? 'Night Theme' : 'Light Theme' }}</span>
-          </button>
-          <button class="dropdown-item" @click="handleAIPrompt" v-if="props.hasPromptContent">
-            <i class="pi pi-bolt" style="font-size: 17px;"></i>
+          </DropdownItem>
+          <DropdownItem @click="handleAIPrompt" v-if="props.hasPromptContent">
+            <template #icon>
+              <i class="pi pi-bolt" style="font-size: 17px;"></i>
+            </template>
             <span>AI Prompt</span>
-          </button>
-          <button :disabled="chatStore.chats[0].messages.length < 2"  class="btn dropdown-item" @click="handleReset('reset')">
-            <i class="pi pi-replay" style="font-size: 17px;"></i>
+          </DropdownItem>
+          <DropdownItem 
+            :disabled="chatStore.chats[0].messages.length < 2" 
+            @click="handleReset('reset')"
+          >
+            <template #icon>
+              <i class="pi pi-replay" style="font-size: 17px;"></i>
+            </template>
             <span>Clear Conversation</span>
-          </button>
-        </div>
-      </div>
+          </DropdownItem>
+        </template>
+      </Dropdown>
+      
       <UserMenu/>
     </div>
+    
     <CalendlyModal ref="bookMeetingRef"></CalendlyModal>
     
     <Teleport to="body">
@@ -75,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useThemeStore } from '@/stores/themeStore';
 import { useChatStore } from '@/stores/chatStore';
@@ -83,9 +95,10 @@ import { useBotStore } from '@/stores/botStore';
 import { useRoleStore } from '@/stores/roleStore';
 import { getWebUrl } from '@/utils';
 import CalendlyModal from '@/components/modal/CalendlyModal.vue';
-import UserMenu from "@/components/auth/UserMenu.vue";
+import UserMenu from "@/components/ui/UserMenu.vue";
 import PublishAgentModal from "@/components/modal/PublishAgentModal.vue";
 import Button from "@/components/ui/Button.vue";
+import { Dropdown, DropdownItem } from "@/components/ui";
 
 interface Props {
   chatId: string,
@@ -99,10 +112,6 @@ const router = useRouter();
 const chatStore = useChatStore();
 const botStore = useBotStore();
 const themeStore = useThemeStore();
-const showDropdown = ref(false);
-const showBotNameDropdown = ref(false);
-const dropdownRef = ref<HTMLDivElement | null>(null);
-const lastOpenedDropdownId = ref<string | undefined>('');
 const bookMeetingRef = ref<InstanceType<typeof CalendlyModal> | null>(null)
 const publishAgentRef = ref<InstanceType<typeof PublishAgentModal> | null>(null)
 
@@ -111,7 +120,6 @@ const emit = defineEmits<{
 }>();
 
 const roleStore = useRoleStore();
-
 
 function toggleTheme() {
   themeStore.setTheme(themeStore.theme === 'light' ? 'dark' : 'light');
@@ -162,62 +170,18 @@ function handleReset(type: string) {
   });
 }
 
-function handleClickOutside(event: Event) {
-  closeAllDropdowns();
-
-  const target = event.target as HTMLElement;
-  const currentSelectedDropdownId = target.closest('.dropdown-container')?.id;
-
-  if (lastOpenedDropdownId.value !== currentSelectedDropdownId) {
-    if (target.closest('#botNameDropdown')) {
-      showBotNameDropdown.value = !showBotNameDropdown.value;
-    }else if (target.closest('#moreActionsDropdown')) {
-      showDropdown.value = !showDropdown.value;
-    }
-    lastOpenedDropdownId.value = currentSelectedDropdownId;
-  }else{
-    lastOpenedDropdownId.value = '';
-  }
-}
-
-function closeAllDropdowns() {
-  showBotNameDropdown.value = false;
-  showDropdown.value = false;
-}
-
 function navigateToManageAgents() {
   router.push({ path: '/select-agent' });
 }
-
-function toggleBotNameDropdown() {
-  showBotNameDropdown.value = !showBotNameDropdown.value;
-}
-
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside);
-});
-
-// Clean up on component unmount
-onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside);
-});
-
-// function handleMouseLeave() {
-//   setTimeout(() => {
-//     showDropdown.value = false;
-//   }, 5000); // 100ms delay
-// }
 </script>
 
 <style scoped>
 .chat-header {
   padding: var(--space-3) var(--space-4);
   background-color: var(--color-bg-secondary);
-  /* z-index: var(--z-sticky); */
   display: flex;
   justify-content: space-between;
   align-items: center;
-  /* border-radius: var(--radius-lg) var(--radius-lg) 0 0; */
   box-shadow: 0 4px 15px rgba(0, 163, 255, 0.08);
   border: 1px solid rgba(0, 163, 255, 0.1);
 }
@@ -254,10 +218,6 @@ onBeforeUnmount(() => {
   color: var(--color-text-primary);
 }
 
-.bot-name-dropdown .icon-button {
-  width: max-content;
-}
-
 .bot-name-dropdown {
   cursor: pointer;
   padding: var(--space-2) var(--space-3);
@@ -272,7 +232,14 @@ onBeforeUnmount(() => {
   background-color: var(--color-bg-tertiary);
 }
 
-.bot-name-dropdown .pi-angle-down {
+.bot-name-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.bot-name-trigger .pi-angle-down {
   transition: transform var(--transition-fast);
 }
 
@@ -280,65 +247,8 @@ onBeforeUnmount(() => {
   transform: rotate(180deg);
 }
 
-.dropdown {
+.more-actions-dropdown {
   position: relative;
   display: inline-block;
-}
-
-.dropdown-content {
-  display: flex;
-  flex-direction: column;
-  position: absolute;
-  right: 0;
-  top: 110%;
-  background-color: var(--color-bg-primary);
-  min-width: 210px;
-  box-shadow: var(--shadow-md), 0 4px 15px rgba(0, 163, 255, 0.08);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(0, 163, 255, 0.1);
-  z-index: var(--z-dropdown);
-  overflow: hidden;
-  padding: var(--space-2) 0;
-  padding: 5px;
-}
-
-#botNameDropdown .dropdown-content {
-  right: auto;
-  left: 0;
-}
-
-.dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  width: 100%;
-  text-align: left;
-  padding: var(--space-2) var(--space-4);
-  background: none;
-  border: none;
-  color: var(--color-text-primary);
-  cursor: pointer;
-  font-size: 0.90rem;
-  font-weight: 500;
-  transition: background-color var(--transition-fast);
-}
-
-
-.btn:disabled {
-  color: gray;
-  cursor: not-allowed;
-}
-
-.dropdown-item:hover {
-  background-color: rgba(98, 0, 255, 0.05);
-  background-image: linear-gradient(to right, rgba(153, 0, 255, 0.08), transparent 80%);
-}
-
-.dropdown-item.danger {
-  color: var(--color-error);
-}
-
-.dropdown-item.danger:hover {
-  background-color: rgba(239, 68, 68, 0.1);
 }
 </style> 

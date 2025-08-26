@@ -158,7 +158,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   // Save data to localStorage
-  async function saveToTemplate() {
+  async function saveToTemplate(edit?: boolean) {
     // Skip if auto-save is disabled
     if (!ENABLE_AUTO_SAVE) {
       return true;
@@ -185,12 +185,17 @@ export const useChatStore = defineStore('chat', () => {
       const aiPrompt = chat.story?.content ?? '';
       const chatsJson = JSON.stringify([optimizedChatData]);
 
-      const payload = {
+      const payload: any = {
           bot_id: getCurrentBotId(),
           ai_prompt: aiPrompt,
           chat_flow: chatsJson,
           name: activeAiPromptVersion.value?.name ?? 'version-1',
-          version_id: '',
+          version_id: ''
+      }
+
+      // Only add edit field if it's true (edit operation)
+      if (edit === true) {
+        payload.edit = true;
       }
 
       if (activeAiPromptVersion.value?.version_id) {
@@ -208,16 +213,16 @@ export const useChatStore = defineStore('chat', () => {
        
       return true;
          } catch (error) {
-       console.error('❌ Error saving to storage:', error);
-       // Error message will be shown in red text in the chats
-       // Toast notifications disabled as requested
-       return false;
-     }
+        console.error('❌ Error saving to storage:', error);
+        // Error message will be shown in red text in the chats
+        // Toast notifications disabled as requested
+        return false;
+      }
 
   }
 
   // Debounced version to prevent multiple rapid calls
-  const debouncedSaveToTemplate = debounce(saveToTemplate, SAVE_DEBOUNCE_DELAY);
+  const debouncedSaveToTemplate = debounce((edit?: boolean) => saveToTemplate(edit), SAVE_DEBOUNCE_DELAY);
 
   const currentChat = computed(() => {
     return chats.value.find(chat => chat.id === activeChat.value) || null;
@@ -366,7 +371,7 @@ export const useChatStore = defineStore('chat', () => {
       chat.story.content = content;
       chat.story.updatedAt = new Date();
       if (edit) {
-        debouncedSaveToTemplate();
+        debouncedSaveToTemplate(edit);
       }
     }
 

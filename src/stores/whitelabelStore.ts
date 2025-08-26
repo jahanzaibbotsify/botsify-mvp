@@ -64,6 +64,11 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
     return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
   }
 
+  function resetWhitelabel() {
+    isWhitelabelClient.value = false
+    whitelabelData.value = null
+  }
+
   // Computed properties
   const companyName = computed(() => whitelabelData.value?.company_name || 'Botsify')
   const primaryColor = computed(() => whitelabelData.value?.primary_color || '#00A3FF')
@@ -87,6 +92,7 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
     logo,
     favicon,
     maskUrl,
-    partnerPortalUrl
+    partnerPortalUrl,
+    resetWhitelabel
   }
 }) 
