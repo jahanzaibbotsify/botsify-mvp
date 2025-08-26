@@ -92,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import ModalLayout from '@/components/ui/ModalLayout.vue'
 import Button from '@/components/ui/Button.vue'
 import { botsifyApi } from '@/services/botsifyApi'

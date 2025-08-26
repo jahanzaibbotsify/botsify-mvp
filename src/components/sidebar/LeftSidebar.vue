@@ -8,7 +8,6 @@ import { useWhitelabelStore } from '@/stores/whitelabelStore'
 import BookMeetingModal from '@/components/modal/BookMeetingModal.vue';
 import CalendlyModal from '@/components/modal/CalendlyModal.vue';
 import { getWebUrl } from '@/utils';
-import type { BillingData } from '@/types';
 import { showZen } from '@/utils/zendesk';
 import { useBotStore } from '@/stores/botStore';
 import { Button, ManageBilling, Dropdown, DropdownItem } from '../ui';

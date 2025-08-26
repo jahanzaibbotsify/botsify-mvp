@@ -39,16 +39,11 @@ import ModalLayout from '@/components/ui/ModalLayout.vue'
 import Button from '@/components/ui/Button.vue'
 import { botsifyApi } from '@/services/botsifyApi'
 
-interface Props {
-  // No props needed
-}
-
 interface Emits {
   (e: 'close'): void
   (e: 'subscriptionCancelled'): void
 }
 
-const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const modalRef = ref<InstanceType<typeof ModalLayout> | null>(null)
