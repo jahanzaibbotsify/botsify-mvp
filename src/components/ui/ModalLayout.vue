@@ -33,7 +33,7 @@ const openModal = () => {
 const closeModal = () => {
   if (!props.closable) return
   showModal.value = false
-  emit('close')
+  // emit('close')
 }
 
 const handleOverlayClick = (event: MouseEvent) => {
