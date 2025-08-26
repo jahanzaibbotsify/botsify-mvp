@@ -255,12 +255,12 @@ const deleteAgent = (agent: any) => {
  */
 const copyPayload = async (agent: any) => {
   try {
-    await navigator.clipboard.writeText(agent.id.toString())
+    await navigator.clipboard.writeText(agent.apikey)
     window.$toast?.success('Payload copied to clipboard!')
   } catch (error) {
     try {
       const textArea = document.createElement('textarea')
-      textArea.value = agent.id.toString()
+      textArea.value = agent.apikey
       document.body.appendChild(textArea)
       textArea.select()
       document.execCommand('copy')
