@@ -3,12 +3,17 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import type { FormValidation } from '@/types/auth'
-import {axiosInstance} from "@/utils/axiosInstance.ts";
+import { authApi } from '@/services/authApi'
 import Button from '@/components/ui/Button.vue';
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+
+// Clear any existing errors when component mounts
+onMounted(() => {
+  authStore.clearError()
+})
 
 // Form state
 const form = reactive({
@@ -95,25 +100,27 @@ const handleSubmit = async () => {
 
   isLoading.value = true;
 
-  await axiosInstance.post('reset-password', {
-    email: route.query.email,
-    token: route.query.token,
-    ...form
-  }).then(res => {
-    if (res.data.status == 'error'){
-      error.value = res.data.message;
-      window.$toast?.error(error.value)
-    } else {
+  try {
+    const response = await authApi.resetPassword({
+      email: route.query.email as string,
+      token: route.query.token as string,
+      password: form.password,
+      confirmPassword: form.confirmPassword
+    })
+    
+    if (response.success) {
       window.$toast?.success('Password reset successfully!');
       router.push('/auth/login')
+    } else {
+      error.value = response.message || 'Failed to reset password';
+      window.$toast?.error(response.message || 'Failed to reset password')
     }
-  }).catch(error => {
+  } catch (error: any) {
     console.log(error)
     window.$toast?.error('Failed to reset password. Please try again.')
-
-  }).finally(() => {
+  } finally {
     isLoading.value = false;
-  })
+  }
 }
 
 const togglePasswordVisibility = (field: 'password' | 'confirmPassword') => {

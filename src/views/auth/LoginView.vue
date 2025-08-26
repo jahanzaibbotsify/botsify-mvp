@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import type { LoginCredentials, FormValidation } from '@/types/auth'
@@ -7,6 +7,11 @@ import Button from '@/components/ui/Button.vue';
 
 const router = useRouter()
 const authStore = useAuthStore()
+
+// Clear any existing errors when component mounts
+onMounted(() => {
+  authStore.clearError()
+})
 
 // Form state
 const form = reactive<LoginCredentials>({
