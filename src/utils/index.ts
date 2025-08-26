@@ -81,7 +81,11 @@ export const getPlatformClass = (platform: string = '') => {
   export const getWebUrl = (): string => {
     const config = whitelabelService.getConfig()
     if (config?.mask_url) {
-      return config.mask_url
+      // Ensure it always includes https://
+      if (!/^https?:\/\//.test(config.mask_url)) {
+        return `https://${config.mask_url}`;
+      }
+      return config.mask_url;
     }
     return BOTSIFY_WEB_URL
   }
