@@ -23,11 +23,6 @@ const disconnectMCP = async (server: any) => {
     console.error('Failed to disconnect from MCP server:', response.message);
   }
 };
-
-// Initialize MCP store when component is mounted
-onMounted(async () => {
-  await mcpStore.setIntialize();
-});
 </script>
 <template>
   <section>
