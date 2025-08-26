@@ -11,6 +11,7 @@ import { getWebUrl } from '@/utils';
 import { showZen } from '@/utils/zendesk';
 import { useBotStore } from '@/stores/botStore';
 import { Button, ManageBilling, Dropdown, DropdownItem } from '../ui';
+import { BOTSIFY_WEB_URL } from '@/utils/config';
 
 const sidebarStore = useSidebarStore();
 const botStore = useBotStore();
@@ -164,9 +165,9 @@ const handleItemClick = (item: any) => {
 };
 
 const openPartnerPortal = () => {
-  // if (whitelabelStore.isPortalEnabled && !whitelabelStore.isWhitelabelClient) {
-    window.open("https://app.botsify.com/partner", '_blank');
-  // }
+  if (isPortalEnabled.value) {
+    window.open(`${BOTSIFY_WEB_URL}/partner`, '_blank');
+  }
 };
 </script>
 
