@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import Button from '@/components/ui/Button.vue'
+import { authApi } from '@/services/authApi'
 
 const router = useRouter()
 const authStore = useAuthStore()
+
+// Clear any existing errors when component mounts
+onMounted(() => {
+  authStore.clearError()
+})
 
 // Form state
 const form = reactive({
@@ -41,12 +47,21 @@ const handleSubmit = async () => {
 
   isLoading.value = true
   validationError.value = null
-  const response = await authStore.resetPassword(form.email).finally(() => {
-    isLoading.value = false;
-  });
-  if (response.status == 'success') {
-    isSuccess.value = true
-    window.$toast?.success('Password reset instructions sent to your email.')
+  
+  try {
+    const response = await authApi.forgotPassword({ email: form.email })
+    if (response.success) {
+      isSuccess.value = true
+      window.$toast?.success('Password reset instructions sent to your email.')
+    } else {
+      validationError.value = response.message || 'An unexpected error occurred. Please try again.'
+      window.$toast?.error(response.message)
+    }
+  } catch (error: any) {
+    validationError.value = 'An unexpected error occurred. Please try again.'
+    window.$toast?.error('An unexpected error occurred. Please try again.')
+  } finally {
+    isLoading.value = false
   }
 }
 

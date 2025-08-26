@@ -274,7 +274,7 @@ const openPartnerPortal = () => {
   border-right: 1px solid rgba(0, 163, 255, 0.1);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  /* overflow-y: auto; */
   position: relative;
   box-shadow: 4px 0 10px rgba(0, 163, 255, 0.05);
   background-image:
