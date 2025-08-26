@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {useMCPStore} from "@/stores/mcpStore.ts";
 import {botsifyApi} from "@/services/botsifyApi.ts";
-import {computed, onMounted} from "vue";
+import {computed} from "vue";
 
 const emit = defineEmits(['selectServer', 'addNewServer']);
 
