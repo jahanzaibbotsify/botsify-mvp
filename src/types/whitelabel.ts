@@ -27,6 +27,7 @@ export interface WhitelabelPackagesResponse {
 }
 
 export interface WhitelabelConfig {
+  id: number
   company_name: string
   mask_url: string
   logo: string

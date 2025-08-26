@@ -30,6 +30,11 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
   const shouldShowWhitelabelPlans = computed(() => hasPackages.value)
   const isRegistrationAllowed = computed(() => config.value?.show_whitelabel_register !== false)
   const isPortalEnabled = computed(() => config.value?.is_whitelabel === 1)
+  const isRunningOnBotsifyWeb = computed(() => whitelabelService.isRunningOnBotsifyWeb())
+  const whitelabelId = computed(() => {
+    const storedId = localStorage.getItem('whitelabelId')
+    return storedId ? parseInt(storedId, 10) : null
+  })
 
   // Actions
   const initialize = async (): Promise<void> => {
@@ -44,6 +49,11 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
         whitelabelService.applyConfiguration()
       } else if (response.error) {
         error.value = response.error
+      } else {
+        // No data and no error - likely skipped due to BOTSIFY_WEB_URL
+        // Set as initialized to prevent repeated calls
+        isInitialized.value = true
+        console.log('Whitelabel initialization skipped - running on BOTSIFY_WEB_URL')
       }
     } catch (err: any) {
       error.value = err?.message || 'Failed to load whitelabel configuration'
@@ -57,6 +67,9 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
       const { data } = await whitelabelService.fetchPackages(userId)
       if (data) {
         packages.value = data
+      } else {
+        // No data - likely skipped due to BOTSIFY_WEB_URL
+        console.log('Whitelabel packages fetch skipped - running on BOTSIFY_WEB_URL')
       }
     } catch (err: any) {
       // eslint-disable-next-line no-console
@@ -95,6 +108,8 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
     shouldShowWhitelabelPlans,
     isRegistrationAllowed,
     isPortalEnabled,
+    isRunningOnBotsifyWeb,
+    whitelabelId,
 
     // Actions
     initialize,

@@ -1,4 +1,5 @@
 import { axiosInstance } from '@/utils/axiosInstance'
+import { BOTSIFY_WEB_URL } from '@/utils/config'
 import type { WhitelabelPackage, WhitelabelConfig } from '@/types/whitelabel'
 
 export interface WhitelabelResponse {
@@ -10,6 +11,7 @@ class WhitelabelService {
   private config: WhitelabelConfig | null = null
   private packages: WhitelabelPackage[] = []
   private isInitialized = false
+  private whitelabelId: number | null = null
 
   /**
    * Get the current domain for the whitelabel API call
@@ -19,16 +21,44 @@ class WhitelabelService {
   }
 
   /**
+   * Check if current URL matches BOTSIFY_WEB_URL
+   */
+  private isBotsifyWebUrl(): boolean {
+    const currentUrl = window.location.origin
+    return currentUrl === BOTSIFY_WEB_URL
+  }
+
+  /**
+   * Public method to check if current URL matches BOTSIFY_WEB_URL
+   */
+  isRunningOnBotsifyWeb(): boolean {
+    return this.isBotsifyWebUrl()
+  }
+
+  /**
    * Fetch whitelabel configuration from API
    */
   async fetchConfig(): Promise<WhitelabelResponse> {
+    // Skip API call if current URL matches BOTSIFY_WEB_URL
+    if (this.isBotsifyWebUrl()) {
+      console.log('Skipping whitelabel config API call - running on BOTSIFY_WEB_URL')
+      return { data: null, error: null }
+    }
+
     try {
       const domain = this.getCurrentDomain()
       const response = await axiosInstance.post('v1/whitelabel/config', { domain })
       
       if (response.data) {
         this.config = response.data
+        this.whitelabelId = response.data.id
         this.isInitialized = true
+        
+        // Store whitelabel ID in localStorage for axios interceptors to use
+        if (this.whitelabelId) {
+          localStorage.setItem('whitelabelId', this.whitelabelId.toString())
+        }
+        
         return { data: this.config, error: null }
       }
       
@@ -43,6 +73,12 @@ class WhitelabelService {
    * Fetch whitelabel packages from API
    */
   async fetchPackages(userId?: string): Promise<{ data: WhitelabelPackage[] | null; error: string | null }> {
+    // Skip API call if current URL matches BOTSIFY_WEB_URL
+    if (this.isBotsifyWebUrl()) {
+      console.log('Skipping whitelabel packages API call - running on BOTSIFY_WEB_URL')
+      return { data: null, error: null }
+    }
+
     try {
       let url = 'v1/whitelabel-packages'
       if (userId) {
@@ -201,6 +237,10 @@ class WhitelabelService {
     this.config = null
     this.packages = []
     this.isInitialized = false
+    this.whitelabelId = null
+    
+    // Remove whitelabel ID from localStorage
+    localStorage.removeItem('whitelabelId')
     
     // Reset document title
     document.title = 'Botsify Agent'

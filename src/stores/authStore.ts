@@ -7,6 +7,7 @@ import type {
   AgentCategory
 } from '@/types/auth'
 import { authApi } from '@/services/authApi'
+import { getCurrentApiKey } from '@/utils/apiKeyUtils'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -416,7 +417,6 @@ export const useAuthStore = defineStore('auth', () => {
     if (!currentUser.email_verified && !currentUser.subs && !currentUser.is_appsumo && !currentUser.is_bot_admin && currentUser.source !== 'botsify_landing') {
       return `/auth/verify-email?email=${encodeURIComponent(currentUser.email || '')}`
     }
-    const { getCurrentApiKey } = require('@/utils/apiKeyUtils')
     const botApiKey = getCurrentApiKey()
     if (botApiKey) {
       return `/agent/${botApiKey}`

@@ -24,6 +24,13 @@ axiosInstance.interceptors.request.use(
         if (token) {
             config.headers.Authorization = `Bearer ${JSON.parse(token)}`;
         }
+        
+        // Add whitelabel ID header if available (stored in localStorage)
+        const whitelabelId = localStorage.getItem('whitelabelId');
+        if (whitelabelId) {
+            config.headers['X-Whitelabel-ID'] = whitelabelId;
+        }
+        
         return config;
     },
     (error) => {
@@ -38,6 +45,13 @@ uploadInstance.interceptors.request.use(
         if (token) {
             config.headers.Authorization = `Bearer ${JSON.parse(token)}`;
         }
+        
+        // Add whitelabel ID header if available (stored in localStorage)
+        const whitelabelId = localStorage.getItem('whitelabelId');
+        if (whitelabelId) {
+            config.headers['X-Whitelabel-ID'] = whitelabelId;
+        }
+        
         return config;
     },
     (error) => {

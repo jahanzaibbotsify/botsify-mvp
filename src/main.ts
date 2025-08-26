@@ -30,8 +30,8 @@ if (apiKey) {
 // Initialize whitelabel configuration before app mounts
 const initializeWhitelabel = async () => {
   try {
-    await whitelabelService.fetchConfig()
-    if (whitelabelService.isConfigured()) {
+    const configResponse = await whitelabelService.fetchConfig()
+    if (configResponse.data && whitelabelService.isConfigured()) {
       whitelabelService.applyConfiguration()
       
       // Also fetch packages if whitelabel is configured
@@ -48,6 +48,9 @@ const initializeWhitelabel = async () => {
           console.warn('Failed to parse user from localStorage:', e)
         }
       }
+    } else if (!configResponse.data && !configResponse.error) {
+      // No data and no error - likely skipped due to BOTSIFY_WEB_URL
+      console.log('Whitelabel initialization skipped - running on BOTSIFY_WEB_URL')
     }
   } catch (error) {
     console.warn('Whitelabel initialization failed:', error)
