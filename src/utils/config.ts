@@ -46,5 +46,5 @@ export function getInitialToken(): string | null {
  */
 export function isBotsifyWebUrl(): boolean {
   if (typeof window === 'undefined') return false
-  return window.location.origin === BOTSIFY_WEB_URL
+  return window.location.origin === APP_URL
 }

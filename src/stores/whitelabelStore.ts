@@ -50,10 +50,10 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
       } else if (response.error) {
         error.value = response.error
       } else {
-        // No data and no error - likely skipped due to BOTSIFY_WEB_URL
+        // No data and no error - likely skipped due to APP_URL
         // Set as initialized to prevent repeated calls
         isInitialized.value = true
-        console.log('Whitelabel initialization skipped - running on BOTSIFY_WEB_URL')
+        console.log('Whitelabel initialization skipped - running on APP_URL')
       }
     } catch (err: any) {
       error.value = err?.message || 'Failed to load whitelabel configuration'
@@ -68,8 +68,8 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
       if (data) {
         packages.value = data
       } else {
-        // No data - likely skipped due to BOTSIFY_WEB_URL
-        console.log('Whitelabel packages fetch skipped - running on BOTSIFY_WEB_URL')
+        // No data - likely skipped due to APP_URL
+        console.log('Whitelabel packages fetch skipped - running on APP_URL')
       }
     } catch (err: any) {
       // eslint-disable-next-line no-console

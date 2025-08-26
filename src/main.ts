@@ -49,8 +49,8 @@ const initializeWhitelabel = async () => {
         }
       }
     } else if (!configResponse.data && !configResponse.error) {
-      // No data and no error - likely skipped due to BOTSIFY_WEB_URL
-      console.log('Whitelabel initialization skipped - running on BOTSIFY_WEB_URL')
+      // No data and no error - likely skipped due to APP_URL
+      console.log('Whitelabel initialization skipped - running on APP_URL')
     }
   } catch (error) {
     console.warn('Whitelabel initialization failed:', error)

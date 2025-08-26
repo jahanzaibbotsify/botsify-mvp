@@ -1,5 +1,5 @@
 import { axiosInstance } from '@/utils/axiosInstance'
-import { BOTSIFY_WEB_URL } from '@/utils/config'
+import { APP_URL } from '@/utils/config'
 import type { WhitelabelPackage, WhitelabelConfig } from '@/types/whitelabel'
 
 export interface WhitelabelResponse {
@@ -21,15 +21,15 @@ class WhitelabelService {
   }
 
   /**
-   * Check if current URL matches BOTSIFY_WEB_URL
+   * Check if current URL matches APP_URL
    */
   private isBotsifyWebUrl(): boolean {
     const currentUrl = window.location.origin
-    return currentUrl === BOTSIFY_WEB_URL
+    return currentUrl === APP_URL
   }
 
   /**
-   * Public method to check if current URL matches BOTSIFY_WEB_URL
+   * Public method to check if current URL matches APP_URL
    */
   isRunningOnBotsifyWeb(): boolean {
     return this.isBotsifyWebUrl()
@@ -39,9 +39,9 @@ class WhitelabelService {
    * Fetch whitelabel configuration from API
    */
   async fetchConfig(): Promise<WhitelabelResponse> {
-    // Skip API call if current URL matches BOTSIFY_WEB_URL
+    // Skip API call if current URL matches APP_URL
     if (this.isBotsifyWebUrl()) {
-      console.log('Skipping whitelabel config API call - running on BOTSIFY_WEB_URL')
+      console.log('Skipping whitelabel config API call - running on APP_URL')
       return { data: null, error: null }
     }
 
@@ -73,9 +73,9 @@ class WhitelabelService {
    * Fetch whitelabel packages from API
    */
   async fetchPackages(userId?: string): Promise<{ data: WhitelabelPackage[] | null; error: string | null }> {
-    // Skip API call if current URL matches BOTSIFY_WEB_URL
+    // Skip API call if current URL matches APP_URL
     if (this.isBotsifyWebUrl()) {
-      console.log('Skipping whitelabel packages API call - running on BOTSIFY_WEB_URL')
+      console.log('Skipping whitelabel packages API call - running on APP_URL')
       return { data: null, error: null }
     }
 
