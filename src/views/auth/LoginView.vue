@@ -3,7 +3,6 @@ import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import type { LoginCredentials, FormValidation } from '@/types/auth'
-import {handlePostAuthRedirect} from "@/utils/authFlow.ts";
 import Button from '@/components/ui/Button.vue';
 
 const router = useRouter()
@@ -77,7 +76,7 @@ const handleSubmit = async () => {
   const response = await authStore.login(form);
 
   if (response.user) {
-    const redirectPath = handlePostAuthRedirect();
+    const redirectPath = authStore.getPostAuthRedirect();
     router.push(redirectPath)
   } else {
     window.$toast?.error(response?.data.error)

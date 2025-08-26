@@ -7,6 +7,7 @@ import type {
   AgentCategory
 } from '@/types/auth'
 import {axiosInstance} from "@/utils/axiosInstance.ts";
+import { authApi } from '@/services/authApi'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -324,38 +325,34 @@ export const useAuthStore = defineStore('auth', () => {
   const login = async (credentials: LoginCredentials) => {
     setLoading(true)
     clearError()
-
-    return await axiosInstance.post('v1/login', {
-      ...credentials,
-      'agentic-login': 1
-    })
-        .then(res => {
-          const authUser = res.data.user;
-          setAuthData(authUser.access_token, authUser)
-          return res.data;
-        }).catch(error => {
-          setError(error?.response?.data?.error);
-          return error.response;
-        }).finally(() => {
-          setLoading(false)
-        });
+    try {
+      const res = await authApi.login(credentials)
+      const authUser = res.data.user
+      setAuthData(authUser.access_token, authUser)
+      return res.data
+    } catch (error: any) {
+      setError(error?.response?.data?.error)
+      return error.response
+    } finally {
+      setLoading(false)
+    }
   }
 
   const signup = async (credentials: SignupCredentials) => {
     setLoading(true)
     clearError()
-    return await axiosInstance.post('v1/register', credentials)
-        .then(res => {
-          const responseData = res.data;
-          setAuthData(responseData.access_token, responseData.user)
-          return responseData;
-        }).catch(error => {
-          setError(error?.response?.message);
-          onboardingStep.value = 'pricing';
-          return error.response;
-        }).finally(() => {
-          setLoading(false)
-        });
+    try {
+      const res = await authApi.signup(credentials)
+      const responseData = res.data
+      setAuthData(responseData.access_token, responseData.user)
+      return responseData
+    } catch (error: any) {
+      setError(error?.response?.message)
+      onboardingStep.value = 'pricing'
+      return error.response
+    } finally {
+      setLoading(false)
+    }
   }
 
   /**
@@ -390,18 +387,81 @@ export const useAuthStore = defineStore('auth', () => {
   const logout = async () => {
     setLoading(true)
     try {
-      await axiosInstance.post('v1/logout').then(() => {
-        removeAuthData();
-        selectedAgent.value = null
-        localStorage.removeItem('auth_remember')
-        localStorage.removeItem('bot_api_key')
-        localStorage.removeItem('accessToken')
-        localStorage.removeItem('user')
-        localStorage.removeItem('bot_api_key')
-        clearError()
-      }).catch(error => {
-        console.log(error);
+      await authApi.logout()
+      removeAuthData();
+      selectedAgent.value = null
+      localStorage.removeItem('auth_remember')
+      localStorage.removeItem('bot_api_key')
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('user')
+      localStorage.removeItem('bot_api_key')
+      clearError()
+    } catch (error) {
+      console.log(error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /**
+   * Compute post-auth redirect path (moved from utils/authFlow)
+   */
+  const getPostAuthRedirect = (): string => {
+    const currentUser: any = user.value
+    if (!isAuthenticated.value || !currentUser) {
+      return '/auth/login'
+    }
+    if (currentUser.is_appsumo || currentUser.is_bot_admin || currentUser.subs || currentUser.source === 'botsify_landing') {
+      return '/select-agent'
+    }
+    if (!currentUser.email_verified && !currentUser.subs && !currentUser.is_appsumo && !currentUser.is_bot_admin && currentUser.source !== 'botsify_landing') {
+      return `/auth/verify-email?email=${encodeURIComponent(currentUser.email || '')}`
+    }
+    const { getCurrentApiKey } = require('@/utils/apiKeyUtils')
+    const botApiKey = getCurrentApiKey()
+    if (botApiKey) {
+      return `/agent/${botApiKey}`
+    }
+    return '/select-agent'
+  }
+
+  /**
+   * Update account/profile details
+   */
+  const updateAccount = async (payload: { firstName: string; lastName: string; email: string }) => {
+    setLoading(true)
+    clearError()
+    try {
+      const fullName = `${payload.firstName} ${payload.lastName}`.trim()
+      const response = await authApi.updateAccount({
+        first_name: payload.firstName,
+        last_name: payload.lastName,
+        email: payload.email,
+        name: fullName
       })
+
+      if (response.success) {
+        const currentUser = user.value || {}
+        const updatedUser = {
+          ...currentUser,
+          // camelCase
+          firstName: payload.firstName,
+          lastName: payload.lastName,
+          email: payload.email,
+          name: fullName,
+          // snake_case for compatibility where expected
+          first_name: payload.firstName,
+          last_name: payload.lastName
+        }
+        setAuthData(null, updatedUser)
+        return { success: true, data: response.data }
+      }
+
+      setError(response.message || 'Failed to update profile')
+      return { success: false, message: response.message }
+    } catch (e: any) {
+      setError(e?.message || 'Failed to update profile')
+      return { success: false, message: e?.message }
     } finally {
       setLoading(false)
     }
@@ -448,6 +508,8 @@ export const useAuthStore = defineStore('auth', () => {
     signup,
     logout,
     resetPassword,
+    getPostAuthRedirect,
+    updateAccount,
     setAuthData
   }
 }) 

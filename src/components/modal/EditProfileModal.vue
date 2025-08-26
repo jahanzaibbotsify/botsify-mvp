@@ -37,7 +37,7 @@
         <Button variant="secondary" @click="closeModal">
           Cancel
         </Button>
-        <Button @click="handleSubmit" :loading="isLoading">
+        <Button @click="handleSubmit" :loading="isLoading" :disabled="isLoading">
           Save Changes
         </Button>
       </div>
@@ -84,13 +84,11 @@ const closeModal = () => {
 const handleSubmit = async () => {
   if (!authStore.user) return
 
-  // Basic validation
   if (!formData.value.firstName.trim() || !formData.value.lastName.trim() || !formData.value.email.trim()) {
     window.$toast?.error('Please fill in all required fields.');
     return;
   }
 
-  // Email validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(formData.value.email)) {
     window.$toast?.error('Please enter a valid email address.');
@@ -98,33 +96,20 @@ const handleSubmit = async () => {
   }
 
   isLoading.value = true
-  
+
   try {
-    // Simulate API call - replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Create the full name from first and last name
-    const fullName = `${formData.value.firstName} ${formData.value.lastName}`.trim();
-    
-    // Update user in auth store
-    const updatedUser = {
-      ...authStore.user,
+    const res = await authStore.updateAccount({
       firstName: formData.value.firstName,
       lastName: formData.value.lastName,
-      email: formData.value.email,
-      name: fullName
-    }
+      email: formData.value.email
+    })
 
-    // Update the user in the store
-    authStore.user = updatedUser
-    
-    // Update localStorage to persist the changes
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    
-    // Show success message
-    window.$toast?.success('Profile updated successfully!')
-    
-    closeModal()
+    if (res?.success) {
+      window.$toast?.success('Profile updated successfully!')
+      closeModal()
+    } else {
+      window.$toast?.error(res?.message || 'Failed to update profile. Please try again.')
+    }
   } catch (error) {
     console.error('Error updating profile:', error)
     window.$toast?.error('Failed to update profile. Please try again.')
