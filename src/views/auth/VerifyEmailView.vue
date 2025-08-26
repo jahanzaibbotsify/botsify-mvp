@@ -2,11 +2,16 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
-import { axiosInstance } from '@/utils/axiosInstance'
+import { authApi } from '@/services/authApi'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+
+// Clear any existing errors when component mounts
+onMounted(() => {
+  authStore.clearError()
+})
 
 /**
  * Get email from route params or query
@@ -56,42 +61,42 @@ const verifyEmailWithToken = async (token: string) => {
   isVerifying.value = true
   verificationError.value = null
 
-  try {
-    const response = await axiosInstance.get(`/verify-email/${token}`)
+      try {
+      const response = await authApi.verifyEmail({ token })
 
-    if (response.data && response.data.status === 'success') {
-      verificationSuccess.value = true
-      localStorage.removeItem(`emailVerificationVisited:${email.value}`);
-      
-      // Update user verification status in store and localStorage
-      if (authStore.user) {
-        authStore.user = {
-          ...authStore.user,
-          email_verified: 1
-        };
-        localStorage.setItem('user', JSON.stringify(authStore.user))
-      }
-
-      // Redirect authenticated users to next route, prevent infinite loops
-      if (authStore.isAuthenticated) {
-        const redirectPath = authStore.getPostAuthRedirect()
-        const currentPath = router.currentRoute.value.path
-        // Only redirect if next route is different from current route and not a verify-email route
-        if (
-          redirectPath !== currentPath &&
-          !redirectPath.includes('verify-email')
-        ) {
-          router.replace(redirectPath)
+            if (response.success) {
+        verificationSuccess.value = true
+        localStorage.removeItem(`emailVerificationVisited:${email.value}`);
+        
+        // Update user verification status in store and localStorage
+        if (authStore.user) {
+          authStore.user = {
+            ...authStore.user,
+            email_verified: 1
+          };
+          localStorage.setItem('user', JSON.stringify(authStore.user))
         }
+
+        // Redirect authenticated users to next route, prevent infinite loops
+        if (authStore.isAuthenticated) {
+          const redirectPath = authStore.getPostAuthRedirect()
+          const currentPath = router.currentRoute.value.path
+          // Only redirect if next route is different from current route and not a verify-email route
+          if (
+            redirectPath !== currentPath &&
+            !redirectPath.includes('verify-email')
+          ) {
+            router.replace(redirectPath)
+          }
+        }
+      } else {
+        verificationError.value = response.message || 'Invalid or expired verification link. Please request a new one.'
+        window.$toast?.error(response.message || 'Verification failed. Please try again.')
       }
-    } else {
-      verificationError.value = response.data?.message || 'Invalid or expired verification link. Please request a new one.'
+      } catch (error: any) {
+      verificationError.value = 'Verification failed. Please try again.'
       window.$toast?.error('Verification failed. Please try again.')
-    }
-  } catch (error: any) {
-    verificationError.value = error?.response?.data?.message || 'Verification failed. Please try again.'
-    window.$toast?.error('Verification failed. Please try again.')
-  } finally {
+    } finally {
     isVerifying.value = false
   }
 }
@@ -110,24 +115,22 @@ const sendVerificationEmail = async () => {
   isResending.value = true
   verificationError.value = null
 
-  try {
-    const response = await axiosInstance.post('/send-verification-email', {
-      email: email.value
-    })
+      try {
+      const response = await authApi.sendVerificationEmail({ email: email.value })
 
-    if (response.data?.status === 'success') {
-      startResendCooldown()
-      localStorage.setItem(`emailVerificationVisited:${email.value}`, 'true')
-    } else {
-      const errorMessage = response.data?.message || 'Failed to send verification email. Please try again.'
+            if (response.success) {
+        startResendCooldown()
+        localStorage.setItem(`emailVerificationVisited:${email.value}`, 'true')
+      } else {
+        const errorMessage = response.message || 'Failed to send verification email. Please try again.'
+        verificationError.value = errorMessage
+        window.$toast?.error(errorMessage)
+      }
+      } catch (error: any) {
+      const errorMessage = 'Failed to send verification email. Please try again.'
       verificationError.value = errorMessage
       window.$toast?.error(errorMessage)
-    }
-  } catch (error: any) {
-    const errorMessage = error?.response?.data?.message || 'Failed to send verification email. Please try again.'
-    verificationError.value = errorMessage
-    window.$toast?.error(errorMessage)
-  } finally {
+    } finally {
     isResending.value = false
   }
 }

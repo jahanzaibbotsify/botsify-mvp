@@ -80,7 +80,6 @@ export async function getBotData() {
     
     // Initialize MCP store with new agent data
     const mcpStore = useMCPStore();
-    await mcpStore.setIntialize();
     mcpStore.connectedMCPs = data.mcp_count;
     
     

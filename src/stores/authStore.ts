@@ -6,7 +6,6 @@ import type {
   PricingPlan,
   AgentCategory
 } from '@/types/auth'
-import {axiosInstance} from "@/utils/axiosInstance.ts";
 import { authApi } from '@/services/authApi'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -37,15 +36,15 @@ export const useAuthStore = defineStore('auth', () => {
         '2 AI Agents',
         '5,000 Users',
         '$10/1,000 additional users',
+        'Integrate MCP 🔥',
         'Integrate Documents & Web Search',
         'Messenger, SMS, Website, Instagram, Telegram, WhatsApp',
+        '1-Agent development free worth $100/Month 🔥',
         'Basic Support'
       ],
       excludedFeatures: [
-        'Integrate MCP 🔥',
         'Scheduled Agents 🔥',
         'WhatsApp platform support',
-        '1-Agent development free worth $100/Month 🔥',
         'Whitelabel Dashboard & Reselling Rights 🔥',
         'Access to all Botsify Resources',
         'Personal Onboarding Session',
@@ -467,22 +466,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const resetPassword = async (email: string) => {
-    setLoading(true)
-    clearError();
 
-    return axiosInstance.post('forgot-password', {
-      email: email
-    }).then(res => {
-      return res.data;
-    }).catch(error => {
-      console.log(error)
-      setError(error.response.data.message || 'Password reset failed')
-      return error.response;
-    }).finally(() => {
-      setLoading(false);
-    });
-  }
 
   return {
     // State
@@ -507,7 +491,6 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     signup,
     logout,
-    resetPassword,
     getPostAuthRedirect,
     updateAccount,
     setAuthData

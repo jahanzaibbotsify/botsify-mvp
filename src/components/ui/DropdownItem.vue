@@ -44,7 +44,17 @@ const emit = defineEmits<{
 
 const handleClick = (event: MouseEvent) => {
   if (props.disabled) return
+  
+  // Emit the click event first
   emit('click', event)
+  
+  // Automatically close the parent dropdown
+  // Find the closest parent dropdown and close it
+  const parentDropdown = (event.target as Element).closest('.dropdown-container')
+  if (parentDropdown) {
+    // Trigger a custom event that the Dropdown component can listen to
+    parentDropdown.dispatchEvent(new CustomEvent('close-dropdown'))
+  }
 }
 </script>
 

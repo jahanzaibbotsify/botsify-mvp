@@ -20,7 +20,7 @@
   </div>
 
   <!-- Portal Dropdown Content -->
-  <Teleport v-if="usePortal && isOpen" to="body">
+  <Teleport v-if="usePortal && isOpen" :to="portalTarget">
     <Transition name="dropdown">
       <div v-if="isOpen" class="dropdown-content dropdown-content--portal" :class="[`dropdown-content--${position}`, contentClass]" :style="portalStyles">
         <!-- Dropdown Arrow -->
@@ -97,11 +97,11 @@ const portalStyles = computed(() => {
   
   const rect = triggerRef.value.getBoundingClientRect()
   const styles: Record<string, string> = {
-    position: 'fixed',
+    position: 'absolute',
     zIndex: 'var(--z-dropdown)'
   }
   
-  // Calculate position based on dropdown position prop
+  // Calculate position based on dropdown position prop, accounting for scroll
   switch (props.position) {
     case 'bottom-left':
       styles.top = `${rect.bottom}px`
@@ -112,16 +112,39 @@ const portalStyles = computed(() => {
       styles.left = `${rect.right - 200}px` // Adjust based on dropdown width
       break
     case 'top-left':
-      styles.bottom = `${window.innerHeight - rect.top + 8}px`
+      styles.top = `${rect.top - 8}px`
       styles.left = `${rect.left}px`
+      styles.transform = 'translateY(-100%)'
       break
     case 'top-right':
-      styles.bottom = `${window.innerHeight - rect.top + 8}px`
+      styles.top = `${rect.top - 8}px`
       styles.left = `${rect.right - 200}px` // Adjust based on dropdown width
+      styles.transform = 'translateY(-100%)'
       break
   }
   
   return styles
+})
+
+// Find the best portal target - prefer scrollable containers over body
+const portalTarget = computed(() => {
+  if (!dropdownRef.value) return 'body'
+  
+  // Try to find a scrollable parent container
+  let parent = dropdownRef.value.parentElement
+  while (parent && parent !== document.body) {
+    const style = window.getComputedStyle(parent)
+    const overflow = style.overflow + style.overflowX + style.overflowY
+    
+    if (overflow.includes('auto') || overflow.includes('scroll')) {
+      return parent
+    }
+    
+    parent = parent.parentElement
+  }
+  
+  // Fallback to body if no scrollable container found
+  return 'body'
 })
 
 const toggleDropdown = () => {
@@ -155,6 +178,20 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 }
 
+// Handle scroll events to update portal positioning
+const handleScroll = () => {
+  // Force reactivity update for portal positioning
+  if (props.usePortal && isOpen.value) {
+    // Trigger a reactive update by accessing the computed property
+    portalStyles.value
+  }
+}
+
+// Handle custom close event from dropdown items
+const handleCloseEvent = () => {
+  closeDropdown()
+}
+
 // Expose methods for parent components
 defineExpose({
   open: openDropdown,
@@ -171,11 +208,33 @@ onMounted(() => {
   if (props.closeOnEscape) {
     document.addEventListener('keydown', handleKeydown)
   }
+  
+  // Add scroll listener for portal positioning
+  if (props.usePortal) {
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    window.addEventListener('resize', handleScroll, { passive: true })
+  }
+  
+  // Add listener for custom close event from dropdown items
+  if (dropdownRef.value) {
+    dropdownRef.value.addEventListener('close-dropdown', handleCloseEvent)
+  }
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
   document.removeEventListener('keydown', handleKeydown)
+  
+  // Remove scroll listener
+  if (props.usePortal) {
+    window.removeEventListener('scroll', handleScroll)
+    window.removeEventListener('resize', handleScroll)
+  }
+  
+  // Remove custom close event listener
+  if (dropdownRef.value) {
+    dropdownRef.value.removeEventListener('close-dropdown', handleCloseEvent)
+  }
 })
 </script>
 
@@ -267,7 +326,7 @@ onUnmounted(() => {
 
 /* Portal dropdown styles */
 .dropdown-content--portal {
-  position: fixed;
+  position: absolute;
   z-index: var(--z-dropdown);
 }
 

@@ -255,12 +255,12 @@ const deleteAgent = (agent: any) => {
  */
 const copyPayload = async (agent: any) => {
   try {
-    await navigator.clipboard.writeText(agent.id.toString())
+    await navigator.clipboard.writeText(agent.apikey)
     window.$toast?.success('Payload copied to clipboard!')
   } catch (error) {
     try {
       const textArea = document.createElement('textarea')
-      textArea.value = agent.id.toString()
+      textArea.value = agent.apikey
       document.body.appendChild(textArea)
       textArea.select()
       document.execCommand('copy')
@@ -623,7 +623,7 @@ onUnmounted(() => {
             <div class="agent-selection-card-content">
               <!-- Agent Menu (Top Right Corner) -->
               <div class="agent-menu" v-if="activeTab === 'my-agents'">
-                                 <Dropdown position="bottom-left" :use-portal="true">
+                                 <Dropdown position="bottom-right">
                   <template #trigger>
                     <button class="menu-trigger">
                       <i class="pi pi-ellipsis-v"></i>
@@ -1212,7 +1212,7 @@ onUnmounted(() => {
   background: white !important;
   border: 1px solid var(--color-border) !important;
   border-radius: var(--radius-lg) !important;
-  overflow: hidden !important;
+  overflow: visible !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
   position: relative !important;
   animation: slideUp 0.3s ease-out !important;
