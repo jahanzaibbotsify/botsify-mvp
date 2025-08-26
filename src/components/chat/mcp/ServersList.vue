@@ -1,13 +1,40 @@
 <script setup lang="ts">
 import {useMCPStore} from "@/stores/mcpStore.ts";
 import {botsifyApi} from "@/services/botsifyApi.ts";
-import {computed, onMounted} from "vue";
+import {computed, onMounted, ref, watch} from "vue";
 
 const emit = defineEmits(['selectServer', 'addNewServer']);
 
 const mcpStore = useMCPStore();
+// Tabs: All, Connected
+const activeTab = ref<'all' | 'connected'>('all');
+
+const allServers = computed(() => mcpStore.servers);
+
+// Build one card per actual connection so duplicates are visible
+const connectedCards = computed(() => {
+  const baseServers = mcpStore.servers;
+  return (mcpStore.connectedServers as any[]).map((conn: any) => {
+    const label = conn?.setting?.server_label;
+    const name = conn?.setting?.server_name;
+    const isCustom = !!conn?.setting?.is_custom;
+    const base = baseServers.find((s: any) => s.id === label);
+    return {
+      id: name || label,
+      name: isCustom ? (conn?.setting?.server_label || 'Custom') : (name || base?.name || label),
+      description: conn?.setting?.server_description || base?.description || '',
+      icon: isCustom ? 'custom.svg' : (`${name?.toLowerCase()?.replaceAll(' ', '-')}.svg` || base?.icon || ''),
+      isCustom,
+      server_url: conn?.setting?.server_url || base?.server_url,
+      server_label: label,
+      connectionId: conn?.id,
+      comingSoon: false,
+    } as any;
+  });
+});
+
 const mcpServers = computed(() => {
-  return mcpStore.servers;
+  return activeTab.value === 'connected' ? connectedCards.value : allServers.value;
 });
 
 /**
@@ -28,34 +55,77 @@ const disconnectMCP = async (server: any) => {
 onMounted(async () => {
   await mcpStore.setIntialize();
 });
+
+const iconSrcMap = ref<Record<string, string>>({});
+
+const preloadIcon = (config: any) => {
+  if (!config || config.isCustom) return;
+  const id = config.id || config.name;
+  if (!id || iconSrcMap.value[id] !== undefined) return;
+  const url = `/mcp/${config.icon}`;
+  const img = new Image();
+  img.onload = () => {
+    iconSrcMap.value = { ...iconSrcMap.value, [id]: url };
+  };
+  img.onerror = () => {
+    iconSrcMap.value = { ...iconSrcMap.value, [id]: '' };
+  };
+  img.src = url;
+};
+
+watch(mcpServers, (list) => {
+  (list || []).forEach(preloadIcon);
+}, { immediate: true, deep: true });
 </script>
 <template>
   <section>
+    <!-- Tabs + Action -->
+    <div class="tabs-row">
+      <div class="tabs">
+        <button
+          class="tab"
+          :class="{ active: activeTab === 'all' }"
+          @click="activeTab = 'all'"
+        >All</button>
+        <button
+          class="tab"
+          :class="{ active: activeTab === 'connected' }"
+          @click="activeTab = 'connected'"
+        >Connected</button>
+      </div>
+      <div class="actions">
+        <button class="primary" @click.stop="$emit('addNewServer')">+ Server</button>
+      </div>
+    </div>
+
     <div class="description">
       <p>
         Connect to MCP (Model Context Protocol) servers to extend your AI's capabilities with external tools and
         data sources.
       </p>
     </div>
-    <div class="server-grid">
-      <!-- Add new card -->
-      <div class="server-card add-new-card" @click.stop="$emit('addNewServer')">
-        <div class="server-icon add-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-        </div>
-        <div class="text-sm text-emphasis add-label">Add new</div>
+    <!-- Empty state for Connected tab -->
+    <div v-if="activeTab === 'connected' && mcpServers.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="8" y1="15" x2="16" y2="15"></line>
+          <line x1="9" y1="9" x2="9.01" y2="9"></line>
+          <line x1="15" y1="9" x2="15.01" y2="9"></line>
+        </svg>
       </div>
+      <div class="empty-title">No connected servers</div>
+      <div class="empty-subtitle">Connect an MCP server to start using external tools.</div>
+    </div>
+
+    <div v-else class="server-grid">
       <!-- Server cards -->
       <div
           v-for="config in mcpServers"
           :key="config.id"
           class="server-card"
-          :class="{connected: !!config.connectionId, 'coming-soon': config.comingSoon}"
-          @click="config.comingSoon ? null : $emit('selectServer', config)"
+          :class="{ connected: activeTab === 'connected' && !!config.connectionId, 'coming-soon': config.comingSoon }"
+          @click="config.comingSoon ? null : $emit('selectServer', { server: config, isEdit: activeTab === 'connected' })"
       >
         <!-- Blur overlay for coming soon cards -->
         <div v-if="config.comingSoon" class="coming-soon-overlay">
@@ -70,7 +140,13 @@ onMounted(async () => {
         </div>
         
         <div class="server-icon">
-          <img v-if="!config.isCustom" :src="`/mcp/${config.icon}`" :alt="config.name" width="32" height="32"/>
+          <img
+            v-if="!config.isCustom && iconSrcMap[config.id || config.name]"
+            :src="iconSrcMap[config.id || config.name]"
+            :alt="config.name"
+            width="32"
+            height="32"
+          />
           <svg
               v-else
               class="server-icon"
@@ -95,24 +171,16 @@ onMounted(async () => {
         <div class="text-sm text-emphasis">
           <div>{{ config.name }}</div>
         </div>
+        <div class="server_label" v-if="activeTab === 'connected'">{{ config.server_label }}</div>
 
-        <!-- Connected Badge -->
-        <div v-if="!!config.connectionId" class="connected-badge">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 6L9 17l-5-5"/>
-          </svg>
-          <span>Connected</span>
-        </div>
-
-        <div v-if="config.connectionId" class="server-actions">
-<!--          <button class="edit-button" title="Edit Server">-->
-<!--            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"-->
-<!--                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">-->
-<!--              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>-->
-<!--              <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>-->
-<!--            </svg>-->
-<!--          </button>-->
+        <div v-if="activeTab === 'connected' && config.connectionId" class="server-actions">
+          <button class="edit-button" title="Edit server" @click.stop="$emit('selectServer', { server: config, isEdit: true })">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
           <button @click.stop="disconnectMCP(config)" class="delete-button" title="Delete Server">
             <i class="pi pi-trash"></i>
           </button>
@@ -123,9 +191,77 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.server-card.add-new-card {
-  border: 1.5px dashed var(--color-primary);
+/* Tabs Row */
+.tabs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-1) var(--space-3) var(--space-1);
+}
+
+.tabs {
+  display: inline-flex;
+  gap: var(--space-2);
+  background-color: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: 4px;
+}
+
+.tab {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-secondary);
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.tab.active {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+}
+
+.server_label {
+  font-size: 14px ;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: var(--space-6) var(--space-4);
+  color: var(--color-text-secondary);
+}
+
+.empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto var(--space-3);
   background: var(--color-bg-tertiary);
+  border-radius: var(--radius-full);
+}
+
+.empty-title {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.empty-subtitle {
+  font-size: 0.875rem;
+  margin-bottom: var(--space-3);
 }
 
 .server-card.connected {
@@ -160,21 +296,7 @@ onMounted(async () => {
   color: var(--color-primary);
 }
 
-.connected-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: var(--color-success);
-  color: white;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  font-size: 0.7rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  box-shadow: var(--shadow-sm);
-}
+/* Connected badge styles removed per requirements */
 
 .coming-soon-overlay {
   position: absolute;

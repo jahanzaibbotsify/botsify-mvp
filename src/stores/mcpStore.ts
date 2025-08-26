@@ -112,7 +112,7 @@ export const useMCPStore = defineStore('mcp', () => {
       comingSoon: true,
     },
     {
-      id: 'calendar',
+      id: 'google-calendar',
       name: 'Google Calendar',
       description: 'Manage calendar events and schedules',
       icon: 'google-calendar.svg',
@@ -127,7 +127,7 @@ export const useMCPStore = defineStore('mcp', () => {
       id: 'gmail',
       name: 'Gmail',
       description: 'Send and receive emails with Gmail integration',
-      icon: 'google-gmail.svg',
+      icon: 'gmail.svg',
       apiKeyRequired: true,
       isPopular: true,
       authMethod: 'oauth',
