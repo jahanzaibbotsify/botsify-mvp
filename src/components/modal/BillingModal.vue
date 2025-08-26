@@ -593,16 +593,8 @@ const { isConfigured, isInitialized } = storeToRefs(whitelabelStore)
       }
     }
     
-    // Fetch packages if we're configured and don't have packages yet
-    if (isConfigured.value && (!whitelabelStore.packages || whitelabelStore.packages.length === 0)) {
-      try {
-        console.log('Fetching whitelabel packages...')
-        await whitelabelStore.fetchPackages()
-        console.log('Packages fetched:', whitelabelStore.packages)
-      } catch (error) {
-        console.error('Failed to fetch whitelabel packages:', error)
-      }
-    }
+    // Note: Packages are only fetched on the pricing page, not here
+    // as they're not needed for billing information
   })
 
   // Expose methods to parent component

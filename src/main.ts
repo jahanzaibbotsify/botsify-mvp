@@ -34,20 +34,8 @@ const initializeWhitelabel = async () => {
     if (configResponse.data && whitelabelService.isConfigured()) {
       whitelabelService.applyConfiguration()
       
-      // Also fetch packages if whitelabel is configured
-      // Get user ID from localStorage if available
-      const userStr = localStorage.getItem('user')
-      if (userStr) {
-        try {
-          const user = JSON.parse(userStr)
-          const userId = user.id || user.user_id
-          if (userId) {
-            await whitelabelService.fetchPackages(userId)
-          }
-        } catch (e) {
-          console.warn('Failed to parse user from localStorage:', e)
-        }
-      }
+      // Note: Packages are only fetched when needed (e.g., on pricing page)
+      // No need to fetch them during app initialization
     } else if (!configResponse.data && !configResponse.error) {
       // No data and no error - likely skipped due to APP_URL
       console.log('Whitelabel initialization skipped - running on APP_URL')

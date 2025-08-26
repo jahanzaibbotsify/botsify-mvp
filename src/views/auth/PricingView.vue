@@ -150,11 +150,13 @@ const brandPanelStyle = computed(() => ({
 }))
 
 // Initialize whitelabel packages if needed
+// NOTE: This is the ONLY place where whitelabel packages should be fetched
+// Packages are not needed on other pages and should not be fetched there
 onMounted(async () => {
   console.log('PricingView mounted - isConfigured:', isConfigured.value, 'hasPackages:', hasPackages.value)
   
-  // Always attempt to fetch packages for logged-in users if not already available
-  if (!hasPackages.value) {
+  // Only fetch packages if whitelabel is configured and we don't already have packages
+  if (isConfigured.value && !hasPackages.value) {
     const userId = authStore.user?.id || authStore.user?.user_id
     console.log('Fetching packages for userId:', userId)
     if (userId) {
@@ -164,6 +166,8 @@ onMounted(async () => {
         console.error('Failed to fetch packages:', error)
       }
     }
+  } else {
+    console.log('Skipping packages fetch - not configured or already have packages')
   }
 })
 </script>

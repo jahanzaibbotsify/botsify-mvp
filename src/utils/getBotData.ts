@@ -49,7 +49,7 @@ export async function getBotData() {
     const data = response.data.data;
 
     const roleStore = useRoleStore();
-    const { initialize } = useWhitelabelStore();
+    const { enablePartnerPortal } = useWhitelabelStore();
     const botStore = useBotStore();
     const conversationStore = useConversationStore();
     
@@ -58,20 +58,8 @@ export async function getBotData() {
       roleStore.setCurrentUser(data.user);
 
       // Whitelabel - initialize if user has whitelabel data
-      if (data.user.is_whitelabel || data.user.is_whitelabel_client) {
-        // Initialize whitelabel configuration
-        await initialize();
-        
-        // Handle favicon if available
-        if (data.user.whitelabel?.favicon) {
-          let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-          if (!link) {
-            link = document.createElement('link');
-            link.rel = 'icon';
-            document.head.appendChild(link);
-          }
-          link.href = data.user.whitelabel.favicon;
-        }
+      if (data.user.is_whitelabel) {
+        enablePartnerPortal(data.user.is_whitelabel);
       }
     }
 
