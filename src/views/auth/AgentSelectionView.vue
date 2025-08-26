@@ -289,9 +289,7 @@ const createAgent = () => {
  */
 const closeAgentModal = () => {
   // Reset local state
-  editingAgent.value = null
-  agentNameValue.value = ''
-  modalMode.value = 'edit'
+  agentModalRef.value?.closeModal()
 }
 
 /**
