@@ -566,6 +566,13 @@ code {
   color: var(--color-text-secondary, #6b7280);
 }
 
+.sidebar-button {
+  border-radius: var(--radius-full) !important;
+  box-shadow: var(--shadow-sm);
+  width: 100%;
+  min-height: 35px !important;
+}
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }

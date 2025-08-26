@@ -17,7 +17,7 @@ export const formatDate = (timestamp: string | Date) => {
 };
 
 export const formatDateTime = (timestamp: string | Date) => {
-  return moment.utc(timestamp).format('MMM DD YYYY HH:mm:ss'); // e.g. "2025-08-13 12:00:00"
+  return moment(timestamp).format("MMM DD YYYY HH:mm:ss"); // e.g. "2025-08-13 17:00:00"
 };
 
 export const getPlatformClass = (platform: string = '') => {

@@ -7,6 +7,10 @@ export { default as Textarea } from './Textarea.vue'
 export { default as Badge } from './Badge.vue'
 export { default as FileUpload } from './FileUpload.vue'
 
+// Dropdown Components
+export { default as Dropdown } from './Dropdown.vue'
+export { default as DropdownItem } from './DropdownItem.vue'
+
 // Table Components
 export { default as Table } from './Table.vue'
 export { default as TableHead } from './TableHead.vue'
@@ -28,3 +32,4 @@ export type { default as InputProps } from './Input.vue'
 export type { default as VueSelectProps } from './VueSelect.vue'
 export type { default as DateRangeProps } from './DateRange.vue'
 export type { default as TextareaProps } from './Textarea.vue' 
+export { default as ManageBilling } from './ManageBilling.vue'

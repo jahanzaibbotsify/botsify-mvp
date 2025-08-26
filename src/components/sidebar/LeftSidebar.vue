@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useRoleStore } from '@/stores/roleStore';
@@ -7,13 +7,11 @@ import { storeToRefs } from 'pinia'
 import { useWhitelabelStore } from '@/stores/whitelabelStore'
 import BookMeetingModal from '@/components/modal/BookMeetingModal.vue';
 import CalendlyModal from '@/components/modal/CalendlyModal.vue';
-import { botsifyApi } from '@/services/botsifyApi'
-import BillingModal from '@/components/modal/BillingModal.vue';
 import { getWebUrl } from '@/utils';
 import type { BillingData } from '@/types';
 import { showZen } from '@/utils/zendesk';
 import { useBotStore } from '@/stores/botStore';
-
+import { Button, ManageBilling, Dropdown, DropdownItem } from '../ui';
 
 const sidebarStore = useSidebarStore();
 const botStore = useBotStore();
@@ -34,15 +32,9 @@ const selectedNavigationButton = computed(() => {
 
   return match?.name || null;
 });
-// const isMobile = computed(() => width.value < 768);
-const showDropdown = ref(false);
+
 const bookMeetingModalRef = ref<InstanceType<typeof BookMeetingModal> | null>(null)
 const calendlyModalRef = ref<InstanceType<typeof CalendlyModal> | null>(null)
-const billingModalRef = ref<InstanceType<typeof BillingModal> | null>(null)
-
-// Close dropdown when clicking outside
-const dropdownRef = ref<HTMLElement | null>(null);
-
 
 const navigationButtons = computed(() => {
   const buttons = [
@@ -81,11 +73,6 @@ const navigationButtons = computed(() => {
     // Check if user has permission
     const hasPermission = roleStore.hasPermission(button.permission);
     
-    // If button requires subscription, check if user has subscription
-    // if (button.requiresSubscription) {
-    //   return hasPermission && roleStore.hasSubscription;
-    // }
-    
     // If button doesn't require subscription, only check permission
     return hasPermission;
   });
@@ -105,7 +92,6 @@ const navLinks = computed(() => {
       }
     ];
   }
-
   // For regular Botsify clients, show all links
   return [
     {
@@ -138,32 +124,7 @@ const navLinks = computed(() => {
   ];
 });
 
-// const createNewChat = () => {
-//   const newChat = chatStore.createNewChat();
-//   router.push(`/chat/${newChat.id}`);
-// };
-
-// const navigateToChat = (chatId: string) => {
-//   router.push(`/agent/${chatId}`);
-//   if (isMobile.value) {
-//     sidebarStore.isOpen r= false;
-//   }
-// };
-
 const navigateToPage = (pageId: string) => {
-  // Check subscription requirements for specific pages
-  // if (pageId === 'users' && !roleStore.hasSubscription) {
-  //   console.log('🔒 Users page requires subscription');
-  //   window.$toast?.error('Users page requires an active subscription');
-  //   return;
-  // }
-  
-  // if (pageId === 'conversation' && !roleStore.hasSubscription) {
-  //   console.log('🔒 Conversation page requires subscription');
-  //   window.$toast?.error('Conversation page requires an active subscription');
-  //   return;
-  // }
-  
   // Role-based navigation logic
   if (roleStore.isLiveChatAgent) {
     // Live chat agents can only access conversation page
@@ -176,72 +137,26 @@ const navigateToPage = (pageId: string) => {
   router.push(`/${pageId}`);
 }
 
-const toggleDropdown = () => {
-  showDropdown.value = !showDropdown.value;
-};
-
-const closeDropdown = () => {
-  showDropdown.value = false;
-};
-
 // Function to open the BookMeeting modal
 const openBookMeetingModal = () => {
   bookMeetingModalRef.value?.openModal()
-  closeDropdown();
 };
 
 const handleCalendly = () => {
   if (calendlyModalRef.value) {
     calendlyModalRef.value.openModal()
-    closeDropdown();
-  }
-}
-
-const closeBillingModal = () => {
-  billingModalRef.value?.closeModal()
-  billingData.value = null
-}
-
-const billingLoading = ref(false)
-const billingData = ref<BillingData | null>(null)
-
-const handleManageBilling = async () => {
-  billingLoading.value = true
-  try {
-    const res = await botsifyApi.manageBilling()
-    
-    if (res && res.charges && res.stripe_subscription) {
-      // Store the billing data and show modal
-      billingData.value = res
-      billingModalRef.value?.openModal()
-    } else if(res && res.url) {
-      window.open(res.url, '_blank')
-    } else {
-      // If no billing data, open the billing modal with empty data
-      billingData.value = null
-      billingModalRef.value?.openModal()
-    }
-  } catch (e) {
-    console.error('Error fetching billing portal:', e)
-    // If API call fails, open the billing modal with empty data
-    billingData.value = null
-    billingModalRef.value?.openModal()
-  } finally {
-    billingLoading.value = false
   }
 }
 
 // Open external link
 const openExternalLink = (url: string) => {
   window.open(url, '_blank');
-  closeDropdown();
 };
 
 // Handle item click
 const handleItemClick = (item: any) => {
   if (item.action === 'showZen') {
     showZen();
-    closeDropdown();
   } else if (item.action === 'bookMeeting') {
     openBookMeetingModal();
   } else if (item.url) {
@@ -249,29 +164,10 @@ const handleItemClick = (item: any) => {
   }
 };
 
-const handleClickOutside = (event: MouseEvent) => {
-  const target = event.target as Node;
-    
-  // Check if click is outside dropdown
-  const isOutsideDropdown = dropdownRef.value && 
-    !dropdownRef.value.contains(target);
-  
-  if (isOutsideDropdown) {
-    showDropdown.value = false;
-  }
-};
-
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside);
-});
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside);
-});
-
 const openPartnerPortal = () => {
-  // Partner portal functionality not available in current whitelabel setup
-  closeDropdown();
+  // if (whitelabelStore.isPortalEnabled && !whitelabelStore.isWhitelabelClient) {
+    window.open("https://app.botsify.com/partner", '_blank');
+  // }
 };
 </script>
 
@@ -297,25 +193,26 @@ const openPartnerPortal = () => {
 
         <div class="sidebar-actions">
           <!-- 3-dot menu button -->
-          <div class="dropdown-container">
-            <button ref="menuButtonRef" class="menu-button" @click.stop="toggleDropdown" title="Navigation Menu">
-              <i class="pi pi-ellipsis-v"></i>
-            </button>
+          <Dropdown position="bottom-left" class="nav-dropdown-container" :use-portal="true">
+            <template #trigger>
+              <button class="menu-button" title="Navigation Menu">
+                <i class="pi pi-ellipsis-v"></i>
+              </button>
+            </template>
 
-            <!-- Navigation dropdown -->
-            <Transition>
-              <div ref="dropdownRef" v-if="showDropdown" class="nav-dropdown">
-                <div class="dropdown-arrow"></div>
-                <div v-for="item in navLinks" :key="item.name" class="nav-item"
-                  @click="handleItemClick(item)">
-                  <div class="nav-item-icon">
-                    <i :class="item.icon"></i>
-                  </div>
-                  <span>{{ item.name }}</span>
-                </div>
-              </div>
-            </Transition>
-          </div>
+            <template #content>
+              <DropdownItem 
+                v-for="item in navLinks" 
+                :key="item.name" 
+                @click="handleItemClick(item)"
+              >
+                <template #icon>
+                  <i :class="item.icon"></i>
+                </template>
+                <span>{{ item.name }}</span>
+              </DropdownItem>
+            </template>
+          </Dropdown>
         </div>
       </div>
     </div>
@@ -333,130 +230,43 @@ const openPartnerPortal = () => {
           </div>
         </template>
       </div>
-      <!-- <div class="help-container">
-        <button class="navigation-button help-button">
-          <span>
-            <i class="pi pi-question-circle" style="font-size: 1.5em;"></i>
-          </span>
-          <span>Help</span>
-        </button>
-      </div> -->
     </div>
 
     <div v-if="roleStore.canManageBillingWithSubscription" class="sidebar-pricing">
         <!-- Partner Portal Button for Whitelabel Users -->
-        <button 
+        <Button 
           v-if="isPortalEnabled" 
-          class="partner-portal-button" 
+          class="sidebar-button" 
           @click="openPartnerPortal"
+          variant="success"
+          icon="pi pi-external-link"
+          iconPosition="right"
         >
-          <div class="button-content">
-            <span class="pricing-text">Partner Portal</span>
-            <i class="pi pi-external-link"></i>
-          </div>
-        </button>
+          Partner Portal
+        </Button>
 
-        <button v-else class="pricing-button" @click="handleManageBilling" :disabled="billingLoading">
-          <div class="button-content">
-            <span class="pricing-text">
-              <template v-if="billingLoading">Processing...</template>
-              <template v-else>Manage Billing</template>
-            </span>
-            <i class="pi pi-external-link"></i>
-          </div>
-        </button>
+        <ManageBilling v-else customClass="sidebar-button" iconPosition="right" />
     </div>
     <div v-else-if="roleStore.isLiveChatAgent" class="sidebar-pricing">
-        <button class="pricing-button" @click="navigateToPage('select-agent')">
-          <div class="button-content">
-            <span class="pricing-text">Manage Agents</span>
-          </div>
-        </button>
+        <Button class="sidebar-button" @click="navigateToPage('select-agent')" icon="pi pi-cog" iconPosition="right">
+          Manage Agents
+        </Button>
     </div>
     <div v-else class="sidebar-pricing">
-        <button class="pricing-button" @click="handleCalendly">
-          <div class="button-content">
-            <span class="pricing-text">Book Demo</span>
-          </div>
-        </button>
+        <Button class="sidebar-button" @click="handleCalendly" icon="pi pi-calendar" iconPosition="right">
+          Book Demo
+        </Button>
     </div>
     <BookMeetingModal ref="bookMeetingModalRef"></BookMeetingModal>
     <CalendlyModal ref="calendlyModalRef"></CalendlyModal>
-    <BillingModal 
-      ref="billingModalRef" 
-      :billing-data="billingData"
-      @close="closeBillingModal"
-    ></BillingModal>
   </aside>
 </template>
-
-
 
 <style scoped>
 .sidebar-pricing {
   padding: var(--space-4);
   border-top: 1px solid var(--color-border);
   background-color: var(--color-bg-secondary);
-}
-
-.pricing-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-2) var(--space-4);
-  background-color: var(--color-primary);
-  color: white;
-  border-radius: var(--radius-full);
-  font-weight: 500;
-  font-size: 0.875rem;
-  transition: all var(--transition-normal);
-  box-shadow: var(--shadow-sm);
-  width: 100%;
-}
-
-.button-content {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  justify-content: center;
-}
-
-.pricing-button:hover {
-  background-color: var(--color-primary-hover);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-}
-
-.partner-portal-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-2) var(--space-4);
-  background-color: var(--color-secondary);
-  color: white;
-  border-radius: var(--radius-full);
-  font-weight: 500;
-  font-size: 0.875rem;
-  transition: all var(--transition-normal);
-  box-shadow: var(--shadow-sm);
-  width: 100%;
-  margin-top: var(--space-2);
-  border: none;
-  cursor: pointer;
-}
-
-.partner-portal-button:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-}
-
-.partner-portal-button .pi {
-  font-size: 0.875rem;
-}
-
-.pricing-star {
-  font-size: 1rem;
-  color: #FFD700;
 }
 
 .left-sidebar {
@@ -467,7 +277,7 @@ const openPartnerPortal = () => {
   border-right: 1px solid rgba(0, 163, 255, 0.1);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  /* overflow-y: auto; */
   position: relative;
   box-shadow: 4px 0 10px rgba(0, 163, 255, 0.05);
   background-image:
@@ -533,27 +343,6 @@ const openPartnerPortal = () => {
   gap: var(--space-2);
 }
 
-.new-chat-button {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  font-size: 0.875rem;
-  white-space: nowrap;
-  min-width: fit-content;
-  background-color: transparent;
-  color: var(--color-text-primary);
-  border-radius: 8px;
-  border: 1px solid var(--color-border);
-  cursor: pointer;
-  transition: all var(--transition-normal);
-}
-
-.new-chat-button:hover {
-  background-color: var(--color-bg-hover);
-  border-color: var(--color-border);
-}
-
 .navigation-container {
   display: flex;
   flex-direction: column;
@@ -572,8 +361,6 @@ const openPartnerPortal = () => {
   min-width: fit-content;
   background-color: transparent;
   color: var(--color-text-primary);
-  /* border-radius: 8px;
-  border: 1px solid var(--color-border); */
   cursor: pointer;
   transition: all var(--transition-normal);
   width: 100%;
@@ -588,25 +375,6 @@ const openPartnerPortal = () => {
   background-color: var(--color-bg-active);
   color: var(--color-text-primary);
   border-color: var(--color-border);
-}
-
-/* Help container and dropdown */
-.help-container {
-  position: relative;
-}
-
-.help-button {
-  position: relative;
-}
-/* Override for ChatGPT-style dark mode */
-[data-theme="dark"] .new-chat-button {
-  color: #e5e5e5;
-  border-color: #404040;
-}
-
-[data-theme="dark"] .new-chat-button:hover {
-  background-color: #2a2a2a;
-  border-color: #525252;
 }
 
 .menu-button {
@@ -639,169 +407,8 @@ const openPartnerPortal = () => {
   color: #e5e5e5;
 }
 
-.dropdown-container {
+.nav-dropdown-container {
   position: relative;
-}
-
-.nav-dropdown {
-  position: absolute;
-  top: calc(100% + 5px);
-  right: 0;
-  width: 200px;
-  background-color: var(--color-bg-primary);
-  border-radius: 8px;
-  box-shadow: var(--shadow-lg);
-  border: 1px solid var(--color-border);
-  z-index: var(--z-dropdown);
-  overflow: hidden;
-}
-
-/* Override for ChatGPT-style dark mode */
-[data-theme="dark"] .nav-dropdown {
-  background-color: #262626;
-  border-color: #404040;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.dropdown-arrow {
-  position: absolute;
-  top: -8px;
-  right: 14px;
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-bottom: 8px solid var(--color-bg-primary);
-  filter: drop-shadow(0 -2px 2px rgba(0, 0, 0, 0.1));
-}
-
-/* Override for ChatGPT-style dark mode */
-[data-theme="dark"] .dropdown-arrow {
-  border-bottom-color: #262626;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  cursor: pointer;
-  font-size: 14px;
-  color: var(--color-text-primary);
-  transition: all var(--transition-normal);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.nav-item:last-child {
-  border-bottom: none;
-}
-
-.nav-item:hover {
-  background-color: rgba(98, 0, 255, 0.05);
-  background-image: linear-gradient(to right, rgba(153, 0, 255, 0.08), transparent 80%);
-}
-
-.nav-item.active {
-  background-color: var(--color-bg-active);
-  color: var(--color-text-primary);
-}
-
-/* Override for ChatGPT-style dark mode */
-[data-theme="dark"] .nav-item {
-  color: #e5e5e5;
-  border-bottom-color: #404040;
-}
-
-[data-theme="dark"] .nav-item:hover {
-  background-color: #2a2a2a;
-}
-
-[data-theme="dark"] .nav-item.active {
-  background-color: #2a2a2a;
-  color: #ffffff;
-}
-
-.nav-item-icon {
-  color: var(--color-text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-}
-
-.nav-item.active .nav-item-icon {
-  color: var(--color-text-primary);
-}
-
-/* Override for ChatGPT-style dark mode */
-[data-theme="dark"] .nav-item-icon {
-  color: #a3a3a3;
-}
-
-[data-theme="dark"] .nav-item.active .nav-item-icon {
-  color: #ffffff;
-}
-
-/* .chat-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0 var(--space-2);
-  position: relative;
-} */
-
-.no-results {
-  padding: var(--space-4);
-  text-align: center;
-  color: var(--color-text-secondary);
-}
-
-/* Override for ChatGPT-style dark mode */
-[data-theme="dark"] .no-results {
-  color: #a3a3a3;
-}
-
-.sidebar-footer {
-  padding: var(--space-3);
-  border-top: 1px solid var(--color-border);
-  background-color: transparent;
-}
-
-/* Override for ChatGPT-style dark mode */
-[data-theme="dark"] .sidebar-footer {
-  border-top-color: #404040;
-}
-
-.settings-link {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  border-radius: 8px;
-  color: var(--color-text-secondary);
-  text-decoration: none;
-  transition: background-color var(--transition-normal), color var(--transition-normal);
-  margin-top: var(--space-3);
-}
-
-.settings-link:hover,
-.settings-link.active {
-  background-color: var(--color-bg-hover);
-  color: var(--color-text-primary);
-}
-
-/* Override for ChatGPT-style dark mode */
-[data-theme="dark"] .settings-link {
-  color: #a3a3a3;
-}
-
-[data-theme="dark"] .settings-link:hover,
-[data-theme="dark"] .settings-link.active {
-  background-color: #2a2a2a;
-  color: #e5e5e5;
-}
-
-.settings-link svg {
-  flex-shrink: 0;
 }
 
 /* Mobile styles */
@@ -822,22 +429,8 @@ const openPartnerPortal = () => {
     transform: translateX(0);
   }
 
-  .new-chat-button span {
-    display: none;
-  }
-
-  .new-chat-button {
-    padding: var(--space-2);
-    min-width: 36px;
-    min-height: 36px;
-  }
-
   .logo-icon {
     max-height: 34px;
-  }
-
-  .nav-dropdown {
-    width: 180px;
   }
 }
 </style>

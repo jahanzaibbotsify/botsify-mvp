@@ -6,13 +6,19 @@ import { storeToRefs } from 'pinia'
 import { useWhitelabelStore } from '@/stores/whitelabelStore'
 import type { PricingPlan } from '@/types/auth'
 import type { WhitelabelPackage } from '@/types/whitelabel'
-import { axiosInstance } from "@/utils/axiosInstance.ts"
+import { authApi } from '@/services/authApi'
+import { Badge, Button } from '@/components/ui';
 
 const authStore = useAuthStore()
 const router = useRouter()
 const whitelabelStore = useWhitelabelStore()
 const { isConfigured, packages: whitelabelPackages, hasPackages, shouldShowWhitelabelPlans, companyName, primaryColor, secondaryColor } = storeToRefs(whitelabelStore)
 const { getLogoUrl } = whitelabelStore
+
+// Clear any existing errors when component mounts
+onMounted(() => {
+  authStore.clearError()
+})
 
 const selectedPlanId = ref<string | null>(null)
 const billingCycle = ref<'monthly' | 'annually'>('annually')
@@ -96,17 +102,23 @@ const allPlans = computed(() => {
 const handlePlanSelect = async (plan: PricingPlan) => {
   selectedPlanId.value = plan.id;
   loading.value = true;
-  
+  const priceId = plan.prices ? plan.prices[billingCycle.value] : null
+
+  if (!priceId) {
+    loading.value = false
+    return
+  }
+
   try {
-    const priceId = plan.prices ? plan.prices[billingCycle.value] : null
-    if (priceId) {
-      const response = await axiosInstance.get(`v1/stripe/checkout-session/${priceId}`);
-      if (response.data.redirect) {
-        window.open(response.data.redirect);
-      }
+    const response = await authApi.getStripeCheckoutSession({ priceId })
+
+    if (response.success && response.data?.redirect) {
+      window.open(response.data.redirect)
+    } else {
+      window.$toast?.error(response.message || 'Failed to create checkout session')
     }
   } catch (error) {
-    console.error('Plan selection failed:', error)
+    window.$toast?.error('Failed to create checkout session')
   } finally {
     loading.value = false
   }
@@ -171,13 +183,9 @@ onMounted(async () => {
             >
           </div>
           <div class="header-right">
-            <button @click="handleLogout" class="logout-button" :disabled="isLoggingOut">
-              <span v-if="isLoggingOut" class="loading-spinner"></span>
-              <template v-else>
-                <i class="pi pi-sign-out"></i>
-                <span>Logout</span>
-              </template>
-            </button>
+            <Button @click="handleLogout" icon="pi pi-sign-out" class="logout-button" :disabled="isLoggingOut" :loading="isLoggingOut">
+                Logout
+            </Button>
           </div>
         </div>
       </div>
@@ -221,7 +229,7 @@ onMounted(async () => {
             :class="{ active: billingCycle === 'annually' }"
           >
             <span>Annually</span>
-            <span class="discount-badge-small">17% OFF</span>
+            <Badge size="xs" variant="success">17% OFF</Badge>
           </button>
         </div>
       </div>
@@ -277,32 +285,21 @@ onMounted(async () => {
             <!-- Show annual discount only for default plans -->
             <div v-if="!isConfigured && billingCycle === 'annually' && plan.discount?.yearlyPrice && !plan.isContactSales" class="price-discount">
               <span class="annual-savings">(Billed Annually & save 2 months)</span>
-              <span class="discount-badge">17% OFF</span>
+              <Badge variant="success">17% OFF</Badge>
             </div>
           </div>
-          
-          <!-- Action Button -->
-          <div class="plan-action">
-            <button
+           <!-- Action Button (Moved to top) -->
+           <div class="plan-action">
+            <Button
               class="plan-button"
+              icon="pi pi-arrow-right"
+              iconPosition="right"
               :disabled="loading"
+              :loading="loading && selectedPlanId === plan.id"
               @click="plan.prices ? handlePlanSelect(plan) : bookDemo()"
             >
-              <span v-if="loading && selectedPlanId === plan.id" class="loading-spinner"></span>
-              <template v-else>
-                <div v-if="plan.prices">
-                   <span class="button-text">
-                    Subscribe
-                  </span>
-                </div>
-                <div v-else>
-                  <span class="button-text">
-                    Book A Demo
-                  </span>
-                  <i class="pi pi-arrow-right button-icon"></i>
-                </div>
-              </template>
-            </button>
+              {{ plan.prices ? 'Subscribe' : 'Book A Demo' }}
+            </Button>
           </div>
 
           <!-- Features -->
@@ -441,37 +438,11 @@ onMounted(async () => {
 }
 
 .logout-button {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  backdrop-filter: blur(10px);
-  min-height: 44px;
-  min-width: 100px;
-}
-
-.logout-button:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
-}
-
-.logout-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.logout-button i {
-  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: var(--radius-md) !important;
+  backdrop-filter: blur(10px) !important;
 }
 
 /* Hero Section */
@@ -637,16 +608,6 @@ onMounted(async () => {
   background: rgba(255, 255, 255, 0.5);
 }
 
-.discount-badge-small {
-  background: var(--color-success);
-  color: white;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  margin-left: var(--space-1);
-}
 
 /* Pricing Container */
 .pricing-container {
@@ -850,15 +811,6 @@ onMounted(async () => {
   text-align: center;
 }
 
-.discount-badge {
-  background: var(--color-success);
-  color: white;
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
 /* Plan Features */
 .plan-features {
   margin-bottom: var(--space-6);
@@ -919,62 +871,10 @@ onMounted(async () => {
   padding-top: var(--space-2);
 }
 
-.plan-button {
+.plan-button{
+  height: 50px;
   width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-4);
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  margin-bottom: var(--space-3);
-  min-height: 56px;
 }
-
-.plan-button:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-  transform: translateY(-2px);
-}
-
-.plan-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.button-text {
-  font-size: 0.875rem;
-}
-
-.button-icon {
-  transition: transform var(--transition-normal);
-}
-
-.plan-button:hover .button-icon {
-  transform: translateX(4px);
-}
-
-.loading-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .header-container {
@@ -983,19 +883,6 @@ onMounted(async () => {
 
   .header-logo {
     height: 32px;
-  }
-
-  .logout-button {
-    padding: var(--space-2) var(--space-3);
-    font-size: 0.8rem;
-  }
-
-  .logout-button span {
-    display: none;
-  }
-
-  .logout-button i {
-    font-size: 1.1rem;
   }
 
   .hero-title {
@@ -1015,12 +902,6 @@ onMounted(async () => {
     padding: var(--space-2) var(--space-3);
     font-size: 0.8rem;
   }
-
-  .discount-badge-small {
-    font-size: 0.65rem;
-    padding: 1px 4px;
-  }
-
   .pricing-container {
     padding: var(--space-6) var(--space-4);
   }
@@ -1053,13 +934,6 @@ onMounted(async () => {
     height: 28px;
   }
 
-  .logout-button {
-    padding: var(--space-1) var(--space-2);
-    min-width: 44px;
-    min-height: 44px;
-    justify-content: center;
-  }
-
   .hero-section {
     padding: var(--space-6) var(--space-4);
   }
@@ -1088,16 +962,6 @@ onMounted(async () => {
 
 [data-theme="dark"] .header-logo {
   filter: brightness(0) invert(1);
-}
-
-[data-theme="dark"] .logout-button {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.25);
-}
-
-[data-theme="dark"] .logout-button:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.35);
 }
 
 [data-theme="dark"] .plan-card {

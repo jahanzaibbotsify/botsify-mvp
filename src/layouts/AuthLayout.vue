@@ -78,7 +78,7 @@ const brandPanelStyle = computed(() => ({
         <div class="main-content">
           <div class="content-text">
             <h1 class="main-title">{{ pageContent.title }}</h1>
-            <p class="main-subtitle">{{ pageContent.subtitle }}</p>
+            <!-- <p class="main-subtitle">{{ pageContent.subtitle }}</p> -->
             <p class="main-description">{{ pageContent.description }}</p>
           </div>
         </div>
@@ -254,13 +254,13 @@ const brandPanelStyle = computed(() => ({
   line-height: 1.2;
   letter-spacing: -0.025em;
 }
-
+/* 
 .main-subtitle {
   font-size: 1.125rem;
   font-weight: 500;
   color: var(--whitelabel-primary);
   margin-bottom: var(--space-3);
-}
+} */
 
 .main-description {
   font-size: 1rem;
@@ -355,9 +355,9 @@ const brandPanelStyle = computed(() => ({
     font-size: 2rem;
   }
   
-  .main-subtitle {
+  /* .main-subtitle {
     font-size: 1rem;
-  }
+  } */
   
   .content-icon {
     width: 64px;
@@ -393,9 +393,9 @@ const brandPanelStyle = computed(() => ({
     font-size: 1.75rem;
   }
   
-  .main-subtitle {
+  /* .main-subtitle {
     font-size: 0.875rem;
-  }
+  } */
   
   .main-description {
     font-size: 0.875rem;

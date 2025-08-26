@@ -41,6 +41,9 @@ export async function getBotData() {
   publishStore.resetStore();
   useUserStore().clearAllCache();
   
+  // Reset MCP store state for new agent
+  useMCPStore().resetStore();
+  
   try {
     const response = await axiosInstance.get(`/v1/bot/get-data?apikey=${apikey}`);
     const data = response.data.data;
@@ -52,6 +55,7 @@ export async function getBotData() {
     
     // User + Role
     if (data.user) {
+      whitelabelStore.resetWhitelabel();
       roleStore.setCurrentUser(data.user);
 
       // Whitelabel - initialize if user has whitelabel data
@@ -77,7 +81,9 @@ export async function getBotData() {
     botStore.setUser(data.user);
     botStore.setBotName(data.bot.name);
     
-    useMCPStore().connectedMCPs = data.mcp_count;
+    // Initialize MCP store with new agent data
+    const mcpStore = useMCPStore();
+    mcpStore.connectedMCPs = data.mcp_count;
     
     
          // Set global flag to prevent duplicate calls

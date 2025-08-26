@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import type { SignupCredentials, FormValidation } from '@/types/auth'
@@ -7,6 +7,11 @@ import Button from '@/components/ui/Button.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+
+// Clear any existing errors when component mounts
+onMounted(() => {
+  authStore.clearError()
+})
 
 // Form state
 const form = reactive<SignupCredentials>({
@@ -154,8 +159,7 @@ const handleSubmit = async () => {
       })
     } else {
       // Use the new authentication flow for redirect
-      const { handlePostAuthRedirect } = await import('@/utils/authFlow')
-      const redirectPath = handlePostAuthRedirect()
+      const redirectPath = authStore.getPostAuthRedirect()
       router.push(redirectPath)
     }
   } catch (error: any) {
