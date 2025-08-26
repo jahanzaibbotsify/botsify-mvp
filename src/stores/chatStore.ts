@@ -660,7 +660,6 @@ Use the above connected services information to understand what tools and data s
       
       // Parse the dual response format efficiently
       const parsedResponse = parseDualResponse(streamedContent);
-      
       // Update AI message content in one operation instead of multiple concatenations
       if (aiMessage) {
         aiMessage.content = parsedResponse.chatResponse || streamedContent;
