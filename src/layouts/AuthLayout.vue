@@ -47,7 +47,7 @@ const pageContent = computed(() => {
       }
     default:
       return {
-        title: 'Welcome to Botsify',
+        title: `Welcome to ${companyName.value ?? 'Botsify'}`,
         subtitle: 'AI-powered conversations',
         description: 'Build, deploy, and manage intelligent AI agents with ease.',
         icon: 'pi-comments'
