@@ -92,7 +92,6 @@
      <ChangePlanModal
        ref="changePlanModalRef"
        :is-configured="isConfigured"
-       :available-whitelabel-plans="availableWhitelabelPlans"
        :current-plan-id="currentPlanId"
        :can-downgrade="canDowngrade"
        @close="closeChangePlanModal"
@@ -231,41 +230,7 @@
   })
 
   const whitelabelStore = useWhitelabelStore()
-const { isConfigured, isInitialized } = storeToRefs(whitelabelStore)
-
-  const availableWhitelabelPlans = computed(async () => {
-    console.log('Computing availableWhitelabelPlans - isConfigured:', isConfigured.value, 'isInitialized:', isInitialized.value)
-    
-    if (isConfigured.value) {
-      // For whitelabel clients, show available packages from the store
-      const packages = await whitelabelStore.fetchPackages()
-      const currentPlanName = getActualPlanName.value
-      
-      console.log('Available whitelabel packages:', packages)
-      console.log('Current plan name:', currentPlanName)
-      
-      if (packages && packages.length > 0) {
-        // Create a map of available plans (excluding current plan)
-        const availablePlans: Record<string, string> = {}
-        
-        packages.forEach(pkg => {
-          if (pkg.name !== currentPlanName) {
-            const price = parseFloat(pkg.price) || 0
-            const billingType = pkg.type || 'month'
-            availablePlans[pkg.name] = `${pkg.name} - $${price}/${billingType}`
-          }
-        })
-        
-        console.log('Available whitelabel plans result:', availablePlans)
-        return availablePlans
-      } else {
-        console.log('No whitelabel packages available')
-        return {}
-      }
-    }
-    console.log('Not configured for whitelabel')
-    return {}
-  })
+  const { isConfigured, isInitialized } = storeToRefs(whitelabelStore)
 
 
   const canDowngrade = computed(() => {

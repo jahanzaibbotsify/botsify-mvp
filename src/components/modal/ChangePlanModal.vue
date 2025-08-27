@@ -92,14 +92,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import ModalLayout from '@/components/ui/ModalLayout.vue'
 import Button from '@/components/ui/Button.vue'
 import { botsifyApi } from '@/services/botsifyApi'
+import { useWhitelabelStore } from '@/stores/whitelabelStore'
+import { storeToRefs } from 'pinia'
 
 interface Props {
   isConfigured: boolean
-  availableWhitelabelPlans: Record<string, string>
   currentPlanId: string
   canDowngrade: boolean
 }
@@ -129,6 +130,35 @@ defineExpose({
 const getContactEmail = () => {
   return 'mailto:support@botsify.ai'
 }
+
+// Whitelabel plans computed locally
+const whitelabelStore = useWhitelabelStore()
+const { isConfigured: wlIsConfigured, isInitialized, packages } = storeToRefs(whitelabelStore)
+
+const availableWhitelabelPlans = computed<Record<string, string>>(() => {
+  if (!wlIsConfigured.value) return {}
+
+  const plans: Record<string, string> = {}
+  for (const pkg of packages.value) {
+    if (pkg.name === props.currentPlanId) continue
+    const priceNumber = parseFloat(pkg.price || '0') || 0
+    const period = pkg.type === 'yearly' ? 'year' : 'month'
+    plans[pkg.name] = `${pkg.name} - $${priceNumber}/${period}`
+  }
+  return plans
+})
+
+onMounted(async () => {
+  try {
+    if (!isInitialized.value) {
+      await whitelabelStore.initialize()
+    }
+    await whitelabelStore.fetchPackages()
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn('Failed to prepare whitelabel plans in ChangePlanModal:', (err as any)?.message)
+  }
+})
 
 // Plan selection
 const selectPlan = async (planId: string) => {
