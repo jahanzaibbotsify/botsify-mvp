@@ -433,9 +433,9 @@
   
 
   // Modal methods
-  const openChangePlanModal = () => {
-    changePlanModalRef.value?.openModal()
-  }
+  // const openChangePlanModal = () => {
+  //   changePlanModalRef.value?.openModal()
+  // }
   
   const closeChangePlanModal = () => {
     changePlanModalRef.value?.closeModal()
@@ -456,9 +456,9 @@
     emit('close')
   }
   
-  const openChangePaymentModal = () => {
-    changePaymentModalRef.value?.openModal()
-  }
+  // const openChangePaymentModal = () => {
+  //   changePaymentModalRef.value?.openModal()
+  // }
   
   // Check if Stripe is available
   // const isStripeLoaded = computed(() => {
