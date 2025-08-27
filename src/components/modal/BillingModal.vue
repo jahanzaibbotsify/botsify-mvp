@@ -476,13 +476,6 @@
   const closeCancellationModal = () => {
     cancellationModalRef.value?.closeModal()
   }
-
-  // Watch for changes in billingData prop
-  watch(() => props.billingData, (newData) => {
-    if (newData) {
-      // Billing data updated
-    }
-  }, { immediate: true })
   
   // Initialize whitelabel store when component mounts
   onMounted(async () => {

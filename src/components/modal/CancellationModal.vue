@@ -38,6 +38,7 @@ import { ref } from 'vue'
 import ModalLayout from '@/components/ui/ModalLayout.vue'
 import Button from '@/components/ui/Button.vue'
 import { botsifyApi } from '@/services/botsifyApi'
+import { useAuthStore } from '@/stores/authStore'
 
 interface Emits {
   (e: 'close'): void
@@ -79,12 +80,11 @@ const confirmCancellation = async () => {
     const response = await botsifyApi.cancelSubscription({
       reason: selectedCancellationReason.value
     })
-    
+    console.log('response', response)
     if (response.success) {
       window.$toast?.success('Subscription cancelled successfully!')
-      closeModal()
-      // Emit event to refresh billing data
-      emit('subscriptionCancelled')
+      useAuthStore().logout()
+      window.location.href = '/auth/login'
     } else {
       window.$toast?.error(response.message || 'Failed to cancel subscription')
     }

@@ -25,15 +25,12 @@ const handleManageBilling = async () => {
   billingLoading.value = true
   try {
     const res = await botsifyApi.manageBilling()
-    
-    if (res && res.charges && res.stripe_subscription) {
-      // Store the billing data and show modal
-      billingData.value = res
-    } else if(res && res.url) {
+    console.log('res', res)
+    if (res && res.url) {
       window.open(res.url, '_blank')
     } else {
       // If no billing data, open the billing modal with empty data
-      billingData.value = null
+      billingData.value = res
       billingModalRef.value?.openModal()
     }
   } catch (e) {

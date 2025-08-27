@@ -1133,7 +1133,7 @@ export class BotsifyApiService {
       let url = '/v1/cancel-client-plan'
       if(!isConfigured || config?.is_whitelabel === 1) url = '/v1/cancel-plan'
       const response = await axiosInstance.post(url, payload);
-      if (response.data.status === 'success') {
+      if (response.status === 200) {
         return {
           success: true,
           message: 'Subscription cancelled successfully',
