@@ -12,13 +12,11 @@ defineProps<{
 }>()
 
 const billingModalRef = ref<InstanceType<typeof BillingModal> | null>(null)
-const showBillingModal = ref(false)
 const billingLoading = ref(false)
 const billingData = ref<BillingData | null>(null)
 
 
 const closeBillingModal = () => {
-  showBillingModal.value = false
   billingData.value = null
 }
 
@@ -31,19 +29,19 @@ const handleManageBilling = async () => {
     if (res && res.charges && res.stripe_subscription) {
       // Store the billing data and show modal
       billingData.value = res
-      showBillingModal.value = true
     } else if(res && res.url) {
       window.open(res.url, '_blank')
     } else {
       // If no billing data, open the billing modal with empty data
       billingData.value = null
-      showBillingModal.value = true
+      billingModalRef.value?.openModal()
     }
   } catch (e) {
     console.error('Error fetching billing portal:', e)
     // If API call fails, open the billing modal with empty data
     billingData.value = null
-    showBillingModal.value = true
+    billingModalRef.value?.openModal()
+
   } finally {
     billingLoading.value = false
   }
@@ -57,7 +55,6 @@ const handleManageBilling = async () => {
     </Button>
     <BillingModal 
       ref="billingModalRef" 
-      :show="showBillingModal" 
       :billing-data="billingData"
       @close="closeBillingModal"
     ></BillingModal>

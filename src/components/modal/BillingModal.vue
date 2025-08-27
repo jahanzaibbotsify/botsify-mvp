@@ -222,7 +222,7 @@
 
   // Helper function to get the actual plan name from Stripe subscription
   const getActualPlanName = computed(() => {
-    if (!subscriptionData.value) return 'Unknown Plan'
+    if (!subscriptionData.value) return 'Free Plan'
     
     console.log('Getting actual plan name from subscriptionData:', subscriptionData.value)
     console.log('Whitelabel state - isConfigured:', isConfigured.value, 'isInitialized:', isInitialized.value)
@@ -262,7 +262,6 @@
   
   const currentPlanId = computed(() => {
     const planName = getActualPlanName.value
-    console.log('Current plan name:', planName)
     return planName || ''
   })
 
@@ -570,7 +569,7 @@ const { isConfigured, isInitialized } = storeToRefs(whitelabelStore)
   const closeCancellationModal = () => {
     cancellationModalRef.value?.closeModal()
   }
-  
+
   // Watch for changes in billingData prop
   watch(() => props.billingData, (newData) => {
     if (newData) {
