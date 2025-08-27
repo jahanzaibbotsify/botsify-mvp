@@ -22,13 +22,13 @@
           </div>
 
           <div class="subscription-actions">
-            <Button 
+            <!-- <Button 
               variant="secondary"
               @click="openChangePlanModal"
             >
               Change Plan
             </Button>
-            <Button variant="secondary" @click="openChangePaymentModal">Update Payment</Button>
+            <Button variant="secondary" @click="openChangePaymentModal">Update Payment</Button> -->
             <Button variant="error" @click="openCancellationModal">Cancel Subscription</Button>
           </div>
         </div>
@@ -115,7 +115,7 @@
   </template>
   
   <script setup lang="ts">
-  import { ref, computed, onMounted, watch } from 'vue'
+  import { ref, computed, onMounted } from 'vue'
   import { useWhitelabelStore } from '@/stores/whitelabelStore'
   import { storeToRefs } from 'pinia'
   import Button from '@/components/ui/Button.vue'
