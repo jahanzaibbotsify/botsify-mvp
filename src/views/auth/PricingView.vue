@@ -217,6 +217,7 @@ onMounted(async () => {
     </div>
 
     <!-- Billing Toggle - Only show for default plans -->
+     <template v-if="!isLoading">
     <div v-if="!isConfigured || !hasPackages" class="billing-toggle-section">
       <div class="billing-toggle-container">
         <div class="billing-toggle">
@@ -240,7 +241,7 @@ onMounted(async () => {
     </div>
 
     <!-- Pricing Cards -->
-    <div class="pricing-container" v-if="!isLoading">
+    <div class="pricing-container">
       <div class="pricing-grid">
         <div
           v-for="(plan, index) in allPlans"
@@ -324,6 +325,7 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
