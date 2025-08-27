@@ -21,6 +21,21 @@
             </div>
           </div>
 
+
+          <div class="subscription-details">
+            <div class="detail-item">
+              <span class="label">Status:</span>
+              <span class="value status" :class="subscriptionData?.status">{{ subscriptionData?.status || 'Unknown' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Created:</span>
+              <span class="value">{{ formatDate(subscriptionData?.created_at) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Last Updated:</span>
+              <span class="value">{{ formatDate(subscriptionData?.updated_at) }}</span>
+            </div>
+          </div>
           <div class="subscription-actions">
             <!-- <Button 
               variant="secondary"
@@ -540,6 +555,7 @@
     color: var(--color-text-primary);
     font-size: 1.125rem;
     font-weight: 600;
+    text-transform: capitalize;
   }
   
   .plan-description {
@@ -591,6 +607,7 @@
     font-size: 0.875rem;
     color: var(--color-text-primary);
     font-weight: 500;
+    text-transform: capitalize;
   }
   
   
