@@ -13,56 +13,21 @@
           <div class="subscription-header">
             <div class="plan-info">
               <h4>{{ getActualPlanName }}</h4>
-              <p class="plan-description">{{ getPlanDescription(getActualPlanName) }}</p>
+              <!-- <p class="plan-description">{{ getPlanDescription(getActualPlanName) }}</p> -->
             </div>
             <div class="plan-price">
               <span class="price-amount">${{ getPlanPrice(getActualPlanName) }}</span>
               <span class="price-period">{{ getBillingPeriod(getActualPlanName) }}</span>
-              <!-- Debug info -->
-              <small style="display: block; font-size: 0.75rem; opacity: 0.7; margin-top: var(--space-1);">
-                Plan: {{ getActualPlanName }} | Config: {{ isConfigured ? 'Yes' : 'No' }} | Init: {{ isInitialized ? 'Yes' : 'No' }} | Packages: {{ whitelabelStore.packages?.length || 0 }}
-              </small>
-            </div>
-          </div>
-          
-          <div class="subscription-details">
-                         <div class="detail-item">
-               <span class="label">Status:</span>
-               <Badge 
-                 :variant="getStatusVariant(subscriptionData?.status)" 
-                 size="small"
-                 class="status-badge"
-               >
-                 {{ subscriptionData?.status || 'Unknown' }}
-               </Badge>
-             </div>
-            <div class="detail-item">
-              <span class="label">Created:</span>
-              <span class="value">{{ formatDate(subscriptionData?.created_at) }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">Last Updated:</span>
-              <span class="value">{{ formatDate(subscriptionData?.updated_at) }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">Quantity:</span>
-              <span class="value">{{ subscriptionData?.quantity || 1 }}</span>
             </div>
           </div>
 
           <div class="subscription-actions">
             <Button 
-              v-if="hasAvailablePlanChanges" 
               variant="secondary"
               @click="openChangePlanModal"
             >
               Change Plan
             </Button>
-            <div v-else-if="isConfigured" class="no-plan-changes-info">
-              <small style="color: var(--color-text-secondary); font-style: italic;">
-                Plan changes are managed by your administrator
-              </small>
-            </div>
             <Button variant="secondary" @click="openChangePaymentModal">Update Payment</Button>
             <Button variant="error" @click="openCancellationModal">Cancel Subscription</Button>
           </div>
@@ -268,12 +233,12 @@
   const whitelabelStore = useWhitelabelStore()
 const { isConfigured, isInitialized } = storeToRefs(whitelabelStore)
 
-  const availableWhitelabelPlans = computed(() => {
+  const availableWhitelabelPlans = computed(async () => {
     console.log('Computing availableWhitelabelPlans - isConfigured:', isConfigured.value, 'isInitialized:', isInitialized.value)
     
     if (isConfigured.value) {
       // For whitelabel clients, show available packages from the store
-      const packages = whitelabelStore.packages
+      const packages = await whitelabelStore.fetchPackages()
       const currentPlanName = getActualPlanName.value
       
       console.log('Available whitelabel packages:', packages)
@@ -302,34 +267,6 @@ const { isConfigured, isInitialized } = storeToRefs(whitelabelStore)
     return {}
   })
 
-  // Check if there are any available plans to change to (excluding current plan)
-  const hasAvailablePlanChanges = computed(() => {
-    console.log('Computing hasAvailablePlanChanges - isConfigured:', isConfigured.value, 'isInitialized:', isInitialized.value)
-    
-    if (!isConfigured.value) {
-      // For non-whitelabel clients, always show plan changes
-      console.log('Not configured for whitelabel, showing plan changes')
-      return true
-    }
-    
-    // For whitelabel clients, check if there are packages available
-    const packages = whitelabelStore.packages
-    console.log('Checking available plan changes - packages:', packages)
-    
-    if (!packages || packages.length === 0) {
-      console.log('No whitelabel packages available')
-      return false
-    }
-    
-    // Check if there are packages other than the current one
-    const currentPlanName = getActualPlanName.value
-    const hasOtherPackages = packages.some(pkg => pkg.name !== currentPlanName)
-    
-    console.log('Current plan:', currentPlanName, 'Has other packages:', hasOtherPackages)
-    console.log('Available packages:', packages.map(pkg => pkg.name))
-    
-    return hasOtherPackages
-  })
 
   const canDowngrade = computed(() => {
     if (isConfigured.value) {
@@ -380,7 +317,7 @@ const { isConfigured, isInitialized } = storeToRefs(whitelabelStore)
   }
   
   const getPlanPrice = (planName: string | undefined) => {
-    if (!planName) return 149
+    if (!planName) return 0
     
     console.log('Getting plan price for:', planName, 'isConfigured:', isConfigured.value, 'isInitialized:', isInitialized.value)
     console.log('Subscription data plan:', subscriptionData.value?.plan)
@@ -414,7 +351,7 @@ const { isConfigured, isInitialized } = storeToRefs(whitelabelStore)
       return 149
     }
     
-    return 149
+    return 0
   }
   
   const getBillingPeriod = (planName: string | undefined) => {
