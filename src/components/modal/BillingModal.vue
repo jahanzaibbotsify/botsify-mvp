@@ -262,24 +262,24 @@
    }
   
   // Helper functions
-  const getPlanDescription = (planName: string | undefined) => {
-    if (!planName) return 'Professional plan with advanced features'
+  // const getPlanDescription = (planName: string | undefined) => {
+  //   if (!planName) return 'Professional plan with advanced features'
     
-    // For whitelabel clients, use the plan name from Stripe
-    if (isConfigured.value) {
-      return `${planName} plan with advanced features`
-    }
+  //   // For whitelabel clients, use the plan name from Stripe
+  //   if (isConfigured.value) {
+  //     return `${planName} plan with advanced features`
+  //   }
     
-    if (planName.includes('Professional')) {
-      return 'Professional service for scalable businesses with AI agents and advanced features'
-    } else if (planName.includes('Personal')) {
-      return 'Basic plan for personal use and small businesses'
-    } else if (planName.includes('Custom')) {
-      return 'Custom enterprise solution with dedicated support'
-    }
+  //   if (planName.includes('Professional')) {
+  //     return 'Professional service for scalable businesses with AI agents and advanced features'
+  //   } else if (planName.includes('Personal')) {
+  //     return 'Basic plan for personal use and small businesses'
+  //   } else if (planName.includes('Custom')) {
+  //     return 'Custom enterprise solution with dedicated support'
+  //   }
     
-    return 'Professional plan with advanced features'
-  }
+  //   return 'Professional plan with advanced features'
+  // }
   
   const getPlanPrice = (planName: string | undefined) => {
     if (!planName) return 0
