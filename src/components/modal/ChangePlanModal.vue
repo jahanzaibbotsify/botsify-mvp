@@ -18,9 +18,6 @@
           </Button>
         </div>
       </div>
-      <div v-else class="no-plans-message">
-        <p>No other plans available for your current subscription.</p>
-      </div>
       
       <!-- Fallback preset options if no plans provided -->
       <div v-if="Object.keys(availablePlans).length === 0">
