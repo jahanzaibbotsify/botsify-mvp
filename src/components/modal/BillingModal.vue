@@ -104,22 +104,22 @@
   </ModalLayout>
 
          <!-- Change Plan Modal -->
-     <ChangePlanModal
+     <!-- <ChangePlanModal
        ref="changePlanModalRef"
        :current-plan-id="currentPlanId"
        :can-downgrade="canDowngrade"
        :available-plans="availablePlans"
        @close="closeChangePlanModal"
        @plan-changed="handlePlanChanged"
-     />
+     /> -->
 
          <!-- Change Payment Method Modal -->
-     <ChangePaymentModal
+     <!-- <ChangePaymentModal
        ref="changePaymentModalRef"
        :current-plan-name="getActualPlanName"
        @close="closeChangePaymentModal"
        @payment-updated="handlePaymentUpdated"
-     />
+     /> -->
 
          <!-- Cancellation Modal -->
      <CancellationModal
@@ -140,8 +140,8 @@
   import TableRow from '@/components/ui/TableRow.vue'
   import TableCell from '@/components/ui/TableCell.vue'
   import Badge from '@/components/ui/Badge.vue'
-  import ChangePlanModal from './ChangePlanModal.vue'
-  import ChangePaymentModal from './ChangePaymentModal.vue'
+  // import ChangePlanModal from './ChangePlanModal.vue'
+  // import ChangePaymentModal from './ChangePaymentModal.vue'
   import CancellationModal from './CancellationModal.vue'
   import type { StripeCharge, StripeSubscription, BillingData } from '@/types'
   
@@ -159,8 +159,8 @@
   
   // Modal refs
   const modalRef = ref<InstanceType<typeof ModalLayout> | null>(null)
-  const changePlanModalRef = ref<InstanceType<typeof ChangePlanModal> | null>(null)
-  const changePaymentModalRef = ref<InstanceType<typeof ChangePaymentModal> | null>(null)
+  // const changePlanModalRef = ref<InstanceType<typeof ChangePlanModal> | null>(null)
+  // const changePaymentModalRef = ref<InstanceType<typeof ChangePaymentModal> | null>(null)
   const cancellationModalRef = ref<InstanceType<typeof CancellationModal> | null>(null)
 
   // Computed properties
@@ -239,26 +239,26 @@
   
   
   
-  const currentPlanId = computed(() => {
-    const planName = getActualPlanName.value
-    return planName || ''
-  })
+  // const currentPlanId = computed(() => {
+  //   const planName = getActualPlanName.value
+  //   return planName || ''
+  // })
 
   const whitelabelStore = useWhitelabelStore()
   const { isConfigured, isInitialized } = storeToRefs(whitelabelStore)
 
 
-  const canDowngrade = computed(() => {
-    if (isConfigured.value) {
-      return false // Whitelabel clients cannot downgrade
-    }
-    return true
-  })
+  // const canDowngrade = computed(() => {
+  //   if (isConfigured.value) {
+  //     return false // Whitelabel clients cannot downgrade
+  //   }
+  //   return true
+  // })
 
-  const availablePlans = computed<Record<string, string>>(() => {
-    if (!props.billingData || !props.billingData.plan) return {}
-    return props.billingData.plan
-  })
+  // const availablePlans = computed<Record<string, string>>(() => {
+  //   if (!props.billingData || !props.billingData.plan) return {}
+  //   return props.billingData.plan
+  // })
 
 
    
@@ -452,19 +452,19 @@
   //   changePlanModalRef.value?.openModal()
   // }
   
-  const closeChangePlanModal = () => {
-    changePlanModalRef.value?.closeModal()
-  }
+  // const closeChangePlanModal = () => {
+  //   changePlanModalRef.value?.closeModal()
+  // }
   
-  const handlePlanChanged = () => {
-    // Emit event to refresh billing data
-    emit('close')
-  }
+  // const handlePlanChanged = () => {
+  //   // Emit event to refresh billing data
+  //   emit('close')
+  // }
   
-  const handlePaymentUpdated = () => {
-    // Emit event to refresh billing data
-    emit('close')
-  }
+  // const handlePaymentUpdated = () => {
+  //   // Emit event to refresh billing data
+  //   emit('close')
+  // }
   
   const handleSubscriptionCancelled = () => {
     // Emit event to refresh billing data
@@ -480,9 +480,9 @@
   //   return typeof window.Stripe !== 'undefined'
   // })
   
-  const closeChangePaymentModal = () => {
-    changePaymentModalRef.value?.closeModal()
-  }
+  // const closeChangePaymentModal = () => {
+  //   changePaymentModalRef.value?.closeModal()
+  // }
   
   const openCancellationModal = () => {
     cancellationModalRef.value?.openModal()
@@ -632,7 +632,7 @@
   
   .empty-state {
     text-align: center;
-    padding: var(--space-8);
+    padding: var(--space-4);
     color: var(--color-text-secondary);
   }
   

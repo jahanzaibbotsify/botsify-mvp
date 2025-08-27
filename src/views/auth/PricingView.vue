@@ -12,7 +12,7 @@ import { Badge, Button } from '@/components/ui';
 const authStore = useAuthStore()
 const router = useRouter()
 const whitelabelStore = useWhitelabelStore()
-const { isConfigured, packages: whitelabelPackages, hasPackages, shouldShowWhitelabelPlans, companyName, primaryColor, secondaryColor } = storeToRefs(whitelabelStore)
+const { isConfigured, isLoading, packages: whitelabelPackages, hasPackages, shouldShowWhitelabelPlans, companyName, primaryColor, secondaryColor } = storeToRefs(whitelabelStore)
 const { getLogoUrl } = whitelabelStore
 
 // Clear any existing errors when component mounts
@@ -240,7 +240,7 @@ onMounted(async () => {
     </div>
 
     <!-- Pricing Cards -->
-    <div class="pricing-container">
+    <div class="pricing-container" v-if="!isLoading">
       <div class="pricing-grid">
         <div
           v-for="(plan, index) in allPlans"

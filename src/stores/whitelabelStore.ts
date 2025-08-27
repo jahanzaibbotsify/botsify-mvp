@@ -75,7 +75,7 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
 
   const fetchPackages = async (userId?: string): Promise<void> => {
     console.log('fetchPackages called with userId:', userId, 'isConfigured:', isConfigured.value, 'hasPackages:', hasPackages.value)
-    
+    isLoading.value = true
     // Only fetch packages if whitelabel is configured and we don't already have packages
     if (!isConfigured.value) {
       console.log('Skipping packages fetch - whitelabel not configured')
@@ -101,6 +101,8 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
     } catch (err: any) {
       // eslint-disable-next-line no-console
       console.warn('Failed to fetch whitelabel packages:', err?.message)
+    } finally {
+      isLoading.value = false
     }
   }
 
