@@ -91,9 +91,9 @@
          <!-- Change Plan Modal -->
      <ChangePlanModal
        ref="changePlanModalRef"
-       :is-configured="isConfigured"
        :current-plan-id="currentPlanId"
        :can-downgrade="canDowngrade"
+       :available-plans="availablePlans"
        @close="closeChangePlanModal"
        @plan-changed="handlePlanChanged"
      />
@@ -238,6 +238,11 @@
       return false // Whitelabel clients cannot downgrade
     }
     return true
+  })
+
+  const availablePlans = computed<Record<string, string>>(() => {
+    if (!props.billingData || !props.billingData.plan) return {}
+    return props.billingData.plan
   })
 
 

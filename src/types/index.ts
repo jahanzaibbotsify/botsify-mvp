@@ -166,6 +166,7 @@ export interface BillingData {
   } | StripeCharge[]
   stripe_subscription?: StripeSubscription
   subscription?: StripeSubscription
+  plan?: Record<string, string>
 }
 
 // Export conversation types

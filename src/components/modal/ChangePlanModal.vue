@@ -6,26 +6,24 @@
     @close="closeModal"
   >
     <div v-if="!changingPlan">
-      <!-- Whitelabel Client Plans -->
-      <div v-if="isConfigured">
-        <div v-if="Object.keys(availableWhitelabelPlans).length > 0">
-          <div v-for="(planName, planId) in availableWhitelabelPlans" :key="planId">
-            <Button 
-              class="plan-option-btn" 
-              variant="secondary"
-              @click="selectPlan(String(planId))"
-            >
-              {{ planName }}
-            </Button>
-          </div>
-        </div>
-        <div v-else class="no-plans-message">
-          <p>No other plans available for your current subscription.</p>
+      <!-- Plans provided from parent (billingData.plan) -->
+      <div v-if="Object.keys(availablePlans).length > 0">
+        <div v-for="(planName, planId) in availablePlans" :key="planId">
+          <Button 
+            class="plan-option-btn" 
+            variant="secondary"
+            @click="selectPlan(String(planId))"
+          >
+            {{ planName }}
+          </Button>
         </div>
       </div>
+      <div v-else class="no-plans-message">
+        <p>No other plans available for your current subscription.</p>
+      </div>
       
-      <!-- Regular Client Plans -->
-      <div v-else>
+      <!-- Fallback preset options if no plans provided -->
+      <div v-if="Object.keys(availablePlans).length === 0">
         <!-- Personal Plan Monthly to Annual -->
         <Button 
           v-show="currentPlanId === 'Personal Plan'" 
@@ -92,17 +90,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref } from 'vue'
 import ModalLayout from '@/components/ui/ModalLayout.vue'
 import Button from '@/components/ui/Button.vue'
 import { botsifyApi } from '@/services/botsifyApi'
-import { useWhitelabelStore } from '@/stores/whitelabelStore'
-import { storeToRefs } from 'pinia'
 
 interface Props {
-  isConfigured: boolean
   currentPlanId: string
   canDowngrade: boolean
+  availablePlans: Record<string, string>
 }
 
 interface Emits {
@@ -130,35 +126,6 @@ defineExpose({
 const getContactEmail = () => {
   return 'mailto:support@botsify.ai'
 }
-
-// Whitelabel plans computed locally
-const whitelabelStore = useWhitelabelStore()
-const { isConfigured: wlIsConfigured, isInitialized, packages } = storeToRefs(whitelabelStore)
-
-const availableWhitelabelPlans = computed<Record<string, string>>(() => {
-  if (!wlIsConfigured.value) return {}
-
-  const plans: Record<string, string> = {}
-  for (const pkg of packages.value) {
-    if (pkg.name === props.currentPlanId) continue
-    const priceNumber = parseFloat(pkg.price || '0') || 0
-    const period = pkg.type === 'yearly' ? 'year' : 'month'
-    plans[pkg.name] = `${pkg.name} - $${priceNumber}/${period}`
-  }
-  return plans
-})
-
-onMounted(async () => {
-  try {
-    if (!isInitialized.value) {
-      await whitelabelStore.initialize()
-    }
-    await whitelabelStore.fetchPackages()
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.warn('Failed to prepare whitelabel plans in ChangePlanModal:', (err as any)?.message)
-  }
-})
 
 // Plan selection
 const selectPlan = async (planId: string) => {
