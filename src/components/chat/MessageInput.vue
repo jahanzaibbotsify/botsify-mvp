@@ -399,6 +399,7 @@ const hideLoading = () => {
       <McpConnectionModal
           :is-open="showMCPModal"
           @close="closeMCPModal"
+          :chatId="props.chatId"
       />
       <FileSearchModal ref="fileSearchModalRef" :chatId="props.chatId" />
       <WebSearchModal ref="webSearchModalRef" :chatId="props.chatId" />

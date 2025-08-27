@@ -171,7 +171,7 @@ export const useMCPStore = defineStore('mcp', () => {
 
   const setIntialize = async () => {
     // Always allow re-initialization after reset
-    if (initialized.value && connectedServers.value.length > 0) return;
+    if (initialized.value || connectedServers.value.length > 0) return;
     
     initialized.value = true;
     try {

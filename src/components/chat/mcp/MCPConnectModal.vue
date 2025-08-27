@@ -6,6 +6,7 @@ import {botsifyApi} from "@/services/botsifyApi";
 import {useMCPStore} from "@/stores/mcpStore";
 import {useBotStore} from "@/stores/botStore";
 import { Button } from '@/components/ui';
+import {useChatStore} from "@/stores/chatStore.ts";
 
 const props = defineProps({
   server: {
@@ -23,6 +24,10 @@ const props = defineProps({
   systemPrompt: {
     type: String,
     default: ''
+  },
+  chatId: {
+    type: String,
+    default: ''
   }
 })
 const emit = defineEmits(['close', 'connect', 'quit']);
@@ -36,6 +41,7 @@ const serverLabel = ref('');
 const labelError = ref<string | null>(null);
 const urlError = ref<string | null>(null);
 const apiKeyError = ref<string | null>(null);
+const chatStore = useChatStore();
 
 const isLabelValid = computed(() => {
   const value = (serverLabel.value || '').trim();
@@ -429,6 +435,10 @@ const addServer = async (allowedTools: string[]) => {
         }
       }
       mcpStore.connectedMCPs = mcpStore.connectedServers.length;
+
+      const successMessage = `✅ "${connectedServer.setting.server_name}" MCP server connected successfully!`
+      await chatStore.addMessage(props.chatId, successMessage, 'assistant')
+
       emit('quit');
     }
   }

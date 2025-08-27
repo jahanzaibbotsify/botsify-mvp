@@ -9,7 +9,8 @@ defineProps({
   showCustomServer: {
     type: Boolean,
     default: false
-  }
+  },
+  chatId: String
 });
 
 const emit = defineEmits(['close']);
@@ -80,6 +81,7 @@ const selectServer = (payload: any) => {
               selectedServer = null; isAddNewServer = false;
               closeModal();
             }"
+            :chat-id="chatId"
         />
         <ServersList
             v-else
