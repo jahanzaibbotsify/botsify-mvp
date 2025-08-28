@@ -18,7 +18,7 @@ import { useRoleStore } from '@/stores/roleStore';
 
 const router = useRouter()
 const whitelabelStore = useWhitelabelStore()
-const { isConfigured, companyName, primaryColor, secondaryColor } = storeToRefs(whitelabelStore)
+const { primaryColor, secondaryColor } = storeToRefs(whitelabelStore)
 
 // Computed styles for whitelabel colors
 const brandPanelStyle = computed(() => ({
