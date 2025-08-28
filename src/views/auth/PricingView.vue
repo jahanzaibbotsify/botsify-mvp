@@ -316,7 +316,7 @@ onMounted(async () => {
                 <span>{{ feature.includes('🔥') ? feature.replace('🔥', '') : feature }}</span>
               </li>
               <li v-for="excludedFeature in plan.excludedFeatures" :key="excludedFeature" class="feature-item exclude">
-                <div class="feature-check">
+                <div class="feature-times">
                   <i class="pi pi-times"></i>
                 </div>
                 <span>{{ excludedFeature }}</span>
@@ -849,7 +849,10 @@ onMounted(async () => {
 }
 
 .feature-item.exclude {
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
+  opacity: 0.7;
+}
+.feature-item.exclude span{
   text-decoration: line-through;
 }
 
@@ -859,7 +862,8 @@ onMounted(async () => {
   height: 20px;
   line-height: 20px;
 }
-.feature-check {
+.feature-check,
+.feature-times {
   width: 20px;
   height: 20px;
   background: var(--color-success);
@@ -871,10 +875,15 @@ onMounted(async () => {
   margin-top: 2px;
 }
 
-.feature-check i {
+.feature-check i,
+.feature-times i {
   color: white;
   font-size: 0.625rem;
   font-weight: 600;
+}
+
+.feature-times{
+  background: var(--color-error);
 }
 
 /* Plan Action */
