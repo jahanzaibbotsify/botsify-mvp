@@ -999,7 +999,7 @@ onMounted(async () => {
   color: var(--whitelabel-primary);
 }
 
-.pricing-view[style*="--whitelabel-primary"] .hero-subtitle {
+/* .pricing-view[style*="--whitelabel-primary"] .hero-subtitle {
   color: var(--whitelabel-secondary);
-}
+} */
 </style> 
