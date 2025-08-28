@@ -14,6 +14,7 @@ import { useWhitelabelStore } from '@/stores/whitelabelStore'
 import WhitelabelLogo from '@/components/ui/WhitelabelLogo.vue'
 import Dropdown from '@/components/ui/Dropdown.vue';
 import DropdownItem from '@/components/ui/DropdownItem.vue';
+import { useRoleStore } from '@/stores/roleStore';
 
 const router = useRouter()
 const whitelabelStore = useWhitelabelStore()
@@ -455,8 +456,10 @@ const getPublishedChannels = (agent: any) => {
 
 onMounted(async () => {
   // Initialize whitelabel if needed
-  if (isConfigured.value) {
-    // Whitelabel is already configured
+  const user = localStorage.getItem('user');
+  if (user) {
+    const roleStore = useRoleStore();
+    roleStore.setCurrentUser(JSON.parse(user))
   }
   
   // Fetch agents on component mount

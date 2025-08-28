@@ -582,6 +582,10 @@ code {
   width: 100%;
 }
 
+.w-fit{
+  width: fit-content;
+}
+
 @media (max-width: 640px) {
   .agent-action-buttons {
     flex-direction: column;

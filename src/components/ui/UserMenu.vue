@@ -73,13 +73,13 @@ const openEditProfile = () => {
           <div class="user-details">
             <p class="user-name">{{ currentUser?.name }}</p>
             <p class="user-email">{{ currentUser?.email }}</p>
-            <Badge v-if="currentUser?.subs?.stripe_plan" variant="secondary" size="small">{{ currentUser.subs.stripe_plan }}</Badge>
+            <Badge v-if="currentUser?.subs?.stripe_plan" variant="secondary" size="xs" class="w-fit">{{ currentUser.subs.stripe_plan }}</Badge>
           </div>
         </div>
         <div class="dropdown-divider"></div>
         <div class="dropdown-actions">
-          <Button @click="openEditProfile" variant="secondary" size="small" icon="pi pi-user-edit">Profile</Button>
           <ManageBilling v-if="roleStore.canManageBillingWithSubscription" size="small" />
+          <Button @click="openEditProfile" variant="secondary" size="small" icon="pi pi-user-edit">Profile</Button>
         </div>
         <div class="dropdown-divider"></div>
         <div class="dropdown-actions">
@@ -104,7 +104,6 @@ const openEditProfile = () => {
       </div>
     </template>
   </Dropdown>
-  
   <Teleport to="body">
     <EditProfileModal ref="editProfileModalRef" />
   </Teleport>
@@ -165,6 +164,7 @@ const openEditProfile = () => {
   font-weight: 500;
   margin: 0;
   color: black;
+  font-size: 0.95rem;
 }
 
 .user-email {
@@ -184,7 +184,7 @@ const openEditProfile = () => {
   align-items: center;
   justify-content: end;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-1) var(--space-3);
   width: 320px;
 }
 
@@ -206,7 +206,7 @@ const openEditProfile = () => {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4) var(--space-2) var(--space-4);
+  padding: var(--space-1) var(--space-4) var(--space-2) var(--space-4);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
@@ -239,6 +239,7 @@ const openEditProfile = () => {
 .user-details {
   display: flex;
   flex-direction: column;
+  align-items: start;
   gap: 2px;
 }
 </style>

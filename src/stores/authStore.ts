@@ -8,6 +8,8 @@ import type {
 } from '@/types/auth'
 import { authApi } from '@/services/authApi'
 import { getCurrentApiKey } from '@/utils/apiKeyUtils'
+import { useRoleStore } from './roleStore'
+import { BotUser } from '@/types/user'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -370,6 +372,8 @@ export const useAuthStore = defineStore('auth', () => {
     if (auth_user) {
       localStorage.setItem('user', JSON.stringify(auth_user));
       user.value = auth_user
+      const roleStore = useRoleStore();
+      roleStore.setCurrentUser(auth_user as BotUser);
     }
   }
 
