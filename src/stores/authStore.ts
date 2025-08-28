@@ -43,14 +43,8 @@ export const useAuthStore = defineStore('auth', () => {
         'No Agent Development',
       ],
       excludedFeatures: [
-        'Scheduled Agents 🔥',
-        'WhatsApp platform support',
-        'Whitelabel Dashboard & Reselling Rights 🔥',
-        'Access to all Botsify Resources',
-        'Personal Onboarding Session',
-        'Bi-Weekly Training of 1 Agent Free for 12 Months',
-        'WhatsApp Agents (1,000 free conversations each month)',
-        'Priority Support'
+        'Integrate MCP',
+        '1-Agent development'
       ],
       limits: {
         conversations: 1000,
@@ -79,22 +73,14 @@ export const useAuthStore = defineStore('auth', () => {
       billing: 'monthly',
       features: [
         '2 AI Agents',
-        '1,000 Credits (1 credit = 1 message) 🔥',
+        '3,000 Credits (1 credit = 1 message) 🔥',
         'Integrate Documents & Web Search',
         'Messenger, SMS, Website, Instagram, Telegram, WhatsApp 🔥',
         'Basic Support',
-        'I̶n̶t̶e̶g̶r̶a̶t̶e̶ M̶C̶P̶',
-        '1̶-̶A̶g̶e̶n̶t̶ d̶e̶v̶e̶l̶o̶p̶m̶e̶n̶t̶',
       ],
       excludedFeatures: [
-        'Scheduled Agents 🔥',
-        'WhatsApp platform support',
-        'Whitelabel Dashboard & Reselling Rights 🔥',
-        'Access to all Botsify Resources',
-        'Personal Onboarding Session',
-        'Bi-Weekly Training of 1 Agent Free for 12 Months',
-        'WhatsApp Agents (1,000 free conversations each month)',
-        'Priority Support'
+        'Integrate MCP',
+        '1-Agent development'
       ],
       limits: {
         conversations: 5000,
@@ -124,13 +110,13 @@ export const useAuthStore = defineStore('auth', () => {
       features: [
         '5 AI Agents',
         '$25/month for an additional agent',
-        '5,000 Credits (1 credit = 1 message)',
+        '5,000 Credits (1 credit = 1 message) 🔥',
         'Integrate MCP 🔥',
         'Integrate Documents & Web Search',
-        'FB, SMS, Website, WhatsApp, Instagram, Telegram',
+        'FB, SMS, Website, WhatsApp, Instagram, Telegram 🔥',
         '1-Agent development free worth $100/Month 🔥',
-        'Whitelabel Dashboard & Reselling Rights 🔥',
         'Access to all Botsify Resources',
+        'Whitelabel Dashboard & Reselling Rights 🔥',
         'Personal Onboarding Session',
         'Bi-Weekly Training of 1 Agent Free for 12 Months',
         'Priority Support',
