@@ -140,13 +140,13 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 }
 
-const clearResults = () => {
-  responseData.value = null
-  prompt.value = ''
-  currentApiPath.value = ''
-  currentApiMethod.value = 'POST'
-  dataAnalysisStore.clearData()
-}
+// const clearResults = () => {
+//   responseData.value = null
+//   prompt.value = ''
+//   currentApiPath.value = ''
+//   currentApiMethod.value = 'POST'
+//   dataAnalysisStore.clearData()
+// }
 
 const refreshResults = () => {
   if (responseData.value) {

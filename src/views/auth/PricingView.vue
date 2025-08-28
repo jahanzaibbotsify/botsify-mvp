@@ -196,15 +196,10 @@ onMounted(async () => {
       <div class="hero-content">
         <div class="hero-badge">
           <i class="pi pi-sparkle"></i>
-          <span>{{ isConfigured ? `${companyName} Plans` : 'Choose Your Plan' }}</span>
+          <span>Choose Your Plan</span>
         </div>
-        <h1 class="hero-title">{{ isConfigured ? `${companyName} AI Solutions` : 'Scale Your AI Experience' }}</h1>
-        <p class="hero-subtitle">
-          {{ isConfigured 
-            ? `Choose the perfect plan for your AI journey with ${companyName}` 
-            : 'From free exploration to enterprise-grade solutions, find the perfect plan for your AI journey' 
-          }}
-        </p>
+        <h1 class="hero-title">Scale Your AI Experience</h1>
+        <p class="hero-subtitle">From free exploration to enterprise-grade solutions, find the perfect plan for your AI journey</p>
       </div>
     </div>
 

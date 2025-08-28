@@ -30,6 +30,9 @@ if (apiKey) {
 // Initialize whitelabel configuration before app mounts
 const initializeWhitelabel = async () => {
   try {
+    // Always apply default Botsify branding first
+    whitelabelService.resetToDefault()
+
     const configResponse = await whitelabelService.fetchConfig()
     if (configResponse.data && whitelabelService.isConfigured()) {
       whitelabelService.applyConfiguration()
