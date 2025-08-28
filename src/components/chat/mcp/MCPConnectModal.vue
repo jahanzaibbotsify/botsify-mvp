@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import {PropType, ref, watch, onMounted, computed} from 'vue'
+import {PropType, ref, watch, onMounted, computed, defineAsyncComponent} from 'vue'
 import axios from "axios";
-import ToolsList from "./ToolsList.vue";
-import {botsifyApi} from "@/services/botsifyApi.ts";
-import {useMCPStore} from "@/stores/mcpStore.ts";
-import {useBotStore} from "@/stores/botStore.ts";
+const ToolsList = defineAsyncComponent(() => import('./ToolsList.vue'));
+import {botsifyApi} from "@/services/botsifyApi";
+import {useMCPStore} from "@/stores/mcpStore";
+import {useBotStore} from "@/stores/botStore";
 import { Button } from '@/components/ui';
+import {useChatStore} from "@/stores/chatStore.ts";
 
 const props = defineProps({
   server: {
@@ -16,7 +17,15 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  isEdit: {
+    type: Boolean,
+    default: false
+  },
   systemPrompt: {
+    type: String,
+    default: ''
+  },
+  chatId: {
     type: String,
     default: ''
   }
@@ -29,6 +38,53 @@ const googleSheetUrl = ref('');
 const googleSheetName = ref('');
 const serverUrl = ref('');
 const serverLabel = ref('');
+const labelError = ref<string | null>(null);
+const urlError = ref<string | null>(null);
+const apiKeyError = ref<string | null>(null);
+const chatStore = useChatStore();
+
+const isLabelValid = computed(() => {
+  const value = (serverLabel.value || '').trim();
+  if (!value) return false;
+  return /^[a-zA-Z0-9_-]+$/.test(value);
+});
+
+const isUrlValid = computed(() => {
+  if (!props.isCustom) return true;
+  const value = (serverUrl.value || '').trim();
+  return !!value;
+});
+
+const isApiKeyRequired = computed(() => authType.value !== 'none' && authType.value !== 'custom_headers');
+const isApiKeyValid = computed(() => {
+  if (!isApiKeyRequired.value) return true;
+  return !!(apiKey.value || '').trim();
+});
+
+const isFormValid = computed(() => isLabelValid.value && isUrlValid.value && isApiKeyValid.value);
+
+watch(serverLabel, (newVal) => {
+  const value = (newVal || '').trim();
+  if (!value) {
+    labelError.value = 'Server label is required';
+    return;
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+    labelError.value = 'Special characters not allowed';
+  } else {
+    labelError.value = null;
+  }
+});
+
+watch(serverUrl, (newVal) => {
+  if (!props.isCustom) {
+    urlError.value = null;
+    return;
+  }
+  const value = (newVal || '').trim();
+  urlError.value = value ? null : 'Server URL is required';
+});
+
 const apiKey = ref('')
 const showApiKey = ref(false)
 const authType = ref('none');
@@ -37,6 +93,7 @@ const isConnecting = ref(false);
 const error = ref<string | null>(null);
 const alreadyConnected = ref(false);
 const connectedServerId = ref<string | null>(null);
+const isConnectDisabled = computed(() => isConnecting.value || !isFormValid.value);
 const authMethods = [
   {value: 'none', label: 'No Authentication'},
   {value: 'api_key', label: 'API Key'},
@@ -48,6 +105,33 @@ const authMethods = [
 const serverTools = ref([]);
 const customHeaders = ref([{key: '', value: ''}]);
 const connectedServers = computed(() => mcpStore.connectedServers);
+watch(apiKey, (newVal) => {
+  if (!isApiKeyRequired.value) {
+    apiKeyError.value = null;
+    return;
+  }
+  apiKeyError.value = (newVal || '').trim() ? null : 'API key is required';
+});
+
+// Preload server icon before showing; fallback to default SVG if load fails
+const iconSrc = ref<string>('');
+const preloadServerIcon = (srv: any) => {
+  if (!srv || srv.isCustom) {
+    iconSrc.value = '';
+    return;
+  }
+  const url = `/mcp/${srv?.icon}`;
+  iconSrc.value = '';
+  const img = new Image();
+  img.onload = () => {
+    iconSrc.value = url;
+  };
+  img.onerror = () => {
+    iconSrc.value = '';
+  };
+  img.src = url;
+};
+watch(() => props.server, (srv) => preloadServerIcon(srv), { immediate: true });
 
 /**
  * Check if server is already connected and pre-fill form
@@ -55,49 +139,28 @@ const connectedServers = computed(() => mcpStore.connectedServers);
 const checkAndPreFillConnectedServer = () => {
   if (!props.server) return;
 
-  const connectedServer: any = connectedServers.value.find((connectedServer: any) =>
-      connectedServer.setting?.server_label === props.server?.name?.toLowerCase().replace(/\s+/g, '_') ||
-      connectedServer.setting?.server_label === props.server?.id
-  );
-
+  const connectedServer: any = connectedServers.value.find((connectedServer: any) => connectedServer?.id == props.server?.connectionId);
   if (connectedServer) {
-    alreadyConnected.value = true;
+    alreadyConnected.value = props.isEdit;
     connectedServerId.value = connectedServer.id;
-    /**
-     * Pre-fill the form with existing connection data
-     */
-    apiKey.value = connectedServer.setting?.apikey || '';
-    description.value = connectedServer.setting?.server_description || '';
-    authType.value = connectedServer.setting?.auth_method || props.server?.authMethod || 'none';
-    serverUrl.value = connectedServer.setting?.server_url || '';
-
-    if (props?.server && props.server?.id === 'google-sheet' && connectedServer.setting?.google_sheet_url) {
-      googleSheetUrl.value = connectedServer.setting?.google_sheet_url
-    }
-    if (props?.server && props.server?.id === 'google-sheet' && connectedServer.setting?.google_sheet_name) {
-      googleSheetName.value = connectedServer.setting?.google_sheet_name
-    }                                                      
-
-    /**
-     * For custom servers, also pre-fill URL and label
-     */
-    if (props.isCustom) {
+    if (props.isEdit) {
+      /**
+       * Pre-fill the form with existing connection data (edit mode only)
+       */
+      apiKey.value = connectedServer.setting?.apikey || '';
+      description.value = connectedServer.setting?.server_description || '';
+      authType.value = connectedServer.setting?.auth_method || props.server?.authMethod || 'none';
       serverUrl.value = connectedServer.setting?.server_url || '';
       serverLabel.value = connectedServer.setting?.server_label || '';
+
+      if (props?.server && props.server?.id === 'google-sheet' && connectedServer.setting?.google_sheet_url) {
+        googleSheetUrl.value = connectedServer.setting?.google_sheet_url
+      }
+      if (props?.server && props.server?.id === 'google-sheet' && connectedServer.setting?.google_sheet_name) {
+        googleSheetName.value = connectedServer.setting?.google_sheet_name
+      }
     }
   }
-};
-
-/**
- * Check if the current server is already connected
- */
-const isServerConnected = () => {
-  if (!props.server) return false;
-
-  return connectedServers.value.some((connectedServer: any) =>
-      connectedServer.setting?.server_label === props.server?.name?.toLowerCase().replace(/\s+/g, '_') ||
-      connectedServer.setting?.server_label === props.server?.id
-  );
 };
 
 /**
@@ -170,6 +233,23 @@ function handleBack() {
  * This function is used to validate the connection to the MCP server
  */
 async function checkConnection() {
+  const trimmedLabel = (serverLabel.value || '').trim();
+  if (!trimmedLabel) {
+    labelError.value = 'Server label is required';
+    return;
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(trimmedLabel)) {
+    labelError.value = 'Special characters not allowed';
+    return;
+  }
+  if (!isUrlValid.value) {
+    urlError.value = urlError.value || 'Server URL is required';
+    return;
+  }
+  if (!isApiKeyValid.value) {
+    apiKeyError.value = apiKeyError.value || 'API key is required';
+    return;
+  }
   error.value = ''
   isConnecting.value = true;
   let url: string;
@@ -245,9 +325,7 @@ function buildMCPHeaders(): Record<string, string> {
         }
         break;
       case 'api_key':
-        if (props.server.id === 'stripe') {
-          headers['Authorization'] = `Bearer ${apiKey.value.trim()}`;
-        } else if (props.server.id === 'github') {
+        if (props.server.id === 'github') {
           headers['Authorization'] = `token ${apiKey.value.trim()}`;
         } else if (props.server.id === 'notion') {
           headers['Authorization'] = `Bearer ${apiKey.value.trim()}`;
@@ -258,7 +336,7 @@ function buildMCPHeaders(): Record<string, string> {
           headers['X-Shopify-Access-Token'] = apiKey.value.trim();
           headers['Content-Type'] = 'application/json';
         } else {
-          headers['X-API-Key'] = apiKey.value.trim();
+          headers['Authorization'] = `Bearer ${apiKey.value.trim()}`;
         }
         break;
       case 'basic_auth':
@@ -281,6 +359,23 @@ function buildMCPHeaders(): Record<string, string> {
  * @param allowedTools
  */
 const addServer = async (allowedTools: string[]) => {
+  const trimmedLabel = (serverLabel.value || '').trim();
+  if (!trimmedLabel) {
+    labelError.value = 'Server label is required';
+    return;
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(trimmedLabel)) {
+    labelError.value = 'Special characters not allowed';
+    return;
+  }
+  if (!isUrlValid.value) {
+    urlError.value = urlError.value || 'Server URL is required';
+    return;
+  }
+  if (!isApiKeyValid.value) {
+    apiKeyError.value = apiKeyError.value || 'API key is required';
+    return;
+  }
   let url: string;
   if (props.server && props.server.id === 'shopify') {
     url = (serverUrl.value.endsWith('/') ? serverUrl.value.slice(0, -1) : serverUrl.value) + (alreadyConnected.value ? '' : '/api/mcp');
@@ -292,7 +387,7 @@ const addServer = async (allowedTools: string[]) => {
     settings: {
       apikey: apiKey.value,
       type: "mcp",
-      server_label: props.server ? (props.server.id || props.server.name?.toLowerCase().replace(/\s+/g, '_')) : serverLabel.value,
+      server_label: serverLabel.value,
       server_url: url,
       server_description: description.value,
       headers: buildMCPHeaders(),
@@ -301,7 +396,8 @@ const addServer = async (allowedTools: string[]) => {
       is_custom: props.isCustom,
       auth_method: authType.value,
       ...(googleSheetUrl.value ? {google_sheet_url: googleSheetUrl.value} : {}),
-      ...(googleSheetName.value ? {google_sheet_name: googleSheetName.value} : {})
+      ...(googleSheetName.value ? {google_sheet_name: googleSheetName.value} : {}),
+      ...(props.server && props.server.name ? {server_name: props.server.name} : {})
     },
     apikey: useBotStore().apiKey
   };
@@ -339,6 +435,10 @@ const addServer = async (allowedTools: string[]) => {
         }
       }
       mcpStore.connectedMCPs = mcpStore.connectedServers.length;
+
+      const successMessage = `✅ "${connectedServer.setting.server_name}" MCP server connected successfully!`
+      await chatStore.addMessage(props.chatId, successMessage, 'assistant')
+
       emit('quit');
     }
   }
@@ -354,9 +454,9 @@ onMounted(() => {
   <section @click.self="handleBack" tabindex="0" style="position:relative;">
     <div class="text-center">
       <img
-          v-if="server && !server.isCustom"
+          v-if="server && !server.isCustom && iconSrc"
           class="server-icon"
-          :src="`/mcp/${server.icon}`"
+          :src="iconSrc"
           :alt="server.name"
       >
       <svg
@@ -382,12 +482,12 @@ onMounted(() => {
       <div class="server-title">Connect to {{ server ? server.name : null }} MCP {{ server ? '' : 'Server' }}</div>
 
       <!-- Connected Status Indicator -->
-      <div v-if="isServerConnected()" class="connected-status">
+      <div v-if="alreadyConnected" class="connected-status">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
              stroke-linecap="round" stroke-linejoin="round">
           <path d="M20 6L9 17l-5-5"/>
         </svg>
-        <span>Already Connected</span>
+        <span>Connected</span>
       </div>
 
       <div v-if="!serverTools.length">
@@ -408,12 +508,17 @@ onMounted(() => {
                 id="url"
                 placeholder="https://mcp.example.com (required)"
             >
-          </div>
-          <div class="pt-20">
-            <input type="text" v-model="serverLabel" id="label" placeholder="Server Label e.g my_mcp_server">
+            <div v-if="urlError" class="error-message" style="margin-top: 8px;">
+              {{ urlError }}
+            </div>
           </div>
         </div>
-        
+        <div class="pt-20">
+          <input type="text" v-model="serverLabel" id="label" placeholder="Server Label e.g my_mcp_server">
+          <div v-if="labelError" class="error-message" style="margin-top: 8px;">
+            {{ labelError }}
+          </div>
+        </div>
         <div class="pt-20">
           <input type="text" v-model="description" id="description" placeholder="Description (optional)">
         </div>
@@ -467,6 +572,7 @@ onMounted(() => {
                 class="access-input"
                 :placeholder="`Enter ${getAuthLabel(authType || (server ? server.authMethod : ''))}`"
             />
+            
             <button
                 class="input-icon input-icon-right"
                 type="button"
@@ -490,6 +596,9 @@ onMounted(() => {
                 </path>
               </svg>
             </button>
+          </div>
+          <div v-if="apiKeyError" class="error-message" style="margin-top: 8px;">
+            {{ apiKeyError }}
           </div>
           <div class="text-center pt-5" v-if="server && server.externalData">
             <a class="external-link" target="_blank" :href="server.externalData.link"> {{ server.externalData.label }}
@@ -533,7 +642,7 @@ onMounted(() => {
         </div>
         <div class="button-row">
           <Button variant="secondary" icon="pi pi-arrow-left" @click="handleBack">Back</Button>
-          <Button :disabled="isConnecting" :loading="isConnecting" icon="pi pi-bolt" @click="checkConnection">
+          <Button :disabled="isConnectDisabled" :loading="isConnecting" :class="{ 'disabled-cursor': isConnectDisabled }" icon="pi pi-bolt" @click="checkConnection">
             Connect
           </Button>
         </div>
@@ -651,6 +760,9 @@ input {
   margin: 40px auto 0 auto;
   max-width: 500px;
   width: 100%;
+}
+.disabled-cursor {
+  cursor: not-allowed !important;
 }
 .auth-select-group {
   margin: 0 auto;
