@@ -7,7 +7,6 @@ import { storeToRefs } from 'pinia'
 import { useWhitelabelStore } from '@/stores/whitelabelStore'
 import BookMeetingModal from '@/components/modal/BookMeetingModal.vue';
 import CalendlyModal from '@/components/modal/CalendlyModal.vue';
-import { getWebUrl } from '@/utils';
 import { showZen } from '@/utils/zendesk';
 import { useBotStore } from '@/stores/botStore';
 import { Button, ManageBilling, Dropdown, DropdownItem } from '../ui';
@@ -81,7 +80,6 @@ const navigationButtons = computed(() => {
 // Help links for the help dropdown
 const navLinks = computed(() => {
   // @ts-ignore
-  const baseUrl = getWebUrl();
   if (isConfigured.value) {
     // For whitelabel clients, show only Support
     return [
