@@ -73,7 +73,7 @@ const openEditProfile = () => {
           <div class="user-details">
             <p class="user-name">{{ currentUser?.name }}</p>
             <p class="user-email">{{ currentUser?.email }}</p>
-            <Badge v-if="currentUser?.subs?.stripe_plan" variant="secondary" size="xs" class="w-fit">{{ currentUser.subs.stripe_plan }}</Badge>
+            <Badge v-if="currentUser?.subs?.stripe_plan" variant="secondary" size="xs" class="w-fit">{{ currentUser.subs.stripe_plan.replaceAll('-', ' ') }}</Badge>
           </div>
         </div>
         <div class="dropdown-divider"></div>

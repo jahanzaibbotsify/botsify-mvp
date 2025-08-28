@@ -437,7 +437,7 @@ export const useAuthStore = defineStore('auth', () => {
     setLoading(true)
     clearError()
     try {
-      const fullName = `${payload.first_name} ${payload.last_name}`.trim()
+      const fullName = `${payload.first_name ?? ''} ${payload.last_name ?? ''}`.trim()
       const response = await authApi.updateAccount({
         first_name: payload.first_name,
         last_name: payload.last_name,
@@ -453,13 +453,13 @@ export const useAuthStore = defineStore('auth', () => {
         const updatedUser = {
           ...currentUser,
           // camelCase
-          firstName: payload.firstName,
-          lastName: payload.lastName,
-          email: payload.email,
-          name: fullName,
+          firstName: payload.first_name ?? (currentUser as any).firstName,
+          lastName: payload.last_name ?? (currentUser as any).lastName,
+          email: payload.email ?? (currentUser as any).email,
+          name: fullName || (currentUser as any).name,
           // snake_case for compatibility where expected
-          first_name: payload.firstName,
-          last_name: payload.lastName
+          first_name: payload.first_name ?? (currentUser as any).first_name,
+          last_name: payload.last_name ?? (currentUser as any).last_name
         }
         setAuthData(null, updatedUser)
         return { success: true, data: response.data }
