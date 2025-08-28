@@ -7,7 +7,7 @@ import WhitelabelLogo from '@/components/ui/WhitelabelLogo.vue'
 
 const route = useRoute()
 const whitelabelStore = useWhitelabelStore()
-const { companyName, primaryColor, secondaryColor } = storeToRefs(whitelabelStore)
+const { companyName, primaryColor, secondaryColor, isConfigured } = storeToRefs(whitelabelStore)
 
 // Determine if brand panel should be shown
 const showBrandPanel = computed(() => {
@@ -102,6 +102,11 @@ const brandPanelStyle = computed(() => ({
         <!-- Footer -->
         <div class="brand-footer">
           <p>&copy; 2025 {{ companyName }}. All rights reserved.</p>
+          <div class="footer-links" v-if="!isConfigured">
+            <a href="https://botsify.com/terms-and-conditions" class="footer-link" target="_blank">Terms & conditions</a>
+            <span class="footer-separator">•</span>
+            <a href="https://botsify.com/privacy-policy" class="footer-link" target="_blank">Privacy policy</a>
+          </div>
         </div>
       </div>
     </div>
@@ -308,8 +313,33 @@ const brandPanelStyle = computed(() => ({
 .brand-footer p {
   font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.7);
-  margin: 0;
+  margin: 0 0 var(--space-2) 0;
 }
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.footer-link {
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  font-size: 0.75rem;
+  transition: color var(--transition-normal);
+}
+.footer-link:hover {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: underline;
+}
+
+.footer-separator {	
+  color: rgba(255, 255, 255, 0.4);	
+  font-size: 0.75rem;
+}
+
 
 /* Right Form Panel */
 .auth-form-panel {

@@ -102,7 +102,9 @@ const openEditProfile = () => {
     </template>
   </Dropdown>
   
-  <EditProfileModal ref="editProfileModalRef" />
+  <Teleport to="body">
+    <EditProfileModal ref="editProfileModalRef" />
+  </Teleport>
 </template>
 
 <style scoped>

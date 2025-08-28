@@ -50,9 +50,11 @@ const handleManageBilling = async () => {
     <Button @click="handleManageBilling" :loading="billingLoading" :disabled="billingLoading" icon="pi pi-external-link" :iconPosition="iconPosition" :class="customClass" :size="size">
         Manage Billing
     </Button>
-    <BillingModal 
-      ref="billingModalRef" 
-      :billing-data="billingData"
-      @close="closeBillingModal"
-    ></BillingModal>
+    <Teleport to="body">
+      <BillingModal 
+        ref="billingModalRef" 
+        :billing-data="billingData"
+        @close="closeBillingModal"
+      ></BillingModal>
+    </Teleport>
 </template>
