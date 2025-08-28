@@ -673,7 +673,7 @@ onUnmounted(() => {
                       <template #icon>
                         <i class="pi pi-clipboard"></i>
                       </template>
-                      <span>Copy API Key</span>
+                      <span>API Key</span>
                     </DropdownItem>
                   </template>
                 </Dropdown>

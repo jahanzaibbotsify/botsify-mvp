@@ -34,7 +34,7 @@ export const useAuthStore = defineStore('auth', () => {
       currency: 'USD',
       billing: 'monthly',
       features: [
-        '1 AI Agents',
+        '1 AI Agent',
         '1,000 Credits (1 credit = 1 message) 🔥',
         'Integrate Documents & Web Search',
         'Messenger, SMS, Website, Instagram, Telegram, WhatsApp 🔥',
