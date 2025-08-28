@@ -80,7 +80,7 @@ onMounted(() => {
         </svg>
       </div>
       <h2 class="success-title">Subscription Successful!</h2>
-      <p class="success-message">You’ll be redirected shortly...</p>
+      <p class="success-message">You’ll be redirected shortly. Do not refresh the page...</p>
       <div class="loading-dots">
         <span class="dot"></span>
         <span class="dot"></span>

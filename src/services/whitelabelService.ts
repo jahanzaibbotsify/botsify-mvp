@@ -12,6 +12,9 @@ class WhitelabelService {
   private packages: WhitelabelPackage[] = []
   private isInitialized = false
   private whitelabelId: number | null = null
+  private readonly defaultTitle = 'Botsify Agent'
+  private readonly defaultDescription = 'Botsify Agent helps you automate conversations and support with AI-powered chatbots.'
+  private readonly defaultFaviconPath = '/favicon.png'
 
   /**
    * Get the current domain for the whitelabel API call
@@ -157,10 +160,10 @@ class WhitelabelService {
   applyConfiguration(): void {
     if (!this.config) return
 
-    // Apply company name to document title
-    if (this.config.company_name) {
-      document.title = `${this.config.company_name} Agent`
-    }
+    // Apply meta (title and description)
+    const titleText = this.config.company_name ? `${this.config.company_name} Agent` : this.defaultTitle
+    const metaDescription = (this.config as Partial<{ meta_description?: string }>).meta_description || this.defaultDescription
+    this.applyMeta(titleText, metaDescription)
 
     // Apply favicon
     if (this.config.favicon) {
@@ -242,11 +245,8 @@ class WhitelabelService {
     // Remove whitelabel ID from localStorage
     localStorage.removeItem('whitelabelId')
     
-    // Reset document title
-    document.title = 'Botsify Agent'
-    
-    // Reset favicon
-    this.applyFavicon('/favicon.png')
+    // Apply default branding (title/meta/favicon)
+    this.applyDefaultBranding()
     
     // Remove logo data attribute
     document.documentElement.removeAttribute('data-whitelabel-logo')
@@ -258,6 +258,36 @@ class WhitelabelService {
     root.style.removeProperty('--color-primary-active')
     root.style.removeProperty('--color-secondary')
     root.style.removeProperty('--color-accent')
+  }
+
+  /**
+   * Ensure a meta tag exists and set its content
+   */
+  private ensureMetaTag(name: string, content: string): void {
+    let tag = document.head.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null
+    if (!tag) {
+      tag = document.createElement('meta')
+      tag.setAttribute('name', name)
+      document.head.appendChild(tag)
+    }
+    tag.setAttribute('content', content)
+  }
+
+  /**
+   * Apply meta title and description
+   */
+  private applyMeta(title: string, description: string): void {
+    document.title = title
+    this.ensureMetaTag('title', title)
+    this.ensureMetaTag('description', description)
+  }
+
+  /**
+   * Apply default Botsify branding to the document
+   */
+  applyDefaultBranding(): void {
+    this.applyMeta(this.defaultTitle, this.defaultDescription)
+    this.applyFavicon(this.defaultFaviconPath)
   }
 }
 

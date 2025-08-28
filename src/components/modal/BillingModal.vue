@@ -222,6 +222,11 @@
       return subscriptionData.value.plan.name
     }
     
+    if (subscriptionData.value.name) {
+      console.log('Found plan name in name:', subscriptionData.value.name)
+      return String(subscriptionData.value.name)
+    }
+
     // Fallback to stripe_plan if available
     if (subscriptionData.value.stripe_plan) {
       console.log('Found plan name in stripe_plan:', subscriptionData.value.stripe_plan)

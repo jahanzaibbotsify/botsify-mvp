@@ -140,13 +140,13 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 }
 
-const clearResults = () => {
-  responseData.value = null
-  prompt.value = ''
-  currentApiPath.value = ''
-  currentApiMethod.value = 'POST'
-  dataAnalysisStore.clearData()
-}
+// const clearResults = () => {
+//   responseData.value = null
+//   prompt.value = ''
+//   currentApiPath.value = ''
+//   currentApiMethod.value = 'POST'
+//   dataAnalysisStore.clearData()
+// }
 
 const refreshResults = () => {
   if (responseData.value) {
@@ -242,7 +242,7 @@ const sendSuggestion = (suggestion: string) => {
           </div>
 
           <!-- AI Processing Error Display -->
-          <div v-if="isErrorPreview" class="ai-error-message">
+          <!-- <div v-if="isErrorPreview" class="ai-error-message">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
@@ -257,7 +257,7 @@ const sendSuggestion = (suggestion: string) => {
                 <button class="retry-btn secondary" @click="clearResults">Start Over</button>
               </div>
             </div>
-          </div>
+          </div> -->
 
           <!-- Store Error Display -->
           <div v-if="dataAnalysisStore.hasError" class="error-message">

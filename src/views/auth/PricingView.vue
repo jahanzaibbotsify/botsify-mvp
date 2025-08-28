@@ -196,15 +196,10 @@ onMounted(async () => {
       <div class="hero-content">
         <div class="hero-badge">
           <i class="pi pi-sparkle"></i>
-          <span>{{ isConfigured ? `${companyName} Plans` : 'Choose Your Plan' }}</span>
+          <span>Choose Your Plan</span>
         </div>
-        <h1 class="hero-title">{{ isConfigured ? `${companyName} AI Solutions` : 'Scale Your AI Experience' }}</h1>
-        <p class="hero-subtitle">
-          {{ isConfigured 
-            ? `Choose the perfect plan for your AI journey with ${companyName}` 
-            : 'From free exploration to enterprise-grade solutions, find the perfect plan for your AI journey' 
-          }}
-        </p>
+        <h1 class="hero-title">Scale Your AI Experience</h1>
+        <p class="hero-subtitle">From free exploration to enterprise-grade solutions, find the perfect plan for your AI journey</p>
       </div>
     </div>
 
@@ -319,6 +314,12 @@ onMounted(async () => {
                   <i class="pi pi-check"></i>
                 </div>
                 <span>{{ feature.includes('🔥') ? feature.replace('🔥', '') : feature }}</span>
+              </li>
+              <li v-for="excludedFeature in plan.excludedFeatures" :key="excludedFeature" class="feature-item exclude">
+                <div class="feature-times">
+                  <i class="pi pi-times"></i>
+                </div>
+                <span>{{ excludedFeature }}</span>
               </li>
             </ul>
           </div>
@@ -847,13 +848,22 @@ onMounted(async () => {
   line-height: 1.5;
 }
 
+.feature-item.exclude {
+  color: var(--color-text-tertiary);
+  opacity: 0.7;
+}
+.feature-item.exclude span{
+  text-decoration: line-through;
+}
+
 .feature-fire{
   font-size: 18px;
   width: 20px;
   height: 20px;
   line-height: 20px;
 }
-.feature-check {
+.feature-check,
+.feature-times {
   width: 20px;
   height: 20px;
   background: var(--color-success);
@@ -865,10 +875,15 @@ onMounted(async () => {
   margin-top: 2px;
 }
 
-.feature-check i {
+.feature-check i,
+.feature-times i {
   color: white;
   font-size: 0.625rem;
   font-weight: 600;
+}
+
+.feature-times{
+  background: var(--color-error);
 }
 
 /* Plan Action */
@@ -993,7 +1008,7 @@ onMounted(async () => {
   color: var(--whitelabel-primary);
 }
 
-.pricing-view[style*="--whitelabel-primary"] .hero-subtitle {
+/* .pricing-view[style*="--whitelabel-primary"] .hero-subtitle {
   color: var(--whitelabel-secondary);
-}
+} */
 </style> 

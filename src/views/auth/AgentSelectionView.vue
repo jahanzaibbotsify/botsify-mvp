@@ -14,10 +14,11 @@ import { useWhitelabelStore } from '@/stores/whitelabelStore'
 import WhitelabelLogo from '@/components/ui/WhitelabelLogo.vue'
 import Dropdown from '@/components/ui/Dropdown.vue';
 import DropdownItem from '@/components/ui/DropdownItem.vue';
+import { useRoleStore } from '@/stores/roleStore';
 
 const router = useRouter()
 const whitelabelStore = useWhitelabelStore()
-const { isConfigured, companyName, primaryColor, secondaryColor } = storeToRefs(whitelabelStore)
+const { primaryColor, secondaryColor } = storeToRefs(whitelabelStore)
 
 // Computed styles for whitelabel colors
 const brandPanelStyle = computed(() => ({
@@ -455,8 +456,10 @@ const getPublishedChannels = (agent: any) => {
 
 onMounted(async () => {
   // Initialize whitelabel if needed
-  if (isConfigured.value) {
-    // Whitelabel is already configured
+  const user = localStorage.getItem('user');
+  if (user) {
+    const roleStore = useRoleStore();
+    roleStore.setCurrentUser(JSON.parse(user))
   }
   
   // Fetch agents on component mount
@@ -487,13 +490,8 @@ onUnmounted(() => {
       </div>
       
       <div class="hero-content">
-        <h1 class="hero-title">{{ isConfigured ? `Choose Your ${companyName} AI Agent` : 'Choose Your AI Agent' }}</h1>
-        <p class="hero-subtitle">
-          {{ isConfigured 
-            ? `Select from our curated collection of specialized AI agents, each designed for specific tasks and industries with ${companyName}` 
-            : 'Select from our curated collection of specialized AI agents, each designed for specific tasks and industries' 
-          }}
-        </p>
+        <h1 class="hero-title">Choose Your AI Agent</h1>
+        <p class="hero-subtitle">Select from our curated collection of specialized AI agents, each designed for specific tasks and industries</p>
       </div>
     </div>
 
@@ -673,7 +671,7 @@ onUnmounted(() => {
                       <template #icon>
                         <i class="pi pi-clipboard"></i>
                       </template>
-                      <span>Copy API Key</span>
+                      <span>API Key</span>
                     </DropdownItem>
                   </template>
                 </Dropdown>

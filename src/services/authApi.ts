@@ -6,6 +6,9 @@ export interface UpdateAccountPayload {
   last_name?: string
   email?: string
   name?: string
+  old_password?: string
+  password?: string
+  password_confirmation?: string
 }
 
 export interface ForgotPasswordPayload {

@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import {ref, onMounted, onBeforeUnmount} from 'vue';
-import type {MCPServer} from '@/types/mcp';
-import ServersList from "@/components/chat/mcp/ServersList.vue";
-import MCPConnectModal from "@/components/chat/mcp/MCPConnectModal.vue";
+import {ref, onMounted, onBeforeUnmount, defineAsyncComponent} from 'vue';
+import type {MCPServer} from '@/types/mcp.ts';
+const ServersList = defineAsyncComponent(() => import('./ServersList.vue'));
+const MCPConnectModal = defineAsyncComponent(() => import('./MCPConnectModal.vue'));
 
 defineProps({
   isOpen: Boolean,
   showCustomServer: {
     type: Boolean,
     default: false
-  }
+  },
+  chatId: String
 });
 
 const emit = defineEmits(['close']);
@@ -17,6 +18,7 @@ const emit = defineEmits(['close']);
 
 const isAddNewServer = ref(false);
 const selectedServer = ref<MCPServer | null>(null);
+const isEdit = ref(false);
 
 /**
  * Closes the modal and resets the state.
@@ -39,8 +41,10 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleKeydown);
 });
 
-const selectServer = (server: MCPServer) => {
-  if (server.isCustom) {
+const selectServer = (payload: any) => {
+  const server = payload?.server || payload;
+  isEdit.value = !!payload?.isEdit;
+  if (server.isCustom && !isEdit.value) {
     isAddNewServer.value = true;
   }
   selectedServer.value = server;
@@ -54,9 +58,9 @@ const selectServer = (server: MCPServer) => {
       <!-- Header -->
       <div class="modal-header" v-if="!isAddNewServer && !selectedServer">
         <div class="header-content">
-          <strong>Add tools from remote MCP servers</strong>
+          <h2 class="modal-title">Add MCP server</h2>
         </div>
-        <button class="close-button" @click="closeModal">
+        <button class="close-button" @click="closeModal" aria-label="Close">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -71,11 +75,13 @@ const selectServer = (server: MCPServer) => {
             v-if="selectedServer || isAddNewServer"
             :server="selectedServer"
             :is-custom="isAddNewServer"
+            :is-edit="isEdit"
             @close="selectedServer = null; isAddNewServer = false"
             @quit="() => {
               selectedServer = null; isAddNewServer = false;
               closeModal();
             }"
+            :chat-id="chatId"
         />
         <ServersList
             v-else
@@ -129,10 +135,11 @@ const selectServer = (server: MCPServer) => {
   gap: var(--space-2);
 }
 
-.modal-header h2 {
+.modal-title {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .close-button {
