@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useChatStore } from '@/stores/chatStore';
 import { useMCPStore } from '@/stores/mcpStore';
+import { useRoleStore } from '@/stores/roleStore';
 import type { Attachment } from '@/types';
 import FileUpload from '@/components/ui/FileUpload.vue';
 import { botsifyApi } from '@/services/botsifyApi';
@@ -19,6 +20,7 @@ const props = defineProps<{
 
 const chatStore = useChatStore();
 const mcpStore = useMCPStore();
+const roleStore = useRoleStore();
 const messageText = ref('');
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const showFileUpload = ref(false);
@@ -200,6 +202,7 @@ const closeMCPDropdown = () => {
 
 // New methods for dropdown actions
 const openMCPServers = async() => {
+  if (!roleStore.canManageMCPConnections) return;
   await mcpStore.setIntialize();
   showMCPModal.value = true;
   closeMCPDropdown();
@@ -368,7 +371,7 @@ const hideLoading = () => {
             </div>
           </div>
           <button 
-          v-if="props.hasPromptContent"
+          v-if="props.hasPromptContent && roleStore.canManageMCPConnections"
             class="icon-button mcp-icon-button" 
             @click="openMCPServers" title="MCP Servers" 
             :disabled="loadingFor === 'fileUploadingFromPin' || chatStore.doInputDisable">           
