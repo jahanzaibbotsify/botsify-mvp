@@ -6,7 +6,7 @@ import type {
   PricingPlan,
   AgentCategory
 } from '@/types/auth'
-import { authApi } from '@/services/authApi'
+import { authApi, UpdateAccountPayload } from '@/services/authApi'
 import { getCurrentApiKey } from '@/utils/apiKeyUtils'
 import { useRoleStore } from './roleStore'
 import { BotUser } from '@/types/user'
@@ -433,16 +433,19 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * Update account/profile details
    */
-  const updateAccount = async (payload: { firstName: string; lastName: string; email: string }) => {
+  const updateAccount = async (payload: UpdateAccountPayload) => {
     setLoading(true)
     clearError()
     try {
-      const fullName = `${payload.firstName} ${payload.lastName}`.trim()
+      const fullName = `${payload.first_name} ${payload.last_name}`.trim()
       const response = await authApi.updateAccount({
-        first_name: payload.firstName,
-        last_name: payload.lastName,
+        first_name: payload.first_name,
+        last_name: payload.last_name,
         email: payload.email,
-        name: fullName
+        name: fullName,
+        old_password: payload.old_password,
+        password: payload.password,
+        password_confirmation: payload.password_confirmation
       })
 
       if (response.success) {
