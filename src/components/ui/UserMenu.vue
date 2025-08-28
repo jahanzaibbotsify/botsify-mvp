@@ -80,7 +80,10 @@ const openEditProfile = () => {
         <div class="dropdown-actions">
           <Button @click="openEditProfile" variant="secondary" size="small" icon="pi pi-user-edit">Profile</Button>
           <ManageBilling v-if="roleStore.canManageBillingWithSubscription" size="small" />
-          <Button @click="handleLogout" :disabled="isLoggingOut" :loading="isLoggingOut" variant="error" size="small" icon="pi pi-sign-out">
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-actions">
+          <Button @click="handleLogout" :disabled="isLoggingOut" :loading="isLoggingOut" variant="error" size="small" icon="pi pi-sign-out" class="w-full">
             Logout
           </Button>
         </div>
@@ -179,6 +182,7 @@ const openEditProfile = () => {
 .dropdown-actions {
   display: flex;
   align-items: center;
+  justify-content: end;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   width: 320px;
