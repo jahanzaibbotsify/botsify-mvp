@@ -460,6 +460,7 @@ onMounted(async () => {
   if (user) {
     const roleStore = useRoleStore();
     roleStore.setCurrentUser(JSON.parse(user))
+    useBotStore().setUser(JSON.parse(user));
   }
   
   // Fetch agents on component mount
