@@ -137,7 +137,7 @@ export const useRoleStore = defineStore('role', () => {
     if (!hasPermission('manage_mcp_connections')) return false
     const plan = currentUser.value?.subs?.stripe_plan as string | undefined
     if (!plan) return true
-    const disallowedPlans = ['Basic-Plan', 'Basic-Annual', 'Personal-Plan', 'Personal-Plan-Annual']
+    const disallowedPlans = ['Basic-Plan', 'Basic-Plan-Annual', 'Personal-Plan', 'Personal-Plan-Annual']
     return !disallowedPlans.includes(plan)
   })
   const canManageTeamMembers = computed(() => hasPermission('manage_team_members'))
