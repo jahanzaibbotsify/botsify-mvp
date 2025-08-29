@@ -2,12 +2,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
 import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { useWhitelabelStore } from '@/stores/whitelabelStore'
 import type { PricingPlan } from '@/types/auth'
+import type { WhitelabelPackage } from '@/types/whitelabel'
 import { authApi } from '@/services/authApi'
 import { Badge, Button } from '@/components/ui';
 
 const authStore = useAuthStore()
 const router = useRouter()
+const whitelabelStore = useWhitelabelStore()
+const { isConfigured, isLoading, packages: whitelabelPackages, hasPackages, shouldShowWhitelabelPlans, companyName, primaryColor, secondaryColor } = storeToRefs(whitelabelStore)
+const { getLogoUrl } = whitelabelStore
 
 // Clear any existing errors when component mounts
 onMounted(() => {
@@ -19,22 +25,74 @@ const billingCycle = ref<'monthly' | 'annually'>('annually')
 const isLoggingOut = ref(false);
 const loading = ref(false);
 
-// Show all plans with dynamic pricing
+// Convert whitelabel packages to pricing plan format
+const convertWhitelabelPackageToPlan = (pkg: WhitelabelPackage): PricingPlan => {
+  // Handle currency - it can be a string or an object
+  let currencyCode = 'USD'
+  if (typeof pkg.currency === 'string') {
+    currencyCode = pkg.currency
+  } else if (pkg.currency && typeof pkg.currency === 'object' && 'code' in pkg.currency) {
+    currencyCode = (pkg.currency as any).code
+  }
+  
+  return {
+    id: pkg.id.toString(),
+    name: pkg.name,
+    description: `${pkg.total_bots} AI Agents, ${pkg.total_users} Users`,
+    price: parseFloat(pkg.price) || 0,
+    currency: currencyCode,
+    billing: pkg.type,
+    features: [
+      `${pkg.total_bots} AI Agents`,
+      `${pkg.total_users} Users`,
+      pkg.is_trial ? `${pkg.trial_days} Day Trial` : 'No Trial',
+      'All Platforms Supported',
+      'Priority Support'
+    ],
+    excludedFeatures: [],
+    limits: {
+      conversations: pkg.total_users === 'unlimited' ? 'unlimited' : parseInt(pkg.total_users),
+      agents: parseInt(pkg.total_bots),
+      customBranding: true,
+      apiAccess: true,
+      prioritySupport: true,
+      advancedAnalytics: true
+    },
+    isContactSales: false,
+    isPopular: false,
+    prices: {
+      monthly: pkg.stripe_price_id,
+      annually: pkg.stripe_price_id
+    }
+  }
+}
+
+// Show all plans with dynamic pricing - use whitelabel packages if available
 const allPlans = computed(() => {
-  return authStore.pricingPlans.map(plan => {
-    if (billingCycle.value === 'annually' && plan.discount?.yearlyPrice) {
+  console.log('allPlans computed - isConfigured:', isConfigured.value, 'whitelabelPackages:', whitelabelPackages.value, 'hasPackages:', hasPackages.value)
+  
+  if (shouldShowWhitelabelPlans.value && whitelabelPackages.value && whitelabelPackages.value.length > 0) {
+    // Use whitelabel packages
+    console.log('Using whitelabel packages:', whitelabelPackages.value)
+    return whitelabelPackages.value.map(pkg => convertWhitelabelPackageToPlan(pkg))
+  } else {
+    // Use default Botsify plans
+    console.log('Using default Botsify plans')
+    return authStore.pricingPlans.map(plan => {
+      if (billingCycle.value === 'annually' && plan.discount?.yearlyPrice) {
+        return {
+          ...plan,
+          price: Math.round(plan.discount.yearlyPrice),
+          billing: 'yearly' as const,
+          showAnnualDiscount: true
+        }
+      }
       return {
         ...plan,
-        price: Math.round(plan.discount.yearlyPrice),
-        billing: 'yearly' as const,
-        showAnnualDiscount: true
+        showAnnualDiscount: false
       }
-    }
-    return {
-      ...plan,
-      showAnnualDiscount: false
-    }
-  })
+    })
+  }
 })
 
 /**
@@ -84,17 +142,49 @@ const handleLogout = async () => {
     isLoggingOut.value = false;
   }
 };
+
+// Computed styles for whitelabel colors
+const brandPanelStyle = computed(() => ({
+  '--whitelabel-primary': primaryColor.value,
+  '--whitelabel-secondary': secondaryColor.value
+}))
+
+// Initialize whitelabel packages if needed
+// NOTE: This is the ONLY place where whitelabel packages should be fetched
+// Packages are not needed on other pages and should not be fetched there
+onMounted(async () => {
+  console.log('PricingView mounted - isConfigured:', isConfigured.value, 'hasPackages:', hasPackages.value)
+  
+  // Only fetch packages if whitelabel is configured and we don't already have packages
+  if (isConfigured.value && !hasPackages.value) {
+    const userId = authStore.user?.id || authStore.user?.user_id
+    console.log('Fetching packages for userId:', userId)
+    if (userId) {
+      try {
+        await whitelabelStore.fetchPackages(userId)
+      } catch (error) {
+        console.error('Failed to fetch packages:', error)
+      }
+    }
+  } else {
+    console.log('Skipping packages fetch - not configured or already have packages')
+  }
+})
 </script>
 
 <template>
-  <div class="pricing-view">
+  <div class="pricing-view" :style="brandPanelStyle">
     <!-- Hero Section -->
     <div class="hero-section">
       <!-- Header moved inside hero section -->
       <div class="hero-header">
         <div class="header-container">
           <div class="header-left">
-            <img src="/images/logos/botsify-logo.webp" alt="Botsify" class="header-logo">
+            <img 
+              :src="isConfigured ? getLogoUrl() || '/images/logos/botsify-logo.webp' : '/images/logos/botsify-logo.webp'" 
+              :alt="companyName" 
+              class="header-logo"
+            >
           </div>
           <div class="header-right">
             <Button @click="handleLogout" icon="pi pi-sign-out" class="logout-button" :disabled="isLoggingOut" :loading="isLoggingOut">
@@ -109,9 +199,7 @@ const handleLogout = async () => {
           <span>Choose Your Plan</span>
         </div>
         <h1 class="hero-title">Scale Your AI Experience</h1>
-        <p class="hero-subtitle">
-          From free exploration to enterprise-grade solutions, find the perfect plan for your AI journey
-        </p>
+        <p class="hero-subtitle">From free exploration to enterprise-grade solutions, find the perfect plan for your AI journey</p>
       </div>
     </div>
 
@@ -123,8 +211,9 @@ const handleLogout = async () => {
       </div>
     </div>
 
-    <!-- Billing Toggle -->
-    <div class="billing-toggle-section">
+    <!-- Billing Toggle - Only show for default plans -->
+     <template v-if="!isLoading">
+    <div v-if="!isConfigured || !hasPackages" class="billing-toggle-section">
       <div class="billing-toggle-container">
         <div class="billing-toggle">
           <button
@@ -158,13 +247,13 @@ const handleLogout = async () => {
             free: plan.price === 0,
             enterprise: plan.id === 'enterprise',
             selected: selectedPlanId === plan.id,
-            loading: authStore.isLoading && selectedPlanId === plan.id
+            loading: loading && selectedPlanId === plan.id
           }"
           :style="{ '--card-delay': index * 0.1 + 's' }"
         >
           <!-- Popular Badge -->
           <div v-if="plan.isPopular" class="plan-badge">
-            <span>Most Popular</span>
+            <span>{{ isConfigured ? 'Most Popular' : 'Most Popular' }}</span>
           </div>
 
           <!-- Plan Header -->
@@ -172,6 +261,7 @@ const handleLogout = async () => {
             <h3 class="plan-title">{{ plan.name }}</h3>
             <p class="plan-subtitle">{{ plan.description }}</p>
           </div>
+          
           <!-- Plan Pricing -->
           <div class="plan-pricing">
             <div v-if="plan.isContactSales" class="price-contact">
@@ -192,7 +282,8 @@ const handleLogout = async () => {
               </span>
             </div>
             
-            <div v-if="billingCycle === 'annually' && plan.discount?.yearlyPrice && !plan.isContactSales" class="price-discount">
+            <!-- Show annual discount only for default plans -->
+            <div v-if="!isConfigured && billingCycle === 'annually' && plan.discount?.yearlyPrice && !plan.isContactSales" class="price-discount">
               <span class="annual-savings">(Billed Annually & save 2 months)</span>
               <Badge variant="success">17% OFF</Badge>
             </div>
@@ -224,11 +315,18 @@ const handleLogout = async () => {
                 </div>
                 <span>{{ feature.includes('🔥') ? feature.replace('🔥', '') : feature }}</span>
               </li>
+              <li v-for="excludedFeature in plan.excludedFeatures" :key="excludedFeature" class="feature-item exclude">
+                <div class="feature-times">
+                  <i class="pi pi-times"></i>
+                </div>
+                <span>{{ excludedFeature }}</span>
+              </li>
             </ul>
           </div>
         </div>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
@@ -240,6 +338,68 @@ const handleLogout = async () => {
   padding: 0;
   scroll-behavior: smooth;
   overflow-x: hidden;
+}
+
+/* Whitelabel color variables */
+.pricing-view[style*="--whitelabel-primary"] {
+  --whitelabel-primary: var(--whitelabel-primary, #6D3ADB);
+  --whitelabel-secondary: var(--whitelabel-secondary, #10B981);
+}
+
+/* Update hero section background with whitelabel colors when available */
+.pricing-view[style*="--whitelabel-primary"] .hero-section::before {
+  background: conic-gradient(
+    from 180deg,
+    var(--whitelabel-primary),
+    var(--whitelabel-secondary),
+    var(--whitelabel-primary),
+    var(--whitelabel-secondary),
+    var(--whitelabel-primary)
+  );
+}
+
+/* Update hero badge with whitelabel colors when available */
+.pricing-view[style*="--whitelabel-primary"] .hero-badge {
+  background: linear-gradient(45deg, var(--whitelabel-primary), var(--whitelabel-secondary));
+  background-size: 600% 600%;
+  animation: gradientShift 6s ease infinite;
+}
+
+/* Update plan button colors with whitelabel colors when available */
+.pricing-view[style*="--whitelabel-primary"] .plan-button {
+  background: var(--whitelabel-primary);
+}
+
+.pricing-view[style*="--whitelabel-primary"] .plan-button:hover:not(:disabled) {
+  background: var(--whitelabel-secondary);
+}
+
+/* Update plan badge colors with whitelabel colors when available */
+.pricing-view[style*="--whitelabel-primary"] .plan-badge {
+  background: var(--whitelabel-primary);
+}
+
+/* Update billing toggle active state with whitelabel colors when available */
+.pricing-view[style*="--whitelabel-primary"] .billing-btn.active {
+  background: var(--whitelabel-primary);
+}
+
+/* Update contact support button with whitelabel colors when available */
+.pricing-view[style*="--whitelabel-primary"] .contact-support-btn {
+  background: var(--whitelabel-primary);
+}
+
+.pricing-view[style*="--whitelabel-primary"] .contact-support-btn:hover {
+  background: var(--whitelabel-secondary);
+}
+
+/* Update error alert with whitelabel colors when available */
+.pricing-view[style*="--whitelabel-primary"] .error-alert {
+  border-color: var(--whitelabel-primary);
+}
+
+.pricing-view[style*="--whitelabel-primary"] .error-content {
+  color: var(--whitelabel-primary);
 }
 
 /* Header Section */
@@ -343,6 +503,18 @@ const handleLogout = async () => {
   margin: 0 auto;
 }
 
+/* Hero section max-width for large screens */
+@media (min-width: 1400px) {
+  .hero-section {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  
+  .hero-content {
+    max-width: 700px;
+  }
+}
+
 .hero-badge {
   display: inline-flex;
   align-items: center;
@@ -381,6 +553,9 @@ const handleLogout = async () => {
   padding: var(--space-4);
   margin: var(--space-6) var(--space-6) 0;
   text-align: center;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .error-content {
@@ -395,6 +570,8 @@ const handleLogout = async () => {
 /* Billing Toggle */
 .billing-toggle-section {
   padding: var(--space-6) var(--space-6) 0;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .billing-toggle-container {
@@ -445,6 +622,7 @@ const handleLogout = async () => {
   padding: var(--space-8) var(--space-6);
   max-width: 1400px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .pricing-grid {
@@ -452,6 +630,32 @@ const handleLogout = async () => {
   grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   gap: var(--space-6);
   align-items: stretch;
+  max-width: 100%;
+}
+
+/* Responsive grid adjustments */
+@media (min-width: 1200px) {
+  .pricing-grid {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .pricing-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 900px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 767px) {
+  .pricing-grid {
+    grid-template-columns: 1fr;
+    max-width: 500px;
+    margin: 0 auto;
+  }
 }
 
 /* Plan Cards */
@@ -469,6 +673,7 @@ const handleLogout = async () => {
   display: flex;
   flex-direction: column;
   min-height: 500px;
+  max-width: 100%;
 }
 
 @keyframes slideUp {
@@ -643,13 +848,22 @@ const handleLogout = async () => {
   line-height: 1.5;
 }
 
+.feature-item.exclude {
+  color: var(--color-text-tertiary);
+  opacity: 0.7;
+}
+.feature-item.exclude span{
+  text-decoration: line-through;
+}
+
 .feature-fire{
   font-size: 18px;
   width: 20px;
   height: 20px;
   line-height: 20px;
 }
-.feature-check {
+.feature-check,
+.feature-times {
   width: 20px;
   height: 20px;
   background: var(--color-success);
@@ -661,10 +875,15 @@ const handleLogout = async () => {
   margin-top: 2px;
 }
 
-.feature-check i {
+.feature-check i,
+.feature-times i {
   color: white;
   font-size: 0.625rem;
   font-weight: 600;
+}
+
+.feature-times{
+  background: var(--color-error);
 }
 
 /* Plan Action */
@@ -783,4 +1002,13 @@ const handleLogout = async () => {
     background-position: 0% 50%;
   }
 }
+
+/* Update hero title and subtitle with whitelabel colors when available */
+.pricing-view[style*="--whitelabel-primary"] .hero-title {
+  color: var(--whitelabel-primary);
+}
+
+/* .pricing-view[style*="--whitelabel-primary"] .hero-subtitle {
+  color: var(--whitelabel-secondary);
+} */
 </style> 

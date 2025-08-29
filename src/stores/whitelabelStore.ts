@@ -1,98 +1,156 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { BOTSIFY_WEB_URL } from '@/utils/config'
-
-interface WhitelabelData {
-  company_name: string
-  primary_color: string
-  secondary_color: string
-  logo: string | null
-  favicon: string | null
-  domain: string | null
-  mask_url: string
-}
+import { whitelabelService } from '@/services/whitelabelService'
+import type { WhitelabelConfig, WhitelabelPackage } from '@/types/whitelabel'
 
 export const useWhitelabelStore = defineStore('whitelabel', () => {
-  const isWhitelabelClient = ref(false)
-  const whitelabelData = ref<WhitelabelData | null>(null)
+  // State
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
+  const isInitialized = ref(false)
+  const isPortalEnabled = ref(false)
 
-  // Set whitelabel data from API response
-  function setWhitelabelData(data: { is_whitelabel_client: boolean; whitelabel: WhitelabelData, is_whitelabel: boolean }) {
-    isWhitelabelClient.value = data.is_whitelabel_client
-    whitelabelData.value = data.is_whitelabel ? {
-      company_name: data.whitelabel?.company_name,
-      primary_color: data.whitelabel?.primary_color,
-      secondary_color: data.whitelabel?.secondary_color,
-      logo: data.whitelabel?.logo,
-      favicon: data.whitelabel?.favicon,
-      domain: data.whitelabel?.domain,
-      mask_url: data.whitelabel?.mask_url
-    } : null
-    // Apply whitelabel colors to CSS custom properties
-    if (data.is_whitelabel_client && data.whitelabel) {
-      applyWhitelabelColors(data.whitelabel)
-      applyWhitelabelFavicon(data.whitelabel.favicon)
+  // Local reactive mirrors of service data for reactivity
+  const config = ref<WhitelabelConfig | null>(null)
+  const packages = ref<WhitelabelPackage[]>([])
+
+  // Hydrate initial state from service if already initialized elsewhere (e.g., main.ts)
+  config.value = whitelabelService.getConfig()
+  packages.value = whitelabelService.getPackages()
+  isInitialized.value = whitelabelService.isConfigured()
+
+  // Getters
+  const isConfigured = computed(() => isInitialized.value && config.value !== null)
+  const companyName = computed(() => config.value?.company_name || 'Botsify')
+  const logo = computed(() => config.value?.logo || null)
+  const favicon = computed(() => config.value?.favicon || null)
+  const primaryColor = computed(() => config.value?.primary_color)
+  const secondaryColor = computed(() => config.value?.secondary_color)
+  const hasPackages = computed(() => packages.value.length > 0)
+  // For UI logic, treat presence of packages as enough to show pricing
+  const shouldShowWhitelabelPlans = computed(() => hasPackages.value)
+  const isRegistrationAllowed = computed(() => config.value?.show_whitelabel_register !== false)
+  const isRunningOnBotsifyWeb = computed(() => whitelabelService.isRunningOnBotsifyWeb())
+  const whitelabelId = computed(() => {
+    const storedId = localStorage.getItem('whitelabelId')
+    return storedId ? parseInt(storedId, 10) : null
+  })
+
+  // Actions
+  const initialize = async (): Promise<void> => {
+    console.log('whitelabelStore.initialize called - isInitialized:', isInitialized.value)
+    console.log('Stack trace:', new Error().stack)
+    
+    if (isInitialized.value) {
+      console.log('Skipping initialization - already initialized')
+      return
+    }
+    
+    isLoading.value = true
+    error.value = null
+    try {
+      console.log('Fetching whitelabel config...')
+      const response = await whitelabelService.fetchConfig()
+      if (response.data) {
+        config.value = response.data
+        isInitialized.value = true
+        whitelabelService.applyConfiguration()
+        console.log('Whitelabel config loaded successfully')
+      } else if (response.error) {
+        error.value = response.error
+        console.log('Whitelabel config error:', response.error)
+      } else {
+        // No data and no error - likely skipped due to APP_URL
+        // Set as initialized to prevent repeated calls
+        isInitialized.value = true
+        console.log('Whitelabel initialization skipped - running on APP_URL')
+      }
+    } catch (err: any) {
+      error.value = err?.message || 'Failed to load whitelabel configuration'
+      console.error('Whitelabel initialization failed:', err?.message)
+    } finally {
+      isLoading.value = false
     }
   }
 
-  // Apply whitelabel colors to CSS variables
-  function applyWhitelabelColors(whitelabel: WhitelabelData) {
-    const root = document.documentElement
-    root.style.setProperty('--color-primary', whitelabel.primary_color)
-    root.style.setProperty('--color-primary-hover', adjustColor(whitelabel.primary_color, 20))
-    root.style.setProperty('--color-primary-active', adjustColor(whitelabel.primary_color, -20))
-    root.style.setProperty('--color-secondary', whitelabel.secondary_color)
-  }
-
-  // Apply whitelabel favicon
-  function applyWhitelabelFavicon(favicon: string | null) {
-    if (favicon) {
-      const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement || document.createElement('link')
-      link.type = 'image/x-icon'
-      link.rel = 'shortcut icon'
-      link.href = favicon
-      document.getElementsByTagName('head')[0].appendChild(link)
+  const fetchPackages = async (userId?: string): Promise<void> => {
+    console.log('fetchPackages called with userId:', userId, 'isConfigured:', isConfigured.value, 'hasPackages:', hasPackages.value)
+    isLoading.value = true
+    // Only fetch packages if whitelabel is configured and we don't already have packages
+    if (!isConfigured.value) {
+      console.log('Skipping packages fetch - whitelabel not configured')
+      return
+    }
+    
+    if (hasPackages.value) {
+      console.log('Skipping packages fetch - already have packages')
+      return
+    }
+    
+    console.log('Proceeding with packages fetch...')
+    
+    try {
+      const { data } = await whitelabelService.fetchPackages(userId)
+      if (data) {
+        packages.value = data
+        console.log('Packages fetched successfully:', data.length, 'packages')
+      } else {
+        // No data - likely skipped due to APP_URL
+        console.log('Whitelabel packages fetch skipped - running on APP_URL')
+      }
+    } catch (err: any) {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to fetch whitelabel packages:', err?.message)
+    } finally {
+      isLoading.value = false
     }
   }
 
-  // Helper function to adjust color brightness
-  function adjustColor(color: string, amount: number): string {
-    const hex = color.replace('#', '')
-    const r = Math.max(0, Math.min(255, parseInt(hex.substr(0, 2), 16) + amount))
-    const g = Math.max(0, Math.min(255, parseInt(hex.substr(2, 2), 16) + amount))
-    const b = Math.max(0, Math.min(255, parseInt(hex.substr(4, 2), 16) + amount))
-    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+  const reset = (): void => {
+    whitelabelService.resetToDefault()
+    isInitialized.value = false
+    config.value = null
+    packages.value = []
+    error.value = null
   }
 
-  function resetWhitelabel() {
-    isWhitelabelClient.value = false
-    whitelabelData.value = null
+  const getLogoUrl = (): string | null => {
+    return document.documentElement.getAttribute('data-whitelabel-logo')
   }
 
-  // Computed properties
-  const companyName = computed(() => whitelabelData.value?.company_name || 'Botsify')
-  const primaryColor = computed(() => whitelabelData.value?.primary_color || '#00A3FF')
-  const secondaryColor = computed(() => whitelabelData.value?.secondary_color || '#10B981')
-  const logo = computed(() => whitelabelData.value?.logo || null)
-  const favicon = computed(() => whitelabelData.value?.favicon || null)
-  const maskUrl = computed(() => whitelabelData.value?.mask_url || '')
-  const isWhitelabel = computed(() => whitelabelData.value !== null)
-  const partnerPortalUrl = computed(() => `${BOTSIFY_WEB_URL}/partner`)
+  const enablePartnerPortal = (enable: boolean): void => {
+    isPortalEnabled.value = enable
+  }
 
   return {
-    isWhitelabelClient,
-    isWhitelabel,
-    whitelabelData,
-    setWhitelabelData,
-    applyWhitelabelColors,
-    applyWhitelabelFavicon,
+    // State
+    isLoading,
+    error,
+    isInitialized,
+    config,
+    packages,
+
+    // Getters
+    isConfigured,
     companyName,
-    primaryColor,
-    secondaryColor,
     logo,
     favicon,
-    maskUrl,
-    partnerPortalUrl,
-    resetWhitelabel
+    primaryColor,
+    secondaryColor,
+    hasPackages,
+    shouldShowWhitelabelPlans,
+    isRegistrationAllowed,
+    isPortalEnabled,
+    isRunningOnBotsifyWeb,
+    whitelabelId,
+
+    // Actions
+    initialize,
+    fetchPackages,
+    reset,
+    getLogoUrl,
+    enablePartnerPortal
   }
-}) 
+})
+
+

@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { useWhitelabelStore } from '@/stores/whitelabelStore'
+import WhitelabelLogo from '@/components/ui/WhitelabelLogo.vue'
 
 const route = useRoute()
+const whitelabelStore = useWhitelabelStore()
+const { companyName, primaryColor, secondaryColor, isConfigured } = storeToRefs(whitelabelStore)
 
 // Determine if brand panel should be shown
 const showBrandPanel = computed(() => {
@@ -42,28 +47,30 @@ const pageContent = computed(() => {
       }
     default:
       return {
-        title: 'Welcome to Botsify',
+        title: `Welcome to ${companyName.value ?? 'Botsify'}`,
         subtitle: 'AI-powered conversations',
         description: 'Build, deploy, and manage intelligent AI agents with ease.',
         icon: 'pi-comments'
       }
   }
 })
+
+// Computed styles for whitelabel colors
+const brandPanelStyle = computed(() => ({
+  '--whitelabel-primary': primaryColor.value,
+  '--whitelabel-secondary': secondaryColor.value
+}))
 </script>
 
 <template>
   <div class="auth-layout" :class="{ 'no-brand-panel': !showBrandPanel }">
     <!-- Left Panel - Branding & Content -->
-    <div v-if="showBrandPanel" class="auth-brand-panel">
+    <div v-if="showBrandPanel" class="auth-brand-panel" :style="brandPanelStyle">
       <div class="auth-brand-content">
         <!-- Logo Section -->
         <div class="logo-section">
           <div class="logo-container">
-                    <img 
-          src="/logo.png" 
-          alt="Botsify" 
-          class="logo-image"
-        />
+            <WhitelabelLogo size="large" />
           </div>
         </div>
 
@@ -94,8 +101,8 @@ const pageContent = computed(() => {
 
         <!-- Footer -->
         <div class="brand-footer">
-          <p>&copy; 2025 Botsify. All rights reserved.</p>
-          <div class="footer-links">
+          <p>&copy; 2025 {{ companyName }}. All rights reserved.</p>
+          <div class="footer-links" v-if="!isConfigured">
             <a href="https://botsify.com/terms-and-conditions" class="footer-link" target="_blank">Terms & conditions</a>
             <span class="footer-separator">•</span>
             <a href="https://botsify.com/privacy-policy" class="footer-link" target="_blank">Privacy policy</a>
@@ -146,16 +153,25 @@ const pageContent = computed(() => {
   position: absolute;
   inset: 0;
   background: conic-gradient(
-    from 180deg,
-    #ff0080,
-    #7928ca,
-    #2afadf,
-    #7928ca,
-    #ff0080
+      from 180deg,
+      #ff0080,
+      #7928ca,
+      #2afadf,
+      #7928ca,
+      #ff0080
   );
   filter: blur(60px);
   opacity: 0.6;
   z-index: 0;
+}
+
+.auth-brand-panel[style*="--whitelabel-primary"]::before {
+  background: conic-gradient(
+    from 180deg,
+    var(--whitelabel-primary),
+    var(--whitelabel-secondary),
+    var(--whitelabel-primary)
+  );
 }
 
 .auth-brand-panel::after {
@@ -247,7 +263,7 @@ const pageContent = computed(() => {
 .main-subtitle {
   font-size: 1.125rem;
   font-weight: 500;
-  color: #2e66f4;
+  color: var(--whitelabel-primary);
   margin-bottom: var(--space-3);
 } */
 
@@ -314,16 +330,16 @@ const pageContent = computed(() => {
   font-size: 0.75rem;
   transition: color var(--transition-normal);
 }
-
 .footer-link:hover {
   color: rgba(255, 255, 255, 0.9);
   text-decoration: underline;
 }
 
-.footer-separator {
-  color: rgba(255, 255, 255, 0.4);
+.footer-separator {	
+  color: rgba(255, 255, 255, 0.4);	
   font-size: 0.75rem;
 }
+
 
 /* Right Form Panel */
 .auth-form-panel {
@@ -355,7 +371,7 @@ const pageContent = computed(() => {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
+  background: linear-gradient(90deg, transparent, var(--whitelabel-primary), transparent);
 }
 
 /* Responsive Design */
@@ -514,7 +530,7 @@ const pageContent = computed(() => {
 /* High contrast mode */
 @media (prefers-contrast: high) {
   .auth-brand-panel {
-    background: var(--color-primary);
+    background: var(--whitelabel-primary);
   }
   
   .auth-brand-panel::before {

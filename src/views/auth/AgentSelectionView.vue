@@ -9,10 +9,22 @@ import Input from '@/components/ui/Input.vue';
 import ModalLayout from '@/components/ui/ModalLayout.vue';
 import { createResource } from "@/utils/caching.ts"
 import { validateImage } from '@/utils';
+import { storeToRefs } from 'pinia'
+import { useWhitelabelStore } from '@/stores/whitelabelStore'
+import WhitelabelLogo from '@/components/ui/WhitelabelLogo.vue'
 import Dropdown from '@/components/ui/Dropdown.vue';
 import DropdownItem from '@/components/ui/DropdownItem.vue';
+import { useRoleStore } from '@/stores/roleStore';
 
 const router = useRouter()
+const whitelabelStore = useWhitelabelStore()
+const { primaryColor, secondaryColor } = storeToRefs(whitelabelStore)
+
+// Computed styles for whitelabel colors
+const brandPanelStyle = computed(() => ({
+  '--whitelabel-primary': primaryColor.value,
+  '--whitelabel-secondary': secondaryColor.value
+}))
 
 // Reactive state
 const searchQuery = ref('')
@@ -442,7 +454,14 @@ const getPublishedChannels = (agent: any) => {
 }
 
 
-onMounted(() => {
+onMounted(async () => {
+  // Initialize whitelabel if needed
+  const user = localStorage.getItem('user');
+  if (user) {
+    const roleStore = useRoleStore();
+    roleStore.setCurrentUser(JSON.parse(user))
+  }
+  
   // Fetch agents on component mount
   getAgents()
 })
@@ -456,13 +475,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="agent-selection-view">
+  <div class="agent-selection-view" :style="brandPanelStyle">
     <!-- Hero Section -->
     <div class="hero-section">
       <div class="hero-header">
         <div class="header-container">
           <div class="header-left">
-            <img src="/images/logos/botsify-logo.webp" alt="Botsify" class="header-logo">
+            <WhitelabelLogo size="large" fallback-src="/images/logos/botsify-logo.webp" />
           </div>
           <div class="header-right">
             <UserMenu/>
@@ -472,9 +491,7 @@ onUnmounted(() => {
       
       <div class="hero-content">
         <h1 class="hero-title">Choose Your AI Agent</h1>
-        <p class="hero-subtitle">
-          Select from our curated collection of specialized AI agents, each designed for specific tasks and industries
-        </p>
+        <p class="hero-subtitle">Select from our curated collection of specialized AI agents, each designed for specific tasks and industries</p>
       </div>
     </div>
 
@@ -654,7 +671,7 @@ onUnmounted(() => {
                       <template #icon>
                         <i class="pi pi-clipboard"></i>
                       </template>
-                      <span>Copy API Key</span>
+                      <span>API Key</span>
                     </DropdownItem>
                   </template>
                 </Dropdown>
@@ -777,6 +794,12 @@ onUnmounted(() => {
   overflow-x: hidden;
 }
 
+/* Whitelabel color variables */
+.agent-selection-view[style*="--whitelabel-primary"] {
+  --whitelabel-primary: var(--whitelabel-primary, #6D3ADB);
+  --whitelabel-secondary: var(--whitelabel-secondary, #10B981);
+}
+
 /* Hero Section */
 .hero-section {
   text-align: center;
@@ -801,6 +824,16 @@ onUnmounted(() => {
   filter: blur(60px);
   opacity: 0.6;
   z-index: 0;
+}
+
+/* Update hero section background with whitelabel colors when available */
+.agent-selection-view[style*="--whitelabel-primary"] .hero-section::before {
+  background: conic-gradient(
+    from 180deg,
+    var(--whitelabel-primary),
+    var(--whitelabel-secondary),
+    var(--whitelabel-primary)
+  );
 }
 
 .hero-section::after {
@@ -843,11 +876,7 @@ onUnmounted(() => {
   gap: var(--space-2);
 }
 
-.header-logo {
-  height: 40px;
-  width: auto;
-  object-fit: contain;
-  filter: brightness(0) invert(1);
+.header-left :deep(.whitelabel-logo) {
   transition: filter var(--transition-normal);
   display: block;
 }
@@ -871,6 +900,11 @@ onUnmounted(() => {
   margin-bottom: var(--space-4);
   line-height: 1.1;
   color: #384348;
+}
+
+/* Update hero title with whitelabel colors when available */
+.agent-selection-view[style*="--whitelabel-primary"] .hero-title {
+  color: var(--whitelabel-primary);
 }
 
 .hero-subtitle {
@@ -973,6 +1007,12 @@ onUnmounted(() => {
   background: var(--color-primary);
   color: white;
   box-shadow: 0 2px 4px rgba(68, 115, 246, 0.3);
+}
+
+/* Update tab button active state with whitelabel colors when available */
+.agent-selection-view[style*="--whitelabel-primary"] .tab-button.active {
+  background: var(--whitelabel-primary);
+  box-shadow: 0 2px 4px rgba(109, 58, 219, 0.3);
 }
 
 .tab-count {
@@ -1717,6 +1757,10 @@ onUnmounted(() => {
 /* Dark theme support */
 [data-theme="dark"] .agent-selection-view {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+[data-theme="dark"] .header-left :deep(.whitelabel-logo) {
+  /* Logo will display in its natural colors */
 }
 
 [data-theme="dark"] .tabs-search-section,

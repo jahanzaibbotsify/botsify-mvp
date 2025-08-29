@@ -1,6 +1,6 @@
-import { useWhitelabelStore } from '@/stores/whitelabelStore';
 import moment from 'moment-timezone';
 import { BOTSIFY_WEB_URL } from './config';
+import { whitelabelService } from '@/services/whitelabelService'
 
 export const currentTime = () => {
   return moment.utc().format('YYYY-MM-DD HH:mm:ss');
@@ -54,14 +54,6 @@ export const getPlatformClass = (platform: string = '') => {
     }
   }
 
-  export const getWebUrl = () => {
-    const whitelabelStore = useWhitelabelStore();
-    if (whitelabelStore.isWhitelabelClient && whitelabelStore.maskUrl) {
-      return whitelabelStore.maskUrl;
-    }
-    return BOTSIFY_WEB_URL;
-  }
-
   export const validateImage = (
     url?: string,
     fallback = "/images/elementor-placeholder-image.png",
@@ -85,4 +77,16 @@ export const getPlatformClass = (platform: string = '') => {
   
     return fallback; // immediate safe value
   };
+  
+  export const getWebUrl = (): string => {
+    const config = whitelabelService.getConfig()
+    if (config?.mask_url) {
+      // Ensure it always includes https://
+      if (!/^https?:\/\//.test(config.mask_url)) {
+        return `https://${config.mask_url}`;
+      }
+      return config.mask_url;
+    }
+    return BOTSIFY_WEB_URL
+  }
   

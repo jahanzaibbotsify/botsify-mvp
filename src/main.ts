@@ -15,6 +15,7 @@ import { extractApiKey } from './utils/apiKeyUtils';
 import VueTelInput from 'vue-tel-input';
 import 'vue-tel-input/vue-tel-input.css';
 import Swal from 'sweetalert2';
+import { whitelabelService } from './services/whitelabelService';
 
 // Import router
 import router from '@/router'
@@ -24,6 +25,33 @@ import router from '@/router'
 const apiKey = extractApiKey();
 if (apiKey) {
   localStorage.setItem('bot_api_key', apiKey);
+}
+
+// Initialize whitelabel configuration before app mounts
+const initializeWhitelabel = async () => {
+  try {
+    const configResponse = await whitelabelService.fetchConfig()
+    if (configResponse.data && whitelabelService.isConfigured()) {
+      whitelabelService.applyConfiguration()
+      
+      // Note: Packages are only fetched when needed (e.g., on pricing page)
+      // No need to fetch them during app initialization
+    } else if (!configResponse.data && !configResponse.error) {
+      // No data and no error - likely skipped due to APP_URL
+      console.log('Whitelabel initialization skipped - running on APP_URL')
+      // Apply default branding only on Botsify web
+      if (whitelabelService.isRunningOnBotsifyWeb()) {
+        whitelabelService.applyDefaultBranding()
+      }
+    } else if (configResponse.error) {
+      // On error, avoid flashing default on whitelabel domains
+      if (whitelabelService.isRunningOnBotsifyWeb()) {
+        whitelabelService.applyDefaultBranding()
+      }
+    }
+  } catch (error) {
+    console.warn('Whitelabel initialization failed:', error)
+  }
 }
 
 // Import OpenAI debug utility in development
@@ -138,5 +166,10 @@ if (!localStorageAvailable) {
   document.body.appendChild(warningDiv);
 }
 
-// mount app
-app.mount('#app'); 
+// Initialize whitelabel and mount app
+const startApp = async () => {
+  await initializeWhitelabel()
+  app.mount('#app')
+}
+
+startApp() 

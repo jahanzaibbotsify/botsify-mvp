@@ -3,20 +3,24 @@ import { computed, ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useRoleStore } from '@/stores/roleStore';
-import { useWhitelabelStore } from '@/stores/whitelabelStore';
+import { storeToRefs } from 'pinia'
+import { useWhitelabelStore } from '@/stores/whitelabelStore'
 import BookMeetingModal from '@/components/modal/BookMeetingModal.vue';
 import CalendlyModal from '@/components/modal/CalendlyModal.vue';
 import { getWebUrl } from '@/utils';
 import { showZen } from '@/utils/zendesk';
 import { useBotStore } from '@/stores/botStore';
 import { Button, ManageBilling, Dropdown, DropdownItem } from '../ui';
+import { BOTSIFY_WEB_URL } from '@/utils/config';
 
 const sidebarStore = useSidebarStore();
 const botStore = useBotStore();
 const roleStore = useRoleStore();
 const router = useRouter();
 const route = useRoute();
-const whitelabelStore = useWhitelabelStore();
+const whitelabelStore = useWhitelabelStore()
+const { isConfigured, companyName, logo, isPortalEnabled } = storeToRefs(whitelabelStore)
+// const { width } = useWindowSize();
 
 const emit = defineEmits(['select-button']);
 const selectedNavigationButton = computed(() => {
@@ -78,8 +82,8 @@ const navigationButtons = computed(() => {
 const navLinks = computed(() => {
   // @ts-ignore
   const baseUrl = getWebUrl();
-  if (whitelabelStore.isWhitelabelClient) {
-    // For whitelabel clients, show only Legacy Platform and Support
+  if (isConfigured.value) {
+    // For whitelabel clients, show only Support
     return [
       {
         name: 'Support',
@@ -161,8 +165,8 @@ const handleItemClick = (item: any) => {
 };
 
 const openPartnerPortal = () => {
-  if (whitelabelStore.isWhitelabel && !whitelabelStore.isWhitelabelClient) {
-    window.open(whitelabelStore.partnerPortalUrl, '_blank');
+  if (isPortalEnabled.value) {
+    window.open(`${BOTSIFY_WEB_URL}/partner`, '_blank');
   }
 };
 </script>
@@ -174,9 +178,9 @@ const openPartnerPortal = () => {
         <div class="app-title-container">
           <!-- Whitelabel or Botsify Logo with link -->
             <img
-              v-if="whitelabelStore.isWhitelabelClient && whitelabelStore.whitelabelData?.logo"
-              :src="whitelabelStore.whitelabelData.logo"
-              :alt="whitelabelStore.whitelabelData.company_name || 'Logo'"
+              v-if="isConfigured && logo"
+              :src="logo"
+              :alt="companyName || 'Logo'"
               class="logo-icon"
             />
             <img
@@ -231,7 +235,7 @@ const openPartnerPortal = () => {
     <div v-if="roleStore.canManageBillingWithSubscription" class="sidebar-pricing">
         <!-- Partner Portal Button for Whitelabel Users -->
         <Button 
-          v-if="whitelabelStore.isWhitelabel && !whitelabelStore.isWhitelabelClient" 
+          v-if="isPortalEnabled" 
           class="sidebar-button" 
           @click="openPartnerPortal"
           variant="success"
@@ -255,7 +259,6 @@ const openPartnerPortal = () => {
     </div>
     <BookMeetingModal ref="bookMeetingModalRef"></BookMeetingModal>
     <CalendlyModal ref="calendlyModalRef"></CalendlyModal>
-
   </aside>
 </template>
 

@@ -6,6 +6,9 @@ export interface UpdateAccountPayload {
   last_name?: string
   email?: string
   name?: string
+  old_password?: string
+  password?: string
+  password_confirmation?: string
 }
 
 export interface ForgotPasswordPayload {
@@ -74,7 +77,7 @@ export class AuthApiService {
 
   async forgotPassword(payload: ForgotPasswordPayload): Promise<ApiResponse<any>> {
     try {
-      const response = await axiosInstance.post('forgot-password', payload)
+      const response = await axiosInstance.post('v1/forgot-password', payload)
       return {
         success: true,
         message: 'Password reset instructions sent successfully',
@@ -91,7 +94,7 @@ export class AuthApiService {
 
   async resetPassword(payload: ResetPasswordPayload): Promise<ApiResponse<any>> {
     try {
-      const response = await axiosInstance.post('reset-password', payload)
+      const response = await axiosInstance.post('v1/reset-password', payload)
       return {
         success: true,
         message: 'Password reset successfully',
@@ -108,7 +111,7 @@ export class AuthApiService {
 
   async verifyEmail(payload: VerifyEmailPayload): Promise<ApiResponse<any>> {
     try {
-      const response = await axiosInstance.get(`/verify-email/${payload.token}`)
+      const response = await axiosInstance.get(`/v1/verify-email/${payload.token}`)
       return {
         success: true,
         message: 'Email verified successfully',
@@ -125,7 +128,7 @@ export class AuthApiService {
 
   async sendVerificationEmail(payload: SendVerificationEmailPayload): Promise<ApiResponse<any>> {
     try {
-      const response = await axiosInstance.post('/send-verification-email', payload)
+      const response = await axiosInstance.post('/v1/send-verification-email', payload)
       return {
         success: true,
         message: 'Verification email sent successfully',

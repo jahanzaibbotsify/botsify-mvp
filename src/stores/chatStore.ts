@@ -358,7 +358,7 @@ export const useChatStore = defineStore('chat', () => {
 
         // Create new version
         const newVersion = createPromptVersion(content);
-        chat.story.versions.push(newVersion);
+        chat.story.versions.unshift(newVersion);
         chat.story.activeVersionId = newVersion.id;
         // Set the activeAiPromptVersion reference for new versions
         activeAiPromptVersion.value = newVersion;

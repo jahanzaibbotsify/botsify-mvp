@@ -40,3 +40,11 @@ export function getInitialToken(): string | null {
     const token = localStorage.getItem('accessToken');
     return token ? JSON.parse(token) : null;
 }
+
+/**
+ * Check if the current URL matches BOTSIFY_WEB_URL
+ */
+export function isBotsifyWebUrl(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.location.origin === APP_URL
+}

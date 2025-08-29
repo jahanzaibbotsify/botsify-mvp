@@ -6,7 +6,10 @@ import type {
   PricingPlan,
   AgentCategory
 } from '@/types/auth'
-import { authApi } from '@/services/authApi'
+import { authApi, UpdateAccountPayload } from '@/services/authApi'
+import { getCurrentApiKey } from '@/utils/apiKeyUtils'
+import { useRoleStore } from './roleStore'
+import { BotUser } from '@/types/user'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -26,31 +29,60 @@ export const useAuthStore = defineStore('auth', () => {
   // Official Botsify pricing plans
   const pricingPlans = ref<PricingPlan[]>([
     {
+      id: 'basic',
+      name: 'Basic Plan',
+      description: 'A basic plan for your personal use, startup websites, and your Facebook page',
+      price: 19,
+      currency: 'USD',
+      billing: 'monthly',
+      features: [
+        '1 AI Agent',
+        '1,000 Credits (1 credit = 1 message) 🔥',
+        'Integrate Documents & Web Search',
+        'Messenger, SMS, Website, Instagram, Telegram, WhatsApp 🔥',
+        'Basic Support',
+        'No MCP',
+        'No Agent Development',
+      ],
+      excludedFeatures: [
+        'Integrate MCP',
+        '1-Agent development'
+      ],
+      limits: {
+        conversations: 1000,
+        agents: 1,
+        customBranding: false,
+        apiAccess: true,
+        prioritySupport: false,
+        advancedAnalytics: false
+      },
+      discount: {
+        percentage: 17,
+        originalPrice: 19,
+        yearlyPrice: 190
+      },
+      prices: {
+        monthly: 'Basic-Plan',
+        annually: 'Basic-Plan-Annual'
+      }
+    },
+    {
       id: 'diy',
       name: 'Do it yourself',
-      description: 'A basic plan for your personal use, startup websites, and your Facebook page',
+      description: 'A personal plan for your small business, startup websites, and your Facebook page',
       price: 49,
       currency: 'USD',
       billing: 'monthly',
       features: [
         '2 AI Agents',
-        '5,000 Users',
-        '$10/1,000 additional users',
-        'Integrate MCP 🔥',
+        '3,000 Credits (1 credit = 1 message) 🔥',
         'Integrate Documents & Web Search',
-        'Messenger, SMS, Website, Instagram, Telegram, WhatsApp',
-        '1-Agent development free worth $100/Month 🔥',
-        'Basic Support'
+        'Messenger, SMS, Website, Instagram, Telegram, WhatsApp 🔥',
+        'Basic Support',
       ],
       excludedFeatures: [
-        'Scheduled Agents 🔥',
-        'WhatsApp platform support',
-        'Whitelabel Dashboard & Reselling Rights 🔥',
-        'Access to all Botsify Resources',
-        'Personal Onboarding Session',
-        'Bi-Weekly Training of 1 Agent Free for 12 Months',
-        'WhatsApp Agents (1,000 free conversations each month)',
-        'Priority Support'
+        'Integrate MCP',
+        '1-Agent development'
       ],
       limits: {
         conversations: 5000,
@@ -80,13 +112,13 @@ export const useAuthStore = defineStore('auth', () => {
       features: [
         '5 AI Agents',
         '$25/month for an additional agent',
-        'Unlimited Users',
+        '5,000 Credits (1 credit = 1 message) 🔥',
         'Integrate MCP 🔥',
         'Integrate Documents & Web Search',
-        'FB, SMS, Website, WhatsApp, Instagram, Telegram',
+        'FB, SMS, Website, WhatsApp, Instagram, Telegram 🔥',
         '1-Agent development free worth $100/Month 🔥',
-        'Whitelabel Dashboard & Reselling Rights 🔥',
         'Access to all Botsify Resources',
+        'Whitelabel Dashboard & Reselling Rights 🔥',
         'Personal Onboarding Session',
         'Bi-Weekly Training of 1 Agent Free for 12 Months',
         'Priority Support',
@@ -110,33 +142,6 @@ export const useAuthStore = defineStore('auth', () => {
         monthly: 'Professional-Plan',
         annually: 'Professional-Plan-Annual'
       }
-    },
-    {
-      id: 'custom',
-      name: 'Custom',
-      description: 'For enterprises with high usage & on-premises solutions',
-      price: 0,
-      currency: 'USD',
-      billing: 'custom',
-      features: [
-        'Custom Agent development 🔥',
-        'All Platforms',
-        'On-Premises Solution / Cloud Dedicated Licence',
-        '7-day training history',
-        'Unlimited Users',
-        'Unlimited Agents',
-        'Integrate MCP 🔥',
-        'Integrate Documents & Web Search'
-      ],
-      limits: {
-        conversations: 'unlimited',
-        agents: 'unlimited',
-        customBranding: true,
-        apiAccess: true,
-        prioritySupport: true,
-        advancedAnalytics: true
-      },
-      isContactSales: true
     }
   ])
 
@@ -367,6 +372,8 @@ export const useAuthStore = defineStore('auth', () => {
     if (auth_user) {
       localStorage.setItem('user', JSON.stringify(auth_user));
       user.value = auth_user
+      const roleStore = useRoleStore();
+      roleStore.setCurrentUser(auth_user as BotUser);
     }
   }
 
@@ -416,7 +423,6 @@ export const useAuthStore = defineStore('auth', () => {
     if (!currentUser.email_verified && !currentUser.subs && !currentUser.is_appsumo && !currentUser.is_bot_admin && currentUser.source !== 'botsify_landing') {
       return `/auth/verify-email?email=${encodeURIComponent(currentUser.email || '')}`
     }
-    const { getCurrentApiKey } = require('@/utils/apiKeyUtils')
     const botApiKey = getCurrentApiKey()
     if (botApiKey) {
       return `/agent/${botApiKey}`
@@ -427,16 +433,19 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * Update account/profile details
    */
-  const updateAccount = async (payload: { firstName: string; lastName: string; email: string }) => {
+  const updateAccount = async (payload: UpdateAccountPayload) => {
     setLoading(true)
     clearError()
     try {
-      const fullName = `${payload.firstName} ${payload.lastName}`.trim()
+      const fullName = `${payload.first_name ?? ''} ${payload.last_name ?? ''}`.trim()
       const response = await authApi.updateAccount({
-        first_name: payload.firstName,
-        last_name: payload.lastName,
+        first_name: payload.first_name,
+        last_name: payload.last_name,
         email: payload.email,
-        name: fullName
+        name: fullName,
+        old_password: payload.old_password,
+        password: payload.password,
+        password_confirmation: payload.password_confirmation
       })
 
       if (response.success) {
@@ -444,13 +453,13 @@ export const useAuthStore = defineStore('auth', () => {
         const updatedUser = {
           ...currentUser,
           // camelCase
-          firstName: payload.firstName,
-          lastName: payload.lastName,
-          email: payload.email,
-          name: fullName,
+          firstName: payload.first_name ?? (currentUser as any).firstName,
+          lastName: payload.last_name ?? (currentUser as any).lastName,
+          email: payload.email ?? (currentUser as any).email,
+          name: fullName || (currentUser as any).name,
           // snake_case for compatibility where expected
-          first_name: payload.firstName,
-          last_name: payload.lastName
+          first_name: payload.first_name ?? (currentUser as any).first_name,
+          last_name: payload.last_name ?? (currentUser as any).last_name
         }
         setAuthData(null, updatedUser)
         return { success: true, data: response.data }

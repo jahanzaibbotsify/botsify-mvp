@@ -2,11 +2,15 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
+import { storeToRefs } from 'pinia'
+import { useWhitelabelStore } from '@/stores/whitelabelStore'
 import type { LoginCredentials, FormValidation } from '@/types/auth'
 import Button from '@/components/ui/Button.vue';
 
 const router = useRouter()
 const authStore = useAuthStore()
+const whitelabelStore = useWhitelabelStore()
+const { isRegistrationAllowed } = storeToRefs(whitelabelStore)
 
 // Clear any existing errors when component mounts
 onMounted(() => {
@@ -214,10 +218,8 @@ const handlePasswordInput = () => {
       </Button>
     </form>
 
-
-
-    <!-- Sign Up Link -->
-    <div class="auth-footer">
+    <!-- Sign Up Link - Only show if registration is allowed -->
+    <div v-if="isRegistrationAllowed" class="auth-footer">
       <p class="footer-text">
         Don't have an account?
         <router-link to="/auth/signup" class="auth-link">
@@ -225,8 +227,6 @@ const handlePasswordInput = () => {
         </router-link>
       </p>
     </div>
-
-
   </div>
 </template>
 

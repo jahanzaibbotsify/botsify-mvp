@@ -91,7 +91,7 @@ export const useConversationStore = defineStore('conversation', () => {
       messages: [],
       email: user.email,
       status: user.status === 1 ? 'open' : 'closed',
-      source: user.type === 'facebook' ? 'Facebook' : user.type === 'whatsapp' ? 'WhatsApp' : 'Web',
+      source: user.type === 'facebook' ? 'Facebook' : user.type.startsWith('whatsapp') ? 'WhatsApp' : 'Web',
       phone: user.phone_number || undefined,
       country: user.country,
       os: user.os || undefined,

@@ -1,6 +1,8 @@
 import {RouteRecordRaw, createRouter, createWebHistory} from 'vue-router'
 import {useAuthStore} from "@/stores/authStore.ts";
 import { getCurrentApiKey } from '@/utils/apiKeyUtils';
+import { whitelabelService } from '@/services/whitelabelService';
+
 const routes: RouteRecordRaw[] = [
   // Auth Routes (with AuthLayout)
   {
@@ -162,15 +164,20 @@ const router = createRouter({
   routes
 });
 
-
-
-
 // @ts-ignore Navigation guards
 router.beforeEach(async (to, from, next) => {
   try {
     const authStore = useAuthStore();
     const user = authStore.user as any;
     const requiresAuth = to.meta?.requiresAuth;
+
+    // Check whitelabel registration restriction for signup page
+    if (to.name === 'signup') {
+      if (!whitelabelService.isRegistrationAllowed()) {
+        // Redirect to login if registration is not allowed
+        return next({ path: '/auth/login' });
+      }
+    }
 
     // Check if user is authenticated
     if (authStore.isAuthenticated && (user.email_verified || user.is_appsumo || user.is_bot_admin || user.subs || user.source === 'botsify_landing')) {
