@@ -93,7 +93,6 @@ import { useThemeStore } from '@/stores/themeStore';
 import { useChatStore } from '@/stores/chatStore';
 import { useBotStore } from '@/stores/botStore';
 import { useRoleStore } from '@/stores/roleStore';
-import { getWebUrl } from '@/utils';
 import CalendlyModal from '@/components/modal/CalendlyModal.vue';
 import UserMenu from "@/components/ui/UserMenu.vue";
 import PublishAgentModal from "@/components/modal/PublishAgentModal.vue";
@@ -135,7 +134,9 @@ async function testAI() {
     return;
   }
   const apiKey = botStore.apiKey;
-  const url = `${getWebUrl()}/web-bot/agent/${apiKey}?testagent=true`;
+  const url = `/test-agent/${apiKey}`;
+  
+  // Open in a new tab (or window depending on browser settings)
   window.open(url, '_blank');
 }
 

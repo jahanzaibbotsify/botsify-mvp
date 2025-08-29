@@ -38,8 +38,8 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
 
   // Actions
   const initialize = async (): Promise<void> => {
-    console.log('whitelabelStore.initialize called - isInitialized:', isInitialized.value)
-    console.log('Stack trace:', new Error().stack)
+    // console.log('whitelabelStore.initialize called - isInitialized:', isInitialized.value)
+    // console.log('Stack trace:', new Error().stack)
     
     if (isInitialized.value) {
       console.log('Skipping initialization - already initialized')

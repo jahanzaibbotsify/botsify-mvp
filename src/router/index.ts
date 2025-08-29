@@ -125,7 +125,7 @@ const routes: RouteRecordRaw[] = [
         path: '/data-analysis',
         name: 'data-analysis',
         component: () => import('../views/DataAnalysisView.vue')
-      }
+      },
     ]
   },
   // Legal Pages (standalone)
@@ -150,6 +150,12 @@ const routes: RouteRecordRaw[] = [
     path: '/unauthenticated',
     name: 'Unauthenticated',
     component: () => import('@/views/Unauthenticated.vue')
+  },
+  {
+    path: '/test-agent/:apikey',
+    name: 'test-agent',
+    component: () => import('../views/TestAgentView.vue'),
+    props: true
   },
   {
     path: '/:pathMatch(.*)*',
