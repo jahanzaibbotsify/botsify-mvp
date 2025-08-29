@@ -134,7 +134,10 @@ async function testAI() {
     return;
   }
   const apiKey = botStore.apiKey;
-  router.push({ path: `/test-agent/${apiKey}` });
+  const url = `/test-agent/${apiKey}`;
+  
+  // Open in a new tab (or window depending on browser settings)
+  window.open(url, '_blank');
 }
 
 function deployAI() {

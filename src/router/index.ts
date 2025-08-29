@@ -152,7 +152,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/Unauthenticated.vue')
   },
   {
-    path: '/test-agent/:apiKey?',
+    path: '/test-agent/:apikey',
     name: 'test-agent',
     component: () => import('../views/TestAgentView.vue'),
     props: true

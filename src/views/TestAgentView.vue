@@ -5,9 +5,8 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
-import { APP_URL } from '@/utils/config'
+import { APP_URL, BOTSIFY_WEB_URL } from '@/utils/config'
 import { useWhitelabelStore } from '@/stores/whitelabelStore'
-import "https://widget.osam.one/dist/css/app.css"
 
 let intervalId: number | undefined
 
@@ -20,6 +19,11 @@ const loadScript = (src: string): Promise<void> => {
       resolve()
       return
     }
+    const css = document.createElement('link')
+    css.rel = 'stylesheet'
+    css.href = 'https://widget.osam.one/dist/css/app.css'
+    document.head.appendChild(css)
+
     const s = document.createElement('script')
     s.src = src
     s.async = true
@@ -31,8 +35,7 @@ const loadScript = (src: string): Promise<void> => {
 
 onMounted(async () => {
   const apiKeyParam = route.params.apikey as string | undefined
-//   const host = window.location.origin
-  const host = window.location.origin
+  const host = BOTSIFY_WEB_URL
   if (!apiKeyParam) return
 
   // Initialize whitelabel header (title, favicon) when not running on APP_URL
@@ -88,6 +91,18 @@ onBeforeUnmount(() => {
 .test-agent-view {
   min-height: 100vh;
 }
+
+/* widget style */
+:global(#bcw-chatbot-menu) { margin-right: 300px !important; }
+:global(.widget-div-active) { padding: 0 300px; }
+:global(.bg-white.chatHeight) {
+  margin-top: 0.5% !important;
+  height: 96vh !important;
+  border: 2px solid var(--color-border);
+}
+:global(.bcw5611 .rounded-tr-none) {
+  border-top-right-radius: 18px !important;
+  border-top-left-radius: 18px !important;
+}
+:global(div#bcw5611_ID) { border-radius: 0 !important; }
 </style>
-
-
