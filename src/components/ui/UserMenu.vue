@@ -73,7 +73,7 @@ const openEditProfile = () => {
           <div class="user-details">
             <p class="user-name">{{ currentUser?.name }}</p>
             <p class="user-email">{{ currentUser?.email }}</p>
-            <Badge v-if="currentUser?.subs?.name" variant="secondary" size="xs" class="w-fit">{{ currentUser.subs.name }}</Badge>
+            <Badge v-if="currentUser?.subs?.name" variant="secondary" size="xs" class="badge">{{ currentUser.subs.name }}</Badge>
           </div>
         </div>
         <div class="dropdown-divider"></div>
@@ -241,5 +241,10 @@ const openEditProfile = () => {
   flex-direction: column;
   align-items: start;
   gap: 2px;
+}
+
+.user-details .badge {
+  width: fit-content;
+  text-transform: capitalize;
 }
 </style>
