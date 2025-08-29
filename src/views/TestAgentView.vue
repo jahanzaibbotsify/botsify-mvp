@@ -63,7 +63,7 @@ onMounted(async () => {
     // @ts-ignore third-party global
     if (typeof window.bcw_widget !== 'undefined') {
       if (intervalId) window.clearInterval(intervalId)
-      const botParams = {
+      const botParams: Record<string, any> = {
         bot_api: apiKeyParam,
         landing: true,
         host
@@ -71,8 +71,24 @@ onMounted(async () => {
       // add test user if ?test=true
       if (isTest) {
         botParams.userData = { uid: 'testUser' }
+        const style = document.createElement('style')
+        style.textContent = `
+          #bcw-chatbot-menu { margin-right: 300px !important; margin-top: 3% !important; }
+          .widget-div-active { padding: 0 300px; }
+          .bg-white.chatHeight {
+            margin-top: 3% !important;
+            height: 94vh !important;
+            border: 2px solid var(--color-border);  
+            overflow: hidden !important;  
+          }
+          .bcw5611 .rounded-tr-none {
+            border-top-right-radius: 18px !important;
+            border-top-left-radius: 18px !important;
+          }
+          div#bcw5611_ID { border-radius: 0 !important; }
+        `
+        document.head.appendChild(style)
       }
-
       // @ts-ignore third-party global
       window.bcw_widget.init('show', botParams)
     }
@@ -92,25 +108,3 @@ onBeforeUnmount(() => {
   // Do not remove the script tag if other pages may reuse it
 })
 </script>
-
-<style scoped>
-.test-agent-view {
-  min-height: 100vh;
-}
-
-/* widget style */
-:global(#bcw-chatbot-menu) { margin-right: 300px !important; margin-top: 3% !important; }
-:global(.widget-div-active) { padding: 0 300px; }
-:global(.bg-white.chatHeight) {
-  margin-top: 3% !important;
-  height: 94vh !important;
-  border: 2px solid var(--color-border);  
-  overflow: hidden !important;  
-}
-:global(.bcw5611 .rounded-tr-none) {
-  border-top-right-radius: 18px !important;
-  border-top-left-radius: 18px !important;
-}
-:global(div#bcw5611_ID) { border-radius: 0 !important; }
-
-</style>
