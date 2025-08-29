@@ -182,7 +182,7 @@ const openEditProfile = () => {
 .dropdown-actions {
   display: flex;
   align-items: center;
-  justify-content: end;
+  justify-content: space-between;
   gap: var(--space-2);
   padding: var(--space-1) var(--space-3);
   width: 320px;

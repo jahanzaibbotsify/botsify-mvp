@@ -134,7 +134,7 @@ async function testAI() {
     return;
   }
   const apiKey = botStore.apiKey;
-  const url = `/test-agent/${apiKey}`;
+  const url = `/test-agent/${apiKey}?test=true`;
   
   // Open in a new tab (or window depending on browser settings)
   window.open(url, '_blank');

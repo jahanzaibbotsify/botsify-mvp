@@ -35,6 +35,7 @@ const loadScript = (src: string): Promise<void> => {
 
 onMounted(async () => {
   const apiKeyParam = route.params.apikey as string | undefined
+  const isTest = route.query.test === 'true'
   const host = BOTSIFY_WEB_URL
   if (!apiKeyParam) return
 
@@ -67,6 +68,11 @@ onMounted(async () => {
         landing: true,
         host
       }
+      // add test user if ?test=true
+      if (isTest) {
+        botParams.userData = { uid: 'testUser' }
+      }
+
       // @ts-ignore third-party global
       window.bcw_widget.init('show', botParams)
     }
@@ -93,16 +99,18 @@ onBeforeUnmount(() => {
 }
 
 /* widget style */
-:global(#bcw-chatbot-menu) { margin-right: 300px !important; }
+:global(#bcw-chatbot-menu) { margin-right: 300px !important; margin-top: 3% !important; }
 :global(.widget-div-active) { padding: 0 300px; }
 :global(.bg-white.chatHeight) {
-  margin-top: 0.5% !important;
-  height: 96vh !important;
-  border: 2px solid var(--color-border);
+  margin-top: 3% !important;
+  height: 94vh !important;
+  border: 2px solid var(--color-border);  
+  overflow: hidden !important;  
 }
 :global(.bcw5611 .rounded-tr-none) {
   border-top-right-radius: 18px !important;
   border-top-left-radius: 18px !important;
 }
 :global(div#bcw5611_ID) { border-radius: 0 !important; }
+
 </style>

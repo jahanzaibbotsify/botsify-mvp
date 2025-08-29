@@ -890,7 +890,7 @@ onUnmounted(() => {
 
 .hero-content {
   position: relative;
-  z-index: 2;
+  z-index: 1;
   max-width: 700px;
   margin: 0 auto;
 }
