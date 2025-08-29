@@ -40,9 +40,7 @@ export const useAuthStore = defineStore('auth', () => {
         '1,000 Credits (1 credit = 1 message) 🔥',
         'Integrate Documents & Web Search',
         'Messenger, SMS, Website, Instagram, Telegram, WhatsApp 🔥',
-        'Basic Support',
-        'No MCP',
-        'No Agent Development',
+        'Basic Support'
       ],
       excludedFeatures: [
         'Integrate MCP',
