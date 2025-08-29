@@ -63,7 +63,7 @@ export const useAuthStore = defineStore('auth', () => {
       },
       prices: {
         monthly: 'Basic-Plan',
-        annually: 'Basic-Annual'
+        annually: 'Basic-Plan-Annual'
       }
     },
     {
