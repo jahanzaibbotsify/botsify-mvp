@@ -34,7 +34,9 @@ const connectedCards = computed(() => {
 });
 
 const mcpServers = computed(() => {
-  return activeTab.value === 'connected' ? connectedCards.value : allServers.value;
+  if (activeTab.value === 'connected') return connectedCards.value;
+  // In the All tab, hide custom connected servers
+  return (allServers.value as any[]).filter((s: any) => !s.isCustom);
 });
 
 /**
@@ -169,9 +171,9 @@ watch(mcpServers, (list) => {
           </svg>
         </div>
         <div class="text-sm text-emphasis">
-          <div>{{ config.name }}</div>
+          <div class="server-name" :title="config.name">{{ config.name }}</div>
         </div>
-        <div class="server_label" v-if="activeTab === 'connected'">{{ config.server_label }}</div>
+        <div class="server_label" v-if="activeTab === 'connected' && !config.isCustom">{{ config.server_label }}</div>
 
         <div v-if="activeTab === 'connected' && config.connectionId" class="server-actions">
           <button class="edit-button" title="Edit server" @click.stop="$emit('selectServer', { server: config, isEdit: true })">
@@ -269,6 +271,24 @@ watch(mcpServers, (list) => {
   background: rgba(34, 197, 94, 0.05);
 }
 
+.server-card {
+  position: relative;
+}
+
+.server-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.text-sm.text-emphasis {
+  width: 100%;
+}
+
 .server-card.coming-soon {
   cursor: not-allowed;
   opacity: 0.7;
@@ -338,10 +358,10 @@ watch(mcpServers, (list) => {
 
 .server-actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: var(--space-1);
   position: absolute;
-  bottom: var(--space-2);
+  top: var(--space-2);
   right: var(--space-2);
 }
 

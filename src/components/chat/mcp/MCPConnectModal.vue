@@ -393,7 +393,7 @@ const addServer = async (allowedTools: string[]) => {
       headers: buildMCPHeaders(),
       allowed_tools: allowedTools.map((tool: any) => tool.name),
       require_approval: "never",
-      is_custom: props.isCustom,
+      is_custom: props.server ? props.server.isCustom : props.isCustom,
       auth_method: authType.value,
       ...(googleSheetUrl.value ? {google_sheet_url: googleSheetUrl.value} : {}),
       ...(googleSheetName.value ? {google_sheet_name: googleSheetName.value} : {}),
@@ -436,7 +436,7 @@ const addServer = async (allowedTools: string[]) => {
       }
       mcpStore.connectedMCPs = mcpStore.connectedServers.length;
 
-      const successMessage = `✅ "${connectedServer.setting.server_name}" MCP server connected successfully!`
+      const successMessage = `✅ "${props.isCustom ? connectedServer.setting.server_label: connectedServer.setting.server_name}" MCP server connected successfully!`
       await chatStore.addMessage(props.chatId, successMessage, 'assistant')
 
       emit('quit');
