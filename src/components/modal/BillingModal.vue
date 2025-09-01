@@ -503,10 +503,6 @@
     if (!isInitialized.value) {
       try {
         await whitelabelStore.initialize()
-        console.log('Whitelabel store initialized:', {
-          isConfigured: isConfigured.value,
-          config: whitelabelStore.config
-        })
       } catch (error) {
         console.error('Failed to initialize whitelabel store:', error)
       }

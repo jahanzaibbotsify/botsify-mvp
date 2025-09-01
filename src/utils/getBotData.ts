@@ -9,6 +9,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { getCurrentApiKey } from './apiKeyUtils';
 import { useMCPStore } from '@/stores/mcpStore';
 import { useUserStore } from '@/stores/userStore';
+import { useAuthStore } from '@/stores/authStore';
 
 // let isBotDataLoaded = false;
 
@@ -35,6 +36,7 @@ export async function getBotData() {
   botStore.setApiKey(apikey);
   // Clean up chat store state before loading new agent data
   const chatStore = useChatStore();
+  const authStore = useAuthStore();
   chatStore.cleanupForAgentSwitch();
   // Reset publish store state for new agent
   const publishStore = usePublishStore();
@@ -56,6 +58,7 @@ export async function getBotData() {
     // User + Role
     if (data.user) {
       roleStore.setCurrentUser(data.user);
+      authStore.setAuthData(null, data.user);
 
       // Whitelabel - initialize if user has whitelabel data
       if (data.user.is_whitelabel) {

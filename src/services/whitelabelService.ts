@@ -44,7 +44,6 @@ class WhitelabelService {
   async fetchConfig(): Promise<WhitelabelResponse> {
     // Skip API call if current URL matches APP_URL
     if (this.isBotsifyWebUrl()) {
-      console.log('Skipping whitelabel config API call - running on APP_URL')
       return { data: null, error: null }
     }
 

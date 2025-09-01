@@ -38,7 +38,6 @@ const initializeWhitelabel = async () => {
       // No need to fetch them during app initialization
     } else if (!configResponse.data && !configResponse.error) {
       // No data and no error - likely skipped due to APP_URL
-      console.log('Whitelabel initialization skipped - running on APP_URL')
       // Apply default branding only on Botsify web
       if (whitelabelService.isRunningOnBotsifyWeb()) {
         whitelabelService.applyDefaultBranding()

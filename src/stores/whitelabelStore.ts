@@ -49,7 +49,6 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
     isLoading.value = true
     error.value = null
     try {
-      console.log('Fetching whitelabel config...')
       const response = await whitelabelService.fetchConfig()
       if (response.data) {
         config.value = response.data
@@ -63,7 +62,6 @@ export const useWhitelabelStore = defineStore('whitelabel', () => {
         // No data and no error - likely skipped due to APP_URL
         // Set as initialized to prevent repeated calls
         isInitialized.value = true
-        console.log('Whitelabel initialization skipped - running on APP_URL')
       }
     } catch (err: any) {
       error.value = err?.message || 'Failed to load whitelabel configuration'

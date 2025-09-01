@@ -368,6 +368,7 @@ export const useAuthStore = defineStore('auth', () => {
       accessToken.value = access_token;
     }
     if (auth_user) {
+      console.log('auth_user', auth_user)
       localStorage.setItem('user', JSON.stringify(auth_user));
       user.value = auth_user
       const roleStore = useRoleStore();
