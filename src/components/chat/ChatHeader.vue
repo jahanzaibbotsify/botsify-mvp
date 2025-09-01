@@ -24,7 +24,6 @@
       <!-- Deploy/Test AI Buttons -->
       <div class="action-buttons">
         <Button 
-          variant="success"
           @click="deployAI"
           :disabled="!hasPromptContent || chatStore.isAIPromptGenerating"
           :title="!hasPromptContent ? 'Generate prompt content first' : 'Deploy your AI agent'"

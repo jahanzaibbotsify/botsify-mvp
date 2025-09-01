@@ -682,8 +682,7 @@ onUnmounted(() => {
               <div class="agent-info-column">
                 <!-- Agent Avatar -->
                 <div class="agent-avatar-section">
-                  <img :src="validateImage(agent.logo, '/icons/img.png')" :alt="agent.name" class="agent-avatar" @click="selectBot(agent)"
-                       style="cursor:pointer; user-select: none"/>
+                  <img :src="validateImage(agent.logo, '/icons/img.png')" :alt="agent.name" class="agent-avatar" @click="selectBot(agent)" />
                 </div>
 
                 <!-- Agent Details -->
@@ -1315,6 +1314,12 @@ onUnmounted(() => {
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid var(--color-border);
+  background-color: var(--color-primary);
+  cursor:pointer; 
+  user-select: none
+}
+.agent-selection-view[style*="--whitelabel-primary"] .agent-avatar {
+  background-color: var(--whitelabel-primary);
 }
 
 /* Agent Details */
@@ -1758,10 +1763,6 @@ onUnmounted(() => {
 /* Dark theme support */
 [data-theme="dark"] .agent-selection-view {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-}
-
-[data-theme="dark"] .header-left :deep(.whitelabel-logo) {
-  /* Logo will display in its natural colors */
 }
 
 [data-theme="dark"] .tabs-search-section,
