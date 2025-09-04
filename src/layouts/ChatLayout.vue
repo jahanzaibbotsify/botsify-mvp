@@ -6,11 +6,13 @@ import LeftSidebar from '@/components/sidebar/LeftSidebar.vue';
 import { useSidebarToggle } from '@/composables/useSidebarToggle';
 import { useBotStore } from '@/stores/botStore';
 import { getBotData } from '@/utils/getBotData';
+import { useImpersonationStore } from '@/stores/impersonationStore';
 
 const botStore = useBotStore();
 const chatStore = useChatStore();
 const route = useRoute();
 const selectedNavigationButton = ref('Agent');
+const impersonationStore = useImpersonationStore();
 
 // Use the sidebar toggle composable
 const {
@@ -73,6 +75,10 @@ onMounted(async () => {
 
     <!-- Content wrapper that contains both sidebar and main content -->
     <div class="content-wrapper">
+      <div v-if="impersonationStore.isImpersonating" class="impersonation-banner">
+        <span>Impersonating user #{{ impersonationStore.impersonatedUserId }}</span>
+        <button class="primary" @click="() => impersonationStore.stop().then(() => $router.replace('/select-agent'))">Stop Impersonate</button>
+      </div>
       <!-- Left Sidebar -->
       <LeftSidebar 
         :select-button="selectedNavigationButton" 
@@ -131,6 +137,20 @@ onMounted(async () => {
   height: 100%;
   width: 100%;
   position: relative;
+}
+
+.impersonation-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: calc(var(--z-fixed) + 20);
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-warning);
+  color: #111;
 }
 
 .main-content {

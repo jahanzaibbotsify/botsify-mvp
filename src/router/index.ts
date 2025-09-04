@@ -85,6 +85,19 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/AgentLandingView.vue'),
     meta: { requiresAuth: false }
   },
+  {
+    path: '/admin',
+    component: () => import('../layouts/AdminLayout.vue'),
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: 'users',
+        name: 'admin-users',
+        component: () => import('../views/admin/AdminUsersView.vue'),
+        meta: { requiresAuth: true }
+      }
+    ]
+  },
   // Main App Routes
   {
     path: '',
@@ -183,6 +196,10 @@ router.beforeEach(async (to, from, next) => {
         // Redirect to login if registration is not allowed
         return next({ path: '/auth/login' });
       }
+    }
+
+    if(to.path.startsWith('/admin')){
+      return next();
     }
 
     // Check if user is authenticated
