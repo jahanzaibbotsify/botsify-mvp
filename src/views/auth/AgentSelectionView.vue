@@ -422,17 +422,7 @@ const loadMoreAgents = async () => {
  * @param agent - Agent to select
  */
 const selectBot = async (agent: any) => {
-  try {
-    const response = await axiosInstance.get(`v1/bot/select/${agent.token}`)
-    if (response.data && response.data.bot) {
-      useBotStore().setApiKey(agent.apikey)
-      router.push(`/agent/${agent.apikey}`)
-    } else {
-      window.$toast?.error(response.data?.message || 'Failed to select agent. Please try again.')
-    }
-  } catch (error: any) {
-    window.$toast?.error(error?.response?.data?.message || 'Failed to select agent. Please try again.')
-  }
+  router.push(`/agent/${agent.apikey}`)
 }
 
 // Publish status helpers

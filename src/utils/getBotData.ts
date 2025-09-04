@@ -69,6 +69,7 @@ export async function getBotData() {
     // Bot
     botStore.setBotId(data.bot.id);
     botStore.setUser(data.user);
+    botStore.setLegacyEnabled(data.bot.legacy_enabled);
     botStore.setBotName(data.bot.name);
     
     // Initialize MCP store with new agent data

@@ -11,6 +11,7 @@ import { showZen } from '@/utils/zendesk';
 import { useBotStore } from '@/stores/botStore';
 import { Button, ManageBilling, Dropdown, DropdownItem } from '../ui';
 import { BOTSIFY_WEB_URL } from '@/utils/config';
+import { getWebUrl } from '@/utils';
 
 const sidebarStore = useSidebarStore();
 const botStore = useBotStore();
@@ -92,6 +93,11 @@ const navLinks = computed(() => {
   }
   // For regular Botsify clients, show all links
   return [
+    ...(botStore.isLegacyEnabled ? [{
+      name: 'Legacy Platform',
+      url: `${getWebUrl()}/bot`,
+      icon: 'pi pi-check-circle'
+    }] : []),
     {
       name: 'Tutorials',
       url: 'https://www.youtube.com/@Botsify',

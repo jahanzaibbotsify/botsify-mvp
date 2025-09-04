@@ -10,10 +10,12 @@ export const useBotStore = defineStore('bot', {
     botId: '',
     botName: '',
     isLoading: true,
+    legacyEnabled: 0,
   }),
   getters: {
     getApiKey: (state) => state.apiKey,
     isApiKeySet: (state) => state.apiKey.length > 0,
+    isLegacyEnabled: (state) => state.legacyEnabled == 1,
   },
   actions: {
     setIsLoading(isLoading: boolean) {
@@ -36,6 +38,9 @@ export const useBotStore = defineStore('bot', {
     clearApiKey() {
       this.apiKey = '';
       clearApiKeyUtil();
+    },
+    setLegacyEnabled(enabled: boolean) {
+      this.legacyEnabled = enabled ? 1 : 0;
     },
   }
 })
